@@ -18,7 +18,7 @@ import {
   Zap
 } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
-import ConsciousnessTree3D from '@/components/ConsciousnessTree3D'
+import ConsciousnessTreeFallback from '@/components/ConsciousnessTreeFallback'
 
 interface User {
   id: string
@@ -365,8 +365,8 @@ export default function PersonalPortalPage() {
                 <TreePine className="w-6 h-6 text-green-400 mr-3" />
                 <h3 className="text-lg font-semibold text-white">3D意识进化树</h3>
               </div>
-              <ConsciousnessTree3D 
-                currentDay={currentDay} 
+              <ConsciousnessTreeFallback
+                currentDay={currentDay}
                 completedTasks={completedTasks}
                 className="w-full"
               />

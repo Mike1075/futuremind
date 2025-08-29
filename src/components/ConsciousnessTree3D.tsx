@@ -320,11 +320,28 @@ function TreeScene({
   )
 }
 
-export default function ConsciousnessTree3D({ 
-  currentDay, 
-  completedTasks, 
-  className = '' 
+export default function ConsciousnessTree3D({
+  currentDay,
+  completedTasks,
+  className = ''
 }: ConsciousnessTree3DProps) {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return (
+      <div className={`w-full h-96 rounded-2xl overflow-hidden ${className} bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-400 text-sm">加载3D意识树...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`w-full h-96 rounded-2xl overflow-hidden ${className}`}>
       <Canvas>
