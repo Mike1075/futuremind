@@ -1,0 +1,19 @@
+future mind 平台环境变量：
+
+
+
+github仓库URL：https://github.com/Mike1075/futuremind.git
+
+前端部署平台：vercel
+
+supabase 数据库参数：
+
+NEXT_PUBLIC_SUPABASE_URL=https://lvjezsnwesyblnlkkirz.supabase.co
+
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2amV6c253ZXN5YmxubGtraXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0MzQyOTUsImV4cCI6MjA3MjAxMDI5NX0.sxXXFRlGutfdhYU0r-1o8Osf98JJgii9hPdFyFWlHgU
+
+service_role_key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2amV6c253ZXN5YmxubGtraXJ6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjQzNDI5NSwiZXhwIjoyMDcyMDEwMjk1fQ.4YOr1WrA8XY5sBhyTZvyR8064JoGAsju-6TXAHcZYsc
+
+
+
+
