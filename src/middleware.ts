@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function middleware(_request: NextRequest) {
   // 简化中间件，暂时不做认证检查
   // 可以在后续需要时重新启用
 

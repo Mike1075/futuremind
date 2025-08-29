@@ -111,11 +111,11 @@ export default function Home() {
           </button>
 
           <button
-            onClick={() => window.location.href = '/portal'}
+            onClick={() => window.location.href = '/dashboard'}
             className="group px-8 py-4 border-2 border-purple-400 rounded-full text-purple-300 font-semibold text-lg hover:bg-purple-400 hover:text-white transition-all duration-300 transform hover:scale-105"
           >
             <Users className="w-5 h-5 inline mr-2" />
-            个人门户
+            进入学院
           </button>
         </motion.div>
 
