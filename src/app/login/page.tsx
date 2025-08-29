@@ -37,11 +37,12 @@ export default function LoginPage() {
           options: {
             data: {
               full_name: fullName,
-            }
+            },
+            emailRedirectTo: `${window.location.origin}/auth/callback`
           }
         })
         if (error) throw error
-        setMessage('请检查您的邮箱以确认注册')
+        setMessage('注册成功！请检查您的邮箱并点击确认链接完成注册。')
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'An error occurred')

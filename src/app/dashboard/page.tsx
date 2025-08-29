@@ -106,6 +106,12 @@ export default function DashboardPage() {
                 欢迎，{user?.user_metadata?.full_name || user?.email}
               </span>
               <button
+                onClick={() => router.push('/portal')}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+              >
+                个人门户
+              </button>
+              <button
                 onClick={handleLogout}
                 className="p-2 text-gray-400 hover:text-white transition-colors"
               >
