@@ -98,6 +98,84 @@ export type Database = {
           updated_at?: string
         }
       }
+      gaia_conversations: {
+        Row: {
+          id: string
+          user_id: string
+          messages: Record<string, unknown>[]
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          messages?: Record<string, unknown>[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          messages?: Record<string, unknown>[]
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      pbl_projects: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          season_id: string
+          max_participants: number
+          current_participants: number
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          season_id: string
+          max_participants?: number
+          current_participants?: number
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          season_id?: string
+          max_participants?: number
+          current_participants?: number
+          status?: string
+          created_at?: string
+        }
+      }
+      project_participants: {
+        Row: {
+          id: string
+          project_id: string
+          user_id: string
+          role: string
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          user_id: string
+          role?: string
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          user_id?: string
+          role?: string
+          joined_at?: string
+        }
+      }
     }
   }
 }

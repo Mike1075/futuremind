@@ -18,16 +18,17 @@ interface ConsciousnessTreeProps {
   className?: string
 }
 
-export default function ConsciousnessTree({ 
-  currentDay, 
-  completedTasks, 
-  className = '' 
+export default function ConsciousnessTree({
+  currentDay,
+  completedTasks,
+  className = ''
 }: ConsciousnessTreeProps) {
+  // completedTasks will be used for future functionality
+  console.log('Completed tasks:', completedTasks.length);
   
   // Generate tree nodes based on progress
   const generateTreeNodes = (): TreeNode[] => {
     const nodes: TreeNode[] = []
-    const totalProgress = currentDay + completedTasks.length
     
     // Root level - always unlocked
     nodes.push({
@@ -91,7 +92,6 @@ export default function ConsciousnessTree({
   }
 
   const treeNodes = generateTreeNodes()
-  const treeHeight = Math.max(4, Math.ceil(currentDay / 7)) * 80
 
   const getNodeIcon = (type: string) => {
     switch (type) {

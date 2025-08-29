@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Sparkles, MessageCircle } from 'lucide-react'
+import { X, Send, Sparkles } from 'lucide-react'
 
 interface Message {
   id: string

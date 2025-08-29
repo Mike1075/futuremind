@@ -8,11 +8,9 @@ import {
   TreePine,
   MessageCircle,
   Sparkles,
-  Calendar,
   Target,
   Users,
   LogOut,
-  Settings,
   Play,
   CheckCircle
 } from 'lucide-react'
@@ -25,6 +23,17 @@ interface User {
   user_metadata: {
     full_name?: string
   }
+}
+
+interface UserProgress {
+  id: string
+  user_id: string
+  season_id: string
+  current_day: number
+  completed_tasks: string[]
+  consciousness_growth: number
+  created_at: string
+  updated_at: string
 }
 
 export default function DashboardPage() {
@@ -42,15 +51,15 @@ export default function DashboardPage() {
       if (user) {
         setUser(user as User)
         // Load user progress
-        const { data: progress } = await supabase
+        const { data: progress, error: progressError } = await supabase
           .from('user_progress')
           .select('*')
           .eq('user_id', user.id)
           .single()
-        
-        if (progress) {
-          setCurrentDay(progress.current_day)
-          setCompletedTasks(progress.completed_tasks || [])
+
+        if (progress && !progressError) {
+          setCurrentDay((progress as UserProgress).current_day || 1)
+          setCompletedTasks((progress as UserProgress).completed_tasks || [])
         }
       } else {
         router.push('/login')
@@ -197,7 +206,7 @@ export default function DashboardPage() {
                 <h2 className="text-xl font-semibold text-white">伊卡洛斯行动</h2>
               </div>
               <p className="text-gray-300 mb-4">
-                探索"无形的纽带" - 与全球探索者一起研究意识与物质的互动
+                                探索&ldquo;无形的纽带&rdquo; - 与全球探索者一起研究意识与物质的互动
               </p>
               <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 加入项目
@@ -236,7 +245,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold text-white">盖亚的低语</h3>
               </div>
               <p className="text-gray-300 text-sm mb-4">
-                "今天，试着聆听沉默中的声音。真正的智慧往往在最安静的时刻显现。"
+                &ldquo;今天，试着聆听沉默中的声音。真正的智慧往往在最安静的时刻显现。&rdquo;
               </p>
               <button
                 onClick={() => setShowGaiaDialog(true)}

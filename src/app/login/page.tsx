@@ -43,8 +43,8 @@ export default function LoginPage() {
         if (error) throw error
         setMessage('请检查您的邮箱以确认注册')
       }
-    } catch (error: any) {
-      setMessage(error.message)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
