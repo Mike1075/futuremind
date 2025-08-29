@@ -258,13 +258,13 @@ export const authClient = {
 // Server-side auth functions
 export const authServer = {
   async getCurrentUser() {
-    const supabase = await createServerClient()
+    const supabase = createServerClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     return { user, error }
   },
 
   async getUserProfile(userId: string) {
-    const supabase = await createServerClient()
+    const supabase = createServerClient()
 
     const { data: profile, error } = await supabase
       .from('profiles')
