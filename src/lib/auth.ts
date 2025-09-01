@@ -1,6 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@/lib/supabase/client'
-import { createClient as createServerClient } from '@/lib/supabase/server'
+import {
+  ExtendedUserProfile,
+  UserRole,
+  Group,
+  GroupMember,
+  GroupApplication,
+  Course,
+  CourseEnrollment,
+  ExtendedProject,
+  hasPermission
+} from '@/types/auth'
 
 export interface UserProfile {
   id: string
@@ -8,6 +18,7 @@ export interface UserProfile {
   full_name: string | null
   avatar_url: string | null
   consciousness_level: number
+  role: UserRole
   created_at: string
   updated_at: string
 }
@@ -232,7 +243,7 @@ export const authClient = {
 
   async joinPBLProject(userId: string, projectId: string) {
     const supabase = createClient()
-    
+
     const insertData = {
       user_id: userId,
       project_id: projectId,
@@ -252,26 +263,239 @@ export const authClient = {
     }
 
     return { data, error }
-  }
-}
-
-// Server-side auth functions
-export const authServer = {
-  async getCurrentUser() {
-    const supabase = await createServerClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
-    return { user, error }
   },
 
-  async getUserProfile(userId: string) {
-    const supabase = await createServerClient()
+  // 小组管理功能
+  async createGroup(userId: string, groupData: {
+    name: string
+    description?: string
+    max_members?: number
+    tags?: string[]
+  }) {
+    const supabase = createClient()
 
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
+    const { data, error } = await supabase
+      .from('groups')
+      .insert({
+        ...groupData,
+        creator_id: userId,
+        max_members: groupData.max_members || 20,
+        tags: groupData.tags || []
+      })
+      .select()
       .single()
 
-    return { profile, error }
+    return { data, error }
+  },
+
+  async getGroups(filters?: {
+    status?: string
+    tags?: string[]
+    search?: string
+  }) {
+    const supabase = createClient()
+
+    let query = supabase
+      .from('groups')
+      .select(`
+        *,
+        creator:profiles!creator_id(id, full_name, email, role)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) {
+      query = query.eq('status', filters.status)
+    }
+
+    if (filters?.search) {
+      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+    }
+
+    const { data: groups, error } = await query
+
+    return { groups, error }
+  },
+
+  async joinGroup(userId: string, groupId: string, message?: string) {
+    const supabase = createClient()
+
+    // 创建申请
+    const { data, error } = await supabase
+      .from('group_applications')
+      .insert({
+        group_id: groupId,
+        user_id: userId,
+        message: message || null
+      })
+      .select()
+      .single()
+
+    return { data, error }
+  },
+
+  async approveGroupApplication(applicationId: string, reviewerId: string) {
+    const supabase = createClient()
+
+    // 获取申请信息
+    const { data: application, error: appError } = await supabase
+      .from('group_applications')
+      .select('*')
+      .eq('id', applicationId)
+      .single()
+
+    if (appError || !application) {
+      return { error: appError || 'Application not found' }
+    }
+
+    // 更新申请状态
+    const { error: updateError } = await supabase
+      .from('group_applications')
+      .update({
+        status: 'approved',
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: reviewerId
+      })
+      .eq('id', applicationId)
+
+    if (updateError) {
+      return { error: updateError }
+    }
+
+    // 添加用户到小组
+    const { data, error } = await supabase
+      .from('group_members')
+      .insert({
+        group_id: application.group_id,
+        user_id: application.user_id,
+        role: 'member'
+      })
+      .select()
+      .single()
+
+    return { data, error }
+  },
+
+  // 项目管理功能
+  async createProject(userId: string, projectData: {
+    title: string
+    description?: string
+    season_id: string
+    max_participants?: number
+    tags?: string[]
+    difficulty_level?: number
+    estimated_duration?: string
+    requirements?: string
+  }) {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from('pbl_projects')
+      .insert({
+        ...projectData,
+        creator_id: userId,
+        max_participants: projectData.max_participants || 10,
+        tags: projectData.tags || [],
+        difficulty_level: projectData.difficulty_level || 1
+      })
+      .select()
+      .single()
+
+    return { data, error }
+  },
+
+  async getProjectsWithDetails() {
+    const supabase = createClient()
+
+    const { data: projects, error } = await supabase
+      .from('pbl_projects')
+      .select(`
+        *,
+        creator:profiles!creator_id(id, full_name, email, role),
+        season:seasons(title),
+        participants:project_participants(count)
+      `)
+      .order('created_at', { ascending: false })
+
+    return { projects, error }
+  },
+
+  // 课程管理功能
+  async createCourse(userId: string, courseData: {
+    title: string
+    description?: string
+    content?: Record<string, unknown>
+    difficulty_level?: number
+    duration_hours?: number
+    tags?: string[]
+  }) {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from('courses')
+      .insert({
+        ...courseData,
+        instructor_id: userId,
+        difficulty_level: courseData.difficulty_level || 1,
+        duration_hours: courseData.duration_hours || 1,
+        tags: courseData.tags || [],
+        status: 'draft'
+      })
+      .select()
+      .single()
+
+    return { data, error }
+  },
+
+  async getCourses(filters?: {
+    status?: string
+    instructor_id?: string
+    tags?: string[]
+  }) {
+    const supabase = createClient()
+
+    let query = supabase
+      .from('courses')
+      .select(`
+        *,
+        instructor:profiles!instructor_id(id, full_name, email, role)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) {
+      query = query.eq('status', filters.status)
+    }
+
+    if (filters?.instructor_id) {
+      query = query.eq('instructor_id', filters.instructor_id)
+    }
+
+    const { data: courses, error } = await query
+
+    return { courses, error }
+  },
+
+  async enrollInCourse(userId: string, courseId: string) {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from('course_enrollments')
+      .insert({
+        course_id: courseId,
+        user_id: userId
+      })
+      .select()
+      .single()
+
+    return { data, error }
+  },
+
+  // 权限检查
+  async checkUserPermission(userId: string, resource: string, action: string): Promise<boolean> {
+    const { profile } = await this.getUserProfile(userId)
+    if (!profile) return false
+
+    return hasPermission(profile.role, resource, action)
   }
 }
+
+
