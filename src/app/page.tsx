@@ -114,6 +114,13 @@ export default function Home() {
             <Users className="w-5 h-5 inline mr-2" />
             探索者联盟
           </button>
+
+          <button
+            onClick={() => window.location.href = '/mike-test'}
+            className="group px-8 py-4 border-2 border-green-400 rounded-full text-green-300 font-semibold text-lg hover:bg-green-400 hover:text-white transition-all duration-300 transform hover:scale-105"
+          >
+            Mike测试页面
+          </button>
         </motion.div>
 
         {/* Features preview */}
