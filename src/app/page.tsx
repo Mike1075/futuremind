@@ -3,18 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Sparkles, MessageCircle, TreePine } from 'lucide-react'
+import { Sparkles, MessageCircle, TreePine, LogIn, Shield, User, LogOut } from 'lucide-react'
 
 import PWAInstaller from '@/components/PWAInstaller'
+import { useAuth } from '@/components/AuthProvider'
 // 移除不存在的导入
 
 export default function Home() {
-
   const [isMobile, setIsMobile] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [animationConfig, setAnimationConfig] = useState({ duration: 0.8, ease: "easeOut" })
   const [particleCount, setParticleCount] = useState(50)
   const router = useRouter()
+  const { user, profile, signOut, isAdmin } = useAuth()
 
   useEffect(() => {
     setMounted(true)
@@ -41,6 +42,46 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4 sm:px-6">
+      {/* 用户状态栏 */}
+      <div className="absolute top-4 right-4 z-10">
+        {user ? (
+          <div className="flex items-center gap-3">
+            {isAdmin() && (
+              <button
+                onClick={() => router.push('/admin')}
+                className="bg-red-500/20 text-red-300 px-3 py-2 rounded-lg hover:bg-red-500/30 transition-colors flex items-center gap-2 text-sm"
+              >
+                <Shield className="w-4 h-4" />
+                管理后台
+              </button>
+            )}
+
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="bg-white/10 text-white px-3 py-2 rounded-lg hover:bg-white/20 transition-colors flex items-center gap-2 text-sm"
+            >
+              <User className="w-4 h-4" />
+              {profile?.full_name || '用户中心'}
+            </button>
+
+            <button
+              onClick={signOut}
+              className="bg-white/10 text-white/80 px-3 py-2 rounded-lg hover:bg-white/20 hover:text-white transition-colors flex items-center gap-2 text-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              退出
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => router.push('/login')}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 flex items-center gap-2 text-sm"
+          >
+            <LogIn className="w-4 h-4" />
+            登录
+          </button>
+        )}
+      </div>
       {/* Background particles - optimized for mobile performance */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(particleCount)].map((_, i) => (

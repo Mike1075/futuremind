@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Users, Calendar, MessageSquare, FileText, Plus, Search, Filter } from 'lucide-react'
+import { ArrowLeft, Users, Calendar, MessageSquare, FileText, Plus, Search, Filter, Star, Clock, Target } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/components/AuthProvider'
+import { authClient } from '@/lib/auth'
+import { ExtendedProject } from '@/types/auth'
 
 interface Project {
   id: string
@@ -99,6 +102,8 @@ export default function ProjectsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredProjects, setFilteredProjects] = useState<Project[]>(mockProjects)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const { user, profile, hasPermission } = useAuth()
 
   useEffect(() => {
     let filtered = mockProjects
@@ -126,10 +131,26 @@ export default function ProjectsPage() {
     console.log('跳转到项目详情:', projectId)
   }
 
-  const handleJoinProject = (projectId: string, e: React.MouseEvent) => {
+  const handleJoinProject = async (projectId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    console.log('加入项目:', projectId)
+
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    const { error } = await authClient.joinPBLProject(user.id, projectId)
+
+    if (error) {
+      alert(`加入失败: ${error.message}`)
+    } else {
+      alert('成功加入项目！')
+      // 重新加载项目数据
+      window.location.reload()
+    }
   }
+
+  const canCreateProject = hasPermission('projects', 'create')
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -145,10 +166,15 @@ export default function ProjectsPage() {
               返回
             </button>
             <h1 className="text-xl font-semibold text-white">项目协作</h1>
-            <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center text-sm transition-colors">
-              <Plus className="w-4 h-4 mr-2" />
-              创建项目
-            </button>
+            {canCreateProject && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center text-sm transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                创建项目
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -301,6 +327,201 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {/* 创建项目模态框 */}
+      {showCreateModal && (
+        <CreateProjectModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false)
+            window.location.reload()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// 创建项目模态框组件
+function CreateProjectModal({
+  onClose,
+  onSuccess
+}: {
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [maxParticipants, setMaxParticipants] = useState(10)
+  const [difficultyLevel, setDifficultyLevel] = useState(1)
+  const [estimatedDuration, setEstimatedDuration] = useState('')
+  const [requirements, setRequirements] = useState('')
+  const [tags, setTags] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { user } = useAuth()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    setLoading(true)
+
+    // 需要先获取当前活跃的season
+    const { seasons } = await authClient.getActiveSeasons()
+    const activeSeason = seasons?.[0]
+
+    if (!activeSeason) {
+      alert('当前没有活跃的学期，无法创建项目')
+      setLoading(false)
+      return
+    }
+
+    const { error } = await authClient.createProject(user.id, {
+      title,
+      description: description || undefined,
+      season_id: activeSeason.id,
+      max_participants: maxParticipants,
+      tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      difficulty_level: difficultyLevel,
+      estimated_duration: estimatedDuration || undefined,
+      requirements: requirements || undefined
+    })
+
+    if (error) {
+      alert(`创建失败: ${error.message}`)
+    } else {
+      onSuccess()
+    }
+
+    setLoading(false)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <h2 className="text-xl font-bold text-white mb-6">创建新项目</h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                项目标题 *
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="输入项目标题"
+                required
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                项目描述 *
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 h-24 resize-none"
+                placeholder="描述项目的目标、内容和预期成果"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                最大参与人数
+              </label>
+              <input
+                type="number"
+                value={maxParticipants}
+                onChange={(e) => setMaxParticipants(parseInt(e.target.value))}
+                className="w-full bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                min="2"
+                max="50"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                难度等级
+              </label>
+              <select
+                value={difficultyLevel}
+                onChange={(e) => setDifficultyLevel(parseInt(e.target.value))}
+                className="w-full bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value={1} className="bg-gray-800">初级</option>
+                <option value={2} className="bg-gray-800">中级</option>
+                <option value={3} className="bg-gray-800">高级</option>
+                <option value={4} className="bg-gray-800">专家</option>
+                <option value={5} className="bg-gray-800">大师</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                预计时长
+              </label>
+              <input
+                type="text"
+                value={estimatedDuration}
+                onChange={(e) => setEstimatedDuration(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="例如: 4-6周"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                标签 (用逗号分隔)
+              </label>
+              <input
+                type="text"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="例如: 意识, 实验, 集体"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                参与要求
+              </label>
+              <textarea
+                value={requirements}
+                onChange={(e) => setRequirements(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 h-20 resize-none"
+                placeholder="描述参与项目的要求和前置条件"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-white/10 text-white py-3 rounded-lg hover:bg-white/20 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !title.trim() || !description.trim()}
+              className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 disabled:opacity-50"
+            >
+              {loading ? '创建中...' : '创建项目'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
     </div>
   )
 }

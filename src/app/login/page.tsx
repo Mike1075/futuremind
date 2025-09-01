@@ -3,18 +3,22 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/components/AuthProvider'
+import { UserRole } from '@/types/auth'
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [role, setRole] = useState<UserRole>('student')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [isMobile, setIsMobile] = useState(false)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
+  const { signIn, signUp } = useAuth()
 
   useEffect(() => {
     setMounted(true)
@@ -43,37 +47,41 @@ export default function LoginPage() {
     setLoading(true)
     setMessage('')
 
-    // 模拟API调用 - 任意邮箱密码都可以登录
-    if (isLogin) {
-      if (email && password) {
-        setMessage('登录成功！正在跳转...')
-        // 在演示模式下写入临时认证cookie，配合中间件放行
-        try {
-          if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
-            document.cookie = 'demo_auth=1; path=/; max-age=86400'
+    try {
+      if (isLogin) {
+        // 登录
+        if (email && password) {
+          const { error } = await signIn(email, password)
+          if (error) {
+            setMessage(`登录失败: ${error}`)
+          } else {
+            setMessage('登录成功！正在跳转...')
+            setTimeout(() => {
+              router.replace('/dashboard')
+            }, 1000)
           }
-        } catch (_) {
-          // 忽略客户端cookie写入异常
+        } else {
+          setMessage('请输入邮箱和密码')
         }
-        // 使用replace确保跳转成功，并添加调试信息
-        setTimeout(() => {
-          console.log('正在跳转到dashboard...')
-          router.replace('/dashboard')
-        }, 1000)
       } else {
-        setMessage('请输入邮箱和密码')
-        setLoading(false)
+        // 注册
+        if (email && password && fullName) {
+          const { error } = await signUp(email, password, fullName, role)
+          if (error) {
+            setMessage(`注册失败: ${error}`)
+          } else {
+            setMessage('注册成功！请检查邮箱验证链接')
+            setIsLogin(true)
+            setPassword('')
+          }
+        } else {
+          setMessage('请填写所有必填字段')
+        }
       }
-    } else {
-      if (email && password && fullName) {
-        setMessage('注册成功！请登录')
-        setIsLogin(true)
-        setPassword('')
-        setLoading(false)
-      } else {
-        setMessage('请填写所有必填字段')
-        setLoading(false)
-      }
+    } catch (error) {
+      setMessage(`操作失败: ${error}`)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -198,6 +206,32 @@ export default function LoginPage() {
                 placeholder="请输入您的姓名"
                 required={!isLogin}
               />
+            </motion.div>
+          )}
+
+          {!isLogin && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                用户角色
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as UserRole)}
+                className={`w-full bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 ${
+                  isMobile ? 'px-3 py-2.5 text-base' : 'px-4 py-3'
+                }`}
+              >
+                <option value="student" className="bg-gray-800">学员</option>
+                <option value="guest" className="bg-gray-800">游客</option>
+              </select>
+              <p className="text-xs text-gray-400 mt-1">
+                学员可以参与课程和项目，游客只能浏览内容
+              </p>
             </motion.div>
           )}
 

@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Play, CheckCircle, Clock, Users } from 'lucide-react'
+import { ArrowLeft, Play, CheckCircle, Clock, Users, BookOpen, Star, Plus } from 'lucide-react'
+import { useAuth } from '@/components/AuthProvider'
+import { authClient } from '@/lib/auth'
+import { Course } from '@/types/auth'
 
 const seasonOneData = {
   title: '第一季：声音的交响',
