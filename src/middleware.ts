@@ -39,6 +39,11 @@ export async function middleware(request: NextRequest) {
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/api/') &&
+    !request.nextUrl.pathname.startsWith('/inspection') &&
+    !request.nextUrl.pathname.startsWith('/guide') &&
+    !request.nextUrl.pathname.startsWith('/modules') &&
+    !request.nextUrl.pathname.startsWith('/inspect/') &&
     request.nextUrl.pathname !== '/'
   ) {
     // no user, potentially respond by redirecting the user to the login page
