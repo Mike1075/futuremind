@@ -6,7 +6,12 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:setup": "node scripts/setup-testing.js",
+    "test:dashboard": "open http://localhost:3000/test-dashboard",
+    "test:status": "open http://localhost:3000/test-status",
+    "test:init-db": "curl -X POST http://localhost:3000/api/init-database",
+    "test:run-all": "node scripts/run-tests.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -33,6 +38,6 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "5.9.2"
   }
 }
