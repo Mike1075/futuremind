@@ -6,6 +6,12 @@ export async function middleware(request: NextRequest) {
     request,
   })
 
+  // 在本地/线下演示时直接放行所有受保护路由
+  const isDemoMode = process.env.DEMO_MODE === 'true'
+  if (isDemoMode) {
+    return supabaseResponse
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

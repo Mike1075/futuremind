@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send, Sparkles } from 'lucide-react'
+import { gaiaMockResponses } from '@/utils/mobileTestData'
+import { useMobileGestures, useHapticFeedback } from '@/hooks/useMobileGestures'
+import { getOptimalAnimationConfig } from '@/utils/mobilePerformance'
 
 interface Message {
   id: string
@@ -27,7 +30,23 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   ])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const [animationConfig, setAnimationConfig] = useState(getOptimalAnimationConfig(false))
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const haptic = useHapticFeedback()
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      setAnimationConfig(getOptimalAnimationConfig(mobile))
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -37,8 +56,49 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     scrollToBottom()
   }, [messages])
 
+  const getSmartResponse = (userInput: string): string => {
+    const input = userInput.toLowerCase()
+    
+    // 智能匹配用户输入的关键词
+    if (input.includes('意识') || input.includes('觉醒') || input.includes('觉察')) {
+      const responses = gaiaMockResponses.find(r => r.trigger === 'consciousness')?.responses || []
+      return responses[Math.floor(Math.random() * responses.length)]
+    }
+    
+    if (input.includes('声音') || input.includes('聆听') || input.includes('听')) {
+      const responses = gaiaMockResponses.find(r => r.trigger === 'sound')?.responses || []
+      return responses[Math.floor(Math.random() * responses.length)]
+    }
+    
+    if (input.includes('冥想') || input.includes('静坐') || input.includes('呼吸')) {
+      const responses = gaiaMockResponses.find(r => r.trigger === 'meditation')?.responses || []
+      return responses[Math.floor(Math.random() * responses.length)]
+    }
+    
+    if (input.includes('你好') || input.includes('hello') || input.includes('hi')) {
+      const responses = gaiaMockResponses.find(r => r.trigger === 'greeting')?.responses || []
+      return responses[Math.floor(Math.random() * responses.length)]
+    }
+    
+    // 默认响应
+    const responses = gaiaMockResponses.find(r => r.trigger === 'default')?.responses || []
+    return responses[Math.floor(Math.random() * responses.length)]
+  }
+
+  // 手势支持
+  const gestureRef = useMobileGestures({
+    onSwipeDown: () => {
+      if (isMobile) {
+        haptic.light()
+        onClose()
+      }
+    }
+  })
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return
+
+    haptic.light() // 发送消息触觉反馈
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -47,30 +107,24 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       timestamp: new Date()
     }
 
+    const currentInput = inputValue
     setMessages(prev => [...prev, userMessage])
     setInputValue('')
     setIsTyping(true)
 
-    // Simulate Gaia's response (in real implementation, this would call an AI API)
+    // 智能响应系统
     setTimeout(() => {
-      const gaiaResponses = [
-        '这是一个深刻的问题。让我们一起探索其中的奥秘...',
-        '你的觉察力正在增长。继续保持这种好奇心。',
-        '在寂静中，我们能听到宇宙最深层的智慧。',
-        '每一个问题都是通向更高意识的门户。',
-        '你已经拥有了所有的答案，我只是帮助你记起它们。'
-      ]
-      
       const gaiaMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: gaiaResponses[Math.floor(Math.random() * gaiaResponses.length)],
+        content: getSmartResponse(currentInput),
         isGaia: true,
         timestamp: new Date()
       }
 
       setMessages(prev => [...prev, gaiaMessage])
       setIsTyping(false)
-    }, 2000)
+      haptic.medium() // 收到回复触觉反馈
+    }, 1500 + Math.random() * 1000) // 1.5-2.5秒的随机延迟，更自然
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -95,32 +149,50 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
 
           {/* Dialog */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            ref={gestureRef}
+            initial={{ opacity: 0, scale: isMobile ? 1 : 0.9, y: isMobile ? '100%' : 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed inset-4 md:inset-8 lg:inset-16 bg-gradient-to-br from-purple-900/90 to-blue-900/90 backdrop-blur-md rounded-2xl border border-purple-500/30 z-50 flex flex-col"
+            exit={{ opacity: 0, scale: isMobile ? 1 : 0.9, y: isMobile ? '100%' : 20 }}
+            transition={animationConfig}
+            className={`fixed z-50 flex flex-col bg-gradient-to-br from-purple-900/95 to-blue-900/95 backdrop-blur-md border border-purple-500/30 ${
+              isMobile
+                ? 'inset-0 rounded-none'
+                : 'inset-4 md:inset-8 lg:inset-16 rounded-2xl'
+            }`}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
+            <div className={`flex items-center justify-between border-b border-white/10 ${
+              isMobile ? 'p-4 pt-6' : 'p-6'
+            }`}>
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-3">
-                  <Sparkles className="w-6 h-6 text-white" />
+                <div className={`bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-3 ${
+                  isMobile ? 'w-8 h-8' : 'w-10 h-10'
+                }`}>
+                  <Sparkles className={`text-white ${isMobile ? 'w-4 h-4' : 'w-6 h-6'}`} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-white">与盖亚对话</h2>
-                  <p className="text-sm text-purple-200">你的意识觉醒导师</p>
+                  <h2 className={`font-semibold text-white ${isMobile ? 'text-lg' : 'text-xl'}`}>与盖亚对话</h2>
+                  <p className={`text-purple-200 ${isMobile ? 'text-xs' : 'text-sm'}`}>你的意识觉醒导师</p>
                 </div>
               </div>
               <button
-                onClick={onClose}
-                className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                onClick={() => {
+                  haptic.light()
+                  onClose()
+                }}
+                className={`text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10 ${
+                  isMobile ? 'p-1.5' : 'p-2'
+                }`}
+                style={{ minHeight: '44px', minWidth: '44px' }}
               >
-                <X className="w-6 h-6" />
+                <X className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
               </button>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className={`flex-1 overflow-y-auto space-y-3 sm:space-y-4 ${
+              isMobile ? 'p-4' : 'p-6'
+            }`} style={{ WebkitOverflowScrolling: 'touch' }}>
               {messages.map((message) => (
                 <motion.div
                   key={message.id}
@@ -128,24 +200,26 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex ${message.isGaia ? 'justify-start' : 'justify-end'}`}
                 >
-                  <div className={`max-w-[80%] ${message.isGaia ? 'order-2' : 'order-1'}`}>
+                  <div className={`${isMobile ? 'max-w-[85%]' : 'max-w-[80%]'} ${message.isGaia ? 'order-2' : 'order-1'}`}>
                     {message.isGaia && (
-                      <div className="flex items-center mb-2">
-                        <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-2">
-                          <Sparkles className="w-4 h-4 text-white" />
+                      <div className={`flex items-center ${isMobile ? 'mb-1.5' : 'mb-2'}`}>
+                        <div className={`bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-2 ${
+                          isMobile ? 'w-5 h-5' : 'w-6 h-6'
+                        }`}>
+                          <Sparkles className={`text-white ${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                         </div>
-                        <span className="text-sm text-purple-300 font-medium">盖亚</span>
+                        <span className={`text-purple-300 font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>盖亚</span>
                       </div>
                     )}
                     <div
-                      className={`p-4 rounded-2xl ${
+                      className={`rounded-2xl ${isMobile ? 'p-3' : 'p-4'} ${
                         message.isGaia
                           ? 'bg-gradient-to-r from-purple-600/30 to-blue-600/30 border border-purple-500/30 text-white'
                           : 'bg-white/10 border border-white/20 text-white ml-auto'
                       }`}
                     >
-                      <p className="text-sm leading-relaxed">{message.content}</p>
-                      <p className="text-xs text-gray-400 mt-2">
+                      <p className={`leading-relaxed ${isMobile ? 'text-sm' : 'text-sm'}`}>{message.content}</p>
+                      <p className={`text-gray-400 mt-2 ${isMobile ? 'text-xs' : 'text-xs'}`}>
                         {message.timestamp.toLocaleTimeString()}
                       </p>
                     </div>
@@ -181,28 +255,37 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             </div>
 
             {/* Input */}
-            <div className="p-6 border-t border-white/10">
-              <div className="flex space-x-4">
+            {/* Input */}
+            <div className={`border-t border-white/10 ${isMobile ? 'p-4 pb-6' : 'p-6'}`}>
+              <div className={`flex ${isMobile ? 'space-x-2' : 'space-x-4'}`}>
                 <div className="flex-1 relative">
                   <textarea
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="向盖亚提出你的问题..."
-                    className="w-full p-4 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                    rows={3}
+                    className={`w-full bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none ${
+                      isMobile ? 'p-3 text-sm' : 'p-4 text-base'
+                    }`}
+                    rows={isMobile ? 2 : 3}
+                    style={{ 
+                      minHeight: isMobile ? '44px' : '48px',
+                      maxHeight: isMobile ? '120px' : '150px'
+                    }}
                   />
                 </div>
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isTyping}
-                  className="px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className={`bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center active:scale-95 ${
+                    isMobile ? 'px-4 py-3 min-w-[48px] min-h-[48px]' : 'px-6 py-4'
+                  }`}
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-2">
-                按 Enter 发送，Shift + Enter 换行
+              <p className={`text-gray-400 mt-2 ${isMobile ? 'text-xs' : 'text-xs'}`}>
+                {isMobile ? '点击发送按钮或按 Enter 发送' : '按 Enter 发送，Shift + Enter 换行'}
               </p>
             </div>
           </motion.div>
