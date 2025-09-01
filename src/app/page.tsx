@@ -116,10 +116,18 @@ export default function Home() {
           </button>
 
           <button
-            onClick={() => window.location.href = '/mike-test'}
+            onClick={() => window.location.href = '/portal'}
             className="group px-8 py-4 border-2 border-green-400 rounded-full text-green-300 font-semibold text-lg hover:bg-green-400 hover:text-white transition-all duration-300 transform hover:scale-105"
           >
-            Mike测试页面
+            <TreePine className="w-5 h-5 inline mr-2" />
+            个人门户
+          </button>
+
+          <button
+            onClick={() => window.location.href = '/mike-test'}
+            className="group px-6 py-3 border border-gray-500 rounded-lg text-gray-400 font-medium text-sm hover:bg-gray-500 hover:text-white transition-all duration-300"
+          >
+            测试页面
           </button>
         </motion.div>
 
