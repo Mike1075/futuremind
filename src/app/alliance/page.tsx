@@ -112,31 +112,8 @@ export default function AlliancePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-        {/* Background particles */}
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(50)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30"
-              animate={{
-                x: [0, Math.random() * 100 - 50],
-                y: [0, Math.random() * 100 - 50],
-                opacity: [0.3, 0.8, 0.3],
-              }}
-              transition={{
-                duration: Math.random() * 3 + 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-            />
-          ))}
-        </div>
-        <div className="text-center relative z-10">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-400 mx-auto"></div>
           <p className="text-purple-300 mt-4 text-lg">正在连接探索者网络...</p>
         </div>
@@ -145,31 +122,7 @@ export default function AlliancePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Background particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(50)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30"
-            animate={{
-              x: [0, Math.random() * 100 - 50],
-              y: [0, Math.random() * 100 - 50],
-              opacity: [0.3, 0.8, 0.3],
-            }}
-            transition={{
-              duration: Math.random() * 3 + 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-          />
-        ))}
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* 导航栏 */}
       <motion.nav
         initial={{ opacity: 0, y: -20 }}
@@ -223,57 +176,55 @@ export default function AlliancePage() {
         transition={{ duration: 0.8, delay: 0.2 }}
         className="relative overflow-hidden"
       >
-                 <div className="absolute inset-0 bg-gradient-to-r from-purple-900/40 to-blue-900/40"></div>
-                 <div className="relative z-10 max-w-4xl mx-auto px-6 py-12 md:py-16">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20"></div>
+        <div className="relative z-10 container mx-auto px-6 py-16">
           <div className="text-center">
-                         <motion.h1
-               initial={{ opacity: 0, scale: 0.9 }}
-               animate={{ opacity: 1, scale: 1 }}
-               transition={{ duration: 0.8, delay: 0.2 }}
-               className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight tracking-wide"
-             >
-               探索者联盟
-             </motion.h1>
-                         <motion.p
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ duration: 0.8, delay: 0.4 }}
-               className="text-lg md:text-xl text-purple-300/90 mb-8 max-w-2xl mx-auto leading-relaxed"
-             >
-               基于意识共振的深度协作空间，让志同道合的探索者汇聚一堂，
-               共同揭开宇宙最深的秘密
-             </motion.p>
-                         <motion.div
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ duration: 0.8, delay: 0.6 }}
-               className="flex flex-col sm:flex-row gap-5 justify-center items-center"
-             >
+            <motion.h1
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="text-5xl md:text-7xl font-bold text-white mb-6"
+            >
+              探索者联盟
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="text-xl md:text-2xl text-purple-200 mb-8 max-w-3xl mx-auto leading-relaxed"
+            >
+              基于意识共振的深度协作空间，让志同道合的探索者汇聚一堂，
+              共同揭开宇宙最深的秘密
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            >
               {isAuthenticated ? (
                 <>
-                                     <button 
-                     onClick={() => setShowCreateModal(true)}
-                     className="group relative px-7 py-3.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-white font-semibold text-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-102 shadow-lg hover:shadow-purple-500/20"
-                   >
-                     <Plus className="w-5 h-5 inline mr-2" />
-                     创建联盟
-                     <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
-                   </button>
-                                     <button className="group px-7 py-3.5 border border-purple-400 rounded-full text-purple-300 font-medium text-lg hover:bg-purple-400 hover:text-white transition-all duration-300 transform hover:scale-102">
-                     <Users className="w-5 h-5 inline mr-2" />
-                     发现联盟
-                   </button>
+                  <button 
+                    onClick={() => setShowCreateModal(true)}
+                    className="group px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-full text-white font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25"
+                  >
+                    <Plus className="w-5 h-5 inline mr-2" />
+                    创建联盟
+                  </button>
+                  <button className="group px-8 py-4 border-2 border-purple-400 rounded-full text-purple-300 font-semibold text-lg hover:bg-purple-400 hover:text-white transition-all duration-300 transform hover:scale-105">
+                    <Users className="w-5 h-5 inline mr-2" />
+                    发现联盟
+                  </button>
                 </>
               ) : (
                 <div className="text-center">
-                                     <p className="text-purple-300/80 mb-4">登录后可以创建和加入联盟</p>
-                                     <button 
-                     onClick={() => window.location.href = '/login?redirect=/alliance'}
-                     className="group relative px-7 py-3.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-white font-semibold text-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-102 shadow-lg hover:shadow-purple-500/20"
-                   >
-                     立即登录
-                     <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
-                   </button>
+                  <p className="text-purple-200 mb-4">登录后可以创建和加入联盟</p>
+                  <button 
+                    onClick={() => window.location.href = '/login?redirect=/alliance'}
+                    className="group px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-full text-white font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25"
+                  >
+                    立即登录
+                  </button>
                 </div>
               )}
             </motion.div>
@@ -281,45 +232,45 @@ export default function AlliancePage() {
         </div>
       </motion.div>
 
-             {/* 特色功能展示 */}
-       <motion.div
-         initial={{ opacity: 0, y: 40 }}
-         animate={{ opacity: 1, y: 0 }}
-         transition={{ duration: 0.8, delay: 0.8 }}
-         className="container mx-auto px-6 py-12 relative z-10"
-       >
+      {/* 特色功能展示 */}
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.8 }}
+        className="container mx-auto px-6 py-16"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                     <div className="text-center group">
-             <div className="w-14 h-14 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-600/40 transition-colors duration-300">
-               <Zap className="w-7 h-7 text-purple-400" />
-             </div>
+          <div className="text-center group">
+            <div className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-600/40 transition-colors duration-300">
+              <Zap className="w-8 h-8 text-purple-400" />
+            </div>
             <h3 className="text-xl font-semibold text-white mb-2">AI智能匹配</h3>
             <p className="text-purple-200 text-sm">基于意识共振算法，精准匹配志同道合的探索者</p>
           </div>
           
-                     <div className="text-center group">
-             <div className="w-14 h-14 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-600/40 transition-colors duration-300">
-               <Target className="w-7 h-7 text-blue-400" />
-             </div>
-             <h3 className="text-xl font-semibold text-white mb-2">神秘邀请</h3>
-             <p className="text-blue-200 text-sm">个性化的召唤方式，让每个邀请都充满神秘色彩</p>
-           </div>
-           
-           <div className="text-center group">
-             <div className="w-14 h-14 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-600/40 transition-colors duration-300">
-               <Globe className="w-7 h-7 text-green-400" />
-             </div>
-             <h3 className="text-xl font-semibold text-white mb-2">协作空间</h3>
-             <p className="text-green-200 text-sm">专属的探索空间，支持实时协作和项目管理</p>
-           </div>
-           
-           <div className="text-center group">
-             <div className="w-14 h-14 bg-pink-600/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-pink-600/40 transition-colors duration-300">
-               <Heart className="w-7 h-7 text-pink-400" />
-             </div>
-             <h3 className="text-xl font-semibold text-white mb-2">成就系统</h3>
-             <p className="text-pink-200 text-sm">记录探索历程，激励持续创新和突破</p>
-           </div>
+          <div className="text-center group">
+            <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-600/40 transition-colors duration-300">
+              <Target className="w-8 h-8 text-blue-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">神秘邀请</h3>
+            <p className="text-blue-200 text-sm">个性化的召唤方式，让每个邀请都充满神秘色彩</p>
+          </div>
+          
+          <div className="text-center group">
+            <div className="w-16 h-16 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-600/40 transition-colors duration-300">
+              <Globe className="w-8 h-8 text-green-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">协作空间</h3>
+            <p className="text-green-200 text-sm">专属的探索空间，支持实时协作和项目管理</p>
+          </div>
+          
+          <div className="text-center group">
+            <div className="w-16 h-16 bg-pink-600/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-pink-600/40 transition-colors duration-300">
+              <Heart className="w-8 h-8 text-pink-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">成就系统</h3>
+            <p className="text-pink-200 text-sm">记录探索历程，激励持续创新和突破</p>
+          </div>
         </div>
       </motion.div>
 
@@ -329,54 +280,54 @@ export default function AlliancePage() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.0 }}
-          className="container mx-auto px-6 py-16 relative z-10"
+          className="container mx-auto px-6 py-12 relative z-10"
         >
-          <div className="max-w-6xl mx-auto bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.25)] px-6 md:px-10 py-10 md:py-12">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              🌟 为你推荐
-            </h2>
-            <p className="text-purple-200 text-lg">
-              基于你的兴趣和探索轨迹，我们为你精选了这些联盟
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recommendations.map((rec, index) => (
-              <motion.div
-                key={rec.guild_id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1.2 + index * 0.1 }}
-                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-purple-400/50 transition-all duration-300 group hover:bg-white/10"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                    <span className="text-yellow-400 font-semibold">
-                      {Math.round(rec.match_score * 100)}% 匹配
-                    </span>
+          <div className="max-w-7xl mx-auto bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.25)] px-4 md:px-6 py-10 md:py-12">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                🌟 为你推荐
+              </h2>
+              <p className="text-purple-200 text-lg">
+                基于你的兴趣和探索轨迹，我们为你精选了这些联盟
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recommendations.map((rec, index) => (
+                <motion.div
+                  key={rec.guild_id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 1.2 + index * 0.1 }}
+                  className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-purple-400/50 transition-all duration-300 group hover:bg-white/10"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Star className="w-5 h-5 text-yellow-400 fill-current" />
+                      <span className="text-yellow-400 font-semibold">
+                        {Math.round(rec.match_score * 100)}% 匹配
+                      </span>
+                    </div>
                   </div>
-                </div>
-                
-                <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors">
-                  {rec.guild_name}
-                </h3>
-                
-                <p className="text-purple-200 text-sm mb-4 line-clamp-3">
-                  {rec.guild_theme}
-                </p>
-                
-                <div className="text-xs text-purple-300 mb-4">
-                  {rec.reason}
-                </div>
-                
-                <button className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-102">
-                  查看详情
-                </button>
-              </motion.div>
-            ))}
-          </div>
+                  
+                  <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors">
+                    {rec.guild_name}
+                  </h3>
+                  
+                  <p className="text-purple-200 text-sm mb-4 line-clamp-3">
+                    {rec.guild_theme}
+                  </p>
+                  
+                  <div className="text-xs text-purple-300 mb-4">
+                    {rec.reason}
+                  </div>
+                  
+                  <button className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors duration-300">
+                    查看详情
+                  </button>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </motion.div>
       )}
@@ -386,14 +337,14 @@ export default function AlliancePage() {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 1.2 }}
-        className="container mx-auto px-6 py-16 relative z-10"
+        className="container mx-auto px-6 py-12 relative z-10"
       >
-        <div className="max-w-6xl mx-auto bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.25)] px-6 md:px-10 py-10 md:py-12">
-          <div className="text-center mb-8 md:mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+        <div className="max-w-7xl mx-auto bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.25)] px-4 md:px-6 py-10 md:py-12">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               🚀 探索者联盟
             </h2>
-            <p className="text-purple-200 text-base md:text-lg mb-6 md:mb-8">
+            <p className="text-purple-200 text-lg mb-8">
               发现正在形成的探索者联盟，加入志同道合的探索之旅
             </p>
             
@@ -409,81 +360,149 @@ export default function AlliancePage() {
               />
             </div>
           </div>
-        
-        {filteredGuilds.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredGuilds.map((guild, index) => (
-              <motion.div
-                key={guild.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1.4 + index * 0.1 }}
-                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-purple-400/50 transition-all duration-300 group hover:bg-white/10"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    guild.status === 'forming' ? 'bg-yellow-500/20 text-yellow-400' :
-                    guild.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                    'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    {guild.status === 'forming' ? '正在组建' :
-                     guild.status === 'active' ? '活跃中' : '已完成'}
-                  </span>
-                  <div className="flex items-center space-x-1 text-purple-300">
-                    <Users className="w-4 h-4" />
-                    <span className="text-sm">{guild.current_members}/{guild.max_members}</span>
+          
+          {filteredGuilds.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredGuilds.map((guild, index) => (
+                <motion.div
+                  key={guild.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 1.4 + index * 0.1 }}
+                  className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-purple-400/50 transition-all duration-300 group hover:bg-white/10"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      guild.status === 'forming' ? 'bg-yellow-500/20 text-yellow-400' :
+                      guild.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                      'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {guild.status === 'forming' ? '正在组建' :
+                       guild.status === 'active' ? '活跃中' : '已完成'}
+                    </span>
+                    <div className="flex items-center space-x-1 text-purple-300">
+                      <Users className="w-4 h-4" />
+                      <span className="text-sm">{guild.current_members}/{guild.max_members}</span>
+                    </div>
                   </div>
-                </div>
-                
-                <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors">
-                  {guild.name}
-                </h3>
-                
-                <p className="text-purple-200 text-sm mb-4 line-clamp-3">
-                  {guild.theme}
-                </p>
-                
-                {guild.description && (
-                  <p className="text-purple-300 text-xs mb-4 line-clamp-2">
-                    {guild.description}
+                  
+                  <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors">
+                    {guild.name}
+                  </h3>
+                  
+                  <p className="text-purple-200 text-sm mb-4 line-clamp-3">
+                    {guild.theme}
                   </p>
-                )}
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-purple-400">
-                    {new Date(guild.created_at).toLocaleDateString('zh-CN')}
-                  </span>
-                                     <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white text-sm font-medium transition-all duration-300 transform hover:scale-102">
-                     加入探索
-                   </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Search className="w-12 h-12 text-purple-400" />
+                  
+                  {guild.description && (
+                    <p className="text-purple-300 text-xs mb-4 line-clamp-2">
+                      {guild.description}
+                    </p>
+                  )}
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-purple-400">
+                      {new Date(guild.created_at).toLocaleDateString('zh-CN')}
+                    </span>
+                    <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm font-medium transition-colors duration-300">
+                      加入探索
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">未找到匹配的联盟</h3>
-            <p className="text-purple-200 mb-6">
-              {searchQuery ? '尝试调整搜索关键词，或者创建一个新的联盟' : '目前还没有探索者联盟，成为第一个创建者吧！'}
-            </p>
-                         {!searchQuery && (
-                                                               <button 
+          ) : (
+            <div className="text-center py-16">
+              <div className="w-24 h-24 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Search className="w-12 h-12 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">未找到匹配的联盟</h3>
+              <p className="text-purple-200 mb-6">
+                {searchQuery ? '尝试调整搜索关键词，或者创建一个新的联盟' : '目前还没有探索者联盟，成为第一个创建者吧！'}
+              </p>
+                           {!searchQuery && (
+                 <button 
                    onClick={() => setShowCreateModal(true)}
-                   className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-102"
+                   className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors duration-300"
                  >
                    创建第一个联盟
                  </button>
-             )}
-          </div>
-        )}
+               )}
+            </div>
+          )}
         </div>
       </motion.div>
 
+      {/* 底部召唤 */}
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 1.6 }}
+        className="container mx-auto px-6 py-16 text-center"
+      >
+        <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-3xl p-12 border border-white/10">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            准备好开始你的探索之旅了吗？
+          </h2>
+          <p className="text-purple-200 text-lg mb-8 max-w-2xl mx-auto">
+            加入探索者联盟，与志同道合的伙伴一起，揭开宇宙最深的秘密，
+            创造属于你们的传奇故事
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button className="px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-full text-white font-semibold text-lg transition-all duration-300 transform hover:scale-105">
+              立即加入
+            </button>
+            <button className="px-8 py-4 border-2 border-purple-400 rounded-full text-purple-300 font-semibold text-lg hover:bg-purple-400 hover:text-white transition-all duration-300 transform hover:scale-105">
+              了解更多
+            </button>
+          </div>
+        </div>
+      </motion.div>
 
-
+      {/* 快速导航区域 */}
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 1.8 }}
+        className="container mx-auto px-6 py-8"
+      >
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+          <h3 className="text-center text-lg font-semibold text-white mb-6">
+            🚀 继续你的探索之旅
+          </h3>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+              onClick={() => window.location.href = '/'}
+              className="flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-105"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span>返回主页</span>
+            </button>
+            
+            <button
+              onClick={() => window.location.href = '/portal'}
+              className="flex items-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-105"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>个人门户</span>
+            </button>
+            
+            <button
+              onClick={() => window.location.href = '/dashboard'}
+              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-105"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span>仪表板</span>
+            </button>
+          </div>
+        </div>
+      </motion.div>
 
       {/* 创建联盟模态框 */}
       <CreateGuildModal
