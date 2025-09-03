@@ -15,6 +15,7 @@ import {
   CheckCircle
 } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
+import UploadToGaia from '@/components/UploadToGaia'
 import ConsciousnessTree from '@/components/ConsciousnessTree'
 
 interface User {
@@ -42,6 +43,7 @@ export default function DashboardPage() {
   const [currentDay, setCurrentDay] = useState(1)
   const [completedTasks, setCompletedTasks] = useState<string[]>([])
   const [showGaiaDialog, setShowGaiaDialog] = useState(false)
+  const [showUpload, setShowUpload] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -297,12 +299,20 @@ export default function DashboardPage() {
               <p className="text-gray-300 text-sm mb-4">
                 &ldquo;今天，试着聆听沉默中的声音。真正的智慧往往在最安静的时刻显现。&rdquo;
               </p>
-              <button
-                onClick={() => setShowGaiaDialog(true)}
-                className="w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                与盖亚对话
-              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setShowGaiaDialog(true)}
+                  className="py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  与盖亚对话
+                </button>
+                <button
+                  onClick={() => setShowUpload(true)}
+                  className="py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  上传文档给盖亚
+                </button>
+              </div>
             </motion.div>
 
             {/* Quick Stats */}
@@ -388,6 +398,7 @@ export default function DashboardPage() {
 
       {/* Gaia Dialog */}
       <GaiaDialog isOpen={showGaiaDialog} onClose={() => setShowGaiaDialog(false)} />
+      <UploadToGaia isOpen={showUpload} onClose={() => setShowUpload(false)} />
     </div>
   )
 }

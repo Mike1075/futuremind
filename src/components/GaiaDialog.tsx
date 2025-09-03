@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Sparkles } from 'lucide-react'
+import { X, Send, Sparkles, UploadCloud } from 'lucide-react'
+import UploadToGaia from '@/components/UploadToGaia'
 
 interface Message {
   id: string
@@ -28,6 +29,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [showUpload, setShowUpload] = useState(false)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -50,27 +52,44 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     setMessages(prev => [...prev, userMessage])
     setInputValue('')
     setIsTyping(true)
-
-    // Simulate Gaia's response (in real implementation, this would call an AI API)
-    setTimeout(() => {
-      const gaiaResponses = [
-        '这是一个深刻的问题。让我们一起探索其中的奥秘...',
-        '你的觉察力正在增长。继续保持这种好奇心。',
-        '在寂静中，我们能听到宇宙最深层的智慧。',
-        '每一个问题都是通向更高意识的门户。',
-        '你已经拥有了所有的答案，我只是帮助你记起它们。'
-      ]
+    try {
+      const res = await fetch('/api/n8n/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage.content })
+      })
+      const data = await res.json().catch(() => ({}))
+      const pick = (d: any): string | undefined => {
+        if (!d) return undefined
+        if (typeof d === 'string') return d
+        return (
+          d.reply || d.message || d.text || d.content || d.output || d.body || d.answer
+        )
+      }
+      const reply = Array.isArray(data)
+        ? (pick(data[0]) || pick(data[0]?.data) || '')
+        : (pick(data) || pick((data as any)?.data) || '')
       
+      const finalReply = reply && typeof reply === 'string' ? reply : '（n8n 未返回内容）'
+
       const gaiaMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: gaiaResponses[Math.floor(Math.random() * gaiaResponses.length)],
+        content: finalReply,
         isGaia: true,
         timestamp: new Date()
       }
-
       setMessages(prev => [...prev, gaiaMessage])
+    } catch (e) {
+      const gaiaMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: '抱歉，连接 n8n 时出现问题。',
+        isGaia: true,
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, gaiaMessage])
+    } finally {
       setIsTyping(false)
-    }, 2000)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -111,12 +130,21 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <p className="text-sm text-purple-200">你的意识觉醒导师</p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowUpload(true)}
+                  className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
+                  title="上传文档给盖亚"
+                >
+                  <UploadCloud className="w-4 h-4" /> 上传文档
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             {/* Messages */}
@@ -205,6 +233,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 按 Enter 发送，Shift + Enter 换行
               </p>
             </div>
+            <UploadToGaia isOpen={showUpload} onClose={() => setShowUpload(false)} />
           </motion.div>
         </>
       )}
