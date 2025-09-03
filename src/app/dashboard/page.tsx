@@ -91,30 +91,80 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <header className="bg-white/5 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <TreePine className="w-8 h-8 text-purple-400 mr-3" />
-              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                未来心灵学院
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-300">
+      {/* 导航栏 */}
+      <motion.nav
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="relative z-20 bg-white/5 backdrop-blur-md border-b border-white/10"
+      >
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* 左侧：返回主页 */}
+            <button
+              onClick={() => window.location.href = '/'}
+              className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
+            >
+              <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/40 transition-colors duration-300">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </div>
+              <span className="font-medium">返回主页</span>
+            </button>
+
+            {/* 中间：页面标题和用户信息 */}
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-white">仪表板</h2>
+              </div>
+              <div className="text-sm text-purple-200">
                 欢迎，{user?.user_metadata?.full_name || user?.email}
-              </span>
+              </div>
+            </div>
+
+            {/* 右侧：导航按钮和登出 */}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => window.location.href = '/alliance'}
+                className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
+              >
+                <span className="font-medium">探索者联盟</span>
+                <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/40 transition-colors duration-300">
+                  <Users className="w-5 h-5 text-purple-400" />
+                </div>
+              </button>
+              
+              <button
+                onClick={() => window.location.href = '/portal'}
+                className="flex items-center space-x-2 text-green-300 hover:text-green-200 transition-colors duration-300 group"
+              >
+                <span className="font-medium">个人门户</span>
+                <div className="w-8 h-8 bg-green-600/20 rounded-full flex items-center justify-center group-hover:bg-green-600/40 transition-colors duration-300">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+              </button>
+
               <button
                 onClick={handleLogout}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="flex items-center space-x-2 text-red-300 hover:text-red-200 transition-colors duration-300 group"
               >
-                <LogOut className="w-5 h-5" />
+                <span className="font-medium">登出</span>
+                <div className="w-8 h-8 bg-red-600/20 rounded-full flex items-center justify-center group-hover:bg-red-600/40 transition-colors duration-300">
+                  <LogOut className="w-5 h-5 text-red-400" />
+                </div>
               </button>
             </div>
           </div>
         </div>
-      </header>
+      </motion.nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -281,6 +331,49 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* 快速导航区域 */}
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.3 }}
+        className="container mx-auto px-6 py-8"
+      >
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+          <h3 className="text-center text-lg font-semibold text-white mb-6">
+            🚀 继续你的探索之旅
+          </h3>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+              onClick={() => window.location.href = '/'}
+              className="flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-105"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span>返回主页</span>
+            </button>
+            
+            <button
+              onClick={() => window.location.href = '/alliance'}
+              className="flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-105"
+            >
+              <Users className="w-4 h-4" />
+              <span>探索者联盟</span>
+            </button>
+            
+            <button
+              onClick={() => window.location.href = '/portal'}
+              className="flex items-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-105"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>个人门户</span>
+            </button>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Floating Gaia Button */}
       <motion.button
