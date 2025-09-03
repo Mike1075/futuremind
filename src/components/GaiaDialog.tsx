@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send, Sparkles, UploadCloud } from 'lucide-react'
 import UploadToGaia from '@/components/UploadToGaia'
+import { createClient } from '@/lib/supabase/client'
 
 interface Message {
   id: string
@@ -18,6 +19,8 @@ interface GaiaDialogProps {
 }
 
 export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
+  const supabase = createClient()
+  const [userId, setUserId] = useState<string | 'guest'>('guest')
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -38,6 +41,48 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // 初始化获取用户，用于本地持久化的 key
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUserId(user?.id ?? 'guest')
+      } catch {
+        setUserId('guest')
+      }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 本地持久化：打开对话框时恢复记录
+  useEffect(() => {
+    if (!isOpen) return
+    const key = `gaia_chat_${userId}`
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null
+      if (raw) {
+        const parsed = JSON.parse(raw) as Array<{ id: string; content: string; isGaia: boolean; timestamp: string }>
+        const restored: Message[] = parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }))
+        if (restored.length > 0) {
+          setMessages(restored)
+        }
+      }
+    } catch {}
+  // 仅在 isOpen 或 userId 变化时尝试恢复
+  }, [isOpen, userId])
+
+  // 本地持久化：每次消息变化时保存（只保留最近 50 条）
+  useEffect(() => {
+    const key = `gaia_chat_${userId}`
+    try {
+      const slice = messages.slice(-50)
+      const serializable = slice.map(m => ({ ...m, timestamp: m.timestamp.toISOString() }))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(key, JSON.stringify(serializable))
+      }
+    } catch {}
+  }, [messages, userId])
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return
