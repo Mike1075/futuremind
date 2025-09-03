@@ -1,9 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import {
   TreePine,
   MessageCircle,
@@ -15,57 +13,14 @@ import {
   CheckCircle
 } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
-import ConsciousnessTree from '@/components/ConsciousnessTree'
+import { DynamicConsciousnessTree } from '@/components/DynamicConsciousnessTree'
 import { useConsciousnessTree } from '@/hooks/useConsciousnessTree'
 
-interface User {
-  id: string
-  email: string
-  user_metadata: {
-    full_name?: string
-  }
-}
-
-interface UserProgress {
-  id: string
-  user_id: string
-  season_id: string
-  current_day: number
-  completed_tasks: string[]
-  consciousness_growth: number
-  created_at: string
-  updated_at: string
-}
-
-export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+export default function TestDashboardPage() {
   const [showGaiaDialog, setShowGaiaDialog] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
   
-  // 使用我们的意识树Hook
-  const consciousness = useConsciousnessTree(user?.id)
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUser(user as User)
-        // 不再需要手动加载进度，由consciousness Hook处理
-      } else {
-        router.push('/login')
-      }
-      setLoading(false)
-    }
-
-    getUser()
-  }, [router, supabase])
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
+  // 使用我们的意识树Hook (测试用户)
+  const consciousness = useConsciousnessTree('test-dashboard-user')
 
   // 任务完成处理函数
   const handleCompleteTask = async (taskId: string) => {
@@ -96,7 +51,7 @@ export default function DashboardPage() {
     index === self.findIndex(t => t.id === task.id)
   )
 
-  if (loading) {
+  if (consciousness.loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
@@ -105,7 +60,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Header */}
       <header className="bg-white/5 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -113,25 +68,28 @@ export default function DashboardPage() {
             <div className="flex items-center">
               <TreePine className="w-8 h-8 text-purple-400 mr-3" />
               <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                未来心灵学院
+                未来心灵学院 - 测试版
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-300">
-                欢迎，{user?.user_metadata?.full_name || user?.email}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
-              >
+              <span className="text-gray-300">测试用户</span>
+              <div className="p-2 text-gray-400">
                 <LogOut className="w-5 h-5" />
-              </button>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* 测试说明 */}
+        <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+          <h2 className="text-green-400 font-semibold mb-2">🧪 测试版Dashboard</h2>
+          <p className="text-green-300 text-sm">
+            这是集成了真实功能的Dashboard测试版。点击"开始"按钮完成任务，观察右侧意识树的实时响应！
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
@@ -152,7 +110,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${consciousness.nextLevelProgress}%` }}
                   ></div>
                 </div>
@@ -172,6 +130,9 @@ export default function DashboardPage() {
               <div className="flex items-center mb-6">
                 <Target className="w-6 h-6 text-green-400 mr-3" />
                 <h2 className="text-xl font-semibold text-white">今日任务</h2>
+                <span className="ml-auto text-sm text-gray-400">
+                  可用: {consciousness.availableTasks.length} | 今日完成: {consciousness.completedTasksToday}
+                </span>
               </div>
               <div className="space-y-4">
                 {todayTasks.map((task, index) => (
@@ -201,16 +162,24 @@ export default function DashboardPage() {
                       {!task.completed && (
                         <button 
                           onClick={() => handleCompleteTask(task.id)}
-                          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 hover:scale-105"
                           disabled={consciousness.loading}
                         >
                           {consciousness.loading ? '处理中...' : '开始'}
                         </button>
                       )}
+                      {task.completed && (
+                        <div className="text-green-400 text-sm">✓ 已完成</div>
+                      )}
                     </div>
                   </motion.div>
                 ))}
               </div>
+              {todayTasks.length === 0 && (
+                <div className="text-center text-gray-500 py-8">
+                  🎉 所有任务已完成！点击右下角重置按钮可以重新测试
+                </div>
+              )}
             </motion.div>
 
             {/* PBL Project */}
@@ -225,7 +194,7 @@ export default function DashboardPage() {
                 <h2 className="text-xl font-semibold text-white">伊卡洛斯行动</h2>
               </div>
               <p className="text-gray-300 mb-4">
-                                探索&ldquo;无形的纽带&rdquo; - 与全球探索者一起研究意识与物质的互动
+                探索"无形的纽带" - 与全球探索者一起研究意识与物质的互动
               </p>
               <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 加入项目
@@ -245,12 +214,13 @@ export default function DashboardPage() {
                 <TreePine className="w-6 h-6 text-green-400 mr-3" />
                 <h3 className="text-lg font-semibold text-white">意识进化树</h3>
               </div>
-              <ConsciousnessTree
-                currentDay={consciousness.state?.currentLevel || 1}
-                completedTasks={Object.keys(consciousness.state?.tasks || {}).filter(taskId => 
-                  consciousness.state?.tasks?.[taskId]?.status === 'completed'
-                )}
-                className="w-full"
+              <DynamicConsciousnessTree
+                consciousnessState={consciousness.state}
+                width={350}
+                height={300}
+                onGrowthComplete={() => {
+                  console.log('🌱 树木生长完成！')
+                }}
               />
             </motion.div>
 
@@ -266,7 +236,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold text-white">盖亚的低语</h3>
               </div>
               <p className="text-gray-300 text-sm mb-4">
-                &ldquo;今天，试着聆听沉默中的声音。真正的智慧往往在最安静的时刻显现。&rdquo;
+                "今天，试着聆听沉默中的声音。真正的智慧往往在最安静的时刻显现。"
               </p>
               <button
                 onClick={() => setShowGaiaDialog(true)}
@@ -297,11 +267,27 @@ export default function DashboardPage() {
                   <span className="text-gray-400">今日完成</span>
                   <span className="text-white font-semibold">{consciousness.completedTasksToday}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">总进度</span>
+                  <span className="text-white font-semibold">{consciousness.state?.totalProgress || 0}%</span>
+                </div>
               </div>
             </motion.div>
           </div>
         </div>
       </div>
+
+      {/* Floating Reset Button */}
+      <motion.button
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 0.5, delay: 1 }}
+        onClick={() => consciousness.resetProgress()}
+        className="fixed bottom-8 left-8 w-16 h-16 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg hover:shadow-red-500/50 transition-all duration-300 hover:scale-110 z-50"
+        title="重置所有进度"
+      >
+        <span className="text-white text-xl">🔄</span>
+      </motion.button>
 
       {/* Floating Gaia Button */}
       <motion.button
