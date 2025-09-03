@@ -66,9 +66,20 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
           d.reply || d.message || d.text || d.content || d.output || d.body || d.answer
         )
       }
+      const pickFromMessages = (d: any): string | undefined => {
+        if (!d) return undefined
+        const arr = Array.isArray(d) ? d : d.messages || d.data?.messages
+        if (Array.isArray(arr) && arr.length > 0) {
+          const last = arr[arr.length - 1]
+          if (!last) return undefined
+          if (typeof last === 'string') return last
+          return last.content || last.text || last.message
+        }
+        return undefined
+      }
       const reply = Array.isArray(data)
-        ? (pick(data[0]) || pick(data[0]?.data) || '')
-        : (pick(data) || pick((data as any)?.data) || '')
+        ? (pick(data[0]) || pick(data[0]?.data) || pickFromMessages(data) || '')
+        : (pick(data) || pick((data as any)?.data) || pickFromMessages(data) || pickFromMessages((data as any)?.data) || '')
       
       const finalReply = reply && typeof reply === 'string' ? reply : '（n8n 未返回内容）'
 
