@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Users, Search, Plus, Star, Target, Zap, Globe, Heart } from 'lucide-react';
 import AllianceAPI from '@/lib/api/alliance';
 import type { ExplorerGuild, RecommendedGuild } from '@/types/alliance';
+import { GuildStatus } from '@/types/alliance';
 import CreateGuildModal from '@/components/alliance/CreateGuildModal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -15,6 +16,7 @@ export default function AlliancePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userGuilds, setUserGuilds] = useState<string[]>([]);
   
   const supabase = createClient();
 
@@ -66,7 +68,7 @@ export default function AlliancePage() {
             description: '专注于声音疗愈和意识觉醒的探索者社区',
             current_members: 12,
             max_members: 20,
-            status: 'active',
+            status: GuildStatus.FORMING,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             created_by: 'demo-user'
@@ -78,7 +80,7 @@ export default function AlliancePage() {
             description: '探索量子物理与意识关系的先锋团队',
             current_members: 8,
             max_members: 15,
-            status: 'active',
+            status: GuildStatus.FORMING,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             created_by: 'demo-user'
@@ -89,6 +91,7 @@ export default function AlliancePage() {
           {
             guild_id: 'demo-1',
             guild_name: '声音探索者联盟',
+            guild_theme: '声音与意识',
             match_score: 0.95,
             reason: '基于你的兴趣匹配'
           }
@@ -108,6 +111,37 @@ export default function AlliancePage() {
 
   const handleCreateSuccess = () => {
     loadData(); // 重新加载数据
+  };
+
+  const handleViewDetails = (guildId: string) => {
+    // 跳转到联盟详情页面
+    window.location.href = `/alliance/${guildId}`;
+  };
+
+  const handleJoinGuild = async (guildId: string) => {
+    if (!isAuthenticated) {
+      window.location.href = '/login?redirect=/alliance';
+      return;
+    }
+
+    try {
+      // 这里应该调用 API 加入联盟
+      // 暂时显示成功消息
+      alert('成功加入联盟！');
+      
+      // 更新本地状态，将联盟标记为已加入
+      setGuilds(prev => prev.map(guild => 
+        guild.id === guildId 
+          ? { ...guild, current_members: Math.min(guild.current_members + 1, guild.max_members) }
+          : guild
+      ));
+      
+      // 更新用户的联盟列表
+      setUserGuilds(prev => [...prev, guildId]);
+    } catch (error) {
+      console.error('加入联盟失败:', error);
+      alert('加入联盟失败，请重试');
+    }
   };
 
   if (loading) {
@@ -348,7 +382,10 @@ export default function AlliancePage() {
                     {rec.reason}
                   </div>
                   
-                  <button className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-102">
+                  <button 
+                    onClick={() => handleViewDetails(rec.guild_id)}
+                    className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-102"
+                  >
                     查看详情
                   </button>
                 </motion.div>
@@ -426,14 +463,19 @@ export default function AlliancePage() {
                     </p>
                   )}
                   
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-purple-400">
-                      {new Date(guild.created_at).toLocaleDateString('zh-CN')}
-                    </span>
-                    <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white text-sm font-medium transition-all duration-300 transform hover:scale-102">
-                      加入探索
-                    </button>
-                  </div>
+                                     <div className="flex items-center justify-between mb-4">
+                     <span className="text-xs text-purple-400">
+                       {new Date(guild.created_at).toLocaleDateString('zh-CN')}
+                     </span>
+                   </div>
+                   
+                   {/* 查看详情按钮 */}
+                   <button 
+                     onClick={() => handleViewDetails(guild.id)}
+                     className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white text-sm font-medium transition-all duration-300 transform hover:scale-102"
+                   >
+                     查看详情
+                   </button>
                 </motion.div>
               ))}
             </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { uploadProjectDocument, listUserProjects } from '@/lib/api/gaia'
+import GaiaAPI from '@/lib/api/gaia'
 
 type Props = {
   isOpen: boolean
@@ -19,9 +19,11 @@ export default function UploadToGaia({ isOpen, onClose }: Props) {
   useEffect(() => {
     if (!isOpen) return
     ;(async () => {
-      const list = await listUserProjects()
-      setProjects(list)
-      if (list.length && !projectId) setProjectId(list[0].id)
+      const result = await GaiaAPI.listUserProjects()
+      if (result.success && result.data) {
+        setProjects(result.data)
+        if (result.data.length && !projectId) setProjectId(result.data[0].id)
+      }
     })()
   }, [isOpen])
 
@@ -33,7 +35,7 @@ export default function UploadToGaia({ isOpen, onClose }: Props) {
     }
     setSubmitting(true)
     setMessage('')
-    const res = await uploadProjectDocument({ projectId, file })
+    const res = await GaiaAPI.uploadProjectDocument({ projectId, file })
     setSubmitting(false)
     if (!res.success) {
       setMessage(`上传失败: ${res.error || ''}`)

@@ -4,14 +4,9 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send, Sparkles, UploadCloud } from 'lucide-react'
 import UploadToGaia from '@/components/UploadToGaia'
-import { createClient } from '@/lib/supabase/client'
+import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
 
-interface Message {
-  id: string
-  content: string
-  isGaia: boolean
-  timestamp: Date
-}
+// 使用从 GaiaAPI 导入的 ChatMessage 类型
 
 interface GaiaDialogProps {
   isOpen: boolean
@@ -19,9 +14,8 @@ interface GaiaDialogProps {
 }
 
 export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
-  const supabase = createClient()
   const [userId, setUserId] = useState<string | 'guest'>('guest')
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
@@ -31,6 +25,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   ])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showUpload, setShowUpload] = useState(false)
 
@@ -42,59 +37,85 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     scrollToBottom()
   }, [messages])
 
-  // 初始化获取用户，用于本地持久化的 key
+  // 初始化获取用户并加载聊天记录
   useEffect(() => {
-    (async () => {
+    const getUserAndLoadHistory = async () => {
       try {
+        setIsLoading(true)
+        // 使用 createClient 直接获取用户
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
-        setUserId(user?.id ?? 'guest')
-      } catch {
-        setUserId('guest')
-      }
-    })()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // 本地持久化：打开对话框时恢复记录
-  useEffect(() => {
-    if (!isOpen) return
-    const key = `gaia_chat_${userId}`
-    try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null
-      if (raw) {
-        const parsed = JSON.parse(raw) as Array<{ id: string; content: string; isGaia: boolean; timestamp: string }>
-        const restored: Message[] = parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }))
-        if (restored.length > 0) {
-          setMessages(restored)
+        const currentUserId = user?.id ?? 'guest'
+        setUserId(currentUserId)
+        
+        // 立即尝试恢复聊天记录
+        if (isOpen && user) {
+          await loadChatHistory()
         }
+      } catch (error) {
+        console.error('获取用户信息失败:', error)
+        setUserId('guest')
+      } finally {
+        setIsLoading(false)
       }
-    } catch {}
-  // 仅在 isOpen 或 userId 变化时尝试恢复
-  }, [isOpen, userId])
+    }
+    
+    if (isOpen) {
+      getUserAndLoadHistory()
+    }
+  }, [isOpen])
 
-  // 本地持久化：每次消息变化时保存（只保留最近 50 条）
-  useEffect(() => {
-    const key = `gaia_chat_${userId}`
+  // 加载聊天记录
+  const loadChatHistory = async () => {
     try {
-      const slice = messages.slice(-50)
-      const serializable = slice.map(m => ({ ...m, timestamp: m.timestamp.toISOString() }))
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(key, JSON.stringify(serializable))
+      console.log('开始从 Supabase 加载聊天记录...')
+      const result = await GaiaAPI.getChatHistory()
+      
+      if (result.success && result.data) {
+        console.log(`成功从 Supabase 加载聊天记录，包含 ${result.data.messages.length} 条消息`)
+        if (result.data.messages.length > 0) {
+          setMessages(result.data.messages)
+        }
+      } else {
+        console.log('没有找到聊天记录或加载失败:', result.error)
       }
-    } catch {}
-  }, [messages, userId])
+    } catch (error) {
+      console.error('从 Supabase 加载聊天记录失败:', error)
+    }
+  }
+
+  // 保存聊天记录到 Supabase
+  const saveChatHistory = async (msgs: ChatMessage[]) => {
+    try {
+      console.log('开始保存聊天记录到 Supabase...')
+      const slice = msgs.slice(-50) // 只保留最近 50 条
+      const result = await GaiaAPI.saveChatHistory(slice)
+      
+      if (result.success) {
+        console.log(`成功保存聊天记录到 Supabase，消息数量: ${slice.length}`)
+      } else {
+        console.error('保存聊天记录到 Supabase 失败:', result.error)
+      }
+    } catch (error) {
+      console.error('保存聊天记录到 Supabase 失败:', error)
+    }
+  }
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return
 
-    const userMessage: Message = {
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: inputValue,
       isGaia: false,
       timestamp: new Date()
     }
 
-    setMessages(prev => [...prev, userMessage])
+    const newMessages = [...messages, userMessage]
+    setMessages(newMessages)
+    await saveChatHistory(newMessages)
+    
     setInputValue('')
     setIsTyping(true)
     try {
@@ -104,6 +125,12 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         body: JSON.stringify({ message: userMessage.content })
       })
       const data = await res.json().catch(() => ({}))
+      
+      // 添加调试日志
+      console.log('n8n 返回的原始数据:', data)
+      console.log('n8n 返回的数据类型:', typeof data)
+      console.log('n8n 返回的数据结构:', JSON.stringify(data, null, 2))
+      
       const pick = (d: any): string | undefined => {
         if (!d) return undefined
         if (typeof d === 'string') return d
@@ -122,27 +149,52 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         }
         return undefined
       }
-      const reply = Array.isArray(data)
-        ? (pick(data[0]) || pick(data[0]?.data) || pickFromMessages(data) || '')
-        : (pick(data) || pick((data as any)?.data) || pickFromMessages(data) || pickFromMessages((data as any)?.data) || '')
+      
+      // 尝试提取回复内容
+      let reply = ''
+      
+      // 优先处理 n8n 返回的 messages 数组结构
+      if (data.messages && Array.isArray(data.messages)) {
+        const lastMessage = data.messages[data.messages.length - 1]
+        if (lastMessage && lastMessage.content) {
+          reply = lastMessage.content
+          console.log('从 messages 数组提取到回复:', reply)
+        }
+      }
+      
+      // 如果没有从 messages 提取到，尝试其他字段
+      if (!reply) {
+        if (Array.isArray(data)) {
+          reply = pick(data[0]) || pick(data[0]?.data) || pickFromMessages(data) || ''
+        } else {
+          reply = pick(data) || pick((data as any)?.data) || pickFromMessages(data) || pickFromMessages((data as any)?.data) || ''
+        }
+      }
+      
+      console.log('最终提取的回复内容:', reply)
+      console.log('回复内容类型:', typeof reply)
       
       const finalReply = reply && typeof reply === 'string' ? reply : '（n8n 未返回内容）'
 
-      const gaiaMessage: Message = {
+      const gaiaMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content: finalReply,
         isGaia: true,
         timestamp: new Date()
       }
-      setMessages(prev => [...prev, gaiaMessage])
+      const updatedMessages = [...newMessages, gaiaMessage]
+      setMessages(updatedMessages)
+      await saveChatHistory(updatedMessages)
     } catch (e) {
-      const gaiaMessage: Message = {
+      const gaiaMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content: '抱歉，连接 n8n 时出现问题。',
         isGaia: true,
         timestamp: new Date()
       }
-      setMessages(prev => [...prev, gaiaMessage])
+      const updatedMessages = [...newMessages, gaiaMessage]
+      setMessages(updatedMessages)
+      await saveChatHistory(updatedMessages)
     } finally {
       setIsTyping(false)
     }
@@ -195,6 +247,34 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <UploadCloud className="w-4 h-4" /> 上传文档
                 </button>
                 <button
+                  onClick={async () => {
+                    try {
+                      console.log('开始清除 Supabase 中的聊天记录...')
+                      const result = await GaiaAPI.clearChatHistory()
+                      
+                      if (result.success) {
+                        console.log('成功清除 Supabase 中的聊天记录')
+                        setMessages([{
+                          id: '1',
+                          content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
+                          isGaia: true,
+                          timestamp: new Date()
+                        }])
+                      } else {
+                        console.error('清除聊天记录失败:', result.error)
+                        alert('清除聊天记录失败: ' + result.error)
+                      }
+                    } catch (error) {
+                      console.error('清除聊天记录时发生错误:', error)
+                      alert('清除聊天记录时发生错误')
+                    }
+                  }}
+                  className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2"
+                  title="清除聊天记录"
+                >
+                  清除记录
+                </button>
+                <button
                   onClick={onClose}
                   className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
                 >
@@ -205,7 +285,14 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.map((message) => (
+              {isLoading && (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
+                  <p className="text-purple-300 mt-2 text-sm">正在加载聊天记录...</p>
+                </div>
+              )}
+              
+              {!isLoading && messages.map((message) => (
                 <motion.div
                   key={message.id}
                   initial={{ opacity: 0, y: 10 }}

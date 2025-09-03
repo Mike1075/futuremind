@@ -1,54 +1,204 @@
 import { createClient } from '@/lib/supabase/client'
 
-export type UploadResult = {
-  success: boolean
-  error?: string
-  body?: string
+export interface ChatMessage {
+  id: string
+  content: string
+  isGaia: boolean
+  timestamp: Date
 }
 
-/**
- * Upload a document to n8n via our server proxy.
- * Accepts pdf, doc, docx, txt. Max 20MB.
- */
-export async function uploadProjectDocument(params: {
-  projectId: string
-  file: File
-}): Promise<UploadResult> {
-  const { projectId, file } = params
+export interface ChatConversation {
+  id: string
+  user_id: string
+  messages: ChatMessage[]
+  created_at: string
+  updated_at: string
+}
 
-  const form = new FormData()
-  form.set('project_id', projectId)
-  form.set('file', file)
+class GaiaAPI {
+  private supabase = createClient()
 
-  const res = await fetch('/api/n8n/upload', {
-    method: 'POST',
-    body: form,
-  })
-
-  const data = await res.json().catch(() => ({}))
-
-  if (!res.ok) {
-    return { success: false, error: data?.error || 'UPLOAD_FAILED' }
+  // 获取当前用户
+  private async getCurrentUser() {
+    const { data: { user } } = await this.supabase.auth.getUser()
+    return user
   }
 
-  return { success: true, body: data?.body }
+  // 获取用户的聊天记录
+  async getChatHistory(): Promise<{ success: boolean; data?: ChatConversation; error?: string }> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, error: '用户未登录' }
+      }
+
+      const { data, error } = await this.supabase
+        .from('gaia_conversations')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // 没有找到记录，返回空记录
+          return { 
+            success: true, 
+            data: {
+              id: '',
+              user_id: user.id,
+              messages: [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          }
+        }
+        return { success: false, error: error.message }
+      }
+
+      // 转换消息格式
+      const convertedData: ChatConversation = {
+        ...data,
+        messages: data.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }))
+      }
+
+      return { success: true, data: convertedData }
+    } catch (error) {
+      console.error('获取聊天记录失败:', error)
+      return { success: false, error: '获取聊天记录失败' }
+    }
+  }
+
+  // 保存聊天记录
+  async saveChatHistory(messages: ChatMessage[]): Promise<{ success: boolean; error?: string }> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, error: '用户未登录' }
+      }
+
+      // 转换消息为可序列化格式
+      const serializableMessages = messages.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp.toISOString()
+      }))
+
+      // 检查是否已有记录
+      const { data: existing } = await this.supabase
+        .from('gaia_conversations')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (existing) {
+        // 更新现有记录
+        const { error } = await this.supabase
+          .from('gaia_conversations')
+          .update({
+            messages: serializableMessages,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+
+        if (error) {
+          return { success: false, error: error.message }
+        }
+      } else {
+        // 创建新记录
+        const { error } = await this.supabase
+          .from('gaia_conversations')
+          .insert({
+            user_id: user.id,
+            messages: serializableMessages
+          })
+
+        if (error) {
+          return { success: false, error: error.message }
+        }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('保存聊天记录失败:', error)
+      return { success: false, error: '保存聊天记录失败' }
+    }
+  }
+
+  // 清除聊天记录
+  async clearChatHistory(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, error: '用户未登录' }
+      }
+
+      const { error } = await this.supabase
+        .from('gaia_conversations')
+        .delete()
+        .eq('user_id', user.id)
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('清除聊天记录失败:', error)
+      return { success: false, error: '清除聊天记录失败' }
+    }
+  }
+
+  // 上传项目文档
+  async uploadProjectDocument({ projectId, file }: { projectId: string; file: File }): Promise<{ success: boolean; error?: string }> {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('project_id', projectId)
+
+      const response = await fetch('/api/n8n/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        return { success: false, error: errorData.error || '上传失败' }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('上传文档失败:', error)
+      return { success: false, error: '上传文档失败' }
+    }
+  }
+
+  // 获取用户的项目列表
+  async listUserProjects(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, error: 'user' }
+      }
+
+      const { data, error } = await this.supabase
+        .from('pbl_projects')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data }
+    } catch (error) {
+      console.error('获取项目列表失败:', error)
+      return { success: false, error: '获取项目列表失败' }
+    }
+  }
 }
 
-/**
- * Helper to fetch projects (id, name) for current user.
- * Adjust the table/columns to your schema if needed.
- */
-export async function listUserProjects() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
-
-  const { data } = await supabase
-    .from('pbl_project')
-    .select('id,name')
-    .order('created_at', { ascending: false })
-
-  return data || []
-}
+export default new GaiaAPI()
 
 
