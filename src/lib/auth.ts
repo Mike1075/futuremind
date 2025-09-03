@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@/lib/supabase/client'
-import { createClient as createServerClient } from '@/lib/supabase/server'
+import { useState, useEffect } from 'react'
 
 export interface UserProfile {
   id: string
@@ -157,8 +157,7 @@ export const authClient = {
       const { data, error } = await (supabase as any)
         .from('user_progress')
         .update(updateData)
-        .eq('user_id', userId)
-        .eq('season_id', (season as any).id)
+        .eq('id', (existingProgress as any).id)
         .select()
         .single()
 
@@ -255,23 +254,55 @@ export const authClient = {
   }
 }
 
-// Server-side auth functions
-export const authServer = {
-  async getCurrentUser() {
-    const supabase = await createServerClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
-    return { user, error }
-  },
+// React hook for authentication state
+export const useAuth = () => {
+  const [user, setUser] = useState<any>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
 
-  async getUserProfile(userId: string) {
-    const supabase = await createServerClient()
+  useEffect(() => {
+    // Get initial user
+    const getInitialUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+        setIsAuthenticated(!!user)
+      } catch (error) {
+        console.error('Error getting initial user:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    getInitialUser()
 
-    return { profile, error }
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null)
+        setIsAuthenticated(!!session?.user)
+        setLoading(false)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [supabase])
+
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+      setIsAuthenticated(false)
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
+
+  return {
+    user,
+    isAuthenticated,
+    loading,
+    signOut
   }
 }

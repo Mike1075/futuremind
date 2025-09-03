@@ -83,10 +83,18 @@ export default function PortalPage() {
   }
 
   const handleTaskComplete = async (taskId: string) => {
-    if (completedTasks.includes(taskId)) return
+    let newCompletedTasks: string[]
+    let newGrowth: number
     
-    const newCompletedTasks = [...completedTasks, taskId]
-    const newGrowth = consciousnessGrowth + 10
+    if (completedTasks.includes(taskId)) {
+      // 如果任务已完成，则取消完成
+      newCompletedTasks = completedTasks.filter(id => id !== taskId)
+      newGrowth = consciousnessGrowth - 10
+    } else {
+      // 如果任务未完成，则标记为完成
+      newCompletedTasks = [...completedTasks, taskId]
+      newGrowth = consciousnessGrowth + 10
+    }
     
     setCompletedTasks(newCompletedTasks)
     setConsciousnessGrowth(newGrowth)
@@ -295,7 +303,7 @@ export default function PortalPage() {
                         ? 'bg-green-500/10 border-green-500/30' 
                         : 'bg-white/5 border-white/10 hover:border-white/20'
                     } transition-colors cursor-pointer`}
-                    onClick={() => !task.completed && handleTaskComplete(task.id)}
+                                         onClick={() => handleTaskComplete(task.id)}
                   >
                     <div className="flex items-center">
                       {task.completed ? (
@@ -479,24 +487,48 @@ export default function PortalPage() {
               <h3 className="text-lg font-semibold text-white mb-4">快速行动</h3>
 
               <div className="space-y-3">
-                <button className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+                <button 
+                  onClick={() => router.push('/progress')}
+                  className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors group"
+                >
                   <div className="flex items-center">
-                    <Calendar className="w-5 h-5 text-blue-400 mr-3" />
-                    <span className="text-white">查看学习历程</span>
+                    <Calendar className="w-5 h-5 text-blue-400 mr-3 group-hover:text-blue-300 transition-colors" />
+                    <span className="text-white group-hover:text-blue-200 transition-colors">查看学习历程</span>
+                  </div>
+                  <div className="w-5 h-5 text-gray-400 group-hover:text-blue-300 transition-colors">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </button>
 
-                <button className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+                <button 
+                  onClick={() => router.push('/alliance')}
+                  className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors group"
+                >
                   <div className="flex items-center">
-                    <Users className="w-5 h-5 text-green-400 mr-3" />
-                    <span className="text-white">探索者联盟</span>
+                    <Users className="w-5 h-5 text-green-400 mr-3 group-hover:text-green-300 transition-colors" />
+                    <span className="text-white group-hover:text-green-200 transition-colors">探索者联盟</span>
+                  </div>
+                  <div className="w-5 h-5 text-gray-400 group-hover:text-green-300 transition-colors">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </button>
 
-                <button className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+                <button 
+                  onClick={() => router.push('/insights')}
+                  className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors group"
+                >
                   <div className="flex items-center">
-                    <Leaf className="w-5 h-5 text-purple-400 mr-3" />
-                    <span className="text-white">分享洞见</span>
+                    <Leaf className="w-5 h-5 text-purple-400 mr-3 group-hover:text-purple-300 transition-colors" />
+                    <span className="text-white group-hover:text-purple-200 transition-colors">分享洞见</span>
+                  </div>
+                  <div className="w-5 h-5 text-gray-400 group-hover:text-purple-300 transition-colors">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </button>
               </div>
