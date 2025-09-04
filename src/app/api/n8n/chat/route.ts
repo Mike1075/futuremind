@@ -18,13 +18,13 @@ export async function POST(req: NextRequest) {
     if (!message) return NextResponse.json({ error: 'MESSAGE_REQUIRED' }, { status: 400 })
 
     // 兼容多种字段命名，以适配不同 n8n 节点：
-    const payload: any = {
+    const payload: Record<string, string> = {
       message,
       text: message,
       prompt: message,
       content: message,
-      project_id,
-      user_id: userId,
+      project_id: project_id || '',
+      user_id: userId || 'guest',
     }
     const res = await fetch(N8N_CHAT_WEBHOOK, {
       method: 'POST',
@@ -53,13 +53,13 @@ export async function POST(req: NextRequest) {
     try {
       responseData = JSON.parse(text)
       console.log('n8n 响应解析为 JSON:', responseData)
-    } catch (parseError) {
+    } catch {
       console.log('n8n 响应不是 JSON，作为纯文本处理:', text)
       responseData = { reply: text }
     }
     
     return NextResponse.json(responseData)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
   }
 }

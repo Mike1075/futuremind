@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Search, Plus, Star, Target, Zap, Globe, Heart } from 'lucide-react';
 import AllianceAPI from '@/lib/api/alliance';
@@ -16,21 +16,10 @@ export default function AlliancePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userGuilds, setUserGuilds] = useState<string[]>([]);
   
   const supabase = createClient();
 
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  useEffect(() => {
-    if (isAuthenticated !== undefined) {
-      loadData();
-    }
-  }, [isAuthenticated]);
-
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       setIsAuthenticated(!!user);
@@ -38,9 +27,9 @@ export default function AlliancePage() {
       console.error('检查认证状态失败:', error);
       setIsAuthenticated(false);
     }
-  };
+  }, [supabase]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -102,7 +91,17 @@ export default function AlliancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
+
+  useEffect(() => {
+    if (isAuthenticated !== undefined) {
+      loadData();
+    }
+  }, [isAuthenticated, loadData]);
 
   const filteredGuilds = guilds.filter(guild =>
     guild.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -118,31 +117,6 @@ export default function AlliancePage() {
     window.location.href = `/alliance/${guildId}`;
   };
 
-  const handleJoinGuild = async (guildId: string) => {
-    if (!isAuthenticated) {
-      window.location.href = '/login?redirect=/alliance';
-      return;
-    }
-
-    try {
-      // 这里应该调用 API 加入联盟
-      // 暂时显示成功消息
-      alert('成功加入联盟！');
-      
-      // 更新本地状态，将联盟标记为已加入
-      setGuilds(prev => prev.map(guild => 
-        guild.id === guildId 
-          ? { ...guild, current_members: Math.min(guild.current_members + 1, guild.max_members) }
-          : guild
-      ));
-      
-      // 更新用户的联盟列表
-      setUserGuilds(prev => [...prev, guildId]);
-    } catch (error) {
-      console.error('加入联盟失败:', error);
-      alert('加入联盟失败，请重试');
-    }
-  };
 
   if (loading) {
     return (

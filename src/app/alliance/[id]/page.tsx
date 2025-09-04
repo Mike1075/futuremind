@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Users, Calendar, MessageSquare, FileText, ArrowLeft, Star, Target, Zap } from 'lucide-react';
+import { Users, Calendar, MessageSquare, FileText, ArrowLeft, Target } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { ExplorerGuild, GuildMember, GuildActivity } from '@/types/alliance';
+import { GuildStatus, MemberRole, InvitationResponse, ActivityType } from '@/types/alliance';
 
 export default function GuildDetailPage() {
   const params = useParams();
@@ -21,12 +22,7 @@ export default function GuildDetailPage() {
   
   const supabase = createClient();
 
-  useEffect(() => {
-    checkAuthStatus();
-    loadGuildData();
-  }, [guildId]);
-
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       setIsAuthenticated(!!user);
@@ -34,9 +30,9 @@ export default function GuildDetailPage() {
       console.error('检查认证状态失败:', error);
       setIsAuthenticated(false);
     }
-  };
+  }, [supabase]);
 
-  const loadGuildData = async () => {
+  const loadGuildData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -48,7 +44,7 @@ export default function GuildDetailPage() {
         description: '专注于声音疗愈和意识觉醒的探索者社区。我们探索声音的频率、振动和意识之间的关系，通过集体的智慧和实践，揭开声音疗愈的神秘面纱。',
         current_members: 12,
         max_members: 20,
-        status: 'forming',
+        status: GuildStatus.FORMING,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         created_by: 'demo-user'
@@ -59,18 +55,18 @@ export default function GuildDetailPage() {
           id: '1',
           guild_id: guildId,
           user_id: 'user1',
-          role: 'founder',
+          role: MemberRole.FOUNDER,
           joined_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          invitation_response: 'accepted',
+          invitation_response: InvitationResponse.ACCEPTED,
           is_active: true
         },
         {
           id: '2',
           guild_id: guildId,
           user_id: 'user2',
-          role: 'coordinator',
+          role: MemberRole.COORDINATOR,
           joined_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-          invitation_response: 'accepted',
+          invitation_response: InvitationResponse.ACCEPTED,
           is_active: true
         }
       ];
@@ -80,7 +76,7 @@ export default function GuildDetailPage() {
           id: '1',
           guild_id: guildId,
           user_id: 'user1',
-          activity_type: 'milestone',
+          activity_type: ActivityType.MILESTONE,
           content: '完成了声音频率分析的基础研究',
           metadata: { milestone_type: 'research' },
           created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
@@ -89,7 +85,7 @@ export default function GuildDetailPage() {
           id: '2',
           guild_id: guildId,
           user_id: 'user2',
-          activity_type: 'message',
+          activity_type: ActivityType.MESSAGE,
           content: '分享了最新的声音疗愈案例',
           metadata: { message_type: 'case_study' },
           created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
@@ -113,7 +109,12 @@ export default function GuildDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [guildId, isAuthenticated, supabase]);
+
+  useEffect(() => {
+    checkAuthStatus();
+    loadGuildData();
+  }, [guildId, checkAuthStatus, loadGuildData]);
 
   const handleJoinGuild = async () => {
     if (!isAuthenticated) {
@@ -323,7 +324,7 @@ export default function GuildDetailPage() {
             </h3>
             
             <div className="space-y-3">
-              {members.map((member, index) => (
+              {members.map((member) => (
                 <div key={member.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-purple-600/20 rounded-full flex items-center justify-center">
@@ -364,7 +365,7 @@ export default function GuildDetailPage() {
             </h3>
             
             <div className="space-y-3">
-              {activities.map((activity, index) => (
+              {activities.map((activity) => (
                 <div key={activity.id} className="p-3 bg-white/5 rounded-lg">
                   <div className="flex items-start space-x-3">
                     <div className="w-8 h-8 bg-blue-600/20 rounded-full flex items-center justify-center flex-shrink-0">

@@ -58,7 +58,7 @@ class GaiaAPI {
       // 转换消息格式
       const convertedData: ChatConversation = {
         ...data,
-        messages: data.messages.map((msg: any) => ({
+        messages: data.messages.map((msg: Record<string, unknown>) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }))
@@ -175,7 +175,7 @@ class GaiaAPI {
   }
 
   // 获取用户的项目列表
-  async listUserProjects(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  async listUserProjects(): Promise<{ success: boolean; data?: Project[]; error?: string }> {
     try {
       const user = await this.getCurrentUser()
       if (!user) {
@@ -199,6 +199,7 @@ class GaiaAPI {
   }
 }
 
-export default new GaiaAPI()
+const gaiaAPI = new GaiaAPI()
+export default gaiaAPI
 
 

@@ -14,7 +14,7 @@ interface GaiaDialogProps {
 }
 
 export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
-  const [userId, setUserId] = useState<string | 'guest'>('guest')
+  const [, setUserId] = useState<string | 'guest'>('guest')
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -131,21 +131,27 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       console.log('n8n 返回的数据类型:', typeof data)
       console.log('n8n 返回的数据结构:', JSON.stringify(data, null, 2))
       
-      const pick = (d: any): string | undefined => {
+      const pick = (d: unknown): string | undefined => {
         if (!d) return undefined
         if (typeof d === 'string') return d
-        return (
-          d.reply || d.message || d.text || d.content || d.output || d.body || d.answer
-        )
+        if (typeof d === 'object' && d !== null) {
+          const obj = d as Record<string, unknown>;
+          return (
+            obj.reply || obj.message || obj.text || obj.content || obj.output || obj.body || obj.answer
+          ) as string | undefined;
+        }
+        return undefined;
       }
-      const pickFromMessages = (d: any): string | undefined => {
+      const pickFromMessages = (d: unknown): string | undefined => {
         if (!d) return undefined
-        const arr = Array.isArray(d) ? d : d.messages || d.data?.messages
+        const obj = d as Record<string, unknown>;
+        const arr = Array.isArray(d) ? d : obj.messages || (obj.data as Record<string, unknown>)?.messages
         if (Array.isArray(arr) && arr.length > 0) {
           const last = arr[arr.length - 1]
           if (!last) return undefined
           if (typeof last === 'string') return last
-          return last.content || last.text || last.message
+          const lastObj = last as Record<string, unknown>;
+          return (lastObj.content || lastObj.text || lastObj.message) as string | undefined;
         }
         return undefined
       }
@@ -167,7 +173,8 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         if (Array.isArray(data)) {
           reply = pick(data[0]) || pick(data[0]?.data) || pickFromMessages(data) || ''
         } else {
-          reply = pick(data) || pick((data as any)?.data) || pickFromMessages(data) || pickFromMessages((data as any)?.data) || ''
+          const dataObj = data as Record<string, unknown>;
+          reply = pick(data) || pick(dataObj?.data) || pickFromMessages(data) || pickFromMessages(dataObj?.data) || ''
         }
       }
       
@@ -185,7 +192,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       const updatedMessages = [...newMessages, gaiaMessage]
       setMessages(updatedMessages)
       await saveChatHistory(updatedMessages)
-    } catch (e) {
+    } catch {
       const gaiaMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content: '抱歉，连接 n8n 时出现问题。',

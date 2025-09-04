@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Eye, EyeOff, Users, Lock, Tag, X } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Users, Lock, Tag, X } from 'lucide-react';
 import { insightsAPI, CreateInsightData } from '@/lib/api/insights';
 import { useAuth } from '@/lib/auth';
 
 export default function NewInsightPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, refreshAuth } = useAuth();
   const router = useRouter();
   const [formData, setFormData] = useState<CreateInsightData>({
     title: '',
@@ -18,26 +18,44 @@ export default function NewInsightPage() {
     status: 'draft'
   });
   const [tagInput, setTagInput] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login?redirect=/insights/new');
+    console.log('认证状态检查:', { isAuthenticated, user: user?.id, authLoading });
+    
+    if (!isAuthenticated && !authLoading) {
+      console.log('用户未认证，尝试刷新认证状态...');
+      // 先尝试刷新认证状态
+      refreshAuth().then(() => {
+        // 延迟检查，给认证状态更新一些时间
+        setTimeout(() => {
+          // 重新获取认证状态
+          refreshAuth().then(() => {
+            if (!isAuthenticated) {
+              console.log('刷新后仍然未认证，重定向到登录页面');
+              router.push('/login?redirect=/insights/new');
+            }
+          });
+        }, 1500);
+      });
       return;
     }
     
-    // 从 localStorage 加载草稿
-    const draft = localStorage.getItem('insight_draft');
-    if (draft) {
-      try {
-        const parsedDraft = JSON.parse(draft);
-        setFormData(parsedDraft);
-      } catch (error) {
-        console.error('加载草稿失败:', error);
+    if (isAuthenticated && user) {
+      console.log('用户已认证，加载草稿');
+      // 从 localStorage 加载草稿
+      const draft = localStorage.getItem('insight_draft');
+      if (draft) {
+        try {
+          const parsedDraft = JSON.parse(draft);
+          setFormData(parsedDraft);
+        } catch (error) {
+          console.error('加载草稿失败:', error);
+        }
       }
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, authLoading, router, refreshAuth]);
 
   // 自动保存草稿
   useEffect(() => {
@@ -73,7 +91,7 @@ export default function NewInsightPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (field: keyof CreateInsightData, value: any) => {
+  const handleInputChange = (field: keyof CreateInsightData, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // 清除对应字段的错误
     if (errors[field]) {
@@ -83,34 +101,63 @@ export default function NewInsightPage() {
 
   const handleAddTag = () => {
     const tag = tagInput.trim();
-    if (tag && !formData.tags.includes(tag) && formData.tags.length < 10) {
-      handleInputChange('tags', [...formData.tags, tag]);
+    if (tag && formData.tags && !formData.tags.includes(tag) && formData.tags.length < 10) {
+      handleInputChange('tags', [...(formData.tags || []), tag]);
       setTagInput('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    handleInputChange('tags', formData.tags.filter(tag => tag !== tagToRemove));
+    handleInputChange('tags', (formData.tags || []).filter(tag => tag !== tagToRemove));
   };
 
   const handleSubmit = async (status: 'draft' | 'published') => {
     if (!validateForm()) return;
     
     try {
-      setLoading(true);
-      // 暂时模拟创建成功，避免数据库连接问题
-      console.log('创建洞见:', { ...formData, status });
+      setSubmitting(true);
+      setErrors({}); // 清除之前的错误
+      
+      // 准备创建洞见的数据
+      const insightData: CreateInsightData = {
+        ...formData,
+        status,
+        user_id: user?.id || ''
+      };
+      
+      console.log('准备创建洞见:', insightData);
+      
+      // 调用 API 创建洞见
+      const newInsight = await insightsAPI.createInsight(insightData);
+      console.log('洞见创建成功:', newInsight);
       
       // 清除草稿
       localStorage.removeItem('insight_draft');
       
+      // 显示成功消息
+      alert('洞见创建成功！');
+      
       // 跳转到洞见列表页
       router.push('/insights');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('创建洞见失败:', error);
-      setErrors({ submit: '创建洞见失败，请重试' });
+      
+      // 更详细的错误处理
+      let errorMessage = '创建洞见失败，请重试';
+      
+      if (error instanceof Error && error.message) {
+        if (error.message.includes('Could not find the table')) {
+          errorMessage = '数据库表未创建，请联系管理员';
+        } else if (error.message.includes('permission denied')) {
+          errorMessage = '权限不足，请检查登录状态';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setErrors({ submit: errorMessage });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -122,8 +169,33 @@ export default function NewInsightPage() {
     handleSubmit('published');
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="text-white mt-4">检查认证状态...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
-    return null; // 等待重定向
+    console.log('渲染时用户未认证，显示加载状态');
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="text-white mt-4">等待认证状态更新...</p>
+          <button 
+            onClick={() => refreshAuth()}
+            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+          >
+            手动刷新认证状态
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -154,7 +226,10 @@ export default function NewInsightPage() {
                 返回主页
               </button>
             </div>
-            <h1 className="text-xl font-semibold text-white">发布洞见</h1>
+                         <h1 className="text-xl font-semibold text-white">发布洞见</h1>
+             <div className="text-sm text-gray-300">
+               {isAuthenticated ? `已登录: ${user?.email}` : '未登录'}
+             </div>
           </div>
         </div>
       </nav>
@@ -242,14 +317,14 @@ export default function NewInsightPage() {
                 <button
                   type="button"
                   onClick={handleAddTag}
-                  disabled={!tagInput.trim() || formData.tags.length >= 10}
+                  disabled={!tagInput.trim() || (formData.tags?.length || 0) >= 10}
                   className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                 >
                   添加
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {formData.tags.map((tag, index) => (
+                {(formData.tags || []).map((tag, index) => (
                   <span
                     key={index}
                     className="inline-flex items-center space-x-1 px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full"
@@ -324,23 +399,23 @@ export default function NewInsightPage() {
 
             {/* 操作按钮 */}
             <div className="flex justify-end space-x-4 pt-6 border-t border-white/10">
-              <button
-                type="button"
-                onClick={handleSaveDraft}
-                disabled={loading}
-                className="px-6 py-3 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
-              >
-                <Save className="w-5 h-5" />
-                <span>保存草稿</span>
-              </button>
-              <button
-                type="button"
-                onClick={handlePublish}
-                disabled={loading || !formData.title.trim() || !formData.content.trim()}
-                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-lg font-medium transition-all duration-300 transform hover:scale-105 disabled:transform-none"
-              >
-                {loading ? '发布中...' : '发布洞见'}
-              </button>
+                             <button
+                 type="button"
+                 onClick={handleSaveDraft}
+                 disabled={submitting}
+                 className="px-6 py-3 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
+               >
+                 <Save className="w-5 h-5" />
+                 <span>保存草稿</span>
+               </button>
+               <button
+                 type="button"
+                 onClick={handlePublish}
+                 disabled={submitting || !formData.title.trim() || !formData.content.trim()}
+                 className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-lg font-medium transition-all duration-300 transform hover:scale-105 disabled:transform-none"
+               >
+                 {submitting ? '发布中...' : '发布洞见'}
+               </button>
             </div>
           </form>
         </div>

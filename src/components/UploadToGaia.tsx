@@ -25,7 +25,7 @@ export default function UploadToGaia({ isOpen, onClose }: Props) {
         if (result.data.length && !projectId) setProjectId(result.data[0].id)
       }
     })()
-  }, [isOpen])
+  }, [isOpen, projectId])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

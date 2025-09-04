@@ -259,38 +259,53 @@ export const useAuth = () => {
   const [user, setUser] = useState<any>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
 
   useEffect(() => {
+    let mounted = true
+
     // Get initial user
     const getInitialUser = async () => {
       try {
+        const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-        setIsAuthenticated(!!user)
+        console.log('Initial user check:', user?.id, !!user)
+        if (mounted) {
+          setUser(user)
+          setIsAuthenticated(!!user)
+        }
       } catch (error) {
         console.error('Error getting initial user:', error)
       } finally {
-        setLoading(false)
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
     getInitialUser()
 
     // Listen for auth changes
+    const supabase = createClient()
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null)
-        setIsAuthenticated(!!session?.user)
-        setLoading(false)
+        console.log('Auth state change:', event, session?.user?.id, 'Session exists:', !!session)
+        if (mounted) {
+          setUser(session?.user ?? null)
+          setIsAuthenticated(!!session?.user)
+          setLoading(false)
+        }
       }
     )
 
-    return () => subscription.unsubscribe()
-  }, [supabase])
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
   const signOut = async () => {
     try {
+      const supabase = createClient()
       await supabase.auth.signOut()
       setUser(null)
       setIsAuthenticated(false)
@@ -299,10 +314,26 @@ export const useAuth = () => {
     }
   }
 
+  const refreshAuth = async () => {
+    try {
+      setLoading(true)
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      console.log('Refresh auth check:', user?.id, !!user)
+      setUser(user)
+      setIsAuthenticated(!!user)
+    } catch (error) {
+      console.error('Error refreshing auth:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return {
     user,
     isAuthenticated,
     loading,
-    signOut
+    signOut,
+    refreshAuth
   }
 }

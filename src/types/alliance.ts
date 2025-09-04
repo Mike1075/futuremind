@@ -52,7 +52,7 @@ export interface GuildActivity {
   user_id: string;
   activity_type: ActivityType;
   content: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, string | number | boolean | null>;
   created_at: string;
 }
 
@@ -175,7 +175,7 @@ export interface CreateActivityRequest {
   guild_id: string;
   activity_type: ActivityType;
   content: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 // 创建成就的请求类型
@@ -258,7 +258,7 @@ export interface ProjectMilestone {
 export interface AllianceError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, string | number | boolean | null>;
 }
 
 // API响应类型

@@ -24,6 +24,7 @@ export interface CreateInsightData {
   visibility: 'private' | 'public' | 'guild';
   guild_id?: string;
   status?: 'draft' | 'published';
+  user_id?: string; // 添加用户ID字段
 }
 
 export interface UpdateInsightData extends Partial<CreateInsightData> {
@@ -81,6 +82,11 @@ export class InsightsAPI {
 
   // 创建洞见
   async createInsight(data: CreateInsightData): Promise<Insight> {
+    // 确保有用户ID
+    if (!data.user_id) {
+      throw new Error('用户ID是必需的');
+    }
+    
     const { data: insight, error } = await this.supabase
       .from('insights')
       .insert([data])

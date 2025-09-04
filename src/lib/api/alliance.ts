@@ -2,25 +2,22 @@
 // 创建时间: 2024-12-19
 
 import { createClient } from '@/lib/supabase/client';
+import type { Database } from '@/lib/supabase';
 import type {
   ExplorerGuild,
   GuildMember,
   MysticalInvitation,
   GuildActivity,
   GuildAchievement,
-  GuildOverview,
   UserGuildStatus,
   RecommendedGuild,
   CreateGuildRequest,
   UpdateGuildRequest,
   SendInvitationRequest,
   RespondInvitationRequest,
-  JoinGuildRequest,
   CreateActivityRequest,
   CreateAchievementRequest,
   GuildStats,
-  PaginationParams,
-  PaginatedResponse,
   GuildSearchParams,
   ApiResponse
 } from '@/types/alliance';
@@ -43,10 +40,13 @@ export class AllianceAPI {
         };
       }
 
-      const { data: guild, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: guild, error } = await (supabase as any)
         .from('explorer_guilds')
         .insert({
-          ...data,
+          name: data.name,
+          theme: data.theme,
+          description: data.description ?? null,
           created_by: user.user.id,
           max_members: data.max_members || 6
         })
@@ -68,7 +68,7 @@ export class AllianceAPI {
         data: guild,
         message: '联盟创建成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '创建联盟时发生未知错误' }
@@ -112,7 +112,7 @@ export class AllianceAPI {
         data: guilds || [],
         message: '获取联盟列表成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '获取联盟列表时发生未知错误' }
@@ -143,7 +143,7 @@ export class AllianceAPI {
         data: guild,
         message: '获取联盟详情成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '获取联盟详情时发生未知错误' }
@@ -197,7 +197,7 @@ export class AllianceAPI {
         data: updatedGuild,
         message: '联盟更新成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '更新联盟时发生未知错误' }
@@ -255,7 +255,7 @@ export class AllianceAPI {
         success: true,
         message: '联盟删除成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '删除联盟时发生未知错误' }
@@ -293,7 +293,7 @@ export class AllianceAPI {
         data: member,
         message: '成员添加成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '添加成员时发生未知错误' }
@@ -328,7 +328,7 @@ export class AllianceAPI {
         data: members || [],
         message: '获取成员列表成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '获取成员列表时发生未知错误' }
@@ -383,7 +383,7 @@ export class AllianceAPI {
         data: member,
         message: '成员角色更新成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '更新成员角色时发生未知错误' }
@@ -443,7 +443,7 @@ export class AllianceAPI {
         success: true,
         message: '成员移除成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '移除成员时发生未知错误' }
@@ -503,7 +503,7 @@ export class AllianceAPI {
       }
 
       // 使用数据库函数生成邀请
-      const { data: invitation, error } = await supabase
+      const { error } = await supabase
         .rpc('generate_mystical_invitation', {
           target_user_id: data.user_id,
           guild_id: data.guild_id,
@@ -530,7 +530,7 @@ export class AllianceAPI {
         data: invitationDetails!,
         message: '邀请发送成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '发送邀请时发生未知错误' }
@@ -572,7 +572,7 @@ export class AllianceAPI {
         data: invitations || [],
         message: '获取邀请列表成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '获取邀请列表时发生未知错误' }
@@ -640,7 +640,7 @@ export class AllianceAPI {
         success: true,
         message: data.response === 'accepted' ? '邀请接受成功，已加入联盟' : '邀请已拒绝'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '响应邀请时发生未知错误' }
@@ -700,7 +700,7 @@ export class AllianceAPI {
         data: activity,
         message: '活动创建成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '创建活动时发生未知错误' }
@@ -735,7 +735,7 @@ export class AllianceAPI {
         data: activities || [],
         message: '获取活动列表成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '获取活动列表时发生未知错误' }
@@ -793,7 +793,7 @@ export class AllianceAPI {
         data: achievement,
         message: '成就创建成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '创建成就时发生未知错误' }
@@ -824,7 +824,7 @@ export class AllianceAPI {
         data: achievements || [],
         message: '获取成就列表成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '获取成就列表时发生未知错误' }
@@ -864,7 +864,7 @@ export class AllianceAPI {
         data: recommendations || [],
         message: '获取推荐联盟成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '获取推荐联盟时发生未知错误' }
@@ -917,7 +917,7 @@ export class AllianceAPI {
         data: stats,
         message: '获取统计信息成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '获取统计信息时发生未知错误' }
@@ -958,7 +958,7 @@ export class AllianceAPI {
         data: status || null,
         message: '获取用户状态成功'
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: { code: 'UNKNOWN_ERROR', message: '获取用户状态时发生未知错误' }

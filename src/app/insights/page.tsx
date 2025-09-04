@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Eye, EyeOff, Users, Lock, Calendar, Tag } from 'lucide-react';
 import { insightsAPI, Insight } from '@/lib/api/insights';
@@ -14,52 +14,18 @@ export default function InsightsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadInsights();
-    }
-  }, [isAuthenticated, activeTab]);
-
-  const loadInsights = async () => {
+  const loadInsights = useCallback(async () => {
     try {
       setLoading(true);
-      // 暂时使用模拟数据，避免数据库连接问题
-      const mockData: Insight[] = [
-        {
-          id: '1',
-          user_id: 'user-1',
-          title: '意识的多重维度',
-          content: '探索意识的不同层次和状态...',
-          summary: '关于意识进化的深度思考',
-          tags: ['意识', '进化', '哲学'],
-          visibility: 'public',
-          status: 'published',
-          likes_count: 12,
-          comments_count: 3,
-          created_at: '2024-02-15T10:00:00Z',
-          updated_at: '2024-02-15T10:00:00Z'
-        },
-        {
-          id: '2',
-          user_id: 'user-2',
-          title: '量子意识与实相',
-          content: '量子力学如何影响我们对实相的理解...',
-          summary: '量子意识理论的新视角',
-          tags: ['量子', '意识', '物理'],
-          visibility: 'public',
-          status: 'published',
-          likes_count: 8,
-          comments_count: 2,
-          created_at: '2024-02-14T15:00:00Z',
-          updated_at: '2024-02-14T15:00:00Z'
-        }
-      ];
       
       if (activeTab === 'my' && user) {
-        // 模拟用户自己的洞见
-        setInsights(mockData.filter(insight => insight.user_id === user.id));
+        // 获取用户自己的洞见
+        const userInsights = await insightsAPI.getUserInsights(user.id);
+        setInsights(userInsights);
       } else {
-        setInsights(mockData);
+        // 获取公开洞见
+        const publicInsights = await insightsAPI.getPublicInsights();
+        setInsights(publicInsights);
       }
     } catch (error) {
       console.error('加载洞见失败:', error);
@@ -67,7 +33,13 @@ export default function InsightsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, user]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadInsights();
+    }
+  }, [isAuthenticated, activeTab, loadInsights]);
 
   const handleCreateInsight = () => {
     router.push('/insights/new');

@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     const n8nRes = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
-      body: forward as any,
+      body: forward as FormData,
       // Do not set Content-Type; the runtime sets correct multipart boundary
     })
 
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, body: text })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
   }
 }

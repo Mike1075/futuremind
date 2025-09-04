@@ -31,11 +31,11 @@ interface Activity {
   title: string;
   description: string;
   timestamp: string;
-  metadata?: any;
+  metadata?: Record<string, string | number | boolean>;
 }
 
 export default function ProgressPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const [progressData, setProgressData] = useState<ProgressData | null>(null);
   const [loading, setLoading] = useState(true);

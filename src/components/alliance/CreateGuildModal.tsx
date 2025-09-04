@@ -45,7 +45,7 @@ export default function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateG
       newErrors.description = '描述不能超过1000个字符';
     }
 
-    if (formData.max_members < 2 || formData.max_members > 20) {
+    if (!formData.max_members || formData.max_members < 2 || formData.max_members > 20) {
       newErrors.max_members = '成员数量必须在2-20之间';
     }
 
@@ -211,7 +211,7 @@ export default function CreateGuildModal({ isOpen, onClose, onSuccess }: CreateG
                   <p className="mt-1 text-sm text-red-400">{errors.description}</p>
                 )}
                 <p className="mt-1 text-xs text-purple-300">
-                  {formData.description.length}/1000 字符
+                  {(formData.description?.length || 0)}/1000 字符
                 </p>
               </div>
 

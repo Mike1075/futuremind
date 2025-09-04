@@ -21,6 +21,19 @@ export default function LoginPage() {
   // 获取重定向地址
   const redirectTo = searchParams.get('redirect') || '/dashboard'
 
+  // 监听认证状态变化
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Login page auth state change:', event, session?.user?.id)
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('User signed in, redirecting to:', redirectTo)
+        router.push(redirectTo)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase, router, redirectTo])
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -33,7 +46,8 @@ export default function LoginPage() {
           password,
         })
         if (error) throw error
-        router.push(redirectTo)
+        
+        setMessage('登录成功，正在跳转...')
       } else {
         const { error } = await supabase.auth.signUp({
           email,
