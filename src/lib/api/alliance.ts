@@ -2,7 +2,6 @@
 // 创建时间: 2024-12-19
 
 import { createClient } from '@/lib/supabase/client';
-import type { Database } from '@/lib/supabase';
 import type {
   ExplorerGuild,
   GuildMember,
@@ -171,14 +170,16 @@ export class AllianceAPI {
         .eq('id', id)
         .single();
 
-      if (!guild || guild.created_by !== user.user.id) {
+      const createdBy = (guild as { created_by?: string } | null)?.created_by;
+      if (!createdBy || createdBy !== user.user.id) {
         return {
           success: false,
           error: { code: 'FORBIDDEN', message: '没有权限修改此联盟' }
         };
       }
 
-      const { data: updatedGuild, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: updatedGuild, error } = await (supabase as any)
         .from('explorer_guilds')
         .update(data)
         .eq('id', id)
@@ -225,14 +226,16 @@ export class AllianceAPI {
         .eq('id', id)
         .single();
 
-      if (!guild || guild.created_by !== user.user.id) {
+      const g = (guild as { created_by?: string; current_members?: number } | null);
+      if (!g?.created_by || g.created_by !== user.user.id) {
         return {
           success: false,
           error: { code: 'FORBIDDEN', message: '没有权限删除此联盟' }
         };
       }
 
-      if (guild.current_members > 1) {
+      const currentMembers = (g?.current_members ?? 0);
+      if (currentMembers > 1) {
         return {
           success: false,
           error: { code: 'INVALID_OPERATION', message: '联盟中还有其他成员，无法删除' }
@@ -270,7 +273,8 @@ export class AllianceAPI {
    */
   static async addMember(guildId: string, userId: string, role: string = 'explorer'): Promise<ApiResponse<GuildMember>> {
     try {
-      const { data: member, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: member, error } = await (supabase as any)
         .from('guild_members')
         .insert({
           guild_id: guildId,
@@ -356,14 +360,15 @@ export class AllianceAPI {
         .eq('id', guildId)
         .single();
 
-      if (!guild || guild.created_by !== user.user.id) {
+      if (!guild || (guild as { created_by?: string } | null)?.created_by !== user.user.id) {
         return {
           success: false,
           error: { code: 'FORBIDDEN', message: '没有权限修改成员角色' }
         };
       }
 
-      const { data: member, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: member, error } = await (supabase as any)
         .from('guild_members')
         .update({ role: newRole })
         .eq('guild_id', guildId)
@@ -411,7 +416,7 @@ export class AllianceAPI {
         .eq('id', guildId)
         .single();
 
-      if (!guild || guild.created_by !== user.user.id) {
+      if (!guild || (guild as { created_by?: string } | null)?.created_by !== user.user.id) {
         return {
           success: false,
           error: { code: 'FORBIDDEN', message: '没有权限移除成员' }
@@ -419,7 +424,7 @@ export class AllianceAPI {
       }
 
       // 不能移除创始人
-      if (guild.created_by === userId) {
+      if ((guild as { created_by?: string } | null)?.created_by === userId) {
         return {
           success: false,
           error: { code: 'INVALID_OPERATION', message: '不能移除联盟创始人' }
@@ -473,14 +478,16 @@ export class AllianceAPI {
         .eq('id', data.guild_id)
         .single();
 
-      if (!guild || guild.created_by !== user.user.id) {
+      if (!guild || (guild as { created_by?: string } | null)?.created_by !== user.user.id) {
         return {
           success: false,
           error: { code: 'FORBIDDEN', message: '没有权限发送邀请' }
         };
       }
 
-      if (guild.current_members >= guild.max_members) {
+      const cm = (guild as { current_members?: number; max_members?: number } | null)?.current_members ?? 0;
+      const mm = (guild as { current_members?: number; max_members?: number } | null)?.max_members ?? 0;
+      if (cm >= mm) {
         return {
           success: false,
           error: { code: 'INVALID_OPERATION', message: '联盟成员已满' }
@@ -503,7 +510,8 @@ export class AllianceAPI {
       }
 
       // 使用数据库函数生成邀请
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .rpc('generate_mystical_invitation', {
           target_user_id: data.user_id,
           guild_id: data.guild_id,
@@ -608,7 +616,7 @@ export class AllianceAPI {
         };
       }
 
-      if (invitation.response !== 'pending') {
+      if ((invitation as { response?: string }).response !== 'pending') {
         return {
           success: false,
           error: { code: 'INVALID_OPERATION', message: '邀请已经被响应' }
@@ -616,7 +624,8 @@ export class AllianceAPI {
       }
 
       // 更新邀请状态
-      const { error: updateError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateError } = await (supabase as any)
         .from('mystical_invitations')
         .update({
           response: data.response,
@@ -633,7 +642,7 @@ export class AllianceAPI {
 
       // 如果接受邀请，自动加入联盟
       if (data.response === 'accepted') {
-        await this.addMember(invitation.guild_id, user.user.id);
+        await this.addMember((invitation as { guild_id: string }).guild_id, user.user.id);
       }
 
       return {
@@ -679,7 +688,8 @@ export class AllianceAPI {
         };
       }
 
-      const { data: activity, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: activity, error } = await (supabase as any)
         .from('guild_activities')
         .insert({
           ...data,
@@ -765,14 +775,15 @@ export class AllianceAPI {
         .eq('id', data.guild_id)
         .single();
 
-      if (!guild || guild.created_by !== user.user.id) {
+      if (!guild || (guild as { created_by?: string } | null)?.created_by !== user.user.id) {
         return {
           success: false,
           error: { code: 'FORBIDDEN', message: '只有联盟创始人才能创建成就' }
         };
       }
 
-      const { data: achievement, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: achievement, error } = await (supabase as any)
         .from('guild_achievements')
         .insert({
           ...data,
@@ -847,7 +858,8 @@ export class AllianceAPI {
         };
       }
 
-      const { data: recommendations, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: recommendations, error } = await (supabase as any)
         .rpc('get_recommended_guilds', {
           user_uuid: user.user.id
         });

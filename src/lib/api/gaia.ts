@@ -56,12 +56,34 @@ class GaiaAPI {
       }
 
       // 转换消息格式
+      const base = (typeof data === 'object' && data !== null ? data : {}) as Record<string, unknown>;
+      const rawMessages = Array.isArray((base as { messages?: unknown }).messages)
+        ? ((base as { messages?: unknown[] }).messages as Record<string, unknown>[])
+        : [];
+      const normalizedMessages: ChatMessage[] = rawMessages.map((msg: Record<string, unknown>) => {
+        const ts = (msg as { timestamp?: string }).timestamp;
+        const idVal = (msg as { id?: unknown }).id;
+        const contentVal =
+          (msg as { content?: unknown }).content ??
+          (msg as { text?: unknown }).text ??
+          '';
+        const isGaiaVal =
+          (msg as { isGaia?: unknown }).isGaia ??
+          (msg as { is_gaia?: unknown }).is_gaia ??
+          ((msg as { from?: unknown }).from === 'gaia');
+        return {
+          id: typeof idVal === 'string' ? idVal : String(Date.now()),
+          content: String(contentVal),
+          isGaia: Boolean(isGaiaVal),
+          timestamp: ts ? new Date(ts) : new Date(),
+        };
+      });
       const convertedData: ChatConversation = {
-        ...data,
-        messages: data.messages.map((msg: Record<string, unknown>) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))
+        id: (base.id as string) ?? '',
+        user_id: (base.user_id as string) ?? user.id,
+        messages: normalizedMessages,
+        created_at: (base.created_at as string) ?? new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
 
       return { success: true, data: convertedData }
@@ -94,7 +116,8 @@ class GaiaAPI {
 
       if (existing) {
         // 更新现有记录
-        const { error } = await this.supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (this.supabase as any)
           .from('gaia_conversations')
           .update({
             messages: serializableMessages,
@@ -107,7 +130,8 @@ class GaiaAPI {
         }
       } else {
         // 创建新记录
-        const { error } = await this.supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (this.supabase as any)
           .from('gaia_conversations')
           .insert({
             user_id: user.id,
@@ -175,7 +199,7 @@ class GaiaAPI {
   }
 
   // 获取用户的项目列表
-  async listUserProjects(): Promise<{ success: boolean; data?: Project[]; error?: string }> {
+  async listUserProjects(): Promise<{ success: boolean; data?: { id: string; name?: string }[]; error?: string }> {
     try {
       const user = await this.getCurrentUser()
       if (!user) {
