@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import type { Database } from '@/lib/supabase';
 
 export interface Insight {
   id: string;
@@ -32,7 +33,7 @@ export interface UpdateInsightData extends Partial<CreateInsightData> {
 }
 
 export class InsightsAPI {
-  private supabase = createClient();
+  private supabase = createClient<Database>();
 
   // 获取用户的洞见列表
   async getUserInsights(userId: string, status?: string): Promise<Insight[]> {
@@ -87,9 +88,23 @@ export class InsightsAPI {
       throw new Error('用户ID是必需的');
     }
     
+    // 映射到数据库 Insert 类型
+    const insertData: Database['public']['Tables']['insights']['Insert'] = {
+      user_id: data.user_id,
+      title: data.title,
+      content: data.content,
+      summary: data.summary || null,
+      tags: data.tags || [],
+      visibility: data.visibility,
+      guild_id: data.guild_id || null,
+      status: data.status || 'draft',
+      likes_count: 0,
+      comments_count: 0
+    };
+    
     const { data: insight, error } = await this.supabase
       .from('insights')
-      .insert([data])
+      .insert([insertData])
       .select()
       .single();
 
