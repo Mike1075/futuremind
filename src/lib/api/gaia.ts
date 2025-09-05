@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase'
 
 export interface ChatMessage {
   id: string
@@ -16,7 +16,7 @@ export interface ChatConversation {
 }
 
 class GaiaAPI {
-  private supabase = createClient()
+  private supabase = supabase
 
   // 获取当前用户
   private async getCurrentUser() {

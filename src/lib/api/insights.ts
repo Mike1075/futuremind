@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/supabase';
 
 export interface Insight {
@@ -33,7 +33,7 @@ export interface UpdateInsightData extends Partial<CreateInsightData> {
 }
 
 export class InsightsAPI {
-  private supabase = createClient<Database>();
+  private supabase = supabase;
 
   // 获取用户的洞见列表
   async getUserInsights(userId: string, status?: string): Promise<Insight[]> {

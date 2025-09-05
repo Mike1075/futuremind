@@ -1,7 +1,7 @@
 // 探索者联盟功能API服务层
 // 创建时间: 2024-12-19
 
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase';
 import type {
   ExplorerGuild,
   GuildMember,
@@ -20,8 +20,6 @@ import type {
   GuildSearchParams,
   ApiResponse
 } from '@/types/alliance';
-
-const supabase = createClient();
 
 export class AllianceAPI {
   // ==================== 探索者联盟管理 ====================
