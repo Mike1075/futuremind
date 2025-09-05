@@ -83,10 +83,18 @@ export default function PortalPage() {
   }
 
   const handleTaskComplete = async (taskId: string) => {
-    if (completedTasks.includes(taskId)) return
+    let newCompletedTasks: string[]
+    let newGrowth: number
     
-    const newCompletedTasks = [...completedTasks, taskId]
-    const newGrowth = consciousnessGrowth + 10
+    if (completedTasks.includes(taskId)) {
+      // 如果任务已完成，则取消完成
+      newCompletedTasks = completedTasks.filter(id => id !== taskId)
+      newGrowth = consciousnessGrowth - 10
+    } else {
+      // 如果任务未完成，则标记为完成
+      newCompletedTasks = [...completedTasks, taskId]
+      newGrowth = consciousnessGrowth + 10
+    }
     
     setCompletedTasks(newCompletedTasks)
     setConsciousnessGrowth(newGrowth)
@@ -163,34 +171,87 @@ export default function PortalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header */}
-      <header className="bg-white/5 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <TreePine className="w-8 h-8 text-purple-400 mr-3" />
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                  个人探索基地
-                </h1>
-                <p className="text-sm text-gray-400">{currentSeason.title}</p>
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Background particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(50)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30"
+            animate={{
+              x: [0, Math.random() * 100 - 50],
+              y: [0, Math.random() * 100 - 50],
+              opacity: [0.3, 0.8, 0.3],
+            }}
+            transition={{
+              duration: Math.random() * 3 + 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+          />
+        ))}
+      </div>
+      {/* 顶部导航栏（与仪表盘一致风格） */}
+      <motion.nav
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="relative z-20 bg-white/5 backdrop-blur-md border-b border-white/10"
+      >
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* 左侧：返回主页 */}
+            <button
+              onClick={() => (window.location.href = '/')}
+              className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
+            >
+              <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/40 transition-colors duration-300">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
               </div>
+              <span className="font-medium">返回主页</span>
+            </button>
+
+            {/* 中间：标题与季信息 */}
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center">
+                  <TreePine className="w-5 h-5 text-purple-400" />
+                </div>
+                <h2 className="text-lg font-semibold text-white">个人探索基地</h2>
+              </div>
+              <div className="text-sm text-purple-200 hidden sm:block">{currentSeason.title}</div>
             </div>
+
+            {/* 右侧：快捷入口与登出 */}
             <div className="flex items-center space-x-4">
-              <span className="text-gray-300">
-                {user?.user_metadata?.full_name || user?.email}
-              </span>
+              <button
+                onClick={() => (window.location.href = '/alliance')}
+                className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
+              >
+                <span className="font-medium">探索者联盟</span>
+                <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/40 transition-colors duration-300">
+                  <Users className="w-5 h-5 text-purple-400" />
+                </div>
+              </button>
               <button
                 onClick={handleLogout}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="flex items-center space-x-2 text-red-300 hover:text-red-200 transition-colors duration-300 group"
               >
-                <LogOut className="w-5 h-5" />
+                <span className="font-medium">登出</span>
+                <div className="w-8 h-8 bg-red-600/20 rounded-full flex items-center justify-center group-hover:bg-red-600/40 transition-colors duration-300">
+                  <LogOut className="w-5 h-5 text-red-400" />
+                </div>
               </button>
             </div>
           </div>
         </div>
-      </header>
+      </motion.nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -242,7 +303,7 @@ export default function PortalPage() {
                         ? 'bg-green-500/10 border-green-500/30' 
                         : 'bg-white/5 border-white/10 hover:border-white/20'
                     } transition-colors cursor-pointer`}
-                    onClick={() => !task.completed && handleTaskComplete(task.id)}
+                                         onClick={() => handleTaskComplete(task.id)}
                   >
                     <div className="flex items-center">
                       {task.completed ? (
@@ -426,24 +487,48 @@ export default function PortalPage() {
               <h3 className="text-lg font-semibold text-white mb-4">快速行动</h3>
 
               <div className="space-y-3">
-                <button className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+                <button 
+                  onClick={() => router.push('/progress')}
+                  className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors group"
+                >
                   <div className="flex items-center">
-                    <Calendar className="w-5 h-5 text-blue-400 mr-3" />
-                    <span className="text-white">查看学习历程</span>
+                    <Calendar className="w-5 h-5 text-blue-400 mr-3 group-hover:text-blue-300 transition-colors" />
+                    <span className="text-white group-hover:text-blue-200 transition-colors">查看学习历程</span>
+                  </div>
+                  <div className="w-5 h-5 text-gray-400 group-hover:text-blue-300 transition-colors">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </button>
 
-                <button className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+                <button 
+                  onClick={() => router.push('/alliance')}
+                  className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors group"
+                >
                   <div className="flex items-center">
-                    <Users className="w-5 h-5 text-green-400 mr-3" />
-                    <span className="text-white">探索者联盟</span>
+                    <Users className="w-5 h-5 text-green-400 mr-3 group-hover:text-green-300 transition-colors" />
+                    <span className="text-white group-hover:text-green-200 transition-colors">探索者联盟</span>
+                  </div>
+                  <div className="w-5 h-5 text-gray-400 group-hover:text-green-300 transition-colors">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </button>
 
-                <button className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+                <button 
+                  onClick={() => router.push('/insights')}
+                  className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors group"
+                >
                   <div className="flex items-center">
-                    <Leaf className="w-5 h-5 text-purple-400 mr-3" />
-                    <span className="text-white">分享洞见</span>
+                    <Leaf className="w-5 h-5 text-purple-400 mr-3 group-hover:text-purple-300 transition-colors" />
+                    <span className="text-white group-hover:text-purple-200 transition-colors">分享洞见</span>
+                  </div>
+                  <div className="w-5 h-5 text-gray-400 group-hover:text-purple-300 transition-colors">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </button>
               </div>
