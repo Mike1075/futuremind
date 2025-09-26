@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Users, Calendar, MessageSquare, FileText, ArrowLeft, Target } from 'lucide-react';
@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { ExplorerGuild, GuildMember, GuildActivity } from '@/types/alliance';
 import { GuildStatus, MemberRole, InvitationResponse, ActivityType } from '@/types/alliance';
 
-export default function GuildDetailPage() {
+function GuildDetailContent() {
   const params = useParams();
   const router = useRouter();
   const guildId = params.id as string;
@@ -391,5 +391,17 @@ export default function GuildDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function GuildDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
+      </div>
+    }>
+      <GuildDetailContent />
+    </Suspense>
   );
 }
