@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import { env } from './env'
 
 export type Database = {
   public: {
@@ -383,4 +382,8 @@ export type Database = {
   }
 }
 
-export const supabase = createClient<Database>(env.supabaseUrl, env.supabaseAnonKey)
+// 使用环境变量创建 Supabase 客户端，构建时允许缺失
+export const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+)

@@ -40,5 +40,7 @@ export function validateEnvVars() {
   };
 }
 
-// 在应用启动时验证环境变量
-export const env = validateEnvVars();
+// 延迟验证环境变量，避免构建时错误
+export function getEnv() {
+  return validateEnvVars();
+}
