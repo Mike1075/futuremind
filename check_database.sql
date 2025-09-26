@@ -47,3 +47,4 @@ SELECT
     session_user as session_user,
     current_setting('role') as current_role;
 
+
