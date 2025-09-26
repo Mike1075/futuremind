@@ -317,34 +317,3 @@ export interface GuildNotification {
   action_url?: string;
 }
 
-// 导出所有类型
-export type {
-  ExplorerGuild,
-  GuildMember,
-  InterestGravityField,
-  MysticalInvitation,
-  GuildActivity,
-  GuildAchievement,
-  GuildOverview,
-  UserGuildStatus,
-  RecommendedGuild,
-  CreateGuildRequest,
-  UpdateGuildRequest,
-  SendInvitationRequest,
-  RespondInvitationRequest,
-  JoinGuildRequest,
-  CreateActivityRequest,
-  CreateAchievementRequest,
-  GuildStats,
-  UserInterestAnalysis,
-  GuildMatchResult,
-  GuildMessage,
-  GuildProject,
-  ProjectMilestone,
-  AllianceError,
-  ApiResponse,
-  PaginationParams,
-  PaginatedResponse,
-  GuildSearchParams,
-  GuildNotification
-};
