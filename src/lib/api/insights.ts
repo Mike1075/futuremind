@@ -104,7 +104,7 @@ export class InsightsAPI {
     
     const { data: insight, error } = await this.supabase
       .from('insights')
-      .insert([insertData])
+      .insert([insertData] as Database['public']['Tables']['insights']['Insert'][])
       .select()
       .single();
 
@@ -117,7 +117,7 @@ export class InsightsAPI {
     const { id, ...updateData } = data;
     const { data: insight, error } = await this.supabase
       .from('insights')
-      .update(updateData)
+      .update(updateData as Database['public']['Tables']['insights']['Update'])
       .eq('id', id)
       .select()
       .single();
