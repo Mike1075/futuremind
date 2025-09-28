@@ -443,6 +443,22 @@ export default function PortalPage() {
                 completedTasks={completedTasks}
                 className="w-full"
               />
+              <div className="mt-4">
+                <button
+                  onClick={() => router.push('/simple-tree')}
+                  className="w-full flex items-center justify-center p-3 bg-gradient-to-r from-green-600/20 to-blue-600/20 hover:from-green-600/30 hover:to-blue-600/30 rounded-lg border border-green-500/30 transition-all duration-300 group"
+                >
+                  <TreePine className="w-5 h-5 text-green-400 mr-2 group-hover:text-green-300 transition-colors" />
+                  <span className="text-green-300 group-hover:text-green-200 transition-colors font-medium">
+                    查看完整意识树
+                  </span>
+                  <div className="w-4 h-4 ml-2 text-green-400 group-hover:text-green-300 transition-colors">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              </div>
             </motion.div>
 
             {/* Growth Stats */}

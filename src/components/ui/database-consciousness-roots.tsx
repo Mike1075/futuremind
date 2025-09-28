@@ -893,7 +893,7 @@ export function DatabaseConsciousnessRoots() {
   }
 
   return (
-    <div className="w-full h-screen overflow-hidden">
+    <div className="w-full h-full overflow-hidden relative bg-transparent">
       <canvas
         ref={canvasRef}
         className="absolute inset-0"
