@@ -68,6 +68,15 @@ export function DatabaseConsciousnessRoots() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
   const [hoveredDomain, setHoveredDomain] = useState<string | null>(null)
 
+  // 标准化数据库分数到0-1范围
+  const normalizeScore = (score: number): number => {
+    // 如果分数大于1，说明是旧的大数值系统，需要标准化
+    if (score > 1) {
+      return Math.min(1.0, score / 20.0) // 除以20来标准化，最大不超过1
+    }
+    return score // 已经是0-1范围的正确值
+  }
+
   // 加载数据库领域数据
   useEffect(() => {
     const loadDomainData = async () => {
@@ -77,54 +86,123 @@ export function DatabaseConsciousnessRoots() {
         if (result.success && result.data) {
           setDomainScores(result.data.domain_scores)
 
-          // 更新领域状态，使用数据库的深度分数
+          // 更新领域状态，标准化数据库的深度分数到0-1范围
+
+          const selfScore = normalizeScore(result.data.domain_scores.self_awareness.depth_score)
+          const lifeScore = normalizeScore(result.data.domain_scores.life_sciences.depth_score)
+          const universalScore = normalizeScore(result.data.domain_scores.universal_laws.depth_score)
+          const creativeScore = normalizeScore(result.data.domain_scores.creative_expression.depth_score)
+          const socialScore = normalizeScore(result.data.domain_scores.social_connection.depth_score)
+
           setDomains(prev => ({
             self_awareness: {
               ...prev.self_awareness,
-              db_score: result.data.domain_scores.self_awareness.depth_score,
-              depth: Math.floor(result.data.domain_scores.self_awareness.depth_score * 20) // 转换为深度等级
+              db_score: selfScore,
+              depth: Math.floor(selfScore * 100) // 转换为深度等级 (0-100)
             },
             life_sciences: {
               ...prev.life_sciences,
-              db_score: result.data.domain_scores.life_sciences.depth_score,
-              depth: Math.floor(result.data.domain_scores.life_sciences.depth_score * 20)
+              db_score: lifeScore,
+              depth: Math.floor(lifeScore * 100)
             },
             universal_laws: {
               ...prev.universal_laws,
-              db_score: result.data.domain_scores.universal_laws.depth_score,
-              depth: Math.floor(result.data.domain_scores.universal_laws.depth_score * 20)
+              db_score: universalScore,
+              depth: Math.floor(universalScore * 100)
             },
             creative_expression: {
               ...prev.creative_expression,
-              db_score: result.data.domain_scores.creative_expression.depth_score,
-              depth: Math.floor(result.data.domain_scores.creative_expression.depth_score * 20)
+              db_score: creativeScore,
+              depth: Math.floor(creativeScore * 100)
             },
             social_connection: {
               ...prev.social_connection,
-              db_score: result.data.domain_scores.social_connection.depth_score,
-              depth: Math.floor(result.data.domain_scores.social_connection.depth_score * 20)
+              db_score: socialScore,
+              depth: Math.floor(socialScore * 100)
             }
           }))
         } else {
           // 使用默认值
-          setDomainScores({
+          const defaultScores = {
             self_awareness: { depth_score: 0.3 },
             life_sciences: { depth_score: 0.2 },
             universal_laws: { depth_score: 0.4 },
             creative_expression: { depth_score: 0.5 },
             social_connection: { depth_score: 0.3 }
-          })
+          }
+          setDomainScores(defaultScores)
+
+          // 更新 domains 状态
+          setDomains(prev => ({
+            self_awareness: {
+              ...prev.self_awareness,
+              db_score: 0.3,
+              depth: 30 // 30%
+            },
+            life_sciences: {
+              ...prev.life_sciences,
+              db_score: 0.2,
+              depth: 20 // 20%
+            },
+            universal_laws: {
+              ...prev.universal_laws,
+              db_score: 0.4,
+              depth: 40 // 40%
+            },
+            creative_expression: {
+              ...prev.creative_expression,
+              db_score: 0.5,
+              depth: 50 // 50%
+            },
+            social_connection: {
+              ...prev.social_connection,
+              db_score: 0.3,
+              depth: 30 // 30%
+            }
+          }))
+
         }
       } catch (error) {
         console.error('加载领域数据失败:', error)
         // 使用默认值
-        setDomainScores({
+        const defaultScores = {
           self_awareness: { depth_score: 0.3 },
           life_sciences: { depth_score: 0.2 },
           universal_laws: { depth_score: 0.4 },
           creative_expression: { depth_score: 0.5 },
           social_connection: { depth_score: 0.3 }
-        })
+        }
+        setDomainScores(defaultScores)
+
+        // 更新 domains 状态
+        setDomains(prev => ({
+          self_awareness: {
+            ...prev.self_awareness,
+            db_score: 0.3,
+            depth: 30 // 30%
+          },
+          life_sciences: {
+            ...prev.life_sciences,
+            db_score: 0.2,
+            depth: 20 // 20%
+          },
+          universal_laws: {
+            ...prev.universal_laws,
+            db_score: 0.4,
+            depth: 40 // 40%
+          },
+          creative_expression: {
+            ...prev.creative_expression,
+            db_score: 0.5,
+            depth: 50 // 50%
+          },
+          social_connection: {
+            ...prev.social_connection,
+            db_score: 0.3,
+            depth: 30 // 30%
+          }
+        }))
+
       } finally {
         setIsLoading(false)
       }
@@ -209,6 +287,75 @@ export function DatabaseConsciousnessRoots() {
     proba4: tree.proba4,
     deviation: 0.65, // 固定偏差值，不再随机
   })
+
+  // 根据数据库数值自动生成初始根系
+  const generateInitialRoots = (scores: Record<string, { depth_score: number }>) => {
+    console.log('开始生成初始根系', scores)
+    // 等待树初始化完成
+    setTimeout(() => {
+      Object.entries(scores).forEach(([domainKey, data]) => {
+        const normalizedScore = normalizeScore(data.depth_score)
+        const branchCount = Math.floor(normalizedScore * 10) // 0-10个分支
+        console.log(`${domainKey}: 分数=${data.depth_score}, 标准化=${normalizedScore}, 分支数=${branchCount}`)
+
+        // 为每个领域生成相应数量的分支
+        for (let i = 0; i < branchCount; i++) {
+          setTimeout(() => {
+            autoCreateDomainBranch(domainKey)
+          }, i * 200) // 每200ms生成一个分支，创造生长动画效果
+        }
+      })
+    }, 1000) // 等待1秒让主干完成初始生长
+  }
+
+  // 自动创建领域分支（不依赖depth计数器）
+  const autoCreateDomainBranch = (domainKey: string) => {
+    if (!treeRef.current) return
+
+    const tree = treeRef.current
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    // 找到主干（可能已经死亡或还活着）
+    const mainTrunk = tree.branches.find(b => b.gen === 1)
+    if (!mainTrunk) {
+      console.log('Main trunk not found')
+      return
+    }
+
+    // Domain-specific branch angles for visual separation - 五个固定角度
+    const getDomainAngle = (domainKey: string): number => {
+      const staticAngles: Record<string, number> = {
+        self_awareness: -0.6,      // 左侧
+        life_sciences: -0.3,       // 左中
+        universal_laws: 0,         // 中央
+        creative_expression: 0.3,  // 右中
+        social_connection: 0.6     // 右侧
+      }
+
+      return staticAngles[domainKey] || 0
+    }
+
+    const domainAngle = getDomainAngle(domainKey)
+    const currentDomain = domains[domainKey]
+
+    // Create domain branch
+    const domainBranch = createBranch(
+      { x: mainTrunk.position.x, y: mainTrunk.position.y },
+      mainTrunk.stw * 0.65,
+      domainAngle,
+      2, // Second generation
+      tree.index++,
+      tree,
+      maxlife * 0.7
+    )
+
+    domainBranch.domainColor = currentDomain.color
+    domainBranch.isDomainRoot = true
+
+    tree.branches.push(domainBranch)
+    console.log(`自动创建 ${domainKey} 分支`)
+  }
 
   // 从主干末端创建领域分支 - 基于数据库深度分数
   const addDomainBranch = (domainKey: string) => {
@@ -660,7 +807,15 @@ export function DatabaseConsciousnessRoots() {
 
     // Create root system
     treeRef.current = createTree(canvas.width, canvas.height)
-  }, [])
+
+    // 树创建完成后，触发自动生长（如果有数据的话）
+    if (domainScores && Object.keys(domainScores).length > 0) {
+      console.log('树创建完成，开始自动生长', domainScores)
+      generateInitialRoots(domainScores)
+    } else {
+      console.log('树创建完成，但暂无领域数据')
+    }
+  }, [domainScores])
 
   const draw = useCallback(() => {
     if (!canvasRef.current || !treeRef.current) return
@@ -682,26 +837,21 @@ export function DatabaseConsciousnessRoots() {
       }
     })
 
-    // Continue animation with elegant frame rate
-    if (hasAliveBranches) {
-      setTimeout(() => {
-        animationRef.current = requestAnimationFrame(draw)
-      }, 1000 / 90) // Smooth 90fps
-    }
+    // 动画循环现在由useEffect中的startAnimation处理
   }, [])
 
-  const handleClick = () => {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current)
-    }
-    setup()
-    draw()
-  }
 
   useEffect(() => {
     if (!isLoading && domainScores) {
       setup()
-      draw()
+      // 立即开始动画循环（90fps）
+      const startAnimation = () => {
+        draw()
+        setTimeout(() => {
+          animationRef.current = requestAnimationFrame(startAnimation)
+        }, 1000 / 90) // 90fps
+      }
+      startAnimation()
     }
 
     const handleResize = () => {
@@ -710,7 +860,14 @@ export function DatabaseConsciousnessRoots() {
       }
       if (!isLoading && domainScores) {
         setup()
-        draw()
+        // 重新开始动画循环（90fps）
+        const startAnimation = () => {
+          draw()
+          setTimeout(() => {
+            animationRef.current = requestAnimationFrame(startAnimation)
+          }, 1000 / 90) // 90fps
+        }
+        startAnimation()
       }
     }
 
@@ -739,8 +896,7 @@ export function DatabaseConsciousnessRoots() {
     <div className="w-full h-screen overflow-hidden">
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 cursor-pointer"
-        onClick={handleClick}
+        className="absolute inset-0"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => {
           setHoveredDomain(null)
@@ -759,11 +915,9 @@ export function DatabaseConsciousnessRoots() {
           >
             <div className="flex items-center justify-between">
               <span>{domain.name}</span>
-              <span className="text-xs text-gray-500">{(domain.db_score * 100).toFixed(0)}%</span>
             </div>
-            <div className="text-xs text-gray-500 mt-1 flex justify-between">
+            <div className="text-xs text-gray-500 mt-1">
               <span>深度: {domain.depth}</span>
-              <span>DB: {domain.db_score.toFixed(2)}</span>
             </div>
           </button>
         ))}
@@ -787,7 +941,7 @@ export function DatabaseConsciousnessRoots() {
             <span>{domains[hoveredDomain]?.name}</span>
           </div>
           <div className="text-xs text-gray-300 mt-1">
-            深度: {domains[hoveredDomain]?.depth} | 数据库分数: {domains[hoveredDomain]?.db_score.toFixed(2)}
+            深度: {domains[hoveredDomain]?.depth}
           </div>
         </div>
       )}
