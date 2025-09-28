@@ -19,7 +19,11 @@
       "Bash(supabase init:*)",
       "Bash(supabase link:*)",
       "Bash(supabase db push:*)",
-      "mcp__supabase__list_migrations"
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__get_project_url",
+      "WebSearch",
+      "WebFetch(domain:supabase.com)",
+      "mcp__supabase__list_edge_functions"
     ],
     "deny": [],
     "ask": []

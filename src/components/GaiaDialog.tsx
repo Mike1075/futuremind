@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Sparkles, UploadCloud } from 'lucide-react'
+import { X, Send, Sparkles, UploadCloud, MessageSquare } from 'lucide-react'
 import UploadToGaia from '@/components/UploadToGaia'
+import ConversationManager from '@/components/ConversationManager'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
 
 // 使用从 GaiaAPI 导入的 ChatMessage 类型
@@ -15,6 +16,8 @@ interface GaiaDialogProps {
 
 export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   const [userId, setUserId] = useState<string | 'guest'>('guest')
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
+  const [conversationTitle, setConversationTitle] = useState<string>('新对话')
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -28,6 +31,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showUpload, setShowUpload] = useState(false)
+  const [showConversationManager, setShowConversationManager] = useState(false)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -66,16 +70,64 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     }
   }, [isOpen])
 
-  // 加载聊天记录
+  // 切换到特定对话
+  const switchToConversation = async (conversationId: string) => {
+    try {
+      setIsLoading(true)
+      console.log('切换到对话:', conversationId)
+
+      const result = await GaiaAPI.getConversation(conversationId)
+      if (result.success && result.data) {
+        setCurrentConversationId(conversationId)
+        setConversationTitle(result.data.title)
+
+        // 如果对话有消息，加载消息，否则只显示默认消息
+        if (result.data.messages.length > 0) {
+          setMessages(result.data.messages)
+        } else {
+          setMessages([{
+            id: '1',
+            content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
+            isGaia: true,
+            timestamp: new Date()
+          }])
+        }
+
+        console.log(`成功切换到对话 "${result.data.title}"，包含 ${result.data.messages.length} 条消息`)
+      } else {
+        console.error('切换对话失败:', result.error)
+      }
+    } catch (error) {
+      console.error('切换对话失败:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 加载聊天记录（支持多对话系统）
   const loadChatHistory = async () => {
     try {
       console.log('开始从 Supabase 加载聊天记录...')
       const result = await GaiaAPI.getChatHistory()
-      
+
       if (result.success && result.data) {
         console.log(`成功从 Supabase 加载聊天记录，包含 ${result.data.messages.length} 条消息`)
+
+        // 设置当前对话信息
+        setCurrentConversationId(result.data.id)
+        setConversationTitle(result.data.title)
+
+        // 加载消息
         if (result.data.messages.length > 0) {
           setMessages(result.data.messages)
+        } else {
+          // 如果没有消息，保留默认的欢迎消息
+          setMessages([{
+            id: '1',
+            content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
+            isGaia: true,
+            timestamp: new Date()
+          }])
         }
       } else {
         console.log('没有找到聊天记录或加载失败:', result.error)
@@ -85,13 +137,21 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     }
   }
 
-  // 保存聊天记录到 Supabase
+  // 保存聊天记录到 Supabase（支持多对话系统）
   const saveChatHistory = async (msgs: ChatMessage[]) => {
     try {
       console.log('开始保存聊天记录到 Supabase...')
       const slice = msgs.slice(-50) // 只保留最近 50 条
-      const result = await GaiaAPI.saveChatHistory(slice)
-      
+
+      let result;
+      if (currentConversationId) {
+        // 保存到特定对话
+        result = await GaiaAPI.saveConversationMessages(currentConversationId, slice)
+      } else {
+        // 使用旧的保存方式（会自动创建或更新最新对话）
+        result = await GaiaAPI.saveChatHistory(slice)
+      }
+
       if (result.success) {
         console.log(`成功保存聊天记录到 Supabase，消息数量: ${slice.length}`)
       } else {
@@ -249,11 +309,18 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-white">与盖亚对话</h2>
+                  <h2 className="text-xl font-semibold text-white">{conversationTitle}</h2>
                   <p className="text-sm text-purple-200">你的意识觉醒导师</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowConversationManager(true)}
+                  className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
+                  title="管理对话"
+                >
+                  <MessageSquare className="w-4 h-4" /> 对话
+                </button>
                 <button
                   onClick={() => setShowUpload(true)}
                   className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
@@ -263,12 +330,18 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 </button>
                 <button
                   onClick={async () => {
+                    if (!confirm('确定要清除所有聊天记录吗？这将删除所有对话。')) return
+
                     try {
                       console.log('开始清除 Supabase 中的聊天记录...')
                       const result = await GaiaAPI.clearChatHistory()
-                      
+
                       if (result.success) {
                         console.log('成功清除 Supabase 中的聊天记录')
+
+                        // 重置所有对话状态
+                        setCurrentConversationId(null)
+                        setConversationTitle('新对话')
                         setMessages([{
                           id: '1',
                           content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
@@ -285,7 +358,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                     }
                   }}
                   className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2"
-                  title="清除聊天记录"
+                  title="清除所有聊天记录"
                 >
                   清除记录
                 </button>
@@ -393,6 +466,14 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             </div>
             <UploadToGaia isOpen={showUpload} onClose={() => setShowUpload(false)} />
           </motion.div>
+
+          {/* Conversation Manager */}
+          <ConversationManager
+            isOpen={showConversationManager}
+            onClose={() => setShowConversationManager(false)}
+            onSelectConversation={switchToConversation}
+            currentConversationId={currentConversationId || undefined}
+          />
         </>
       )}
     </AnimatePresence>

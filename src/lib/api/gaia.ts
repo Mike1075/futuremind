@@ -10,9 +10,23 @@ export interface ChatMessage {
 export interface ChatConversation {
   id: string
   user_id: string
+  title: string
   messages: ChatMessage[]
+  message_count: number
+  is_active: boolean
   created_at: string
   updated_at: string
+}
+
+export interface ConversationSummary {
+  id: string
+  user_id: string
+  title: string
+  message_count: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  last_message: string
 }
 
 class GaiaAPI {
@@ -24,8 +38,79 @@ class GaiaAPI {
     return user
   }
 
-  // 获取用户的聊天记录
-  async getChatHistory(): Promise<{ success: boolean; data?: ChatConversation; error?: string }> {
+  // === 多对话管理方法 ===
+
+  // 获取用户的所有对话列表
+  async getConversationList(): Promise<{ success: boolean; data?: ConversationSummary[]; error?: string }> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, error: '用户未登录' }
+      }
+
+      const { data, error } = await this.supabase
+        .from('conversation_summary')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false })
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data: data || [] }
+    } catch (error) {
+      console.error('获取对话列表失败:', error)
+      return { success: false, error: '获取对话列表失败' }
+    }
+  }
+
+  // 创建新对话
+  async createNewConversation(title?: string): Promise<{ success: boolean; data?: ChatConversation; error?: string }> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, error: '用户未登录' }
+      }
+
+      const newConversation = {
+        user_id: user.id,
+        title: title || '新对话',
+        messages: [],
+        is_active: true
+      }
+
+      const { data, error } = await this.supabase
+        .from('gaia_conversations')
+        .insert(newConversation)
+        .select()
+        .single()
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      const convertedData: ChatConversation = {
+        id: data.id,
+        user_id: data.user_id,
+        title: data.title,
+        messages: [],
+        message_count: 0,
+        is_active: data.is_active,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      }
+
+      return { success: true, data: convertedData }
+    } catch (error) {
+      console.error('创建新对话失败:', error)
+      return { success: false, error: '创建新对话失败' }
+    }
+  }
+
+  // 获取特定对话
+  async getConversation(conversationId: string): Promise<{ success: boolean; data?: ChatConversation; error?: string }> {
     try {
       const user = await this.getCurrentUser()
       if (!user) {
@@ -35,66 +120,69 @@ class GaiaAPI {
       const { data, error } = await this.supabase
         .from('gaia_conversations')
         .select('*')
+        .eq('id', conversationId)
         .eq('user_id', user.id)
+        .eq('is_active', true)
         .single()
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // 没有找到记录，返回空记录
-          return { 
-            success: true, 
-            data: {
-              id: '',
-              user_id: user.id,
-              messages: [],
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }
-          }
-        }
         return { success: false, error: error.message }
       }
 
-      // 转换消息格式
-      const base = (typeof data === 'object' && data !== null ? data : {}) as Record<string, unknown>;
-      const rawMessages = Array.isArray((base as { messages?: unknown }).messages)
-        ? ((base as { messages?: unknown[] }).messages as Record<string, unknown>[])
-        : [];
-      const normalizedMessages: ChatMessage[] = rawMessages.map((msg: Record<string, unknown>) => {
-        const ts = (msg as { timestamp?: string }).timestamp;
-        const idVal = (msg as { id?: unknown }).id;
-        const contentVal =
-          (msg as { content?: unknown }).content ??
-          (msg as { text?: unknown }).text ??
-          '';
-        const isGaiaVal =
-          (msg as { isGaia?: unknown }).isGaia ??
-          (msg as { is_gaia?: unknown }).is_gaia ??
-          ((msg as { from?: unknown }).from === 'gaia');
-        return {
-          id: typeof idVal === 'string' ? idVal : String(Date.now()),
-          content: String(contentVal),
-          isGaia: Boolean(isGaiaVal),
-          timestamp: ts ? new Date(ts) : new Date(),
-        };
-      });
+      // 转换消息格式（复用现有逻辑）
+      const rawMessages = Array.isArray(data.messages) ? data.messages : []
+      const normalizedMessages: ChatMessage[] = rawMessages.map((msg: any) => ({
+        id: typeof msg.id === 'string' ? msg.id : String(Date.now()),
+        content: String(msg.content || msg.text || ''),
+        isGaia: Boolean(msg.isGaia ?? msg.is_gaia ?? (msg.from === 'gaia')),
+        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+      }))
+
       const convertedData: ChatConversation = {
-        id: (base.id as string) ?? '',
-        user_id: (base.user_id as string) ?? user.id,
+        id: data.id,
+        user_id: data.user_id,
+        title: data.title,
         messages: normalizedMessages,
-        created_at: (base.created_at as string) ?? new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        message_count: data.message_count || 0,
+        is_active: data.is_active,
+        created_at: data.created_at,
+        updated_at: data.updated_at
       }
 
       return { success: true, data: convertedData }
     } catch (error) {
-      console.error('获取聊天记录失败:', error)
-      return { success: false, error: '获取聊天记录失败' }
+      console.error('获取对话失败:', error)
+      return { success: false, error: '获取对话失败' }
     }
   }
 
-  // 保存聊天记录
-  async saveChatHistory(messages: ChatMessage[]): Promise<{ success: boolean; error?: string }> {
+  // 删除对话（软删除）
+  async deleteConversation(conversationId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, error: '用户未登录' }
+      }
+
+      const { error } = await this.supabase
+        .from('gaia_conversations')
+        .update({ is_active: false })
+        .eq('id', conversationId)
+        .eq('user_id', user.id)
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('删除对话失败:', error)
+      return { success: false, error: '删除对话失败' }
+    }
+  }
+
+  // 保存特定对话的聊天记录
+  async saveConversationMessages(conversationId: string, messages: ChatMessage[]): Promise<{ success: boolean; error?: string }> {
     try {
       const user = await this.getCurrentUser()
       if (!user) {
@@ -107,50 +195,122 @@ class GaiaAPI {
         timestamp: msg.timestamp.toISOString()
       }))
 
-      // 检查是否已有记录
+      const { error } = await this.supabase
+        .from('gaia_conversations')
+        .update({
+          messages: serializableMessages,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', conversationId)
+        .eq('user_id', user.id)
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('保存对话消息失败:', error)
+      return { success: false, error: '保存对话消息失败' }
+    }
+  }
+
+  // 获取用户的聊天记录（获取最新的对话，兼容旧版本）
+  async getChatHistory(): Promise<{ success: boolean; data?: ChatConversation; error?: string }> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, error: '用户未登录' }
+      }
+
+      // 获取最新的活跃对话
+      const { data, error } = await this.supabase
+        .from('gaia_conversations')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      if (!data) {
+        // 没有找到记录，创建一个新对话
+        const newConversationResult = await this.createNewConversation('新对话')
+        if (newConversationResult.success && newConversationResult.data) {
+          return { success: true, data: newConversationResult.data }
+        } else {
+          return { success: false, error: newConversationResult.error || '创建新对话失败' }
+        }
+      }
+
+      // 转换消息格式（复用getConversation的逻辑）
+      const rawMessages = Array.isArray(data.messages) ? data.messages : []
+      const normalizedMessages: ChatMessage[] = rawMessages.map((msg: any) => ({
+        id: typeof msg.id === 'string' ? msg.id : String(Date.now()),
+        content: String(msg.content || msg.text || ''),
+        isGaia: Boolean(msg.isGaia ?? msg.is_gaia ?? (msg.from === 'gaia')),
+        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+      }))
+
+      const convertedData: ChatConversation = {
+        id: data.id,
+        user_id: data.user_id,
+        title: data.title,
+        messages: normalizedMessages,
+        message_count: data.message_count || 0,
+        is_active: data.is_active,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      }
+
+      return { success: true, data: convertedData }
+    } catch (error) {
+      console.error('获取聊天记录失败:', error)
+      return { success: false, error: '获取聊天记录失败' }
+    }
+  }
+
+  // 保存聊天记录（保存到最新的活跃对话，兼容旧版本）
+  async saveChatHistory(messages: ChatMessage[]): Promise<{ success: boolean; error?: string }> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, error: '用户未登录' }
+      }
+
+      // 获取最新的活跃对话
       const { data: existing } = await this.supabase
         .from('gaia_conversations')
         .select('id')
         .eq('user_id', user.id)
-        .single()
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
       if (existing) {
-        // 更新现有记录
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (this.supabase as any)
-          .from('gaia_conversations')
-          .update({
-            messages: serializableMessages,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
-
-        if (error) {
-          return { success: false, error: error.message }
-        }
+        // 更新现有对话
+        return await this.saveConversationMessages(existing.id, messages)
       } else {
-        // 创建新记录
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (this.supabase as any)
-          .from('gaia_conversations')
-          .insert({
-            user_id: user.id,
-            messages: serializableMessages
-          })
-
-        if (error) {
-          return { success: false, error: error.message }
+        // 创建新对话
+        const newConversationResult = await this.createNewConversation('新对话')
+        if (newConversationResult.success && newConversationResult.data) {
+          return await this.saveConversationMessages(newConversationResult.data.id, messages)
+        } else {
+          return { success: false, error: newConversationResult.error || '创建新对话失败' }
         }
       }
-
-      return { success: true }
     } catch (error) {
       console.error('保存聊天记录失败:', error)
       return { success: false, error: '保存聊天记录失败' }
     }
   }
 
-  // 清除聊天记录
+  // 清除所有聊天记录（软删除，设置为非活跃）
   async clearChatHistory(): Promise<{ success: boolean; error?: string }> {
     try {
       const user = await this.getCurrentUser()
@@ -160,7 +320,7 @@ class GaiaAPI {
 
       const { error } = await this.supabase
         .from('gaia_conversations')
-        .delete()
+        .update({ is_active: false })
         .eq('user_id', user.id)
 
       if (error) {
