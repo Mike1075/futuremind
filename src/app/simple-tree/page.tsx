@@ -1,11 +1,9 @@
 'use client'
 
-import { SimpleTree } from '@/components/ui/simple-growth-tree'
+import { DatabaseConsciousnessRoots } from '@/components/ui/database-consciousness-roots'
 
 export default function SimpleTreePage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SimpleTree />
-    </div>
+    <DatabaseConsciousnessRoots />
   )
 }
