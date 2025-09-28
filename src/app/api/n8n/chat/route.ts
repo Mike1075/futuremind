@@ -25,6 +25,9 @@ export async function POST(req: NextRequest) {
       content: message,
       project_id: project_id || '',
       user_id: userId || 'guest',
+      // 添加回调URL，让n8n知道如何保存对话记录
+      callback_url: `${req.nextUrl.origin}/api/n8n/chat-callback`,
+      user_message: message, // 明确标识用户消息
     }
     const res = await fetch(N8N_CHAT_WEBHOOK, {
       method: 'POST',

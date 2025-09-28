@@ -14,7 +14,7 @@ interface GaiaDialogProps {
 }
 
 export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
-  const [, setUserId] = useState<string | 'guest'>('guest')
+  const [userId, setUserId] = useState<string | 'guest'>('guest')
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -114,15 +114,21 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
 
     const newMessages = [...messages, userMessage]
     setMessages(newMessages)
+
+    // 先保存用户消息
     await saveChatHistory(newMessages)
-    
+
     setInputValue('')
     setIsTyping(true)
     try {
       const res = await fetch('/api/n8n/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage.content })
+        body: JSON.stringify({
+          message: userMessage.content,
+          user_message: userMessage.content,
+          user_id: userId
+        })
       })
       const data = await res.json().catch(() => ({}))
       
@@ -192,6 +198,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       const updatedMessages = [...newMessages, gaiaMessage]
       setMessages(updatedMessages)
       await saveChatHistory(updatedMessages)
+
     } catch {
       const gaiaMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -202,6 +209,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       const updatedMessages = [...newMessages, gaiaMessage]
       setMessages(updatedMessages)
       await saveChatHistory(updatedMessages)
+
     } finally {
       setIsTyping(false)
     }

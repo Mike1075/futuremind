@@ -9,9 +9,23 @@
       "Bash(node:*)",
       "Bash(npm run build:*)",
       "Bash(curl:*)",
-      "Bash(npm:*)"
+      "Bash(npm:*)",
+      "Bash(supabase status:*)",
+      "Read(//Users/mikeliu/Desktop/dressmi/dressmi_1/docs/mcp安装/**)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__apply_migration",
+      "Bash(supabase functions:*)",
+      "Bash(supabase init:*)",
+      "Bash(supabase link:*)",
+      "Bash(supabase db push:*)",
+      "mcp__supabase__list_migrations"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }
