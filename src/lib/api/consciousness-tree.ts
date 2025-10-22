@@ -30,7 +30,11 @@ export interface ConsciousnessTreeView {
   branches_and_leaves: {
     total_leaves: number
   }
-  fruits: any[]
+  fruits: Array<{
+    id: string
+    type: string
+    value: string | number
+  }>
   last_updated: string | null
 }
 
@@ -76,13 +80,13 @@ class ConsciousnessTreeAPI {
         .from('profiles')
         .select('consciousness_tree_view')
         .eq('id', user.id)
-        .single()
+        .single<{ consciousness_tree_view: ConsciousnessTreeView }>()
 
       if (error) {
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: data.consciousness_tree_view }
+      return { success: true, data: data?.consciousness_tree_view }
     } catch (error) {
       console.error('获取意识树视图失败:', error)
       return { success: false, error: '获取意识树视图失败' }
@@ -161,7 +165,7 @@ class ConsciousnessTreeAPI {
   }
 
   // 手动更新意识树（用于测试）
-  async manualUpdateTree(growthScores: GrowthScores): Promise<{ success: boolean; data?: any; error?: string }> {
+  async manualUpdateTree(growthScores: GrowthScores): Promise<{ success: boolean; data?: DomainScores; error?: string }> {
     try {
       const user = await this.getCurrentUser()
       if (!user) {
@@ -169,11 +173,11 @@ class ConsciousnessTreeAPI {
       }
 
       // 调用数据库RPC函数
-      const { data, error } = await this.supabase
-        .rpc('update_exploration_and_tree_view', {
-          p_user_id: user.id,
-          p_growth_scores_json: growthScores
-        })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (this.supabase.rpc as any)('update_exploration_and_tree_view', {
+        p_user_id: user.id,
+        p_growth_scores_json: growthScores
+      })
 
       if (error) {
         return { success: false, error: error.message }
@@ -201,7 +205,7 @@ class ConsciousnessTreeAPI {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .single<{ messages: unknown[] }>()
 
       if (error && error.code !== 'PGRST116') {
         return { success: false, should_evaluate: false, error: error.message }

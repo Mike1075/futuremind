@@ -7,6 +7,16 @@ export interface ChatMessage {
   timestamp: Date
 }
 
+interface RawMessageData {
+  id?: string | number
+  content?: string
+  text?: string
+  isGaia?: boolean
+  is_gaia?: boolean
+  from?: string
+  timestamp?: string | Date
+}
+
 export interface ChatConversation {
   id: string
   user_id: string
@@ -83,9 +93,17 @@ class GaiaAPI {
 
       const { data, error } = await this.supabase
         .from('gaia_conversations')
-        .insert(newConversation)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(newConversation as any)
         .select()
-        .single()
+        .single<{
+          id: string
+          user_id: string
+          title: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }>()
 
       if (error) {
         return { success: false, error: error.message }
@@ -123,15 +141,24 @@ class GaiaAPI {
         .eq('id', conversationId)
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .single()
+        .single<{
+          id: string
+          user_id: string
+          title: string
+          messages: unknown[]
+          message_count: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }>()
 
       if (error) {
         return { success: false, error: error.message }
       }
 
       // 转换消息格式（复用现有逻辑）
-      const rawMessages = Array.isArray(data.messages) ? data.messages : []
-      const normalizedMessages: ChatMessage[] = rawMessages.map((msg: any) => ({
+      const rawMessages = (Array.isArray(data.messages) ? data.messages : []) as RawMessageData[]
+      const normalizedMessages: ChatMessage[] = rawMessages.map((msg) => ({
         id: typeof msg.id === 'string' ? msg.id : String(Date.now()),
         content: String(msg.content || msg.text || ''),
         isGaia: Boolean(msg.isGaia ?? msg.is_gaia ?? (msg.from === 'gaia')),
@@ -164,8 +191,8 @@ class GaiaAPI {
         return { success: false, error: '用户未登录' }
       }
 
-      const { error } = await this.supabase
-        .from('gaia_conversations')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (this.supabase.from('gaia_conversations') as any)
         .update({ is_active: false })
         .eq('id', conversationId)
         .eq('user_id', user.id)
@@ -195,8 +222,8 @@ class GaiaAPI {
         timestamp: msg.timestamp.toISOString()
       }))
 
-      const { error } = await this.supabase
-        .from('gaia_conversations')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (this.supabase.from('gaia_conversations') as any)
         .update({
           messages: serializableMessages,
           updated_at: new Date().toISOString()
@@ -231,7 +258,16 @@ class GaiaAPI {
         .eq('is_active', true)
         .order('updated_at', { ascending: false })
         .limit(1)
-        .maybeSingle()
+        .maybeSingle<{
+          id: string
+          user_id: string
+          title: string
+          messages: unknown[]
+          message_count: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }>()
 
       if (error) {
         return { success: false, error: error.message }
@@ -248,8 +284,8 @@ class GaiaAPI {
       }
 
       // 转换消息格式（复用getConversation的逻辑）
-      const rawMessages = Array.isArray(data.messages) ? data.messages : []
-      const normalizedMessages: ChatMessage[] = rawMessages.map((msg: any) => ({
+      const rawMessages = (Array.isArray(data.messages) ? data.messages : []) as RawMessageData[]
+      const normalizedMessages: ChatMessage[] = rawMessages.map((msg) => ({
         id: typeof msg.id === 'string' ? msg.id : String(Date.now()),
         content: String(msg.content || msg.text || ''),
         isGaia: Boolean(msg.isGaia ?? msg.is_gaia ?? (msg.from === 'gaia')),
@@ -290,7 +326,7 @@ class GaiaAPI {
         .eq('is_active', true)
         .order('updated_at', { ascending: false })
         .limit(1)
-        .maybeSingle()
+        .maybeSingle<{ id: string }>()
 
       if (existing) {
         // 更新现有对话
@@ -318,8 +354,8 @@ class GaiaAPI {
         return { success: false, error: '用户未登录' }
       }
 
-      const { error } = await this.supabase
-        .from('gaia_conversations')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (this.supabase.from('gaia_conversations') as any)
         .update({ is_active: false })
         .eq('user_id', user.id)
 

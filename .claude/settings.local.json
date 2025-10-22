@@ -35,7 +35,10 @@
       "Bash(claude --version)",
       "Bash(claude mcp remove:*)",
       "Bash(claude mcp add:*)",
-      "Read(//Users/mikeliu/Library/Developer/Xcode/DerivedData/**)"
+      "Read(//Users/mikeliu/Library/Developer/Xcode/DerivedData/**)",
+      "Bash(gh repo fork:*)",
+      "Bash(git config:*)",
+      "Bash(git remote set-url:*)"
     ],
     "deny": [],
     "ask": []

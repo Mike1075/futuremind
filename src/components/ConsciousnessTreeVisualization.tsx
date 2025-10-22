@@ -74,7 +74,7 @@ const CONSCIOUSNESS_DOMAINS = {
 
 export default function ConsciousnessTreeVisualization() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animationRef = useRef<number>()
+  const animationRef = useRef<number | undefined>(undefined)
   const [isGrowing, setIsGrowing] = useState(false)
   const [hoveredDomain, setHoveredDomain] = useState<string | null>(null)
   const [mousePos, setMousePos] = useState<Vector2D>({ x: 0, y: 0 })

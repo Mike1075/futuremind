@@ -6,6 +6,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import consciousnessTreeAPI from '@/lib/api/consciousness-tree'
 
+interface DomainTreeData {
+  id: string
+  domain_type: string
+  title: string
+  current_depth: number
+  max_depth: number
+}
+
 interface TreeNode {
   id: string
   level: number
@@ -28,7 +36,7 @@ export default function ConsciousnessTree({
   className = ''
 }: ConsciousnessTreeProps) {
   const router = useRouter()
-  const [treeData, setTreeData] = useState<any[]>([])
+  const [treeData, setTreeData] = useState<DomainTreeData[]>([])
   const [loading, setLoading] = useState(true)
 
   // completedTasks will be used for future functionality
@@ -91,7 +99,7 @@ export default function ConsciousnessTree({
     const nodes: TreeNode[] = []
 
     // Map database domains to tree nodes
-    const domainTypeMap: Record<string, typeof TreeNode.prototype.type> = {
+    const domainTypeMap: Record<string, TreeNode['type']> = {
       'self_awareness': 'self_awareness',
       'life_sciences': 'life_sciences',
       'universal_laws': 'universal_laws',
