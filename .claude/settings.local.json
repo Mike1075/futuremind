@@ -28,7 +28,14 @@
       "Read(//Users/mikeliu/Desktop/ethan/weilaijiaoyu_tuzi/futuremind/src/components/**)",
       "Read(//Users/mikeliu/Desktop/ethan/weilaijiaoyu_tuzi/futuremind/**)",
       "Bash(npx:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(claude doctor)",
+      "Bash(claude --version)",
+      "Bash(claude mcp remove:*)",
+      "Bash(claude mcp add:*)",
+      "Read(//Users/mikeliu/Library/Developer/Xcode/DerivedData/**)"
     ],
     "deny": [],
     "ask": []

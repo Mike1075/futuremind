@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useCallback, useState } from "react"
-import consciousnessTreeAPI, { DomainScores } from '@/lib/api/consciousness-tree'
+import consciousnessTreeAPI, { ConsciousnessTreeView } from '@/lib/api/consciousness-tree'
 
 interface Vector2D {
   x: number
@@ -52,7 +52,7 @@ export function DatabaseConsciousnessRoots() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number | undefined>(undefined)
   const treeRef = useRef<Tree | null>(null)
-  const [domainScores, setDomainScores] = useState<DomainScores | null>(null)
+  const [treeView, setTreeView] = useState<ConsciousnessTreeView | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // 数据库五个领域配置 - 替换前端小姐姐的科学、艺术、哲学
@@ -66,6 +66,20 @@ export function DatabaseConsciousnessRoots() {
 
   // MOUSE HOVER STATE - 鼠标悬浮状态
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
+
+  // 树干状态管理 - 冥想系统
+  const [trunkThickness, setTrunkThickness] = useState(1.0) // 树干粗细倍数，默认1.0
+  const MAX_TRUNK_THICKNESS = 3.0 // 最大粗细倍数
+  const THICKNESS_INCREMENT = 0.1 // 每次冥想增加的粗细
+
+  // 冥想处理函数
+  const handleMeditation = () => {
+    setTrunkThickness(prev => {
+      const newThickness = Math.min(prev + THICKNESS_INCREMENT, MAX_TRUNK_THICKNESS)
+      console.log(`冥想完成！树干粗细从 ${prev.toFixed(1)} 增加到 ${newThickness.toFixed(1)}`)
+      return newThickness
+    })
+  }
   const [hoveredDomain, setHoveredDomain] = useState<string | null>(null)
 
   // 标准化数据库分数到0-1范围
@@ -77,129 +91,150 @@ export function DatabaseConsciousnessRoots() {
     return score // 已经是0-1范围的正确值
   }
 
-  // 加载数据库领域数据
+  // 加载意识树视图数据
   useEffect(() => {
-    const loadDomainData = async () => {
+    const loadTreeViewData = async () => {
       setIsLoading(true)
       try {
-        const result = await consciousnessTreeAPI.getDomainExploration()
+        const result = await consciousnessTreeAPI.getConsciousnessTreeView()
         if (result.success && result.data) {
-          setDomainScores(result.data.domain_scores)
+          setTreeView(result.data)
 
-          // 更新领域状态，标准化数据库的深度分数到0-1范围
+          // 从意识树视图中提取根部长度数据并更新领域状态
+          const rootsData = result.data.roots.main_roots
+          const rootsMap = rootsData.reduce((acc, root) => {
+            acc[root.domain] = root.length
+            return acc
+          }, {} as Record<string, number>)
 
-          const selfScore = normalizeScore(result.data.domain_scores.self_awareness.depth_score)
-          const lifeScore = normalizeScore(result.data.domain_scores.life_sciences.depth_score)
-          const universalScore = normalizeScore(result.data.domain_scores.universal_laws.depth_score)
-          const creativeScore = normalizeScore(result.data.domain_scores.creative_expression.depth_score)
-          const socialScore = normalizeScore(result.data.domain_scores.social_connection.depth_score)
+          const selfScore = rootsMap.self_awareness || 0
+          const lifeScore = rootsMap.life_sciences || 0
+          const universalScore = rootsMap.universal_laws || 0
+          const creativeScore = rootsMap.creative_expression || 0
+          const socialScore = rootsMap.social_connection || 0
 
           setDomains(prev => ({
             self_awareness: {
               ...prev.self_awareness,
               db_score: selfScore,
-              depth: Math.floor(selfScore * 100) // 转换为深度等级 (0-100)
+              depth: selfScore // 直接使用根部长度作为深度
             },
             life_sciences: {
               ...prev.life_sciences,
               db_score: lifeScore,
-              depth: Math.floor(lifeScore * 100)
+              depth: lifeScore
             },
             universal_laws: {
               ...prev.universal_laws,
               db_score: universalScore,
-              depth: Math.floor(universalScore * 100)
+              depth: universalScore
             },
             creative_expression: {
               ...prev.creative_expression,
               db_score: creativeScore,
-              depth: Math.floor(creativeScore * 100)
+              depth: creativeScore
             },
             social_connection: {
               ...prev.social_connection,
               db_score: socialScore,
-              depth: Math.floor(socialScore * 100)
+              depth: socialScore
             }
           }))
         } else {
           // 使用默认值
-          const defaultScores = {
-            self_awareness: { depth_score: 0.3 },
-            life_sciences: { depth_score: 0.2 },
-            universal_laws: { depth_score: 0.4 },
-            creative_expression: { depth_score: 0.5 },
-            social_connection: { depth_score: 0.3 }
+          const defaultTreeView = {
+            roots: {
+              main_roots: [
+                { domain: 'self_awareness', length: 3 },
+                { domain: 'life_sciences', length: 2 },
+                { domain: 'universal_laws', length: 4 },
+                { domain: 'creative_expression', length: 5 },
+                { domain: 'social_connection', length: 3 }
+              ]
+            },
+            trunk: { thickness: 1, stability: 1 },
+            branches_and_leaves: { total_leaves: 0 },
+            fruits: [],
+            last_updated: null
           }
-          setDomainScores(defaultScores)
+          setTreeView(defaultTreeView)
 
           // 更新 domains 状态
           setDomains(prev => ({
             self_awareness: {
               ...prev.self_awareness,
-              db_score: 0.3,
-              depth: 30 // 30%
+              db_score: 3,
+              depth: 3 // 直接使用根部长度作为深度
             },
             life_sciences: {
               ...prev.life_sciences,
-              db_score: 0.2,
-              depth: 20 // 20%
+              db_score: 2,
+              depth: 2 // 直接使用根部长度作为深度
             },
             universal_laws: {
               ...prev.universal_laws,
-              db_score: 0.4,
-              depth: 40 // 40%
+              db_score: 4,
+              depth: 4 // 直接使用根部长度作为深度
             },
             creative_expression: {
               ...prev.creative_expression,
-              db_score: 0.5,
-              depth: 50 // 50%
+              db_score: 5,
+              depth: 5 // 直接使用根部长度作为深度
             },
             social_connection: {
               ...prev.social_connection,
-              db_score: 0.3,
-              depth: 30 // 30%
+              db_score: 3,
+              depth: 3 // 直接使用根部长度作为深度
             }
           }))
 
         }
       } catch (error) {
-        console.error('加载领域数据失败:', error)
+        console.error('加载意识树视图数据失败:', error)
         // 使用默认值
-        const defaultScores = {
-          self_awareness: { depth_score: 0.3 },
-          life_sciences: { depth_score: 0.2 },
-          universal_laws: { depth_score: 0.4 },
-          creative_expression: { depth_score: 0.5 },
-          social_connection: { depth_score: 0.3 }
+        const defaultTreeView = {
+          roots: {
+            main_roots: [
+              { domain: 'self_awareness', length: 3 },
+              { domain: 'life_sciences', length: 2 },
+              { domain: 'universal_laws', length: 4 },
+              { domain: 'creative_expression', length: 5 },
+              { domain: 'social_connection', length: 3 }
+            ]
+          },
+          trunk: { thickness: 1, stability: 1 },
+          branches_and_leaves: { total_leaves: 0 },
+          fruits: [],
+          last_updated: null
         }
-        setDomainScores(defaultScores)
+        setTreeView(defaultTreeView)
 
         // 更新 domains 状态
         setDomains(prev => ({
           self_awareness: {
             ...prev.self_awareness,
-            db_score: 0.3,
-            depth: 30 // 30%
+            db_score: 3,
+            depth: 3 // 直接使用根部长度作为深度
           },
           life_sciences: {
             ...prev.life_sciences,
-            db_score: 0.2,
-            depth: 20 // 20%
+            db_score: 2,
+            depth: 2 // 直接使用根部长度作为深度
           },
           universal_laws: {
             ...prev.universal_laws,
-            db_score: 0.4,
-            depth: 40 // 40%
+            db_score: 4,
+            depth: 4 // 直接使用根部长度作为深度
           },
           creative_expression: {
             ...prev.creative_expression,
-            db_score: 0.5,
-            depth: 50 // 50%
+            db_score: 5,
+            depth: 5 // 直接使用根部长度作为深度
           },
           social_connection: {
             ...prev.social_connection,
-            db_score: 0.3,
-            depth: 30 // 30%
+            db_score: 3,
+            depth: 3 // 直接使用根部长度作为深度
           }
         }))
 
@@ -208,7 +243,7 @@ export function DatabaseConsciousnessRoots() {
       }
     }
 
-    loadDomainData()
+    loadTreeViewData()
   }, [])
 
   // Balanced constants for elegant simplicity - 保持前端小姐姐的常量
@@ -222,7 +257,7 @@ export function DatabaseConsciousnessRoots() {
     return min + Math.random() * (max - min)
   }
 
-  const createTree = (width: number, height: number): Tree => {
+  const createTree = useCallback((width: number, height: number): Tree => {
     // ROOT SYSTEM: Start at horizontal line for proper root system
     const x = width / 2
     const y = height * 0.5 // FIXED: Back to 50% to match horizontal line
@@ -241,10 +276,10 @@ export function DatabaseConsciousnessRoots() {
       proba4: 0.45, // Moderate 45% probability for secondary branches
     }
 
-    // Create main trunk - more natural proportions
+    // Create main trunk - more natural proportions with meditation thickness
     const trunk: Branch = {
       position: { ...start },
-      stw: 25 * Math.sqrt(start.y / height), // Original elegant proportions
+      stw: 25 * Math.sqrt(start.y / height) * trunkThickness, // Apply meditation thickness multiplier
       gen: 1,
       alive: true,
       age: 0,
@@ -261,7 +296,7 @@ export function DatabaseConsciousnessRoots() {
 
     tree.branches.push(trunk)
     return tree
-  }
+  }, [trunkThickness])
 
   const createBranch = (
     start: Vector2D,
@@ -288,15 +323,17 @@ export function DatabaseConsciousnessRoots() {
     deviation: 0.65, // 固定偏差值，不再随机
   })
 
-  // 根据数据库数值自动生成初始根系
-  const generateInitialRoots = (scores: Record<string, { depth_score: number }>) => {
-    console.log('开始生成初始根系', scores)
+  // 根据意识树视图的根部长度自动生成初始根系
+  const generateInitialRoots = useCallback((scores: Record<string, { depth_score: number }>) => {
+    console.log('开始根据根部长度生成初始根系', scores)
     // 等待树初始化完成
     setTimeout(() => {
       Object.entries(scores).forEach(([domainKey, data]) => {
-        const normalizedScore = normalizeScore(data.depth_score)
-        const branchCount = Math.floor(normalizedScore * 10) // 0-10个分支
-        console.log(`${domainKey}: 分数=${data.depth_score}, 标准化=${normalizedScore}, 分支数=${branchCount}`)
+        // 直接使用根部长度，不需要标准化（因为已经是预计算的值）
+        const rootLength = data.depth_score
+        // 非常缓慢增长：每3个深度点生成1个分支，最少1个，最多6个
+        const branchCount = Math.max(1, Math.min(6, Math.ceil(rootLength / 3)))
+        console.log(`${domainKey}: 根部长度=${rootLength}, 分支数=${branchCount}`)
 
         // 为每个领域生成相应数量的分支
         for (let i = 0; i < branchCount; i++) {
@@ -306,7 +343,7 @@ export function DatabaseConsciousnessRoots() {
         }
       })
     }, 1000) // 等待1秒让主干完成初始生长
-  }
+  }, []) // 这个函数不依赖外部状态
 
   // 自动创建领域分支（不依赖depth计数器）
   const autoCreateDomainBranch = (domainKey: string) => {
@@ -809,13 +846,18 @@ export function DatabaseConsciousnessRoots() {
     treeRef.current = createTree(canvas.width, canvas.height)
 
     // 树创建完成后，触发自动生长（如果有数据的话）
-    if (domainScores && Object.keys(domainScores).length > 0) {
-      console.log('树创建完成，开始自动生长', domainScores)
-      generateInitialRoots(domainScores)
+    if (treeView && treeView.roots.main_roots.length > 0) {
+      console.log('树创建完成，开始自动生长', treeView.roots.main_roots)
+      const rootsMap = treeView.roots.main_roots.reduce((acc, root) => {
+        acc[root.domain] = { depth_score: root.length }
+        return acc
+      }, {} as Record<string, { depth_score: number }>)
+      generateInitialRoots(rootsMap)
     } else {
-      console.log('树创建完成，但暂无领域数据')
+      console.log('树创建完成，但暂无意识树数据')
     }
-  }, [domainScores])
+  }, [treeView, createTree, generateInitialRoots])
+
 
   const draw = useCallback(() => {
     if (!canvasRef.current || !treeRef.current) return
@@ -842,7 +884,7 @@ export function DatabaseConsciousnessRoots() {
 
 
   useEffect(() => {
-    if (!isLoading && domainScores) {
+    if (!isLoading && treeView) {
       setup()
       // 立即开始动画循环（90fps）
       const startAnimation = () => {
@@ -858,7 +900,7 @@ export function DatabaseConsciousnessRoots() {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
-      if (!isLoading && domainScores) {
+      if (!isLoading && treeView) {
         setup()
         // 重新开始动画循环（90fps）
         const startAnimation = () => {
@@ -879,7 +921,7 @@ export function DatabaseConsciousnessRoots() {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [setup, draw, isLoading, domainScores])
+  }, [setup, draw, isLoading, treeView])
 
   if (isLoading) {
     return (
@@ -903,6 +945,35 @@ export function DatabaseConsciousnessRoots() {
           setMousePos(null)
         }}
       />
+
+      {/* 冥想按钮 - 增加树干粗细 */}
+      <div className="absolute top-6 left-6">
+        <button
+          onClick={handleMeditation}
+          disabled={trunkThickness >= MAX_TRUNK_THICKNESS}
+          className={`px-6 py-3 rounded-lg shadow-lg transition-all duration-300 font-medium text-sm ${
+            trunkThickness >= MAX_TRUNK_THICKNESS
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+              : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white transform hover:scale-105'
+          }`}
+        >
+          🧘 冥想修炼
+        </button>
+        <div className="mt-2 text-center">
+          <div className="text-xs text-gray-600">
+            树干粗细: {trunkThickness.toFixed(1)}x
+          </div>
+          <div className="w-24 bg-gray-200 rounded-full h-2 mt-1">
+            <div
+              className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(trunkThickness / MAX_TRUNK_THICKNESS) * 100}%` }}
+            ></div>
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {trunkThickness >= MAX_TRUNK_THICKNESS ? '已达最大' : `还可增长 ${(MAX_TRUNK_THICKNESS - trunkThickness).toFixed(1)}x`}
+          </div>
+        </div>
+      </div>
 
       {/* Domain Control Buttons - 数据库五个领域 */}
       <div className="absolute top-6 right-6 space-y-3">

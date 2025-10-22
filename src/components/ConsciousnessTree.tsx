@@ -1,15 +1,19 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { TreePine, Sparkles, Star, Leaf } from 'lucide-react'
+import { TreePine, Sparkles, Star, Leaf, Brain } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import consciousnessTreeAPI from '@/lib/api/consciousness-tree'
 
 interface TreeNode {
   id: string
   level: number
-  type: 'awareness' | 'wisdom' | 'creativity' | 'connection'
+  type: 'self_awareness' | 'life_sciences' | 'universal_laws' | 'creative_expression' | 'social_connection'
   title: string
   unlocked: boolean
   progress: number
+  depth: number
 }
 
 interface ConsciousnessTreeProps {
@@ -23,70 +27,91 @@ export default function ConsciousnessTree({
   completedTasks,
   className = ''
 }: ConsciousnessTreeProps) {
+  const router = useRouter()
+  const [treeData, setTreeData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
   // completedTasks will be used for future functionality
   console.log('Completed tasks:', completedTasks.length);
-  
-  // Generate tree nodes based on progress
+
+  // Fetch real consciousness tree data
+  useEffect(() => {
+    async function fetchTreeData() {
+      try {
+        setLoading(true)
+        const result = await consciousnessTreeAPI.getDomainExploration()
+        if (result.success && result.data) {
+          // Domain title mapping
+          const domainTitles: Record<string, string> = {
+            'self_awareness': '自我觉察',
+            'life_sciences': '生命科学',
+            'universal_laws': '宇宙法则',
+            'creative_expression': '创意表达',
+            'social_connection': '社会连接'
+          }
+
+          // Convert domain scores to tree data format
+          const domains = Object.entries(result.data.domain_scores).map(([domain, score], index) => ({
+            id: `${domain}-${index}`,
+            domain_type: domain,
+            title: domainTitles[domain] || domain.replace(/_/g, ' '),
+            current_depth: score.depth_score,
+            max_depth: 100 // Set reasonable max depth
+          }))
+          setTreeData(domains)
+        } else {
+          console.error('Failed to fetch domain data:', result.error)
+          setTreeData([])
+        }
+      } catch (error) {
+        console.error('Failed to fetch tree data:', error)
+        setTreeData([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTreeData()
+  }, [])
+
+  // Generate tree nodes based on real data
   const generateTreeNodes = (): TreeNode[] => {
+    if (loading || !treeData.length) {
+      return [{
+        id: 'loading',
+        level: 0,
+        type: 'self_awareness',
+        title: '加载中...',
+        unlocked: true,
+        progress: 0,
+        depth: 0
+      }]
+    }
+
     const nodes: TreeNode[] = []
-    
-    // Root level - always unlocked
-    nodes.push({
-      id: 'root',
-      level: 0,
-      type: 'awareness',
-      title: '觉醒的种子',
-      unlocked: true,
-      progress: 100
+
+    // Map database domains to tree nodes
+    const domainTypeMap: Record<string, typeof TreeNode.prototype.type> = {
+      'self_awareness': 'self_awareness',
+      'life_sciences': 'life_sciences',
+      'universal_laws': 'universal_laws',
+      'creative_expression': 'creative_expression',
+      'social_connection': 'social_connection'
+    }
+
+    treeData.forEach((domain, index) => {
+      const nodeType = domainTypeMap[domain.domain_type] || 'self_awareness'
+
+      nodes.push({
+        id: domain.id,
+        level: index,
+        type: nodeType,
+        title: domain.title || domain.domain_type,
+        unlocked: domain.current_depth > 0,
+        progress: Math.min(100, (domain.current_depth / Math.max(domain.max_depth, 1)) * 100),
+        depth: domain.current_depth
+      })
     })
-
-    // Level 1 - Basic awareness (unlocked after day 3)
-    if (currentDay >= 3) {
-      nodes.push({
-        id: 'awareness-1',
-        level: 1,
-        type: 'awareness',
-        title: '初始觉察',
-        unlocked: true,
-        progress: Math.min(100, ((currentDay - 3) / 4) * 100)
-      })
-    }
-
-    // Level 2 - Deeper understanding (unlocked after day 7)
-    if (currentDay >= 7) {
-      nodes.push({
-        id: 'wisdom-1',
-        level: 2,
-        type: 'wisdom',
-        title: '智慧萌芽',
-        unlocked: true,
-        progress: Math.min(100, ((currentDay - 7) / 7) * 100)
-      })
-    }
-
-    // Level 3 - Creative expression (unlocked after day 14)
-    if (currentDay >= 14) {
-      nodes.push({
-        id: 'creativity-1',
-        level: 3,
-        type: 'creativity',
-        title: '创造之花',
-        unlocked: true,
-        progress: Math.min(100, ((currentDay - 14) / 7) * 100)
-      })
-    }
-
-    // Level 4 - Connection with others (unlocked after day 21)
-    if (currentDay >= 21) {
-      nodes.push({
-        id: 'connection-1',
-        level: 4,
-        type: 'connection',
-        title: '共振之果',
-        unlocked: true,
-        progress: Math.min(100, ((currentDay - 21) / 9) * 100)
-      })
-    }
 
     return nodes
   }
@@ -95,28 +120,38 @@ export default function ConsciousnessTree({
 
   const getNodeIcon = (type: string) => {
     switch (type) {
-      case 'awareness': return Sparkles
-      case 'wisdom': return Star
-      case 'creativity': return Leaf
-      case 'connection': return TreePine
+      case 'self_awareness': return Sparkles
+      case 'life_sciences': return Star
+      case 'universal_laws': return Brain
+      case 'creative_expression': return Leaf
+      case 'social_connection': return TreePine
       default: return Sparkles
     }
   }
 
   const getNodeColor = (type: string) => {
     switch (type) {
-      case 'awareness': return 'from-yellow-400 to-orange-400'
-      case 'wisdom': return 'from-blue-400 to-purple-400'
-      case 'creativity': return 'from-green-400 to-emerald-400'
-      case 'connection': return 'from-pink-400 to-rose-400'
+      case 'self_awareness': return 'from-yellow-400 to-orange-400'
+      case 'life_sciences': return 'from-green-400 to-emerald-400'
+      case 'universal_laws': return 'from-blue-400 to-purple-400'
+      case 'creative_expression': return 'from-pink-400 to-rose-400'
+      case 'social_connection': return 'from-cyan-400 to-blue-400'
       default: return 'from-gray-400 to-gray-500'
     }
+  }
+
+  // Handle click to navigate to detailed tree view
+  const handleTreeClick = () => {
+    router.push('/simple-tree')
   }
 
   return (
     <div className={`relative ${className}`}>
       {/* Tree Container */}
-      <div className="relative w-full h-96 overflow-hidden rounded-2xl bg-gradient-to-b from-slate-900/50 to-slate-800/50 backdrop-blur-sm border border-white/10">
+      <div
+        className="relative w-full h-96 overflow-hidden rounded-2xl bg-gradient-to-b from-slate-900/50 to-slate-800/50 backdrop-blur-sm border border-white/10 cursor-pointer hover:bg-slate-800/60 transition-colors duration-300"
+        onClick={handleTreeClick}
+      >
         
         {/* Background Tree Silhouette */}
         <div className="absolute inset-0 flex items-end justify-center opacity-10">
@@ -262,11 +297,18 @@ export default function ConsciousnessTree({
           <div className="text-white text-sm">
             <div className="font-semibold mb-1">意识进化</div>
             <div className="text-gray-300">
-              第 {currentDay} 天 • Level {Math.floor(currentDay / 7) + 1}
+              第 {currentDay} 天 • {loading ? '加载中...' : `${treeData.length} 个领域`}
             </div>
             <div className="text-gray-300">
               已解锁: {treeNodes.filter(n => n.unlocked).length} 个节点
             </div>
+          </div>
+        </div>
+
+        {/* Click hint */}
+        <div className="absolute top-4 right-4 bg-purple-600/20 rounded-lg p-2">
+          <div className="text-purple-200 text-xs">
+            点击查看详细
           </div>
         </div>
 
@@ -291,19 +333,23 @@ export default function ConsciousnessTree({
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
         <div className="flex items-center">
           <div className="w-3 h-3 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 mr-2"></div>
-          <span className="text-gray-300">觉察</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 mr-2"></div>
-          <span className="text-gray-300">智慧</span>
+          <span className="text-gray-300">自我觉察</span>
         </div>
         <div className="flex items-center">
           <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-emerald-400 mr-2"></div>
-          <span className="text-gray-300">创造</span>
+          <span className="text-gray-300">生命科学</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 mr-2"></div>
+          <span className="text-gray-300">宇宙法则</span>
         </div>
         <div className="flex items-center">
           <div className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 mr-2"></div>
-          <span className="text-gray-300">连接</span>
+          <span className="text-gray-300">创意表达</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400 mr-2"></div>
+          <span className="text-gray-300">社会连接</span>
         </div>
       </div>
     </div>

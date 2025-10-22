@@ -19,7 +19,7 @@ import {
   Leaf
 } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
-import ConsciousnessTree from '@/components/ConsciousnessTree'
+import { DatabaseConsciousnessRoots } from '@/components/ui/database-consciousness-roots'
 
 interface User {
   id: string
@@ -438,11 +438,13 @@ export default function PortalPage() {
                 <TreePine className="w-6 h-6 text-green-400 mr-3" />
                 <h3 className="text-lg font-semibold text-white">意识进化树</h3>
               </div>
-              <ConsciousnessTree
-                currentDay={currentDay}
-                completedTasks={completedTasks}
-                className="w-full"
-              />
+              <div className="relative h-80 w-full flex items-center justify-center bg-gradient-to-b from-white/5 to-white/10 rounded-lg">
+                <img
+                  src="/images/consciousness-tree-preview.png"
+                  alt="意识进化树预览"
+                  className="max-h-full max-w-full object-contain opacity-80"
+                />
+              </div>
               <div className="mt-4">
                 <button
                   onClick={() => router.push('/simple-tree')}

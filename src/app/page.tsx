@@ -1,34 +1,53 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Sparkles, MessageCircle, TreePine, Users } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
 
 export default function Home() {
   const [showGaiaDialog, setShowGaiaDialog] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  // 确保只在客户端渲染
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // 生成固定的粒子配置
+  const particles = useMemo(() => {
+    if (!isMounted) return []
+    return [...Array(50)].map((_, i) => ({
+      id: i,
+      x: Math.random() * 100 - 50,
+      y: Math.random() * 100 - 50,
+      duration: Math.random() * 3 + 2,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+    }))
+  }, [isMounted])
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
       {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(50)].map((_, i) => (
+        {isMounted && particles.map((particle) => (
           <motion.div
-            key={i}
+            key={particle.id}
             className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30"
             animate={{
-              x: [0, Math.random() * 100 - 50],
-              y: [0, Math.random() * 100 - 50],
+              x: [0, particle.x],
+              y: [0, particle.y],
               opacity: [0.3, 0.8, 0.3],
             }}
             transition={{
-              duration: Math.random() * 3 + 2,
+              duration: particle.duration,
               repeat: Infinity,
               ease: "easeInOut",
             }}
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              left: `${particle.left}%`,
+              top: `${particle.top}%`,
             }}
           />
         ))}
