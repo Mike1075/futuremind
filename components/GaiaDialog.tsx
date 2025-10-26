@@ -441,7 +441,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                           : 'bg-white/10 border border-white/20 text-white ml-auto'
                       }`}
                     >
-                      <p className="text-sm leading-relaxed">{message.content}</p>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                       <p className="text-xs text-gray-400 mt-2">
                         {message.timestamp.toLocaleTimeString()}
                       </p>
