@@ -1,16 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { Users, ArrowLeft } from 'lucide-react'
 
 export default function StudentsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState<string>('')
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    setIsMounted(true)
     checkAuth()
   }, [])
 
@@ -33,6 +36,19 @@ export default function StudentsPage() {
     }
   }
 
+  // 生成固定的粒子配置
+  const particles = useMemo(() => {
+    if (!isMounted) return []
+    return [...Array(50)].map((_, i) => ({
+      id: i,
+      x: Math.random() * 100 - 50,
+      y: Math.random() * 100 - 50,
+      duration: Math.random() * 3 + 2,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+    }))
+  }, [isMounted])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -45,9 +61,33 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Background particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {isMounted && particles.map((particle) => (
+          <motion.div
+            key={particle.id}
+            className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30"
+            animate={{
+              x: [0, particle.x],
+              y: [0, particle.y],
+              opacity: [0.3, 0.8, 0.3],
+            }}
+            transition={{
+              duration: particle.duration,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            style={{
+              left: `${particle.left}%`,
+              top: `${particle.top}%`,
+            }}
+          />
+        ))}
+      </div>
+
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-md border-b border-white/10">
+      <header className="bg-black/50 backdrop-blur-md border-b border-white/10 relative z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -70,7 +110,7 @@ export default function StudentsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         <div className="bg-white/5 backdrop-blur-md rounded-xl p-12 border border-white/10">
           <div className="text-center">
             <Users className="w-16 h-16 text-cyan-400 mx-auto mb-6" />

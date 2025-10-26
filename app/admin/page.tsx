@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import {
   Users,
   BookOpen
@@ -12,8 +13,10 @@ export default function AdminDashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState<string>('')
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    setIsMounted(true)
     checkAuth()
   }, [])
 
@@ -35,6 +38,19 @@ export default function AdminDashboard() {
       setLoading(false)
     }
   }
+
+  // 生成固定的粒子配置
+  const particles = useMemo(() => {
+    if (!isMounted) return []
+    return [...Array(50)].map((_, i) => ({
+      id: i,
+      x: Math.random() * 100 - 50,
+      y: Math.random() * 100 - 50,
+      duration: Math.random() * 3 + 2,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+    }))
+  }, [isMounted])
 
   if (loading) {
     return (
@@ -65,9 +81,33 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Background particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {isMounted && particles.map((particle) => (
+          <motion.div
+            key={particle.id}
+            className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30"
+            animate={{
+              x: [0, particle.x],
+              y: [0, particle.y],
+              opacity: [0.3, 0.8, 0.3],
+            }}
+            transition={{
+              duration: particle.duration,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            style={{
+              left: `${particle.left}%`,
+              top: `${particle.top}%`,
+            }}
+          />
+        ))}
+      </div>
+
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-md border-b border-white/10">
+      <header className="bg-black/50 backdrop-blur-md border-b border-white/10 relative z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -85,7 +125,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* Main Content - Minimalist Portal */}
-      <main className="max-w-7xl mx-auto px-6 py-8 h-[calc(100vh-120px)] flex items-center justify-center">
+      <main className="max-w-7xl mx-auto px-6 py-8 h-[calc(100vh-120px)] flex items-center justify-center relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-6xl">
           {portalCards.map((card) => {
             const Icon = card.icon
