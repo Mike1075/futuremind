@@ -259,18 +259,41 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       
       console.log('最终提取的回复内容:', reply)
       console.log('回复内容类型:', typeof reply)
-      
+
       const finalReply = reply && typeof reply === 'string' ? reply : '（n8n 未返回内容）'
 
+      // 打字机效果：逐字显示盖亚的回复
+      const gaiaMessageId = (Date.now() + 1).toString()
       const gaiaMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        content: finalReply,
+        id: gaiaMessageId,
+        content: '', // 初始为空
         isGaia: true,
         timestamp: new Date()
       }
-      const updatedMessages = [...newMessages, gaiaMessage]
-      setMessages(updatedMessages)
-      await saveChatHistory(updatedMessages)
+
+      // 先添加空消息
+      let currentMessages = [...newMessages, gaiaMessage]
+      setMessages(currentMessages)
+
+      // 逐字显示内容
+      let displayedContent = ''
+      const chars = finalReply.split('')
+      const typeSpeed = 30 // 每个字符的显示间隔（毫秒）
+
+      for (let i = 0; i < chars.length; i++) {
+        displayedContent += chars[i]
+
+        // 更新消息内容
+        const updatedGaiaMessage = { ...gaiaMessage, content: displayedContent }
+        currentMessages = [...newMessages, updatedGaiaMessage]
+        setMessages(currentMessages)
+
+        // 等待一小段时间
+        await new Promise(resolve => setTimeout(resolve, typeSpeed))
+      }
+
+      // 全部显示完毕后，保存聊天记录
+      await saveChatHistory(currentMessages)
 
     } catch {
       const gaiaMessage: ChatMessage = {
