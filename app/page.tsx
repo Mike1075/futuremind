@@ -247,11 +247,11 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
-              onClick={() => window.location.href = '/admin/lessons'}
+              onClick={() => window.location.href = '/admin'}
               className="group relative px-8 py-4 bg-gradient-to-r from-red-600 to-pink-600 rounded-full text-white font-semibold text-lg hover:from-red-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-red-500/25"
             >
               <Shield className="w-5 h-5 inline mr-2" />
-              课程管理中心
+              管理后台
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-600 to-pink-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
             </motion.button>
           )}
