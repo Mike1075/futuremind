@@ -63,9 +63,24 @@ export async function POST(req: NextRequest) {
           for (const line of lines) {
             try {
               const json = JSON.parse(line)
-              // 只提取 content 字段
-              if (json.content) {
-                fullContent += json.content
+
+              // 只处理 type: "item" 的流式数据
+              if (json.type === 'item' && json.content) {
+                // content 可能是纯文本，也可能是转义的 JSON 字符串
+                const content = json.content
+
+                // 尝试解析 content（可能包含 output 字段）
+                try {
+                  const innerJson = JSON.parse(content)
+                  // 如果包含 output 字段，这是完整的最终回复
+                  if (innerJson.output) {
+                    fullContent = innerJson.output // 直接使用完整回复，覆盖之前的累积
+                    console.log('找到 output 字段（完整回复）:', innerJson.output)
+                  }
+                } catch {
+                  // content 是纯文本，累加
+                  fullContent += content
+                }
               }
             } catch (e) {
               // 可能不是 JSON，或者是部分 JSON，继续
