@@ -31,40 +31,61 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(payload)
     })
 
-    const text = await res.text()
-
-    // 添加详细的调试日志
     console.log('=== N8N 聊天 API 调试信息 ===')
     console.log('发送到 n8n 的 payload:', JSON.stringify(payload, null, 2))
     console.log('n8n 响应状态:', res.status)
     console.log('n8n 响应头:', Object.fromEntries(res.headers.entries()))
-    console.log('n8n 原始响应文本:', text)
-    console.log('n8n 响应文本长度:', text.length)
-    console.log('================================')
 
     if (!res.ok) {
-      // 将 n8n 的错误体返回，便于前端直接看到具体错误
-      return NextResponse.json({ error: 'N8N_CHAT_FAILED', status: res.status, body: text }, { status: 502 })
+      const errorText = await res.text()
+      console.log('n8n 错误响应:', errorText)
+      return NextResponse.json({ error: 'N8N_CHAT_FAILED', status: res.status, body: errorText }, { status: 502 })
     }
 
-    // 尝试解析 n8n 的响应
-    let responseData
-    try {
-      responseData = JSON.parse(text)
-      console.log('n8n 响应解析为 JSON:', responseData)
-    } catch {
-      console.log('n8n 响应不是 JSON，作为纯文本处理:', text)
-      responseData = { reply: text }
-    }
+    // N8N 返回流式输出，需要读取流并组合所有 content 字段
+    const reader = res.body?.getReader()
+    const decoder = new TextDecoder()
+    let fullContent = ''
+    let rawText = ''
 
-    // 添加调试信息到响应中（临时）
-    return NextResponse.json({
-      ...responseData,
-      _debug: {
-        sentPayload: payload,
-        receivedText: text,
-        receivedParsed: responseData
+    if (reader) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          rawText += chunk
+          console.log('收到流式 chunk:', chunk)
+
+          // 尝试解析每个 chunk（可能包含多个 JSON 对象或换行分隔的 JSON）
+          const lines = chunk.split('\n').filter(line => line.trim())
+          for (const line of lines) {
+            try {
+              const json = JSON.parse(line)
+              // 只提取 content 字段
+              if (json.content) {
+                fullContent += json.content
+              }
+            } catch (e) {
+              // 可能不是 JSON，或者是部分 JSON，继续
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
       }
+    }
+
+    console.log('流式响应完成')
+    console.log('原始文本:', rawText)
+    console.log('提取的 content 内容:', fullContent)
+    console.log('================================')
+
+    // 返回组合后的内容
+    return NextResponse.json({
+      reply: fullContent,
+      content: fullContent
     })
   } catch {
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
