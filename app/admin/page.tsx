@@ -5,12 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import {
   Users,
-  BookOpen,
-  MessageSquare,
-  BarChart3,
-  Settings,
-  FileText,
-  Sparkles
+  BookOpen
 } from 'lucide-react'
 
 export default function AdminDashboard() {
@@ -52,18 +47,21 @@ export default function AdminDashboard() {
     )
   }
 
-  const stats = [
-    { label: '总用户数', value: '---', icon: Users, color: 'from-blue-500 to-cyan-500' },
-    { label: '课程内容', value: '---', icon: BookOpen, color: 'from-purple-500 to-pink-500' },
-    { label: '对话记录', value: '---', icon: MessageSquare, color: 'from-green-500 to-emerald-500' },
-    { label: 'PBL项目', value: '---', icon: Sparkles, color: 'from-orange-500 to-red-500' },
-  ]
-
-  const quickActions = [
-    { label: '内容管理', href: '/admin/content', icon: FileText, description: '管理课程和学习内容' },
-    { label: '用户管理', href: '/admin/users', icon: Users, description: '查看和管理用户' },
-    { label: '数据分析', href: '/admin/analytics', icon: BarChart3, description: '查看使用数据和统计' },
-    { label: '系统设置', href: '/admin/settings', icon: Settings, description: '配置系统参数' },
+  const portalCards = [
+    {
+      title: '课程管理',
+      description: '管理课程内容、学习路径和教学资源',
+      href: '/admin/courses',
+      icon: BookOpen,
+      gradient: 'from-purple-500 via-pink-500 to-rose-500'
+    },
+    {
+      title: '学员管理',
+      description: '查看学员信息、学习进度和成长轨迹',
+      href: '/admin/students',
+      icon: Users,
+      gradient: 'from-blue-500 via-cyan-500 to-teal-500'
+    }
   ]
 
   return (
@@ -86,56 +84,45 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat) => {
-            const Icon = stat.icon
+      {/* Main Content - Minimalist Portal */}
+      <main className="max-w-7xl mx-auto px-6 py-8 h-[calc(100vh-120px)] flex items-center justify-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-6xl">
+          {portalCards.map((card) => {
+            const Icon = card.icon
             return (
-              <div
-                key={stat.label}
-                className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10 hover:border-white/20 transition-all"
+              <button
+                key={card.title}
+                onClick={() => router.push(card.href)}
+                className="group relative bg-white/5 backdrop-blur-md rounded-3xl p-16 border border-white/10 hover:border-white/30 transition-all duration-500 hover:scale-105 hover:bg-white/10 min-h-[400px] flex flex-col items-center justify-center"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${stat.color} flex items-center justify-center`}>
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
+                {/* Gradient Background Effect */}
+                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
+
+                {/* Icon */}
+                <div className={`relative w-32 h-32 rounded-full bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500`}>
+                  <Icon className="w-16 h-16 text-white" />
                 </div>
-                <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
-                <p className="text-sm text-gray-400">{stat.label}</p>
-              </div>
+
+                {/* Title */}
+                <h2 className="relative text-4xl font-bold text-white mb-4 group-hover:scale-105 transition-transform duration-300">
+                  {card.title}
+                </h2>
+
+                {/* Description */}
+                <p className="relative text-lg text-gray-300 text-center group-hover:text-white transition-colors duration-300">
+                  {card.description}
+                </p>
+
+                {/* Arrow Indicator */}
+                <div className="relative mt-8 flex items-center text-purple-300 group-hover:text-white transition-colors duration-300">
+                  <span className="text-sm mr-2">进入</span>
+                  <svg className="w-6 h-6 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </div>
+              </button>
             )
           })}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">快捷操作</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {quickActions.map((action) => {
-              const Icon = action.icon
-              return (
-                <button
-                  key={action.label}
-                  onClick={() => router.push(action.href)}
-                  className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10 hover:border-purple-500/50 hover:bg-white/10 transition-all text-left group"
-                >
-                  <Icon className="w-8 h-8 text-purple-400 mb-3 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-lg font-semibold text-white mb-2">{action.label}</h3>
-                  <p className="text-sm text-gray-400">{action.description}</p>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Recent Activity Placeholder */}
-        <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10">
-          <h2 className="text-xl font-semibold text-white mb-4">最近活动</h2>
-          <div className="text-center py-12">
-            <p className="text-gray-400">暂无活动记录</p>
-          </div>
         </div>
       </main>
     </div>
