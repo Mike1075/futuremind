@@ -88,8 +88,8 @@ export default function ListeningCoursePage() {
   const loadLessons = async () => {
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from('lessons')
+      const { data, error } = await (supabase
+        .from('lessons') as any)
         .select('*')
         .eq('course_system', '自在聆听')
         .order('day_number', { ascending: true })
@@ -107,8 +107,8 @@ export default function ListeningCoursePage() {
   const loadMediaResources = async (lessonId: string) => {
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from('media_resources')
+      const { data, error } = await (supabase
+        .from('media_resources') as any)
         .select('*')
         .eq('lesson_id', lessonId)
         .order('created_at', { ascending: false })
@@ -126,8 +126,8 @@ export default function ListeningCoursePage() {
     setSaving(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase
-        .from('lessons')
+      const { error } = await (supabase
+        .from('lessons') as any)
         .update({
           title: formData.title,
           original_text: formData.original_text,
@@ -176,8 +176,8 @@ export default function ListeningCoursePage() {
         .getPublicUrl(filePath)
 
       // 保存到 media_resources 表
-      const { error: dbError } = await supabase
-        .from('media_resources')
+      const { error: dbError } = await (supabase
+        .from('media_resources') as any)
         .insert({
           lesson_id: selectedLesson.id,
           file_name: file.name,
@@ -203,8 +203,8 @@ export default function ListeningCoursePage() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase
-        .from('media_resources')
+      const { error } = await (supabase
+        .from('media_resources') as any)
         .delete()
         .eq('id', mediaId)
 
@@ -227,8 +227,8 @@ export default function ListeningCoursePage() {
 
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from('lessons')
+      const { data, error } = await (supabase
+        .from('lessons') as any)
         .insert({
           course_system: '自在聆听',
           day_number: newDayNumber,
