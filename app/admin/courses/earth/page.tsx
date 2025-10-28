@@ -291,6 +291,12 @@ export default function EarthCoursePage() {
   }
 
   const handleDeleteStage = async (stageId: string, sequenceNumber: number) => {
+    // 保护前6个阶段的固定内容
+    if (sequenceNumber <= 6) {
+      alert('前6个阶段是固定内容，不能删除，只能修改。')
+      return
+    }
+
     if (!confirm(`确定要删除第 ${sequenceNumber} 阶段吗？删除后将无法恢复。`)) return
 
     try {
@@ -449,7 +455,7 @@ export default function EarthCoursePage() {
                 >
                   <button
                     onClick={() => setSelectedStage(stage)}
-                    className="w-full text-left px-4 py-3 pr-20"
+                    className={`w-full text-left px-4 py-3 ${stage.sequence_number > 6 ? 'pr-20' : ''}`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -458,16 +464,19 @@ export default function EarthCoursePage() {
                       </div>
                     </div>
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteStage(stage.id, stage.sequence_number)
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
-                    title="删除阶段"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {/* 只显示第7阶段及以后的删除按钮 */}
+                  {stage.sequence_number > 6 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteStage(stage.id, stage.sequence_number)
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
+                      title="删除阶段"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
