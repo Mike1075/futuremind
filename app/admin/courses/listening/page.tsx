@@ -276,6 +276,12 @@ export default function ListeningCoursePage() {
   }
 
   const handleDeleteCourse = async (contentId: string, sequenceNumber: number) => {
+    // 保护前14天的固定课程
+    if (sequenceNumber <= 14) {
+      alert('前14天的课程是固定内容，不能删除，只能修改。')
+      return
+    }
+
     if (!confirm(`确定要删除第 ${sequenceNumber} 天的课程吗？删除后将无法恢复。`)) return
 
     try {
@@ -404,7 +410,7 @@ export default function ListeningCoursePage() {
                 >
                   <button
                     onClick={() => setSelectedContent(content)}
-                    className="w-full text-left px-4 py-3 pr-20"
+                    className={`w-full text-left px-4 py-3 ${content.sequence_number > 14 ? 'pr-20' : ''}`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -413,16 +419,19 @@ export default function ListeningCoursePage() {
                       </div>
                     </div>
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteCourse(content.id, content.sequence_number)
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
-                    title="删除课程"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {/* 只显示第15天及以后的删除按钮 */}
+                  {content.sequence_number > 14 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteCourse(content.id, content.sequence_number)
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
+                      title="删除课程"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
