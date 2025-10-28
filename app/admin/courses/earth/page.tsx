@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, Save, Upload, FileVideo, Trash2, ChevronRight, BookOpen } from 'lucide-react'
+import { ArrowLeft, Plus, Save, Upload, FileVideo, Trash2, ChevronRight, BookOpen, Edit } from 'lucide-react'
 
 interface EarthStage {
   id: string
@@ -290,6 +290,72 @@ export default function EarthCoursePage() {
     }
   }
 
+  const handleDeleteStage = async (stageId: string, sequenceNumber: number) => {
+    if (!confirm(`确定要删除第 ${sequenceNumber} 阶段吗？删除后将无法恢复。`)) return
+
+    try {
+      const supabase = createClient()
+
+      // 先删除关联的媒体资源
+      const { error: mediaError } = await (supabase
+        .from('media_resources') as any)
+        .delete()
+        .eq('course_content_id', stageId)
+
+      if (mediaError) throw mediaError
+
+      // 删除阶段内容
+      const { error } = await (supabase
+        .from('course_contents') as any)
+        .delete()
+        .eq('id', stageId)
+
+      if (error) throw error
+
+      alert('删除成功！')
+
+      // 如果删除的是当前选中的阶段，清空选中状态
+      if (selectedStage?.id === stageId) {
+        setSelectedStage(null)
+      }
+
+      await loadStages()
+    } catch (error) {
+      console.error('删除失败:', error)
+      alert('删除失败，请重试')
+    }
+  }
+
+  const handleEditVideoUrl = async (mediaId: string, currentUrl: string, currentName: string) => {
+    const newUrl = prompt('请输入新的视频URL:', currentUrl)
+    if (!newUrl || newUrl === currentUrl) return
+
+    const newName = prompt('请输入新的视频描述:', currentName)
+
+    try {
+      const supabase = createClient()
+      const { error } = await (supabase
+        .from('media_resources') as any)
+        .update({
+          file_url: newUrl,
+          external_url: newUrl,
+          file_name: newName || currentName,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', mediaId)
+
+      if (error) throw error
+
+      alert('修改成功！')
+      if (selectedStage) {
+        await loadMediaResources(selectedStage.id)
+      }
+    } catch (error) {
+      console.error('修改失败:', error)
+      alert('修改失败，请重试')
+    }
+  }
+
   // 生成星空粒子
   const particles = useMemo(() => {
     if (!isMounted) return []
@@ -373,23 +439,36 @@ export default function EarthCoursePage() {
 
             <div className="space-y-2">
               {stages.map((stage) => (
-                <button
+                <div
                   key={stage.id}
-                  onClick={() => setSelectedStage(stage)}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
+                  className={`relative rounded-lg transition-all ${
                     selectedStage?.id === stage.id
                       ? 'bg-purple-600/30 border border-purple-500/50'
                       : 'bg-white/5 border border-white/10 hover:bg-white/10'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-medium">第 {stage.sequence_number} 阶段</p>
-                      <p className="text-gray-400 text-sm mt-1 line-clamp-1">{stage.title}</p>
+                  <button
+                    onClick={() => setSelectedStage(stage)}
+                    className="w-full text-left px-4 py-3 pr-20"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-medium">第 {stage.sequence_number} 阶段</p>
+                        <p className="text-gray-400 text-sm mt-1 line-clamp-1">{stage.title}</p>
+                      </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteStage(stage.id, stage.sequence_number)
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
+                    title="删除阶段"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -591,6 +670,13 @@ export default function EarthCoursePage() {
                           >
                             查看
                           </a>
+                          <button
+                            onClick={() => handleEditVideoUrl(media.id, media.external_url || media.file_url, media.file_name)}
+                            className="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded transition-all"
+                            title="编辑链接"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => handleDeleteMedia(media.id)}
                             className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"

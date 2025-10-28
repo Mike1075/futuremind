@@ -275,6 +275,42 @@ export default function ListeningCoursePage() {
     }
   }
 
+  const handleDeleteCourse = async (contentId: string, sequenceNumber: number) => {
+    if (!confirm(`确定要删除第 ${sequenceNumber} 天的课程吗？删除后将无法恢复。`)) return
+
+    try {
+      const supabase = createClient()
+
+      // 先删除关联的媒体资源
+      const { error: mediaError } = await (supabase
+        .from('media_resources') as any)
+        .delete()
+        .eq('course_content_id', contentId)
+
+      if (mediaError) throw mediaError
+
+      // 删除课程内容
+      const { error } = await (supabase
+        .from('course_contents') as any)
+        .delete()
+        .eq('id', contentId)
+
+      if (error) throw error
+
+      alert('删除成功！')
+
+      // 如果删除的是当前选中的课程，清空选中状态
+      if (selectedContent?.id === contentId) {
+        setSelectedContent(null)
+      }
+
+      await loadCourseContents()
+    } catch (error) {
+      console.error('删除失败:', error)
+      alert('删除失败，请重试')
+    }
+  }
+
   // 生成星空粒子
   const particles = useMemo(() => {
     if (!isMounted) return []
@@ -358,23 +394,36 @@ export default function ListeningCoursePage() {
 
             <div className="space-y-2">
               {courseContents.map((content) => (
-                <button
+                <div
                   key={content.id}
-                  onClick={() => setSelectedContent(content)}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
+                  className={`relative rounded-lg transition-all ${
                     selectedContent?.id === content.id
                       ? 'bg-purple-600/30 border border-purple-500/50'
                       : 'bg-white/5 border border-white/10 hover:bg-white/10'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-medium">第 {content.sequence_number} 天</p>
-                      <p className="text-gray-400 text-sm mt-1 line-clamp-1">{content.title}</p>
+                  <button
+                    onClick={() => setSelectedContent(content)}
+                    className="w-full text-left px-4 py-3 pr-20"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-medium">第 {content.sequence_number} 天</p>
+                        <p className="text-gray-400 text-sm mt-1 line-clamp-1">{content.title}</p>
+                      </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteCourse(content.id, content.sequence_number)
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
+                    title="删除课程"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
