@@ -46,14 +46,33 @@ export default function IcarusAdminPage() {
   const [saving, setSaving] = useState(false)
   const [icarusSystemId, setIcarusSystemId] = useState<string | null>(null)
 
-  // 表单状态
-  const [formData, setFormData] = useState({
+  // 表单状态 - 使用结构化数据
+  const [formData, setFormData] = useState<{
+    title: string
+    subtitle: string
+    original_text: string
+    week_plan: Array<{
+      week: number
+      theme: string
+      goals: string[]
+      activities: Array<{
+        day: string
+        title: string
+        description: string
+        deliverables: string[]
+      }>
+    }>
+    prerequisites: Array<{
+      type: string
+      description: string
+    }>
+    estimated_duration: number
+  }>({
     title: '',
     subtitle: '',
     original_text: '',
-    week_plan: '',
-    day_plan: '',
-    prerequisites: '',
+    week_plan: [],
+    prerequisites: [],
     estimated_duration: 0
   })
 
@@ -68,9 +87,8 @@ export default function IcarusAdminPage() {
         title: selectedProject.title || '',
         subtitle: selectedProject.subtitle || '',
         original_text: selectedProject.original_text || '',
-        week_plan: JSON.stringify(selectedProject.week_plan, null, 2) || '',
-        day_plan: JSON.stringify(selectedProject.day_plan, null, 2) || '',
-        prerequisites: JSON.stringify(selectedProject.prerequisites, null, 2) || '',
+        week_plan: Array.isArray(selectedProject.week_plan) ? selectedProject.week_plan : [],
+        prerequisites: Array.isArray(selectedProject.prerequisites) ? selectedProject.prerequisites : [],
         estimated_duration: selectedProject.estimated_duration || 0
       })
     }
@@ -241,20 +259,15 @@ export default function IcarusAdminPage() {
     try {
       const supabase = createClient()
 
-      // Parse JSON fields
-      const weekPlan = formData.week_plan ? JSON.parse(formData.week_plan) : []
-      const dayPlan = formData.day_plan ? JSON.parse(formData.day_plan) : []
-      const prerequisites = formData.prerequisites ? JSON.parse(formData.prerequisites) : []
-
       const { error } = await (supabase
         .from('course_contents') as any)
         .update({
           title: formData.title,
           subtitle: formData.subtitle,
           original_text: formData.original_text,
-          week_plan: weekPlan,
-          day_plan: dayPlan,
-          prerequisites: prerequisites,
+          week_plan: formData.week_plan,
+          day_plan: [],  // day_plan不再使用，保留空数组
+          prerequisites: formData.prerequisites,
           estimated_duration: formData.estimated_duration,
           updated_at: new Date().toISOString()
         })
@@ -267,7 +280,7 @@ export default function IcarusAdminPage() {
       await loadProjects()
     } catch (error) {
       console.error('保存失败:', error)
-      alert('保存失败，请检查JSON格式')
+      alert('保存失败，请重试')
     } finally {
       setSaving(false)
     }
@@ -275,6 +288,95 @@ export default function IcarusAdminPage() {
 
   const getProjectBySequence = (seq: number): PBLProject | undefined => {
     return projects.find(p => p.sequence_number === seq)
+  }
+
+  // Week Plan 管理函数
+  const addWeek = () => {
+    const newWeek = {
+      week: formData.week_plan.length + 1,
+      theme: '',
+      goals: [],
+      activities: []
+    }
+    setFormData({ ...formData, week_plan: [...formData.week_plan, newWeek] })
+  }
+
+  const removeWeek = (index: number) => {
+    const newWeekPlan = formData.week_plan.filter((_, i) => i !== index)
+    // 重新编号
+    newWeekPlan.forEach((week, i) => week.week = i + 1)
+    setFormData({ ...formData, week_plan: newWeekPlan })
+  }
+
+  const updateWeek = (index: number, field: 'theme', value: string) => {
+    const newWeekPlan = [...formData.week_plan]
+    newWeekPlan[index] = { ...newWeekPlan[index], [field]: value }
+    setFormData({ ...formData, week_plan: newWeekPlan })
+  }
+
+  const addGoal = (weekIndex: number) => {
+    const newWeekPlan = [...formData.week_plan]
+    newWeekPlan[weekIndex].goals.push('')
+    setFormData({ ...formData, week_plan: newWeekPlan })
+  }
+
+  const updateGoal = (weekIndex: number, goalIndex: number, value: string) => {
+    const newWeekPlan = [...formData.week_plan]
+    newWeekPlan[weekIndex].goals[goalIndex] = value
+    setFormData({ ...formData, week_plan: newWeekPlan })
+  }
+
+  const removeGoal = (weekIndex: number, goalIndex: number) => {
+    const newWeekPlan = [...formData.week_plan]
+    newWeekPlan[weekIndex].goals = newWeekPlan[weekIndex].goals.filter((_, i) => i !== goalIndex)
+    setFormData({ ...formData, week_plan: newWeekPlan })
+  }
+
+  const addActivity = (weekIndex: number) => {
+    const newWeekPlan = [...formData.week_plan]
+    newWeekPlan[weekIndex].activities.push({
+      day: '',
+      title: '',
+      description: '',
+      deliverables: []
+    })
+    setFormData({ ...formData, week_plan: newWeekPlan })
+  }
+
+  const updateActivity = (weekIndex: number, activityIndex: number, field: 'day' | 'title' | 'description', value: string) => {
+    const newWeekPlan = [...formData.week_plan]
+    newWeekPlan[weekIndex].activities[activityIndex] = {
+      ...newWeekPlan[weekIndex].activities[activityIndex],
+      [field]: value
+    }
+    setFormData({ ...formData, week_plan: newWeekPlan })
+  }
+
+  const removeActivity = (weekIndex: number, activityIndex: number) => {
+    const newWeekPlan = [...formData.week_plan]
+    newWeekPlan[weekIndex].activities = newWeekPlan[weekIndex].activities.filter((_, i) => i !== activityIndex)
+    setFormData({ ...formData, week_plan: newWeekPlan })
+  }
+
+  // Prerequisites 管理函数
+  const addPrerequisite = () => {
+    setFormData({
+      ...formData,
+      prerequisites: [...formData.prerequisites, { type: '', description: '' }]
+    })
+  }
+
+  const updatePrerequisite = (index: number, field: 'type' | 'description', value: string) => {
+    const newPrerequisites = [...formData.prerequisites]
+    newPrerequisites[index] = { ...newPrerequisites[index], [field]: value }
+    setFormData({ ...formData, prerequisites: newPrerequisites })
+  }
+
+  const removePrerequisite = (index: number) => {
+    setFormData({
+      ...formData,
+      prerequisites: formData.prerequisites.filter((_, i) => i !== index)
+    })
   }
 
   if (!isMounted || loading) {
@@ -477,30 +579,217 @@ export default function IcarusAdminPage() {
                 />
               </div>
 
-              {/* Week Plan (JSON) */}
+              {/* 周计划编辑器 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">周计划（Week Plan - JSON格式）</label>
-                <textarea
-                  value={formData.week_plan}
-                  onChange={(e) => setFormData({ ...formData, week_plan: e.target.value })}
-                  disabled={!editMode}
-                  rows={10}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-purple-500 disabled:opacity-50"
-                  placeholder='[{"week": 1, "theme": "主题", "goals": [], "activities": []}]'
-                />
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-lg font-semibold text-white">周计划</label>
+                  {editMode && (
+                    <button
+                      onClick={addWeek}
+                      className="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 rounded-lg transition-all flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      添加周
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {formData.week_plan.length === 0 ? (
+                    <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10">
+                      <p className="text-gray-400">暂无周计划{editMode ? '，点击"添加周"开始创建' : ''}</p>
+                    </div>
+                  ) : (
+                    formData.week_plan.map((week, weekIndex) => (
+                      <div key={weekIndex} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-md font-bold text-white">第 {week.week} 周</h3>
+                          {editMode && (
+                            <button
+                              onClick={() => removeWeek(weekIndex)}
+                              className="p-1 hover:bg-red-600/20 text-red-400 rounded transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* 主题 */}
+                        <div className="mb-4">
+                          <label className="block text-sm text-gray-400 mb-2">主题</label>
+                          <input
+                            type="text"
+                            value={week.theme}
+                            onChange={(e) => updateWeek(weekIndex, 'theme', e.target.value)}
+                            disabled={!editMode}
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                            placeholder="输入本周主题..."
+                          />
+                        </div>
+
+                        {/* 目标 */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm text-gray-400">本周目标</label>
+                            {editMode && (
+                              <button
+                                onClick={() => addGoal(weekIndex)}
+                                className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
+                              >
+                                <Plus className="w-3 h-3" />
+                                添加目标
+                              </button>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            {week.goals.map((goal, goalIndex) => (
+                              <div key={goalIndex} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={goal}
+                                  onChange={(e) => updateGoal(weekIndex, goalIndex, e.target.value)}
+                                  disabled={!editMode}
+                                  className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                                  placeholder={`目标 ${goalIndex + 1}`}
+                                />
+                                {editMode && (
+                                  <button
+                                    onClick={() => removeGoal(weekIndex, goalIndex)}
+                                    className="p-2 hover:bg-red-600/20 text-red-400 rounded"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 活动 */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm text-gray-400">本周活动</label>
+                            {editMode && (
+                              <button
+                                onClick={() => addActivity(weekIndex)}
+                                className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
+                              >
+                                <Plus className="w-3 h-3" />
+                                添加活动
+                              </button>
+                            )}
+                          </div>
+                          <div className="space-y-3">
+                            {week.activities.map((activity, actIndex) => (
+                              <div key={actIndex} className="bg-white/5 p-3 rounded border border-white/10">
+                                <div className="flex items-start justify-between mb-2">
+                                  <span className="text-xs text-purple-400">活动 {actIndex + 1}</span>
+                                  {editMode && (
+                                    <button
+                                      onClick={() => removeActivity(weekIndex, actIndex)}
+                                      className="p-1 hover:bg-red-600/20 text-red-400 rounded"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="space-y-2">
+                                  <input
+                                    type="text"
+                                    value={activity.day}
+                                    onChange={(e) => updateActivity(weekIndex, actIndex, 'day', e.target.value)}
+                                    disabled={!editMode}
+                                    placeholder="日期/时间"
+                                    className="w-full px-3 py-1 bg-white/5 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={activity.title}
+                                    onChange={(e) => updateActivity(weekIndex, actIndex, 'title', e.target.value)}
+                                    disabled={!editMode}
+                                    placeholder="活动标题"
+                                    className="w-full px-3 py-1 bg-white/5 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                                  />
+                                  <textarea
+                                    value={activity.description}
+                                    onChange={(e) => updateActivity(weekIndex, actIndex, 'description', e.target.value)}
+                                    disabled={!editMode}
+                                    placeholder="活动描述"
+                                    rows={2}
+                                    className="w-full px-3 py-1 bg-white/5 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
-              {/* Prerequisites (JSON) */}
+              {/* 前置要求编辑器 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">前置要求（Prerequisites - JSON格式）</label>
-                <textarea
-                  value={formData.prerequisites}
-                  onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
-                  disabled={!editMode}
-                  rows={4}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-purple-500 disabled:opacity-50"
-                  placeholder='[{"type": "none", "description": "无要求"}]'
-                />
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-lg font-semibold text-white">前置要求</label>
+                  {editMode && (
+                    <button
+                      onClick={addPrerequisite}
+                      className="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 rounded-lg transition-all flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      添加要求
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {formData.prerequisites.length === 0 ? (
+                    <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10">
+                      <p className="text-gray-400">暂无前置要求{editMode ? '，点击"添加要求"开始创建' : ''}</p>
+                    </div>
+                  ) : (
+                    formData.prerequisites.map((prereq, index) => (
+                      <div key={index} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1 space-y-3">
+                            <div>
+                              <label className="block text-xs text-gray-400 mb-1">类型</label>
+                              <input
+                                type="text"
+                                value={prereq.type}
+                                onChange={(e) => updatePrerequisite(index, 'type', e.target.value)}
+                                disabled={!editMode}
+                                placeholder="如：基础知识、技能要求、设备需求等"
+                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-400 mb-1">描述</label>
+                              <textarea
+                                value={prereq.description}
+                                onChange={(e) => updatePrerequisite(index, 'description', e.target.value)}
+                                disabled={!editMode}
+                                placeholder="详细说明此项要求..."
+                                rows={3}
+                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                              />
+                            </div>
+                          </div>
+                          {editMode && (
+                            <button
+                              onClick={() => removePrerequisite(index)}
+                              className="p-2 hover:bg-red-600/20 text-red-400 rounded transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>
