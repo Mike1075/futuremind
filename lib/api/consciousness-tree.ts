@@ -124,7 +124,14 @@ class ConsciousnessTreeAPI {
         return { success: false, error: error.message }
       }
 
-      return { success: true, data }
+      return {
+        success: true,
+        data: {
+          domain_scores: data.domain_scores as DomainScores,
+          last_evaluated_at: data.last_evaluated_at || new Date().toISOString(),
+          total_evaluations: data.total_evaluations || 0
+        }
+      }
     } catch (error) {
       console.error('获取领域探索记录失败:', error)
       return { success: false, error: '获取领域探索记录失败' }
