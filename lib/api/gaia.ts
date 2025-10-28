@@ -69,7 +69,12 @@ class GaiaAPI {
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: data || [] }
+      // Filter out any invalid records and ensure all fields are non-null
+      const validData = (data || []).filter(item =>
+        item.id && item.user_id && item.title
+      ) as ConversationSummary[]
+
+      return { success: true, data: validData }
     } catch (error) {
       console.error('获取对话列表失败:', error)
       return { success: false, error: '获取对话列表失败' }
