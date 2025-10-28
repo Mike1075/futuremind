@@ -127,7 +127,7 @@ class ConsciousnessTreeAPI {
       return {
         success: true,
         data: {
-          domain_scores: data.domain_scores as DomainScores,
+          domain_scores: data.domain_scores as unknown as DomainScores,
           last_evaluated_at: data.last_evaluated_at || new Date().toISOString(),
           total_evaluations: data.total_evaluations || 0
         }
