@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Edit, Save, X } from 'lucide-react'
+import { ArrowLeft, Edit, Save, X, Trash2, Plus } from 'lucide-react'
 
 interface PBLProject {
   id: string
@@ -23,17 +23,17 @@ interface PBLProject {
   updated_at: string
 }
 
-const MODULES = [
+const FIXED_MODULES = [
   { id: 1, name: '模块一：无形的纽带', range: [1, 2, 3, 4] },
   { id: 2, name: '模块二：无形的地图', range: [5, 6, 7, 8] },
   { id: 3, name: '模块三：延展的心灵', range: [9, 10, 11, 12] }
 ]
 
 const DIFFICULTY_LABELS = {
-  beginner: { label: '小学', color: 'from-green-500 to-emerald-500', icon: '🌱' },
-  intermediate: { label: '初中', color: 'from-blue-500 to-cyan-500', icon: '🌿' },
-  advanced: { label: '高中', color: 'from-purple-500 to-pink-500', icon: '🌳' },
-  expert: { label: '成人', color: 'from-orange-500 to-red-500', icon: '🌲' }
+  option_a: { label: '选项A', color: 'from-green-500 to-emerald-500', icon: '🌱' },
+  option_b: { label: '选项B', color: 'from-blue-500 to-cyan-500', icon: '🌿' },
+  option_c: { label: '选项C', color: 'from-purple-500 to-pink-500', icon: '🌳' },
+  option_d: { label: '选项D', color: 'from-orange-500 to-red-500', icon: '🌲' }
 }
 
 export default function IcarusAdminPage() {
@@ -44,6 +44,7 @@ export default function IcarusAdminPage() {
   const [selectedProject, setSelectedProject] = useState<PBLProject | null>(null)
   const [editMode, setEditMode] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [icarusSystemId, setIcarusSystemId] = useState<string | null>(null)
 
   // 表单状态
   const [formData, setFormData] = useState({
@@ -106,6 +107,7 @@ export default function IcarusAdminPage() {
         .single()
 
       if (systemError) throw systemError
+      setIcarusSystemId(systemData.id)
 
       // Get all PBL projects
       const { data, error } = await (supabase
@@ -119,6 +121,116 @@ export default function IcarusAdminPage() {
       setProjects(data || [])
     } catch (error) {
       console.error('加载项目列表失败:', error)
+    }
+  }
+
+  // 动态计算所有模块（包括固定模块和新增模块）
+  const getAllModules = () => {
+    if (projects.length === 0) return FIXED_MODULES
+
+    const maxSeq = Math.max(...projects.map(p => p.sequence_number))
+    const modules = [...FIXED_MODULES]
+
+    // 如果有sequence_number >= 13的项目，说明有新增模块
+    if (maxSeq >= 13) {
+      const additionalModules = Math.floor((maxSeq - 12) / 4)
+      for (let i = 1; i <= additionalModules; i++) {
+        const startSeq = 9 + i * 4
+        modules.push({
+          id: 3 + i,
+          name: `模块${3 + i}`,
+          range: [startSeq, startSeq + 1, startSeq + 2, startSeq + 3]
+        })
+      }
+    }
+
+    return modules
+  }
+
+  const handleAddModule = async () => {
+    if (!icarusSystemId) return
+
+    const moduleName = prompt('请输入新模块名称:', `模块${getAllModules().length + 1}`)
+    if (!moduleName) return
+
+    try {
+      const supabase = createClient()
+      const maxSeq = projects.length > 0 ? Math.max(...projects.map(p => p.sequence_number)) : 12
+      const startSeq = maxSeq + 1
+
+      // 创建4个新项目（选项A/B/C/D）
+      const newProjects = [
+        { subtitle: 'option_a', title: `${moduleName} - 选项A` },
+        { subtitle: 'option_b', title: `${moduleName} - 选项B` },
+        { subtitle: 'option_c', title: `${moduleName} - 选项C` },
+        { subtitle: 'option_d', title: `${moduleName} - 选项D` }
+      ]
+
+      for (let i = 0; i < 4; i++) {
+        const { error } = await (supabase
+          .from('course_contents') as any)
+          .insert({
+            system_id: icarusSystemId,
+            content_type: 'pbl_project',
+            sequence_number: startSeq + i,
+            title: newProjects[i].title,
+            subtitle: newProjects[i].subtitle,
+            original_text: '',
+            week_plan: [],
+            day_plan: [],
+            prerequisites: [],
+            estimated_duration: 30,
+            is_published: false
+          })
+
+        if (error) throw error
+      }
+
+      alert('新增模块成功！')
+      await loadProjects()
+    } catch (error) {
+      console.error('新增模块失败:', error)
+      alert('新增模块失败，请重试')
+    }
+  }
+
+  const handleDeleteModule = async (moduleId: number, range: number[]) => {
+    // 只能删除sequence_number >= 13的模块
+    if (range[0] < 13) {
+      alert('系统默认的前3个模块不能删除')
+      return
+    }
+
+    if (!confirm(`确定要删除${getAllModules().find(m => m.id === moduleId)?.name}吗？删除后将无法恢复。`)) return
+
+    try {
+      const supabase = createClient()
+
+      // 删除该模块的所有4个项目
+      for (const seq of range) {
+        const project = projects.find(p => p.sequence_number === seq)
+        if (project) {
+          // 先删除关联的媒体资源
+          await (supabase
+            .from('media_resources') as any)
+            .delete()
+            .eq('course_content_id', project.id)
+
+          // 删除项目
+          const { error } = await (supabase
+            .from('course_contents') as any)
+            .delete()
+            .eq('id', project.id)
+
+          if (error) throw error
+        }
+      }
+
+      alert('删除成功！')
+      await loadProjects()
+    } catch (error) {
+      console.error('删除失败:', error)
+      alert('删除失败，请重试')
     }
   }
 
@@ -218,21 +330,33 @@ export default function IcarusAdminPage() {
         {!selectedProject ? (
           /* 矩阵视图 */
           <div className="space-y-8">
-            {MODULES.map((module) => (
+            {getAllModules().map((module) => (
               <motion.div
                 key={module.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: module.id * 0.1 }}
-                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6"
+                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 relative"
               >
-                <h2 className="text-xl font-bold text-white mb-6">{module.name}</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-white">{module.name}</h2>
+                  {module.range[0] >= 13 && (
+                    <button
+                      onClick={() => handleDeleteModule(module.id, module.range)}
+                      className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-all flex items-center gap-2"
+                      title="删除模块"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      删除模块
+                    </button>
+                  )}
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {module.range.map((seq) => {
                     const project = getProjectBySequence(seq)
-                    const difficulty = project?.subtitle as keyof typeof DIFFICULTY_LABELS || 'beginner'
-                    const diffConfig = DIFFICULTY_LABELS[difficulty]
+                    const difficulty = project?.subtitle as keyof typeof DIFFICULTY_LABELS || 'option_a'
+                    const diffConfig = DIFFICULTY_LABELS[difficulty] || DIFFICULTY_LABELS.option_a
 
                     return (
                       <motion.div
@@ -265,6 +389,16 @@ export default function IcarusAdminPage() {
                 </div>
               </motion.div>
             ))}
+
+            {/* 新增模块按钮 */}
+            <motion.button
+              onClick={handleAddModule}
+              whileHover={{ scale: 1.02 }}
+              className="w-full p-6 bg-white/5 hover:bg-white/10 backdrop-blur-sm border-2 border-dashed border-white/20 hover:border-purple-500/50 rounded-xl transition-all flex items-center justify-center gap-3"
+            >
+              <Plus className="w-6 h-6 text-purple-400" />
+              <span className="text-lg font-medium text-white">新增模块</span>
+            </motion.button>
           </div>
         ) : (
           /* 详细编辑视图 */

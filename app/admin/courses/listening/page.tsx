@@ -177,20 +177,20 @@ export default function ListeningCoursePage() {
     try {
       const supabase = createClient()
 
-      // 上传文件到 Supabase Storage
+      // 上传文件到 Supabase Storage (media bucket)
       const fileExt = file.name.split('.').pop()
-      const fileName = `${selectedContent.id}_${Date.now()}.${fileExt}`
+      const fileName = `day_${selectedContent.sequence_number}_${Date.now()}.${fileExt}`
       const filePath = `listening/${fileName}`
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('course-media')
+        .from('media')
         .upload(filePath, file)
 
       if (uploadError) throw uploadError
 
       // 获取公开URL
       const { data: { publicUrl } } = supabase.storage
-        .from('course-media')
+        .from('media')
         .getPublicUrl(filePath)
 
       // 保存到 media_resources 表
