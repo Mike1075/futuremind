@@ -4,18 +4,25 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Plus, Save, Upload, FileVideo, Trash2, ChevronRight, BookOpen } from 'lucide-react'
 
-interface CourseContent {
+interface EarthStage {
   id: string
   system_id: string
   content_type: string
   sequence_number: number
   title: string
-  original_text: string
-  deep_interpretation: string
-  meditation_guide: string
-  life_practice: string
+  subtitle: string
+  documentary_url: string
+  pre_watch_guide: string
+  knowledge_points: any[]
+  socratic_questions: {
+    pre_watch: string[]
+    during_watch: string[]
+    post_watch: string[]
+  }
+  post_reflection: string[]
+  estimated_duration: number
   is_published: boolean
   created_at: string
   updated_at: string
@@ -29,27 +36,35 @@ interface MediaResource {
   file_type: string
   file_size: number
   resource_type: string
+  external_url: string
   created_at: string
 }
 
-export default function ListeningCoursePage() {
+export default function EarthCoursePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
-  const [courseContents, setCourseContents] = useState<CourseContent[]>([])
-  const [selectedContent, setSelectedContent] = useState<CourseContent | null>(null)
+  const [stages, setStages] = useState<EarthStage[]>([])
+  const [selectedStage, setSelectedStage] = useState<EarthStage | null>(null)
   const [mediaResources, setMediaResources] = useState<MediaResource[]>([])
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [listeningSystemId, setListeningSystemId] = useState<string | null>(null)
+  const [earthSystemId, setEarthSystemId] = useState<string | null>(null)
 
   // 表单状态
   const [formData, setFormData] = useState({
     title: '',
-    original_text: '',
-    deep_interpretation: '',
-    meditation_guide: '',
-    life_practice: ''
+    subtitle: '',
+    documentary_url: '',
+    pre_watch_guide: '',
+    knowledge_points: [] as string[],
+    socratic_questions: {
+      pre_watch: [] as string[],
+      during_watch: [] as string[],
+      post_watch: [] as string[]
+    },
+    post_reflection: [] as string[],
+    estimated_duration: 60
   })
 
   useEffect(() => {
@@ -58,17 +73,24 @@ export default function ListeningCoursePage() {
   }, [])
 
   useEffect(() => {
-    if (selectedContent) {
+    if (selectedStage) {
       setFormData({
-        title: selectedContent.title || '',
-        original_text: selectedContent.original_text || '',
-        deep_interpretation: selectedContent.deep_interpretation || '',
-        meditation_guide: selectedContent.meditation_guide || '',
-        life_practice: selectedContent.life_practice || ''
+        title: selectedStage.title || '',
+        subtitle: selectedStage.subtitle || '',
+        documentary_url: selectedStage.documentary_url || '',
+        pre_watch_guide: selectedStage.pre_watch_guide || '',
+        knowledge_points: selectedStage.knowledge_points || [],
+        socratic_questions: selectedStage.socratic_questions || {
+          pre_watch: [],
+          during_watch: [],
+          post_watch: []
+        },
+        post_reflection: selectedStage.post_reflection || [],
+        estimated_duration: selectedStage.estimated_duration || 60
       })
-      loadMediaResources(selectedContent.id)
+      loadMediaResources(selectedStage.id)
     }
-  }, [selectedContent])
+  }, [selectedStage])
 
   const checkAuth = async () => {
     try {
@@ -80,7 +102,7 @@ export default function ListeningCoursePage() {
         return
       }
 
-      await loadCourseContents()
+      await loadStages()
     } catch (error) {
       console.error('认证失败:', error)
       router.push('/login')
@@ -89,23 +111,23 @@ export default function ListeningCoursePage() {
     }
   }
 
-  const loadCourseContents = async () => {
+  const loadStages = async () => {
     try {
       const supabase = createClient()
 
-      // First, get the listening system ID
+      // First, get the earth system ID
       const { data: systemData, error: systemError } = await (supabase
         .from('course_systems') as any)
         .select('id')
-        .eq('system_key', 'listening')
+        .eq('system_key', 'earth')
         .single()
 
       if (systemError) throw systemError
-      if (!systemData) throw new Error('未找到自在聆听课程体系')
+      if (!systemData) throw new Error('未找到欢迎来到地球课程体系')
 
-      setListeningSystemId(systemData.id)
+      setEarthSystemId(systemData.id)
 
-      // Then, get all course contents for this system
+      // Then, get all stages for this system
       const { data, error } = await (supabase
         .from('course_contents') as any)
         .select('*')
@@ -113,22 +135,22 @@ export default function ListeningCoursePage() {
         .order('sequence_number', { ascending: true })
 
       if (error) throw error
-      setCourseContents(data || [])
+      setStages(data || [])
       if (data && data.length > 0) {
-        setSelectedContent(data[0])
+        setSelectedStage(data[0])
       }
     } catch (error) {
       console.error('加载课程列表失败:', error)
     }
   }
 
-  const loadMediaResources = async (contentId: string) => {
+  const loadMediaResources = async (stageId: string) => {
     try {
       const supabase = createClient()
       const { data, error } = await (supabase
         .from('media_resources') as any)
         .select('*')
-        .eq('course_content_id', contentId)
+        .eq('course_content_id', stageId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -139,7 +161,7 @@ export default function ListeningCoursePage() {
   }
 
   const handleSave = async () => {
-    if (!selectedContent) return
+    if (!selectedStage) return
 
     setSaving(true)
     try {
@@ -148,18 +170,21 @@ export default function ListeningCoursePage() {
         .from('course_contents') as any)
         .update({
           title: formData.title,
-          original_text: formData.original_text,
-          deep_interpretation: formData.deep_interpretation,
-          meditation_guide: formData.meditation_guide,
-          life_practice: formData.life_practice,
+          subtitle: formData.subtitle,
+          documentary_url: formData.documentary_url,
+          pre_watch_guide: formData.pre_watch_guide,
+          knowledge_points: formData.knowledge_points,
+          socratic_questions: formData.socratic_questions,
+          post_reflection: formData.post_reflection,
+          estimated_duration: formData.estimated_duration,
           updated_at: new Date().toISOString()
         })
-        .eq('id', selectedContent.id)
+        .eq('id', selectedStage.id)
 
       if (error) throw error
 
       alert('保存成功！')
-      await loadCourseContents()
+      await loadStages()
     } catch (error) {
       console.error('保存失败:', error)
       alert('保存失败，请重试')
@@ -168,57 +193,40 @@ export default function ListeningCoursePage() {
     }
   }
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedContent || !event.target.files || event.target.files.length === 0) return
+  const handleAddExternalVideo = async () => {
+    if (!selectedStage) return
 
-    const file = event.target.files[0]
-    setUploading(true)
+    const url = prompt('请输入视频URL（YouTube/Bilibili）:')
+    if (!url) return
+
+    const description = prompt('请输入视频描述:')
 
     try {
       const supabase = createClient()
-
-      // 上传文件到 Supabase Storage
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${selectedContent.id}_${Date.now()}.${fileExt}`
-      const filePath = `listening/${fileName}`
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('course-media')
-        .upload(filePath, file)
-
-      if (uploadError) throw uploadError
-
-      // 获取公开URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('course-media')
-        .getPublicUrl(filePath)
-
-      // 保存到 media_resources 表
-      const { error: dbError } = await (supabase
+      const { error } = await (supabase
         .from('media_resources') as any)
         .insert({
-          course_content_id: selectedContent.id,
-          file_name: file.name,
-          file_url: publicUrl,
-          file_type: file.type,
-          file_size: file.size,
-          resource_type: 'audio'
+          course_content_id: selectedStage.id,
+          file_name: description || '外部视频',
+          file_url: url,
+          external_url: url,
+          file_type: 'video/external',
+          resource_type: 'video',
+          description: description
         })
 
-      if (dbError) throw dbError
+      if (error) throw error
 
-      alert('文件上传成功！')
-      await loadMediaResources(selectedContent.id)
+      alert('视频链接添加成功！')
+      await loadMediaResources(selectedStage.id)
     } catch (error) {
-      console.error('文件上传失败:', error)
-      alert('文件上传失败，请重试')
-    } finally {
-      setUploading(false)
+      console.error('添加视频失败:', error)
+      alert('添加视频失败，请重试')
     }
   }
 
   const handleDeleteMedia = async (mediaId: string) => {
-    if (!confirm('确定要删除这个文件吗？')) return
+    if (!confirm('确定要删除这个资源吗？')) return
 
     try {
       const supabase = createClient()
@@ -230,8 +238,8 @@ export default function ListeningCoursePage() {
       if (error) throw error
 
       alert('删除成功！')
-      if (selectedContent) {
-        await loadMediaResources(selectedContent.id)
+      if (selectedStage) {
+        await loadMediaResources(selectedStage.id)
       }
     } catch (error) {
       console.error('删除失败:', error)
@@ -239,11 +247,11 @@ export default function ListeningCoursePage() {
     }
   }
 
-  const handleAddNewDay = async () => {
-    if (!listeningSystemId) return
+  const handleAddNewStage = async () => {
+    if (!earthSystemId) return
 
-    const newSequenceNumber = courseContents.length > 0
-      ? Math.max(...courseContents.map(c => c.sequence_number)) + 1
+    const newSequenceNumber = stages.length > 0
+      ? Math.max(...stages.map(s => s.sequence_number)) + 1
       : 1
 
     try {
@@ -251,14 +259,21 @@ export default function ListeningCoursePage() {
       const { data, error } = await (supabase
         .from('course_contents') as any)
         .insert({
-          system_id: listeningSystemId,
-          content_type: 'daily_lesson',
+          system_id: earthSystemId,
+          content_type: 'stage',
           sequence_number: newSequenceNumber,
-          title: `第${newSequenceNumber}天`,
-          original_text: '',
-          deep_interpretation: '',
-          meditation_guide: '',
-          life_practice: '',
+          title: `第${newSequenceNumber}阶段`,
+          subtitle: '',
+          documentary_url: '',
+          pre_watch_guide: '',
+          knowledge_points: [],
+          socratic_questions: {
+            pre_watch: [],
+            during_watch: [],
+            post_watch: []
+          },
+          post_reflection: [],
+          estimated_duration: 60,
           is_published: false
         })
         .select()
@@ -267,8 +282,8 @@ export default function ListeningCoursePage() {
       if (error) throw error
 
       alert('新增成功！')
-      await loadCourseContents()
-      setSelectedContent(data)
+      await loadStages()
+      setSelectedStage(data)
     } catch (error) {
       console.error('新增失败:', error)
       alert('新增失败，请重试')
@@ -336,8 +351,8 @@ export default function ListeningCoursePage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-white">自在聆听·观音之旅</h1>
-              <p className="text-sm text-purple-300 mt-1">14天的聆听练习</p>
+              <h1 className="text-2xl font-bold text-white">欢迎来到地球</h1>
+              <p className="text-sm text-purple-300 mt-1">6个阶段的认知探索之旅</p>
             </div>
           </div>
         </div>
@@ -345,32 +360,32 @@ export default function ListeningCoursePage() {
 
       {/* Main Content */}
       <div className="flex h-[calc(100vh-88px)] relative z-10">
-        {/* 左侧栏 - 课程列表 */}
+        {/* 左侧栏 - 阶段列表 */}
         <div className="w-80 bg-white/5 backdrop-blur-md border-r border-white/10 overflow-y-auto">
           <div className="p-4">
             <button
-              onClick={handleAddNewDay}
+              onClick={handleAddNewStage}
               className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              新增一天
+              新增阶段
             </button>
 
             <div className="space-y-2">
-              {courseContents.map((content) => (
+              {stages.map((stage) => (
                 <button
-                  key={content.id}
-                  onClick={() => setSelectedContent(content)}
+                  key={stage.id}
+                  onClick={() => setSelectedStage(stage)}
                   className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
-                    selectedContent?.id === content.id
+                    selectedStage?.id === stage.id
                       ? 'bg-purple-600/30 border border-purple-500/50'
                       : 'bg-white/5 border border-white/10 hover:bg-white/10'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-white font-medium">第 {content.sequence_number} 天</p>
-                      <p className="text-gray-400 text-sm mt-1 line-clamp-1">{content.title}</p>
+                      <p className="text-white font-medium">第 {stage.sequence_number} 阶段</p>
+                      <p className="text-gray-400 text-sm mt-1 line-clamp-1">{stage.title}</p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                   </div>
@@ -382,10 +397,10 @@ export default function ListeningCoursePage() {
 
         {/* 右侧栏 - 内容编辑器 */}
         <div className="flex-1 overflow-y-auto">
-          {selectedContent ? (
+          {selectedStage ? (
             <div className="max-w-4xl mx-auto p-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">第 {selectedContent.sequence_number} 天</h2>
+                <h2 className="text-2xl font-bold text-white">第 {selectedStage.sequence_number} 阶段</h2>
                 <button
                   onClick={handleSave}
                   disabled={saving}
@@ -405,51 +420,130 @@ export default function ListeningCoursePage() {
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入标题..."
+                    placeholder="输入阶段标题..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">原文摘录</label>
+                  <label className="block text-white font-medium mb-2">副标题</label>
+                  <input
+                    type="text"
+                    value={formData.subtitle}
+                    onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入副标题..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">纪录片URL</label>
+                  <input
+                    type="text"
+                    value={formData.documentary_url}
+                    onChange={(e) => setFormData({ ...formData, documentary_url: e.target.value })}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入纪录片URL..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">观前指南</label>
                   <textarea
-                    value={formData.original_text}
-                    onChange={(e) => setFormData({ ...formData, original_text: e.target.value })}
+                    value={formData.pre_watch_guide}
+                    onChange={(e) => setFormData({ ...formData, pre_watch_guide: e.target.value })}
                     rows={6}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入克里希那穆提的原文摘录..."
+                    placeholder="输入观前指南..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">深度解读</label>
+                  <label className="block text-white font-medium mb-2">知识点（每行一个）</label>
                   <textarea
-                    value={formData.deep_interpretation}
-                    onChange={(e) => setFormData({ ...formData, deep_interpretation: e.target.value })}
-                    rows={10}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入深度解读内容..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white font-medium mb-2">冥想练习与引导</label>
-                  <textarea
-                    value={formData.meditation_guide}
-                    onChange={(e) => setFormData({ ...formData, meditation_guide: e.target.value })}
-                    rows={10}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入冥想练习与引导..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white font-medium mb-2">生活中的小练习</label>
-                  <textarea
-                    value={formData.life_practice}
-                    onChange={(e) => setFormData({ ...formData, life_practice: e.target.value })}
+                    value={formData.knowledge_points.join('\n')}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      knowledge_points: e.target.value.split('\n').filter(k => k.trim())
+                    })}
                     rows={8}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入生活中的小练习..."
+                    placeholder="输入知识点，每行一个..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">苏格拉底问题 - 课前引导（每行一个）</label>
+                  <textarea
+                    value={formData.socratic_questions.pre_watch.join('\n')}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      socratic_questions: {
+                        ...formData.socratic_questions,
+                        pre_watch: e.target.value.split('\n').filter(q => q.trim())
+                      }
+                    })}
+                    rows={4}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入课前问题，每行一个..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">苏格拉底问题 - 观看时（每行一个）</label>
+                  <textarea
+                    value={formData.socratic_questions.during_watch.join('\n')}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      socratic_questions: {
+                        ...formData.socratic_questions,
+                        during_watch: e.target.value.split('\n').filter(q => q.trim())
+                      }
+                    })}
+                    rows={6}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入观看时问题，每行一个..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">苏格拉底问题 - 课后思辨（每行一个）</label>
+                  <textarea
+                    value={formData.socratic_questions.post_watch.join('\n')}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      socratic_questions: {
+                        ...formData.socratic_questions,
+                        post_watch: e.target.value.split('\n').filter(q => q.trim())
+                      }
+                    })}
+                    rows={4}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入课后问题，每行一个..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">课后反思问题（每行一个）</label>
+                  <textarea
+                    value={formData.post_reflection.join('\n')}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      post_reflection: e.target.value.split('\n').filter(r => r.trim())
+                    })}
+                    rows={6}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入课后反思问题，每行一个..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">预计时长（分钟）</label>
+                  <input
+                    type="number"
+                    value={formData.estimated_duration}
+                    onChange={(e) => setFormData({ ...formData, estimated_duration: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入预计时长..."
                   />
                 </div>
               </div>
@@ -458,24 +552,20 @@ export default function ListeningCoursePage() {
               <div className="mt-12 pt-8 border-t border-white/10">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-white">资料管理</h3>
-                  <label className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 cursor-pointer">
+                  <button
+                    onClick={handleAddExternalVideo}
+                    className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                  >
                     <Upload className="w-4 h-4" />
-                    {uploading ? '上传中...' : '上传资料'}
-                    <input
-                      type="file"
-                      onChange={handleFileUpload}
-                      accept="audio/*,video/*,.pdf,.doc,.docx"
-                      className="hidden"
-                      disabled={uploading}
-                    />
-                  </label>
+                    添加视频链接
+                  </button>
                 </div>
 
                 <div className="space-y-3">
                   {mediaResources.length === 0 ? (
                     <div className="text-center py-12 bg-white/5 rounded-lg border border-white/10">
-                      <FileAudio className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-400">暂无资料，点击上传按钮添加</p>
+                      <FileVideo className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-400">暂无资料，点击按钮添加</p>
                     </div>
                   ) : (
                     mediaResources.map((media) => (
@@ -484,17 +574,17 @@ export default function ListeningCoursePage() {
                         className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all"
                       >
                         <div className="flex items-center gap-3">
-                          <FileAudio className="w-6 h-6 text-purple-400" />
+                          <FileVideo className="w-6 h-6 text-purple-400" />
                           <div>
                             <p className="text-white font-medium">{media.file_name}</p>
-                            <p className="text-gray-400 text-sm">
-                              {(media.file_size / 1024 / 1024).toFixed(2)} MB
+                            <p className="text-gray-400 text-sm truncate max-w-md">
+                              {media.external_url || media.file_url}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <a
-                            href={media.file_url}
+                            href={media.external_url || media.file_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-sm transition-all"
@@ -516,7 +606,7 @@ export default function ListeningCoursePage() {
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-gray-400 text-lg">请从左侧选择一天课程进行编辑</p>
+              <p className="text-gray-400 text-lg">请从左侧选择一个阶段进行编辑</p>
             </div>
           )}
         </div>
