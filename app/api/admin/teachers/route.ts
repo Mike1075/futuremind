@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 // GET /api/admin/teachers - 获取教师列表
 export async function GET() {
@@ -109,8 +109,9 @@ export async function POST(request: Request) {
       )
     }
 
-    // 将用户角色设为 teacher
-    const { error: updateError } = await (supabase
+    // 将用户角色设为 teacher - 使用管理员客户端绕过 RLS
+    const adminSupabase = createAdminClient()
+    const { error: updateError } = await (adminSupabase
       .from('profiles') as any)
       .update({ role: 'teacher' })
       .eq('id', targetUserData.id)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 // DELETE /api/admin/teachers/[id] - 删除教师（将角色改回 student）
 export async function DELETE(
@@ -57,8 +57,9 @@ export async function DELETE(
       )
     }
 
-    // 将角色改回 student
-    const { error: updateError } = await (supabase
+    // 将角色改回 student - 使用管理员客户端绕过 RLS
+    const adminSupabase = createAdminClient()
+    const { error: updateError } = await (adminSupabase
       .from('profiles') as any)
       .update({ role: 'student' })
       .eq('id', teacherId)
