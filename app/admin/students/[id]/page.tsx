@@ -92,7 +92,7 @@ export default function StudentDetailPage() {
         .eq('id', user.id)
         .single()
 
-      if (!profile || !['principal', 'teacher'].includes(profile.role)) {
+      if (!profile || !profile.role || !['principal', 'teacher'].includes(profile.role)) {
         alert('⚠️ 您不是管理员\n\n只有校长和老师可以访问学员详情。')
         router.push('/admin')
         return

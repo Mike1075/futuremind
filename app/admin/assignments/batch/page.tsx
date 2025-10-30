@@ -59,7 +59,7 @@ export default function BatchAssignmentPage() {
         .eq('id', user.id)
         .single()
 
-      if (!profile || !['principal', 'teacher'].includes(profile.role)) {
+      if (!profile || !profile.role || !['principal', 'teacher'].includes(profile.role)) {
         alert('⚠️ 您不是管理员')
         router.push('/admin')
         return

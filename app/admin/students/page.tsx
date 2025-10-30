@@ -99,7 +99,7 @@ export default function StudentsPage() {
         return
       }
 
-      if (!profile || !['principal', 'teacher'].includes(profile.role)) {
+      if (!profile || !profile.role || !['principal', 'teacher'].includes(profile.role)) {
         alert('⚠️ 您不是管理员\n\n只有校长和老师可以访问学员管理页面。')
         router.push('/admin')
         return

@@ -49,7 +49,7 @@ export async function DELETE(
     }
 
     // 4. 移除学员
-    const newStudentIds = currentStudentIds.filter(id => id !== studentId)
+    const newStudentIds = currentStudentIds.filter((id: string) => id !== studentId)
 
     // 5. 更新 teacher_assignments
     const { error } = await supabase
