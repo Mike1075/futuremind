@@ -1,3 +1,5 @@
+'use client'
+
 import dynamic from 'next/dynamic'
 
 // 使用动态导入，完全禁用服务端渲染，避免 hydration 错误
