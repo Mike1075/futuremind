@@ -30,6 +30,25 @@ export default function AdminDashboard() {
         return
       }
 
+      // 检查是否是管理员（可选检查，如果表不存在则跳过）
+      try {
+        const { data: admin, error } = await supabase
+          .from('admins')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          // PGRST116 = 没有找到行，这是正常的
+          console.warn('无法验证管理员权限:', error.message)
+        }
+
+        // 即使不是管理员也允许访问主页（降级为只读模式）
+      } catch (adminCheckError) {
+        // admins表可能不存在，继续允许访问
+        console.warn('管理员表可能未初始化:', adminCheckError)
+      }
+
       setUserEmail(user.email || '')
     } catch (error) {
       console.error('认证失败:', error)

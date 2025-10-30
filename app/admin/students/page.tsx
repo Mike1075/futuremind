@@ -86,13 +86,24 @@ export default function StudentsPage() {
       }
 
       // 检查是否是管理员
-      const { data: admin } = await supabase
+      const { data: admin, error: adminError } = await supabase
         .from('admins')
         .select('role')
         .eq('id', user.id)
         .single()
 
+      if (adminError) {
+        console.error('无法验证管理员权限:', adminError)
+        // 如果是表不存在或其他数据库错误，显示友好提示
+        if (adminError.code === '42P01' || adminError.code === 'PGRST204') {
+          alert('❌ 数据库未初始化\n\n请先运行数据库迁移：\nsupabase db push --include-all\n\n详见 DEPLOYMENT_AND_TESTING_GUIDE.md')
+          router.push('/admin')
+          return
+        }
+      }
+
       if (!admin) {
+        alert('⚠️ 您不是管理员\n\n请联系系统管理员将您的账号添加到 admins 表中。')
         router.push('/admin')
         return
       }
@@ -100,6 +111,7 @@ export default function StudentsPage() {
       setUserEmail(user.email || '')
     } catch (error) {
       console.error('认证失败:', error)
+      alert('❌ 系统错误\n\n无法验证您的身份，请稍后重试。')
       router.push('/login')
     } finally {
       setLoading(false)
