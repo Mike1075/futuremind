@@ -29,24 +29,37 @@ export default function AdminDashboard() {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        router.push('/login')
+        router.push('/')
         return
       }
 
-      // 检查用户角色（所有用户都可以访问主页）
-      const { data: profile } = await supabase
+      // 检查用户角色
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
 
-      // 所有用户都可以访问主页，但功能入口会根据角色显示
+      if (profileError || !profile) {
+        console.error('获取用户资料失败:', profileError)
+        alert('⚠️ 无法获取用户信息，请重新登录')
+        router.push('/')
+        return
+      }
+
+      // 检查是否有管理权限
+      if (!profile.role || !['principal', 'teacher'].includes(profile.role)) {
+        alert('⚠️ 您没有管理员权限\n\n只有校长和老师可以访问管理后台。')
+        router.push('/')
+        return
+      }
 
       setUserEmail(user.email || '')
-      setUserRole(profile?.role || '')
+      setUserRole(profile.role)
     } catch (error) {
       console.error('认证失败:', error)
-      router.push('/login')
+      alert('❌ 系统错误，请稍后重试')
+      router.push('/')
     } finally {
       setLoading(false)
     }
@@ -167,44 +180,50 @@ export default function AdminDashboard() {
 
       {/* Main Content - Minimalist Portal */}
       <main className="max-w-7xl mx-auto px-6 py-8 min-h-[calc(100vh-120px)] flex items-center justify-center relative z-10">
-        <div className={`grid grid-cols-1 ${portalCards.length >= 3 ? 'md:grid-cols-3 lg:grid-cols-4' : 'md:grid-cols-2'} gap-6 w-full max-w-7xl`}>
-          {portalCards.map((card) => {
-            const Icon = card.icon
-            return (
-              <button
-                key={card.title}
-                onClick={() => router.push(card.href)}
-                className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-500 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center"
-              >
-                {/* Gradient Background Effect */}
-                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
+        {portalCards.length === 0 ? (
+          <div className="text-center">
+            <p className="text-gray-400 text-lg">正在加载管理功能...</p>
+          </div>
+        ) : (
+          <div className={`grid grid-cols-1 ${portalCards.length >= 3 ? 'md:grid-cols-3 lg:grid-cols-4' : 'md:grid-cols-2'} gap-6 w-full max-w-7xl`}>
+            {portalCards.map((card) => {
+              const Icon = card.icon
+              return (
+                <button
+                  key={card.title}
+                  onClick={() => router.push(card.href)}
+                  className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-500 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center"
+                >
+                  {/* Gradient Background Effect */}
+                  <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
 
-                {/* Icon */}
-                <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500`}>
-                  <Icon className="w-10 h-10 text-white" />
-                </div>
+                  {/* Icon */}
+                  <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500`}>
+                    <Icon className="w-10 h-10 text-white" />
+                  </div>
 
-                {/* Title */}
-                <h2 className="relative text-2xl font-bold text-white mb-2 group-hover:scale-105 transition-transform duration-300">
-                  {card.title}
-                </h2>
+                  {/* Title */}
+                  <h2 className="relative text-2xl font-bold text-white mb-2 group-hover:scale-105 transition-transform duration-300">
+                    {card.title}
+                  </h2>
 
-                {/* Description */}
-                <p className="relative text-sm text-gray-300 text-center group-hover:text-white transition-colors duration-300">
-                  {card.description}
-                </p>
+                  {/* Description */}
+                  <p className="relative text-sm text-gray-300 text-center group-hover:text-white transition-colors duration-300">
+                    {card.description}
+                  </p>
 
-                {/* Arrow Indicator */}
-                <div className="relative mt-4 flex items-center text-purple-300 group-hover:text-white transition-colors duration-300">
-                  <span className="text-xs mr-1">进入</span>
-                  <svg className="w-4 h-4 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </div>
-              </button>
-            )
-          })}
-        </div>
+                  {/* Arrow Indicator */}
+                  <div className="relative mt-4 flex items-center text-purple-300 group-hover:text-white transition-colors duration-300">
+                    <span className="text-xs mr-1">进入</span>
+                    <svg className="w-4 h-4 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </main>
     </div>
   )
