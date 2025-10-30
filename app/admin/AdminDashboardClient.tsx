@@ -7,8 +7,7 @@ import { motion } from 'framer-motion'
 import {
   Users,
   BookOpen,
-  UserCog,
-  Zap
+  UserCheck
 } from 'lucide-react'
 
 export default function AdminDashboardClient() {
@@ -83,45 +82,38 @@ export default function AdminDashboardClient() {
     }
   }, [isMounted])
 
-  // 根据角色生成卡片
+  // 根据角色生成卡片（新架构：校长3个，老师2个）
   useEffect(() => {
     const cards = []
 
-    // 校长和老师都能看到的卡片
+    // 校长专属：教师管理
+    if (userRole === 'principal') {
+      cards.push({
+        title: '教师管理',
+        description: '管理教师账号，查看教师活动',
+        href: '/admin/teachers',
+        icon: UserCheck,
+        gradient: 'from-emerald-500 via-teal-500 to-cyan-500'
+      })
+    }
+
+    // 校长和老师共有：课程管理
     if (userRole === 'principal' || userRole === 'teacher') {
       cards.push({
-        title: '学员管理',
-        description: '查看学员信息、学习进度和成长轨迹',
-        href: '/admin/students',
-        icon: Users,
-        gradient: 'from-blue-500 via-cyan-500 to-teal-500'
-      })
-
-      cards.push({
         title: '课程管理',
-        description: '管理课程内容、学习路径和教学资源',
+        description: '管理课程内容、资料上传、选课学员',
         href: '/admin/courses',
         icon: BookOpen,
         gradient: 'from-purple-500 via-pink-500 to-rose-500'
       })
 
+      // 校长和老师共有：学员管理
       cards.push({
-        title: '批量分配',
-        description: '快速为多个学员分配课程',
-        href: '/admin/assignments/batch',
-        icon: Zap,
-        gradient: 'from-yellow-500 via-orange-500 to-red-500'
-      })
-    }
-
-    // 老师专属：我的学员管理
-    if (userRole === 'teacher') {
-      cards.push({
-        title: '我的学员',
-        description: '管理选了您课程的学员',
-        href: '/admin/teacher/students',
-        icon: UserCog,
-        gradient: 'from-green-500 via-emerald-500 to-teal-500'
+        title: '学员管理',
+        description: '查看学员信息、选课情况、分组管理',
+        href: '/admin/students',
+        icon: Users,
+        gradient: 'from-blue-500 via-cyan-500 to-teal-500'
       })
     }
 

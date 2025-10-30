@@ -16,7 +16,9 @@ import {
   Calendar,
   Lightbulb,
   Star,
-  Leaf
+  Leaf,
+  BookOpen,
+  Plus
 } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
 import { DatabaseConsciousnessRoots } from '@/components/ui/database-consciousness-roots'
@@ -40,6 +42,20 @@ interface UserProgress {
   updated_at: string
 }
 
+interface Course {
+  id: string
+  title: string
+  description: string | null
+  system_key: string
+  is_active: boolean
+}
+
+interface EnrolledCourse {
+  course_id: string
+  course_title: string
+  assigned_at: string
+}
+
 export default function PortalPage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -47,7 +63,12 @@ export default function PortalPage() {
   const [currentDay, setCurrentDay] = useState(1)
   const [completedTasks, setCompletedTasks] = useState<string[]>([])
   const [consciousnessGrowth, setConsciousnessGrowth] = useState(0)
-  
+
+  // Course enrollment state
+  const [allCourses, setAllCourses] = useState<Course[]>([])
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([])
+  const [enrolling, setEnrolling] = useState(false)
+
   const router = useRouter()
   const supabase = createClient()
 
@@ -68,6 +89,9 @@ export default function PortalPage() {
           setCompletedTasks((progress as UserProgress).completed_tasks || [])
           setConsciousnessGrowth((progress as UserProgress).consciousness_growth || 0)
         }
+
+        // Load courses
+        await loadCourses(user.id)
       } else {
         router.push('/login')
       }
@@ -77,6 +101,42 @@ export default function PortalPage() {
     getUser()
   }, [router, supabase])
 
+  const loadCourses = async (userId: string) => {
+    try {
+      // Load all active courses
+      const { data: coursesData, error: coursesError } = await (supabase
+        .from('course_systems') as any)
+        .select('id, title, description, system_key, is_active')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+
+      if (coursesError) throw coursesError
+      setAllCourses(coursesData || [])
+
+      // Load enrolled courses
+      const { data: enrolledData, error: enrolledError } = await (supabase
+        .from('student_course_assignments') as any)
+        .select(`
+          assigned_at,
+          course_systems (id, title)
+        `)
+        .eq('student_id', userId)
+        .eq('status', 'active')
+
+      if (enrolledError) throw enrolledError
+
+      const enrolled: EnrolledCourse[] = enrolledData?.map((item: any) => ({
+        course_id: item.course_systems.id,
+        course_title: item.course_systems.title,
+        assigned_at: item.assigned_at
+      })) || []
+
+      setEnrolledCourses(enrolled)
+    } catch (error) {
+      console.error('加载课程失败:', error)
+    }
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')
@@ -85,7 +145,7 @@ export default function PortalPage() {
   const handleTaskComplete = async (taskId: string) => {
     let newCompletedTasks: string[]
     let newGrowth: number
-    
+
     if (completedTasks.includes(taskId)) {
       // 如果任务已完成，则取消完成
       newCompletedTasks = completedTasks.filter(id => id !== taskId)
@@ -95,7 +155,7 @@ export default function PortalPage() {
       newCompletedTasks = [...completedTasks, taskId]
       newGrowth = consciousnessGrowth + 10
     }
-    
+
     setCompletedTasks(newCompletedTasks)
     setConsciousnessGrowth(newGrowth)
 
@@ -115,6 +175,41 @@ export default function PortalPage() {
         .upsert(updateData)
     } catch (error) {
       console.error('Error updating progress:', error)
+    }
+  }
+
+  const handleEnrollCourse = async (courseId: string) => {
+    if (!user) return
+
+    // Check if already enrolled
+    if (enrolledCourses.some(c => c.course_id === courseId)) {
+      alert('您已经选修了这门课程')
+      return
+    }
+
+    const confirmed = confirm('确认要选修这门课程吗？')
+    if (!confirmed) return
+
+    setEnrolling(true)
+    try {
+      const { error } = await (supabase
+        .from('student_course_assignments') as any)
+        .insert({
+          student_id: user.id,
+          course_system_id: courseId,
+          assigned_by: user.id, // Self-enrollment
+          status: 'active'
+        })
+
+      if (error) throw error
+
+      alert('✅ 选课成功！')
+      await loadCourses(user.id)
+    } catch (error) {
+      console.error('选课失败:', error)
+      alert('❌ 选课失败，请重试')
+    } finally {
+      setEnrolling(false)
     }
   }
 
@@ -275,6 +370,80 @@ export default function PortalPage() {
                   <span>Level {Math.floor(currentDay / 7) + 1}</span>
                 </div>
               </div>
+            </motion.div>
+
+            {/* My Courses */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
+            >
+              <div className="flex items-center mb-4">
+                <BookOpen className="w-6 h-6 text-cyan-400 mr-3" />
+                <h3 className="text-xl font-semibold text-white">我的课程</h3>
+              </div>
+
+              {/* Enrolled Courses */}
+              {enrolledCourses.length > 0 ? (
+                <div className="space-y-3 mb-6">
+                  <p className="text-sm text-gray-400 mb-2">已选课程：</p>
+                  {enrolledCourses.map((course) => (
+                    <div
+                      key={course.course_id}
+                      className="flex items-center justify-between p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg"
+                    >
+                      <div>
+                        <p className="text-white font-medium">{course.course_title}</p>
+                        <p className="text-xs text-gray-400">
+                          选课时间：{new Date(course.assigned_at).toLocaleDateString('zh-CN')}
+                        </p>
+                      </div>
+                      <CheckCircle className="w-5 h-5 text-cyan-400" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400 text-sm mb-6">您还没有选修任何课程</p>
+              )}
+
+              {/* Available Courses */}
+              {(() => {
+                const availableCourses = allCourses.filter(
+                  course => !enrolledCourses.some(e => e.course_id === course.id)
+                )
+
+                return availableCourses.length > 0 ? (
+                  <>
+                    <div className="border-t border-white/10 pt-4">
+                      <p className="text-sm text-gray-400 mb-3">可选课程：</p>
+                      <div className="space-y-3">
+                        {availableCourses.map((course) => (
+                          <div
+                            key={course.id}
+                            className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg hover:border-white/20 transition-colors"
+                          >
+                            <div className="flex-1 mr-3">
+                              <p className="text-white font-medium">{course.title}</p>
+                              {course.description && (
+                                <p className="text-sm text-gray-400 mt-1">{course.description}</p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleEnrollCourse(course.id)}
+                              disabled={enrolling}
+                              className="flex items-center gap-2 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <Plus className="w-4 h-4" />
+                              选课
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : null
+              })()}
             </motion.div>
 
             {/* Main Quest */}

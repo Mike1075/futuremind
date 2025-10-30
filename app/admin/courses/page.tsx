@@ -6,11 +6,19 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus } from 'lucide-react'
 
+interface CourseSystem {
+  id: string
+  title: string
+  description: string
+  system_key: string
+}
+
 export default function CoursesPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState<string>('')
   const [isMounted, setIsMounted] = useState(false)
+  const [courseSystems, setCourseSystems] = useState<CourseSystem[]>([])
 
   useEffect(() => {
     setIsMounted(true)
@@ -28,11 +36,28 @@ export default function CoursesPage() {
       }
 
       setUserEmail(user.email || '')
+      await loadCourses()
     } catch (error) {
       console.error('认证失败:', error)
       router.push('/login')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadCourses = async () => {
+    try {
+      const supabase = createClient()
+      const { data, error } = await (supabase
+        .from('course_systems') as any)
+        .select('id, title, description, system_key')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+
+      if (error) throw error
+      setCourseSystems(data || [])
+    } catch (error) {
+      console.error('加载课程列表失败:', error)
     }
   }
 
@@ -49,32 +74,31 @@ export default function CoursesPage() {
     }))
   }, [isMounted])
 
-  const courseSystems = [
-    {
-      title: '自在聆听·观音之旅',
-      description: '14天的聆听练习，开启觉知之门',
-      href: '/admin/courses/listening',
-      icon: Ear,
-      gradient: 'from-purple-500 via-indigo-500 to-blue-500',
-      iconColor: 'text-purple-400'
-    },
-    {
-      title: '欢迎来到地球',
-      description: '感官探索与科学认知的奇妙旅程',
-      href: '/admin/courses/earth',
-      icon: Globe,
-      gradient: 'from-cyan-500 via-teal-500 to-green-500',
-      iconColor: 'text-cyan-400'
-    },
-    {
-      title: '伊卡洛斯计划',
-      description: 'PBL项目式学习，探索无形的纽带',
-      href: '/admin/courses/pbl',
-      icon: Rocket,
-      gradient: 'from-orange-500 via-red-500 to-pink-500',
-      iconColor: 'text-orange-400'
+  // Icon mapping
+  const getIconAndGradient = (systemKey: string) => {
+    switch (systemKey) {
+      case 'listening':
+        return {
+          icon: Ear,
+          gradient: 'from-purple-500 via-indigo-500 to-blue-500'
+        }
+      case 'earth':
+        return {
+          icon: Globe,
+          gradient: 'from-cyan-500 via-teal-500 to-green-500'
+        }
+      case 'pbl':
+        return {
+          icon: Rocket,
+          gradient: 'from-orange-500 via-red-500 to-pink-500'
+        }
+      default:
+        return {
+          icon: BookOpen,
+          gradient: 'from-gray-500 via-gray-600 to-gray-700'
+        }
     }
-  ]
+  }
 
   if (loading) {
     return (
@@ -141,18 +165,18 @@ export default function CoursesPage() {
         {/* 课程体系网格 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {courseSystems.map((course) => {
-            const Icon = course.icon
+            const { icon: Icon, gradient } = getIconAndGradient(course.system_key)
             return (
               <button
-                key={course.title}
-                onClick={() => router.push(course.href)}
+                key={course.id}
+                onClick={() => router.push(`/admin/courses/${course.id}`)}
                 className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center"
               >
                 {/* Gradient Background Effect */}
-                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${course.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300`} />
+                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300`} />
 
                 {/* Icon */}
-                <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${course.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   <Icon className="w-10 h-10 text-white" />
                 </div>
 

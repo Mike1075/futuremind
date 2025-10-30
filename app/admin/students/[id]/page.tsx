@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, User, TrendingUp, BookOpen, History, AlertCircle } from 'lucide-react'
+import { ArrowLeft, User, TrendingUp, BookOpen, History, AlertCircle, UsersRound } from 'lucide-react'
 
 interface StudentDetail {
   student: {
@@ -40,6 +40,18 @@ interface StudentDetail {
     total: number
     avg_depth: number
   }
+  enrolled_courses?: Array<{
+    course_id: string
+    course_title: string
+    assigned_at: string
+    ai_evaluation: string
+  }>
+  groups?: Array<{
+    id: string
+    name: string
+    group_type: 'global' | 'course'
+    course_title?: string
+  }>
 }
 
 const LEVEL_COLORS = {
@@ -69,7 +81,7 @@ export default function StudentDetailPage() {
 
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<StudentDetail | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'stats' | 'progress' | 'history'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'groups' | 'stats' | 'progress' | 'history'>('overview')
 
   useEffect(() => {
     checkAuthAndFetchData()
@@ -233,6 +245,28 @@ export default function StudentDetailPage() {
               概览
             </button>
             <button
+              onClick={() => setActiveTab('courses')}
+              className={`flex-1 px-6 py-4 font-semibold transition-all ${
+                activeTab === 'courses'
+                  ? 'text-white bg-purple-500/20 border-b-2 border-purple-400'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <BookOpen className="w-5 h-5 inline mr-2" />
+              选修课程
+            </button>
+            <button
+              onClick={() => setActiveTab('groups')}
+              className={`flex-1 px-6 py-4 font-semibold transition-all ${
+                activeTab === 'groups'
+                  ? 'text-white bg-purple-500/20 border-b-2 border-purple-400'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <UsersRound className="w-5 h-5 inline mr-2" />
+              所属分组
+            </button>
+            <button
               onClick={() => setActiveTab('stats')}
               className={`flex-1 px-6 py-4 font-semibold transition-all ${
                 activeTab === 'stats'
@@ -327,7 +361,93 @@ export default function StudentDetailPage() {
               </div>
             )}
 
-            {/* Tab 2: 统计数据 */}
+            {/* Tab 2: 选修课程 */}
+            {activeTab === 'courses' && (
+              <div className="space-y-6">
+                <h3 className="text-xl font-bold text-white mb-4">选修课程</h3>
+
+                {data.enrolled_courses && data.enrolled_courses.length > 0 ? (
+                  <div className="space-y-4">
+                    {data.enrolled_courses.map((course) => (
+                      <div
+                        key={course.course_id}
+                        className="bg-white/5 rounded-lg p-6 border border-white/10"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="text-lg font-semibold text-white mb-1">{course.course_title}</h4>
+                            <p className="text-xs text-gray-400">
+                              选课时间: {new Date(course.assigned_at).toLocaleDateString('zh-CN')}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* AI Evaluation */}
+                        <div className="mt-4 pt-4 border-t border-white/10">
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded">
+                              AI 评价
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-300 leading-relaxed italic">
+                            {course.ai_evaluation}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-2">
+                            * 此为占位文本，实际AI评价将从 student_summaries 表的 course_summaries 字段读取
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-400">该学员暂未选修任何课程</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 3: 所属分组 */}
+            {activeTab === 'groups' && (
+              <div className="space-y-6">
+                <h3 className="text-xl font-bold text-white mb-4">所属分组</h3>
+
+                {data.groups && data.groups.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {data.groups.map((group) => (
+                      <div
+                        key={group.id}
+                        className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="text-white font-semibold">{group.name}</h4>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            group.group_type === 'global'
+                              ? 'bg-blue-500/20 text-blue-300'
+                              : 'bg-green-500/20 text-green-300'
+                          }`}>
+                            {group.group_type === 'global' ? '全局' : '课程'}
+                          </span>
+                        </div>
+                        {group.course_title && (
+                          <p className="text-xs text-gray-400 mt-2">
+                            关联课程: {group.course_title}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <UsersRound className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-400">该学员暂未加入任何分组</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 4: 统计数据 */}
             {activeTab === 'stats' && (
               <div className="space-y-6">
                 <h3 className="text-xl font-bold text-white mb-4">行为统计</h3>
@@ -363,7 +483,7 @@ export default function StudentDetailPage() {
               </div>
             )}
 
-            {/* Tab 3: 课程进度 */}
+            {/* Tab 5: 课程进度 */}
             {activeTab === 'progress' && (
               <div className="space-y-6">
                 <h3 className="text-xl font-bold text-white mb-4">课程进度</h3>
@@ -397,7 +517,7 @@ export default function StudentDetailPage() {
               </div>
             )}
 
-            {/* Tab 4: 成长历程 */}
+            {/* Tab 6: 成长历程 */}
             {activeTab === 'history' && (
               <div className="space-y-6">
                 <h3 className="text-xl font-bold text-white mb-4">等级历史</h3>

@@ -30,19 +30,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
-    // 1.1 如果是老师，检查是否有权限查看该学员
-    if (profile.role === 'teacher') {
-      const { data: assignment } = await supabase
-        .from('teacher_assignments')
-        .select('managed_student_ids')
-        .eq('teacher_id', user.id)
-        .single()
-
-      const managedStudentIds = assignment?.managed_student_ids || []
-      if (!managedStudentIds.includes(studentId)) {
-        return NextResponse.json({ error: 'Forbidden - You do not manage this student' }, { status: 403 })
-      }
-    }
+    // Note: 老师和校长都有权限查看所有学员（新权限系统）
 
     // 2. 获取学员基本信息（不含隐私字段）
     const { data: student, error: studentError } = await supabase
@@ -141,7 +129,49 @@ export async function GET(
       return acc
     }, {})
 
-    // 10. 汇总返回数据
+    // 10. 获取选修课程（新增）
+    const { data: enrolledCourses } = await supabase
+      .from('student_course_assignments')
+      .select(`
+        assigned_at,
+        course_systems (
+          id,
+          title
+        )
+      `)
+      .eq('student_id', studentId)
+      .eq('status', 'active')
+
+    const coursesList = enrolledCourses?.map((e: any) => ({
+      course_id: e.course_systems.id,
+      course_title: e.course_systems.title,
+      assigned_at: e.assigned_at,
+      // 临时占位AI评价（后续从 student_summaries.course_summaries 读取）
+      ai_evaluation: `该学员在「${e.course_systems.title}」课程中表现积极，参与度良好。展现出对课程内容的理解能力，能够按时完成学习任务。建议继续保持学习热情，深入探索课程核心概念。`
+    })) || []
+
+    // 11. 获取所属分组（新增）
+    const { data: groupsData } = await supabase
+      .from('student_groups')
+      .select(`
+        id,
+        name,
+        group_type,
+        member_ids,
+        course_systems (
+          title
+        )
+      `)
+      .contains('member_ids', [studentId])
+
+    const groupsList = groupsData?.map((g: any) => ({
+      id: g.id,
+      name: g.name,
+      group_type: g.group_type,
+      course_title: g.course_systems?.title
+    })) || []
+
+    // 12. 汇总返回数据
     return NextResponse.json({
       student,
       summary,
@@ -162,7 +192,9 @@ export async function GET(
         avg_depth: conversations && conversations.length > 0
           ? Math.round(conversations.reduce((sum, c) => sum + (c.message_count || 0), 0) / conversations.length)
           : 0
-      }
+      },
+      enrolled_courses: coursesList,
+      groups: groupsList
     })
 
   } catch (error: any) {
