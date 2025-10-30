@@ -44,14 +44,16 @@ export default function DebugPage() {
       }
 
       // 也尝试用 email 查询
-      const { data: adminByEmail, error: emailError } = await supabase
-        .from('admins')
-        .select('*')
-        .eq('email', user.email)
-        .single()
+      if (user.email) {
+        const { data: adminByEmail, error: emailError } = await supabase
+          .from('admins')
+          .select('*')
+          .eq('email', user.email)
+          .single()
 
-      if (!emailError && adminByEmail) {
-        setAdminInfo(prev => ({ ...prev, foundByEmail: adminByEmail }))
+        if (!emailError && adminByEmail) {
+          setAdminInfo(prev => ({ ...prev, foundByEmail: adminByEmail }))
+        }
       }
 
     } catch (error: any) {
