@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -65,17 +65,20 @@ export default function AdminDashboard() {
     }
   }
 
-  // 生成固定的粒子配置
-  const particles = useMemo(() => {
-    if (!isMounted) return []
-    return [...Array(50)].map((_, i) => ({
-      id: i,
-      x: Math.random() * 100 - 50,
-      y: Math.random() * 100 - 50,
-      duration: Math.random() * 3 + 2,
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-    }))
+  // 生成固定的粒子配置（避免 hydration 不匹配）
+  const [particles, setParticles] = useState<any[]>([])
+
+  useEffect(() => {
+    if (isMounted) {
+      setParticles([...Array(50)].map((_, i) => ({
+        id: i,
+        x: Math.random() * 100 - 50,
+        y: Math.random() * 100 - 50,
+        duration: Math.random() * 3 + 2,
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+      })))
+    }
   }, [isMounted])
 
   if (loading) {
@@ -89,8 +92,10 @@ export default function AdminDashboard() {
     )
   }
 
-  // 根据角色生成卡片
-  const portalCards = useMemo(() => {
+  // 根据角色生成卡片（避免 hydration 不匹配）
+  const [portalCards, setPortalCards] = useState<any[]>([])
+
+  useEffect(() => {
     const cards = []
 
     // 校长和老师都能看到的卡片
@@ -131,7 +136,7 @@ export default function AdminDashboard() {
       })
     }
 
-    return cards
+    setPortalCards(cards)
   }, [userRole])
 
   return (
