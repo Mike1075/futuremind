@@ -59,7 +59,12 @@ export default function TeachersPage() {
 
   const loadTeachers = async () => {
     try {
-      const response = await fetch('/api/admin/teachers')
+      const response = await fetch('/api/admin/teachers', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      })
       const data = await response.json()
 
       if (data.error) {

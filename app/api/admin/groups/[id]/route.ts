@@ -48,21 +48,33 @@ export async function GET(
 
     if (groupError) throw groupError
 
-    // 3. 获取分组中的学员列表
-    const { data: students, count: studentCount } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        full_name,
-        email,
-        avatar_url,
-        consciousness_level,
-        composite_score,
-        created_at
-      `, { count: 'exact' })
-      .eq('student_group_id', groupId)
-      .eq('role', 'student')
-      .order('composite_score', { ascending: false })
+    // 3. 获取分组中的学员列表（从member_ids数组）
+    let students: any[] = []
+    let studentCount = 0
+
+    if (group.member_ids && group.member_ids.length > 0) {
+      const { data, error: studentsError } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          full_name,
+          email,
+          avatar_url,
+          consciousness_level,
+          composite_score,
+          created_at
+        `)
+        .in('id', group.member_ids)
+        .eq('role', 'student')
+        .order('composite_score', { ascending: false })
+
+      if (studentsError) {
+        console.error('Error fetching students:', studentsError)
+      } else {
+        students = data || []
+        studentCount = students.length
+      }
+    }
 
     // 4. 不再支持分组级别的课程分配（已删除 course_assignments 表）
     const assignmentCount = 0
@@ -156,18 +168,14 @@ export async function PUT(
 
     if (error) throw error
 
-    // 5. 获取学员数量
-    const { count: studentCount } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('student_group_id', groupId)
-      .eq('role', 'student')
+    // 5. 计算学员数量（从member_ids数组）
+    const studentCount = group.member_ids ? group.member_ids.length : 0
 
     // 6. 返回更新后的分组
     return NextResponse.json({
       group: {
         ...group,
-        student_count: studentCount || 0
+        student_count: studentCount
       }
     })
 
@@ -208,7 +216,7 @@ export async function DELETE(
     // 2. 检查是否是系统自动分组（不可删除）
     const { data: group } = await supabase
       .from('student_groups')
-      .select('group_type')
+      .select('group_type, member_ids')
       .eq('id', groupId)
       .single()
 
@@ -219,14 +227,10 @@ export async function DELETE(
       )
     }
 
-    // 3. 检查分组中是否有学员
-    const { count: studentCount } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('student_group_id', groupId)
-      .eq('role', 'student')
+    // 3. 检查分组中是否有学员（从member_ids数组）
+    const studentCount = group?.member_ids ? group.member_ids.length : 0
 
-    if (studentCount && studentCount > 0) {
+    if (studentCount > 0) {
       return NextResponse.json(
         { error: `Cannot delete group with ${studentCount} students. Please remove students first.` },
         { status: 400 }

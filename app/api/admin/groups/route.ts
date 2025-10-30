@@ -64,22 +64,13 @@ export async function GET(request: Request) {
 
     if (error) throw error
 
-    // 8. 为每个分组获取学员数量
-    const groupsWithStats = await Promise.all(
-      (groups || []).map(async (group) => {
-        // 获取分组中的学员数量
-        const { count: studentCount } = await supabase
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .eq('student_group_id', group.id)
-          .eq('role', 'student')
-
-        return {
-          ...group,
-          student_count: studentCount || 0
-        }
-      })
-    )
+    // 8. 为每个分组计算学员数量（从member_ids数组）
+    const groupsWithStats = (groups || []).map((group) => {
+      return {
+        ...group,
+        student_count: group.member_ids ? group.member_ids.length : 0
+      }
+    })
 
     // 9. 返回结果
     return NextResponse.json({

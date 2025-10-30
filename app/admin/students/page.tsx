@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Users, ArrowLeft, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react'
+import { Users, ArrowLeft, Search, Filter, ChevronDown, ChevronUp, Plus, FolderOpen, Trash2, Edit2, UserPlus, X } from 'lucide-react'
 
 interface Student {
   id: string
@@ -23,6 +23,21 @@ interface PaginationInfo {
   pageSize: number
   total: number
   totalPages: number
+}
+
+interface StudentGroup {
+  id: string
+  name: string
+  description: string | null
+  group_type: string
+  course_id: string | null
+  member_ids: string[]
+  student_count: number
+  created_at: string
+  created_by_profile?: {
+    full_name: string
+    email: string
+  }
 }
 
 const LEVEL_COLORS = {
@@ -63,6 +78,15 @@ export default function StudentsPage() {
   const [sortBy, setSortBy] = useState('composite_score')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [isMounted, setIsMounted] = useState(false)
+
+  // 分组管理状态
+  const [showGroupsPanel, setShowGroupsPanel] = useState(false)
+  const [groups, setGroups] = useState<StudentGroup[]>([])
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
+  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupDescription, setNewGroupDescription] = useState('')
+  const [newGroupType, setNewGroupType] = useState<'global' | 'course' | 'custom'>('custom')
+  const [submittingGroup, setSubmittingGroup] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
@@ -153,6 +177,97 @@ export default function StudentsPage() {
     }
   }
 
+  const loadGroups = async () => {
+    try {
+      const response = await fetch('/api/admin/groups', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      })
+      const data = await response.json()
+
+      if (data.error) {
+        console.error('获取分组失败:', data.error)
+        return
+      }
+
+      setGroups(data.groups || [])
+    } catch (error) {
+      console.error('加载分组失败:', error)
+    }
+  }
+
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newGroupName.trim()) {
+      alert('请输入分组名称')
+      return
+    }
+
+    setSubmittingGroup(true)
+    try {
+      const response = await fetch('/api/admin/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newGroupName.trim(),
+          description: newGroupDescription.trim() || null,
+          group_type: newGroupType
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.error) {
+        alert(`创建失败: ${data.error}`)
+        return
+      }
+
+      alert('✅ 分组创建成功')
+      setNewGroupName('')
+      setNewGroupDescription('')
+      setNewGroupType('custom')
+      setShowCreateGroupModal(false)
+      await loadGroups()
+    } catch (error) {
+      console.error('创建分组失败:', error)
+      alert('❌ 创建失败，请稍后重试')
+    } finally {
+      setSubmittingGroup(false)
+    }
+  }
+
+  const handleDeleteGroup = async (groupId: string, groupName: string) => {
+    const confirmed = confirm(`确定要删除分组「${groupName}」吗？`)
+    if (!confirmed) return
+
+    try {
+      const response = await fetch(`/api/admin/groups/${groupId}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (data.error) {
+        alert(`删除失败: ${data.error}`)
+        return
+      }
+
+      alert('✅ 删除成功')
+      await loadGroups()
+    } catch (error) {
+      console.error('删除分组失败:', error)
+      alert('❌ 删除失败，请稍后重试')
+    }
+  }
+
+  useEffect(() => {
+    if (showGroupsPanel) {
+      loadGroups()
+    }
+  }, [showGroupsPanel])
+
   // 生成固定的粒子配置
   const particles = useMemo(() => {
     if (!isMounted) return []
@@ -220,6 +335,17 @@ export default function StudentsPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowGroupsPanel(!showGroupsPanel)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  showGroupsPanel
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                <FolderOpen className="w-4 h-4" />
+                学员分组
+              </button>
               <span className="text-cyan-400 font-semibold">总计：{pagination.total} 人</span>
               <Users className="w-6 h-6 text-cyan-400" />
             </div>
@@ -229,6 +355,72 @@ export default function StudentsPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">
+        {/* Groups Panel */}
+        {showGroupsPanel && (
+          <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <FolderOpen className="w-5 h-5" />
+                学员分组管理
+              </h2>
+              <button
+                onClick={() => setShowCreateGroupModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                创建分组
+              </button>
+            </div>
+
+            {/* Groups Grid */}
+            {groups.length === 0 ? (
+              <div className="text-center py-8">
+                <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-400">暂无分组</p>
+                <p className="text-gray-500 text-sm mt-1">点击右上角"创建分组"开始创建</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {groups.map((group) => (
+                  <div
+                    key={group.id}
+                    className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-purple-400/50 transition-all cursor-pointer"
+                    onClick={() => router.push(`/admin/groups/${group.id}`)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h3 className="text-white font-semibold">{group.name}</h3>
+                        {group.description && (
+                          <p className="text-gray-400 text-sm mt-1">{group.description}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteGroup(group.id, group.name)
+                        }}
+                        className="p-1 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
+                      <span className="text-gray-400 text-sm">
+                        {group.group_type === 'global' && '全局分组'}
+                        {group.group_type === 'course' && '课程分组'}
+                        {group.group_type === 'custom' && '自定义分组'}
+                      </span>
+                      <span className="text-cyan-400 font-semibold">
+                        {group.student_count} 人
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Filters and Search */}
         <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -391,6 +583,94 @@ export default function StudentsPage() {
           </>
         )}
       </main>
+
+      {/* Create Group Modal */}
+      {showCreateGroupModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-xl p-6 w-full max-w-md border border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white">创建分组</h2>
+              <button
+                onClick={() => setShowCreateGroupModal(false)}
+                className="p-1 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateGroup}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    分组名称 *
+                  </label>
+                  <input
+                    type="text"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    placeholder="例如：高级班、初学者组..."
+                    className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    分组描述
+                  </label>
+                  <textarea
+                    value={newGroupDescription}
+                    onChange={(e) => setNewGroupDescription(e.target.value)}
+                    placeholder="简要描述这个分组的用途..."
+                    rows={3}
+                    className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    分组类型
+                  </label>
+                  <select
+                    value={newGroupType}
+                    onChange={(e) => setNewGroupType(e.target.value as 'global' | 'course' | 'custom')}
+                    className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                    style={{ colorScheme: 'dark' }}
+                  >
+                    <option value="custom" className="bg-gray-900">自定义分组</option>
+                    <option value="global" className="bg-gray-900">全局分组</option>
+                    <option value="course" className="bg-gray-900">课程分组</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-2">
+                    • 自定义分组：灵活的自定义分组<br />
+                    • 全局分组：跨课程的全局分组<br />
+                    • 课程分组：特定课程的分组
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateGroupModal(false)
+                    setNewGroupName('')
+                    setNewGroupDescription('')
+                    setNewGroupType('custom')
+                  }}
+                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                  disabled={submittingGroup}
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  disabled={submittingGroup}
+                >
+                  {submittingGroup ? '创建中...' : '创建'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
