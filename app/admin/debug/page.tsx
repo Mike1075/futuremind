@@ -52,7 +52,7 @@ export default function DebugPage() {
           .single()
 
         if (!emailError && adminByEmail) {
-          setAdminInfo(prev => ({ ...prev, foundByEmail: adminByEmail }))
+          setAdminInfo((prev: any) => ({ ...prev, foundByEmail: adminByEmail }))
         }
       }
 
