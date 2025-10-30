@@ -52,6 +52,264 @@ export type Database = {
           },
         ]
       }
+      admins: {
+        Row: {
+          id: string
+          full_name: string | null
+          email: string
+          role: string
+          can_manage_teachers: boolean
+          permissions: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          full_name?: string | null
+          email: string
+          role?: string
+          can_manage_teachers?: boolean
+          permissions?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          full_name?: string | null
+          email?: string
+          role?: string
+          can_manage_teachers?: boolean
+          permissions?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      consciousness_level_history: {
+        Row: {
+          id: string
+          user_id: string
+          old_level: number
+          new_level: number
+          old_composite_score: number
+          new_composite_score: number
+          recorded_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          old_level: number
+          new_level: number
+          old_composite_score: number
+          new_composite_score: number
+          recorded_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          old_level?: number
+          new_level?: number
+          old_composite_score?: number
+          new_composite_score?: number
+          recorded_at?: string
+        }
+        Relationships: []
+      }
+      course_assignments: {
+        Row: {
+          id: string
+          group_id: string
+          course_system_id: string
+          assigned_by: string
+          assigned_at: string
+          notes: string | null
+        }
+        Insert: {
+          id?: string
+          group_id: string
+          course_system_id: string
+          assigned_by: string
+          assigned_at?: string
+          notes?: string | null
+        }
+        Update: {
+          id?: string
+          group_id?: string
+          course_system_id?: string
+          assigned_by?: string
+          assigned_at?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      gaia_context_variables: {
+        Row: {
+          id: string
+          user_id: string
+          course_system_id: string
+          consciousness_level: number
+          learning_style: string | null
+          weaknesses_summary: string | null
+          course_learning_summary: string | null
+          n8n_variable_id: string | null
+          last_synced_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_system_id: string
+          consciousness_level: number
+          learning_style?: string | null
+          weaknesses_summary?: string | null
+          course_learning_summary?: string | null
+          n8n_variable_id?: string | null
+          last_synced_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_system_id?: string
+          consciousness_level?: number
+          learning_style?: string | null
+          weaknesses_summary?: string | null
+          course_learning_summary?: string | null
+          n8n_variable_id?: string | null
+          last_synced_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      student_course_assignments: {
+        Row: {
+          id: string
+          student_id: string
+          course_system_id: string
+          assigned_by: string
+          assigned_at: string
+          notes: string | null
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          course_system_id: string
+          assigned_by: string
+          assigned_at?: string
+          notes?: string | null
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          course_system_id?: string
+          assigned_by?: string
+          assigned_at?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      student_groups: {
+        Row: {
+          id: string
+          group_name: string
+          description: string | null
+          group_type: string
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          group_name: string
+          description?: string | null
+          group_type?: string
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          group_name?: string
+          description?: string | null
+          group_type?: string
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      student_summaries: {
+        Row: {
+          id: string
+          user_id: string
+          overall_summary: string | null
+          learning_style: string | null
+          personality_traits: string | null
+          strengths: string | null
+          areas_for_growth: string | null
+          generated_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          overall_summary?: string | null
+          learning_style?: string | null
+          personality_traits?: string | null
+          strengths?: string | null
+          areas_for_growth?: string | null
+          generated_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          overall_summary?: string | null
+          learning_style?: string | null
+          personality_traits?: string | null
+          strengths?: string | null
+          areas_for_growth?: string | null
+          generated_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_behavior_stats: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          online_duration_minutes: number
+          completed_lessons: number
+          submitted_assignments: number
+          active_conversations: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          online_duration_minutes?: number
+          completed_lessons?: number
+          submitted_assignments?: number
+          active_conversations?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          online_duration_minutes?: number
+          completed_lessons?: number
+          submitted_assignments?: number
+          active_conversations?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       content_item: {
         Row: {
           created_at: string | null
