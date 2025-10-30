@@ -59,6 +59,8 @@ export default function CourseDetailPage() {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [showAddGroupModal, setShowAddGroupModal] = useState(false)
   const [newStudentEmail, setNewStudentEmail] = useState('')
+  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupDescription, setNewGroupDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -161,9 +163,27 @@ export default function CourseDetailPage() {
   const loadMaterials = async () => {
     try {
       const supabase = createClient()
+
+      // 首先获取该课程的所有 course_contents
+      const { data: contents, error: contentsError } = await (supabase
+        .from('course_contents') as any)
+        .select('id')
+        .eq('system_id', courseId)
+
+      if (contentsError) throw contentsError
+
+      const contentIds = contents?.map((c: any) => c.id) || []
+
+      if (contentIds.length === 0) {
+        setMaterials([])
+        return
+      }
+
+      // 然后获取这些 course_contents 关联的所有资料
       const { data, error } = await (supabase
         .from('media_resources') as any)
         .select('*')
+        .in('course_content_id', contentIds)
         .order('display_order', { ascending: true })
         .order('created_at', { ascending: false })
 
@@ -273,6 +293,86 @@ export default function CourseDetailPage() {
     } catch (error) {
       console.error('移除学员失败:', error)
       alert('❌ 移除失败，请重试')
+    }
+  }
+
+  const handleDeleteMaterial = async (materialId: string) => {
+    const confirmed = confirm('确定要删除这个资料吗？')
+    if (!confirmed) return
+
+    try {
+      const supabase = createClient()
+      const { error } = await (supabase
+        .from('media_resources') as any)
+        .delete()
+        .eq('id', materialId)
+
+      if (error) throw error
+
+      alert('✅ 已删除资料')
+      await loadMaterials()
+    } catch (error) {
+      console.error('删除资料失败:', error)
+      alert('❌ 删除失败，请重试')
+    }
+  }
+
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newGroupName.trim()) {
+      alert('请输入分组名称')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const { error } = await (supabase
+        .from('student_groups') as any)
+        .insert({
+          name: newGroupName.trim(),
+          description: newGroupDescription.trim() || null,
+          group_type: 'course',
+          course_id: courseId,
+          member_ids: [],
+          created_by: user?.id
+        })
+
+      if (error) throw error
+
+      alert('✅ 创建成功')
+      setNewGroupName('')
+      setNewGroupDescription('')
+      setShowAddGroupModal(false)
+      await loadGroups()
+    } catch (error) {
+      console.error('创建分组失败:', error)
+      alert('❌ 创建失败，请重试')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDeleteGroup = async (groupId: string) => {
+    const confirmed = confirm('确定要删除这个分组吗？\n\n删除分组不会删除学员，只会解除分组关系。')
+    if (!confirmed) return
+
+    try {
+      const supabase = createClient()
+      const { error } = await (supabase
+        .from('student_groups') as any)
+        .delete()
+        .eq('id', groupId)
+
+      if (error) throw error
+
+      alert('✅ 已删除分组')
+      await loadGroups()
+    } catch (error) {
+      console.error('删除分组失败:', error)
+      alert('❌ 删除失败，请重试')
     }
   }
 
@@ -428,11 +528,81 @@ export default function CourseDetailPage() {
               </button>
             </div>
 
-            <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-              <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">资料管理功能开发中...</p>
-              <p className="text-gray-500 text-sm mt-2">将支持拖拽排序</p>
-            </div>
+            {materials.length === 0 ? (
+              <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+                <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400">暂无课程资料</p>
+                <p className="text-gray-500 text-sm mt-2">点击上方按钮上传资料</p>
+              </div>
+            ) : (
+              <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-white/5 border-b border-white/10">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        文件名
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        类型
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        描述
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        上传时间
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        操作
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {materials.map((material) => (
+                      <tr key={material.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-purple-400" />
+                            <div>
+                              <div className="text-white font-medium">{material.file_name}</div>
+                              {material.external_url && (
+                                <a
+                                  href={material.external_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-cyan-400 hover:text-cyan-300"
+                                >
+                                  查看链接 ↗
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded">
+                            {material.resource_type || '文件'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-300">
+                          {material.description || '-'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-400">
+                          {new Date(material.created_at).toLocaleDateString('zh-CN')}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleDeleteMaterial(material.id)}
+                            className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            删除
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -450,10 +620,51 @@ export default function CourseDetailPage() {
               </button>
             </div>
 
-            <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-              <UsersRound className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">课程分组功能开发中...</p>
-            </div>
+            {groups.length === 0 ? (
+              <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+                <UsersRound className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400">暂无课程分组</p>
+                <p className="text-gray-500 text-sm mt-2">点击上方按钮创建分组</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {groups.map((group) => (
+                  <div
+                    key={group.id}
+                    className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10 hover:border-white/20 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-white mb-2">{group.name}</h3>
+                        {group.description && (
+                          <p className="text-sm text-gray-400 mb-3">{group.description}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleDeleteGroup(group.id)}
+                        className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                        title="删除分组"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-cyan-400">
+                        <Users className="w-4 h-4" />
+                        <span>{group.member_ids.length} 名成员</span>
+                      </div>
+                      <button
+                        onClick={() => router.push(`/admin/groups/${group.id}`)}
+                        className="px-3 py-1 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded transition-colors"
+                      >
+                        管理成员
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -495,6 +706,63 @@ export default function CourseDetailPage() {
                   disabled={submitting}
                 >
                   {submitting ? '添加中...' : '添加'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Group Modal */}
+      {showAddGroupModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-xl p-6 w-full max-w-md border border-white/10">
+            <h2 className="text-xl font-bold text-white mb-4">创建课程分组</h2>
+            <form onSubmit={handleCreateGroup}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  分组名称
+                </label>
+                <input
+                  type="text"
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  placeholder="例如：高级班、实验组等"
+                  className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  描述（可选）
+                </label>
+                <textarea
+                  value={newGroupDescription}
+                  onChange={(e) => setNewGroupDescription(e.target.value)}
+                  placeholder="分组说明..."
+                  rows={3}
+                  className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 resize-none"
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddGroupModal(false)
+                    setNewGroupName('')
+                    setNewGroupDescription('')
+                  }}
+                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                  disabled={submitting}
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  disabled={submitting}
+                >
+                  {submitting ? '创建中...' : '创建'}
                 </button>
               </div>
             </form>

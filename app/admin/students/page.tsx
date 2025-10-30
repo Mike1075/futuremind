@@ -251,10 +251,13 @@ export default function StudentsPage() {
                 value={levelFilter}
                 onChange={(e) => setLevelFilter(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-400 appearance-none"
+                style={{
+                  colorScheme: 'dark'
+                }}
               >
-                <option value="">所有等级</option>
+                <option value="" className="bg-gray-900 text-white">所有等级</option>
                 {[1, 2, 3, 4, 5, 6, 7].map(level => (
-                  <option key={level} value={level}>Level {level} - {LEVEL_NAMES[level as keyof typeof LEVEL_NAMES]}</option>
+                  <option key={level} value={level} className="bg-gray-900 text-white">Level {level} - {LEVEL_NAMES[level as keyof typeof LEVEL_NAMES]}</option>
                 ))}
               </select>
             </div>

@@ -176,21 +176,22 @@ export default function AdminDashboardClient() {
       </header>
 
       {/* Main Content - Minimalist Portal */}
-      <main className="max-w-7xl mx-auto px-6 py-8 min-h-[calc(100vh-120px)] flex items-center justify-center relative z-10">
+      <main className="max-w-7xl mx-auto px-6 py-12 min-h-[calc(100vh-120px)] flex items-center justify-center relative z-10">
         {portalCards.length === 0 ? (
           <div className="text-center">
             <p className="text-gray-400 text-lg">正在加载管理功能...</p>
           </div>
         ) : (
-          <div className={`grid grid-cols-1 ${portalCards.length >= 3 ? 'md:grid-cols-3 lg:grid-cols-4' : 'md:grid-cols-2'} gap-6 w-full max-w-7xl`}>
-            {portalCards.map((card) => {
-              const Icon = card.icon
-              return (
-                <button
-                  key={card.title}
-                  onClick={() => router.push(card.href)}
-                  className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-500 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center"
-                >
+          <div className="w-full flex justify-center">
+            <div className={`grid grid-cols-1 ${portalCards.length >= 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-8 max-w-5xl`}>
+              {portalCards.map((card) => {
+                const Icon = card.icon
+                return (
+                  <button
+                    key={card.title}
+                    onClick={() => router.push(card.href)}
+                    className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-10 border border-white/10 hover:border-white/30 transition-all duration-500 hover:scale-105 hover:bg-white/10 min-h-[320px] w-full flex flex-col items-center justify-center"
+                  >
                   {/* Gradient Background Effect */}
                   <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
 
@@ -219,6 +220,7 @@ export default function AdminDashboardClient() {
                 </button>
               )
             })}
+            </div>
           </div>
         )}
       </main>
