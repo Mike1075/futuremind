@@ -38,11 +38,11 @@ export default function Home() {
           .eq('id', user.id)
           .single()
 
-        // 检查role字段是否为content_admin或content_editor
-        // content_admin: 最高管理员权限
-        // content_editor: 内容编辑权限
+        // 检查role字段是否为principal或teacher
+        // principal: 校长，拥有最高管理员权限
+        // teacher: 老师，拥有部分管理权限
         const userRole = (profile as unknown as { role?: string })?.role
-        if (userRole === 'content_admin' || userRole === 'content_editor') {
+        if (userRole === 'principal' || userRole === 'teacher') {
           setIsAdmin(true)
         }
       } else {
