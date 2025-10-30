@@ -11,21 +11,24 @@ export async function GET(request: Request) {
     const supabase = createRouteHandlerClient({ cookies })
     const { searchParams } = new URL(request.url)
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
+
+    const isPrincipal = profile.role === 'principal'
+    const isTeacher = profile.role === 'teacher'
 
     // 2. 获取查询参数
     const search = searchParams.get('search') || ''
@@ -35,7 +38,27 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
-    // 3. 构建查询
+    // 3. 获取老师管理的学员ID（如果是老师）
+    let managedStudentIds: string[] = []
+    if (isTeacher) {
+      const { data: assignment } = await supabase
+        .from('teacher_assignments')
+        .select('managed_student_ids')
+        .eq('teacher_id', user.id)
+        .single()
+
+      managedStudentIds = assignment?.managed_student_ids || []
+
+      if (managedStudentIds.length === 0) {
+        // 老师没有分配任何学员
+        return NextResponse.json({
+          students: [],
+          pagination: { page: 1, pageSize, total: 0, totalPages: 0 }
+        })
+      }
+    }
+
+    // 4. 构建查询
     let query = supabase
       .from('profiles')
       .select(`
@@ -49,32 +72,37 @@ export async function GET(request: Request) {
         level_updated_at,
         created_at
       `, { count: 'exact' })
-      .neq('role', 'content_admin')
+      .eq('role', 'student')
 
-    // 4. 应用搜索过滤
+    // 老师只能查看被分配的学员
+    if (isTeacher && managedStudentIds.length > 0) {
+      query = query.in('id', managedStudentIds)
+    }
+
+    // 5. 应用搜索过滤
     if (search) {
       query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
     }
 
-    // 5. 应用等级过滤
+    // 6. 应用等级过滤
     if (levelFilter) {
       query = query.eq('consciousness_level', parseInt(levelFilter))
     }
 
-    // 6. 应用排序
+    // 7. 应用排序
     query = query.order(sortBy, { ascending: sortOrder === 'asc' })
 
-    // 7. 应用分页
+    // 8. 应用分页
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1
     query = query.range(from, to)
 
-    // 8. 执行查询
+    // 9. 执行查询
     const { data: students, error, count } = await query
 
     if (error) throw error
 
-    // 9. 返回结果
+    // 10. 返回结果
     return NextResponse.json({
       students,
       pagination: {

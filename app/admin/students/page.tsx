@@ -85,25 +85,22 @@ export default function StudentsPage() {
         return
       }
 
-      // 检查是否是管理员
-      const { data: admin, error: adminError } = await supabase
-        .from('admins')
+      // 检查是否是管理员（校长或老师）
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
 
-      if (adminError) {
-        console.error('无法验证管理员权限:', adminError)
-        // 如果是表不存在或其他数据库错误，显示友好提示
-        if (adminError.code === '42P01' || adminError.code === 'PGRST204') {
-          alert('❌ 数据库未初始化\n\n请先运行数据库迁移：\nsupabase db push --include-all\n\n详见 DEPLOYMENT_AND_TESTING_GUIDE.md')
-          router.push('/admin')
-          return
-        }
+      if (profileError) {
+        console.error('无法验证用户权限:', profileError)
+        alert('❌ 系统错误\n\n无法验证您的权限，请稍后重试。')
+        router.push('/admin')
+        return
       }
 
-      if (!admin) {
-        alert('⚠️ 您不是管理员\n\n请联系系统管理员将您的账号添加到 admins 表中。')
+      if (!profile || !['principal', 'teacher'].includes(profile.role)) {
+        alert('⚠️ 您不是管理员\n\n只有校长和老师可以访问学员管理页面。')
         router.push('/admin')
         return
       }

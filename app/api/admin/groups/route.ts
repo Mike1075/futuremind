@@ -12,19 +12,19 @@ export async function GET(request: Request) {
     const supabase = createRouteHandlerClient({ cookies })
     const { searchParams } = new URL(request.url)
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
@@ -38,16 +38,17 @@ export async function GET(request: Request) {
       .from('student_groups')
       .select(`
         *,
-        created_by_admin:admins!student_groups_created_by_fkey(
+        created_by_profile:profiles!student_groups_created_by_fkey(
           id,
           full_name,
-          email
+          email,
+          role
         )
       `, { count: 'exact' })
 
     // 4. 应用搜索过滤
     if (search) {
-      query = query.or(`group_name.ilike.%${search}%,description.ilike.%${search}%`)
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
     }
 
     // 5. 应用排序
@@ -71,17 +72,11 @@ export async function GET(request: Request) {
           .from('profiles')
           .select('id', { count: 'exact', head: true })
           .eq('student_group_id', group.id)
-
-        // 获取分组的课程分配数量
-        const { count: assignmentCount } = await supabase
-          .from('course_assignments')
-          .select('id', { count: 'exact', head: true })
-          .eq('group_id', group.id)
+          .eq('role', 'student')
 
         return {
           ...group,
-          student_count: studentCount || 0,
-          assignment_count: assignmentCount || 0
+          student_count: studentCount || 0
         }
       })
     )
@@ -111,28 +106,28 @@ export async function POST(request: Request) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
     // 2. 获取请求体数据
     const body = await request.json()
-    const { group_name, description, group_type } = body
+    const { name, description, group_type } = body
 
     // 3. 验证必填字段
-    if (!group_name) {
+    if (!name) {
       return NextResponse.json({ error: 'Group name is required' }, { status: 400 })
     }
 
@@ -140,17 +135,18 @@ export async function POST(request: Request) {
     const { data: group, error } = await supabase
       .from('student_groups')
       .insert({
-        group_name,
+        name,
         description: description || null,
         group_type: group_type || 'custom',
         created_by: user.id
       })
       .select(`
         *,
-        created_by_admin:admins!student_groups_created_by_fkey(
+        created_by_profile:profiles!student_groups_created_by_fkey(
           id,
           full_name,
-          email
+          email,
+          role
         )
       `)
       .single()
@@ -161,8 +157,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       group: {
         ...group,
-        student_count: 0,
-        assignment_count: 0
+        student_count: 0
       }
     }, { status: 201 })
 

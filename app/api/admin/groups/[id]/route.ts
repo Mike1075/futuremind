@@ -15,19 +15,19 @@ export async function GET(
     const supabase = createRouteHandlerClient({ cookies })
     const groupId = params.id
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
@@ -36,10 +36,11 @@ export async function GET(
       .from('student_groups')
       .select(`
         *,
-        created_by_admin:admins!student_groups_created_by_fkey(
+        created_by_profile:profiles!student_groups_created_by_fkey(
           id,
           full_name,
-          email
+          email,
+          role
         )
       `)
       .eq('id', groupId)
@@ -60,29 +61,12 @@ export async function GET(
         created_at
       `, { count: 'exact' })
       .eq('student_group_id', groupId)
+      .eq('role', 'student')
       .order('composite_score', { ascending: false })
 
-    // 4. 获取分组的课程分配
-    const { data: assignments, count: assignmentCount } = await supabase
-      .from('course_assignments')
-      .select(`
-        id,
-        course_system_id,
-        assigned_by,
-        assigned_at,
-        notes,
-        course_systems (
-          id,
-          title,
-          system_key
-        ),
-        assigned_by_admin:admins!course_assignments_assigned_by_fkey(
-          id,
-          full_name,
-          email
-        )
-      `, { count: 'exact' })
-      .eq('group_id', groupId)
+    // 4. 不再支持分组级别的课程分配（已删除 course_assignments 表）
+    const assignmentCount = 0
+    const assignments: any[] = []
 
     // 5. 计算分组统计数据
     const stats = {
@@ -126,19 +110,19 @@ export async function PUT(
     const supabase = createRouteHandlerClient({ cookies })
     const groupId = params.id
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
@@ -155,16 +139,17 @@ export async function PUT(
     const { data: group, error } = await supabase
       .from('student_groups')
       .update({
-        group_name,
+        name: group_name,
         description: description || null
       })
       .eq('id', groupId)
       .select(`
         *,
-        created_by_admin:admins!student_groups_created_by_fkey(
+        created_by_profile:profiles!student_groups_created_by_fkey(
           id,
           full_name,
-          email
+          email,
+          role
         )
       `)
       .single()
@@ -176,19 +161,13 @@ export async function PUT(
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .eq('student_group_id', groupId)
+      .eq('role', 'student')
 
-    // 6. 获取课程分配数量
-    const { count: assignmentCount } = await supabase
-      .from('course_assignments')
-      .select('id', { count: 'exact', head: true })
-      .eq('group_id', groupId)
-
-    // 7. 返回更新后的分组
+    // 6. 返回更新后的分组
     return NextResponse.json({
       group: {
         ...group,
-        student_count: studentCount || 0,
-        assignment_count: assignmentCount || 0
+        student_count: studentCount || 0
       }
     })
 
@@ -210,19 +189,19 @@ export async function DELETE(
     const supabase = createRouteHandlerClient({ cookies })
     const groupId = params.id
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
@@ -245,6 +224,7 @@ export async function DELETE(
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .eq('student_group_id', groupId)
+      .eq('role', 'student')
 
     if (studentCount && studentCount > 0) {
       return NextResponse.json(

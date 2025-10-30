@@ -85,14 +85,15 @@ export default function GroupsPage() {
         return
       }
 
-      // 检查是否是管理员
-      const { data: admin } = await supabase
-        .from('admins')
+      // 检查是否是管理员（校长或老师）
+      const { data: profile } = await supabase
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
 
-      if (!admin) {
+      if (!profile || !['principal', 'teacher'].includes(profile.role)) {
+        alert('⚠️ 您不是管理员\n\n只有校长和老师可以访问分组管理。')
         router.push('/admin')
         return
       }

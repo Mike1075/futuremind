@@ -12,19 +12,19 @@ export async function GET(request: Request) {
     const supabase = createRouteHandlerClient({ cookies })
     const { searchParams } = new URL(request.url)
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
@@ -47,12 +47,6 @@ export async function GET(request: Request) {
           id,
           title,
           system_key
-        ),
-        assigned_by_admin:admins!student_course_assignments_assigned_by_fkey(
-          id,
-          full_name,
-          email,
-          role
         )
       `)
       .order('assigned_at', { ascending: false })
@@ -89,19 +83,19 @@ export async function POST(request: Request) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
@@ -153,12 +147,6 @@ export async function POST(request: Request) {
           id,
           title,
           system_key
-        ),
-        assigned_by_admin:admins!student_course_assignments_assigned_by_fkey(
-          id,
-          full_name,
-          email,
-          role
         )
       `)
       .single()

@@ -1,5 +1,5 @@
 // API Route: /api/admin/assignments
-// Description: 课程分配API - 分组级别的课程分配
+// Description: 课程分配API - 学员级别的课程分配
 // 权限：校长和老师
 
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
@@ -12,53 +12,47 @@ export async function GET(request: Request) {
     const supabase = createRouteHandlerClient({ cookies })
     const { searchParams } = new URL(request.url)
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
     // 2. 获取查询参数
-    const groupId = searchParams.get('group_id') || ''
+    const studentId = searchParams.get('student_id') || ''
     const courseId = searchParams.get('course_id') || ''
 
     // 3. 构建查询
     let query = supabase
-      .from('course_assignments')
+      .from('student_course_assignments')
       .select(`
         *,
-        student_groups (
+        student:profiles!student_course_assignments_student_id_fkey(
           id,
-          group_name,
-          group_type
+          full_name,
+          email
         ),
         course_systems (
           id,
           title,
           system_key
-        ),
-        assigned_by_admin:admins!course_assignments_assigned_by_fkey(
-          id,
-          full_name,
-          email,
-          role
         )
       `)
       .order('assigned_at', { ascending: false })
 
     // 4. 应用过滤
-    if (groupId) {
-      query = query.eq('group_id', groupId)
+    if (studentId) {
+      query = query.eq('student_id', studentId)
     }
     if (courseId) {
       query = query.eq('course_system_id', courseId)
@@ -69,24 +63,9 @@ export async function GET(request: Request) {
 
     if (error) throw error
 
-    // 6. 为每个分配获取学员数量
-    const assignmentsWithStats = await Promise.all(
-      (assignments || []).map(async (assignment) => {
-        const { count: studentCount } = await supabase
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .eq('student_group_id', assignment.group_id)
-
-        return {
-          ...assignment,
-          student_count: studentCount || 0
-        }
-      })
-    )
-
-    // 7. 返回结果
+    // 6. 返回结果
     return NextResponse.json({
-      assignments: assignmentsWithStats
+      assignments: assignments || []
     })
 
   } catch (error: any) {
@@ -98,98 +77,101 @@ export async function GET(request: Request) {
   }
 }
 
-// POST - 创建分组级别的课程分配
+// POST - 创建学员级别的课程分配
 export async function POST(request: Request) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
     // 2. 获取请求体数据
     const body = await request.json()
-    const { group_id, course_system_id, notes } = body
+    const { student_id, course_system_id, status } = body
 
     // 3. 验证必填字段
-    if (!group_id || !course_system_id) {
+    if (!student_id || !course_system_id) {
       return NextResponse.json(
-        { error: 'group_id and course_system_id are required' },
+        { error: 'student_id and course_system_id are required' },
         { status: 400 }
       )
     }
 
+    // 3.1 如果是老师，检查是否有权限管理该学员
+    if (profile.role === 'teacher') {
+      const { data: assignment } = await supabase
+        .from('teacher_assignments')
+        .select('managed_student_ids')
+        .eq('teacher_id', user.id)
+        .single()
+
+      const managedStudentIds = assignment?.managed_student_ids || []
+      if (!managedStudentIds.includes(student_id)) {
+        return NextResponse.json(
+          { error: 'You do not manage this student' },
+          { status: 403 }
+        )
+      }
+    }
+
     // 4. 检查是否已经分配过
     const { data: existing } = await supabase
-      .from('course_assignments')
+      .from('student_course_assignments')
       .select('id')
-      .eq('group_id', group_id)
+      .eq('student_id', student_id)
       .eq('course_system_id', course_system_id)
-      .single()
+      .maybeSingle()
 
     if (existing) {
       return NextResponse.json(
-        { error: 'This course is already assigned to this group' },
+        { error: 'This course is already assigned to this student' },
         { status: 400 }
       )
     }
 
     // 5. 创建课程分配
-    const { data: assignment, error } = await supabase
-      .from('course_assignments')
+    const { data: newAssignment, error } = await supabase
+      .from('student_course_assignments')
       .insert({
-        group_id,
+        student_id,
         course_system_id,
         assigned_by: user.id,
-        notes: notes || null
+        assigned_by_role: profile.role,
+        status: status || 'active'
       })
       .select(`
         *,
-        student_groups (
+        student:profiles!student_course_assignments_student_id_fkey(
           id,
-          group_name,
-          group_type
+          full_name,
+          email
         ),
         course_systems (
           id,
           title,
           system_key
-        ),
-        assigned_by_admin:admins!course_assignments_assigned_by_fkey(
-          id,
-          full_name,
-          email,
-          role
         )
       `)
       .single()
 
     if (error) throw error
 
-    // 6. 获取分组中的学员数量
-    const { count: studentCount } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('student_group_id', group_id)
-
-    // 7. 返回创建的分配
+    // 6. 返回创建的分配
     return NextResponse.json({
-      assignment: {
-        ...assignment,
-        student_count: studentCount || 0
-      }
+      assignment: newAssignment
     }, { status: 201 })
 
   } catch (error: any) {

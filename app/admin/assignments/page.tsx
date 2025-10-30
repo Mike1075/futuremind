@@ -138,13 +138,14 @@ export default function AssignmentsPage() {
         return
       }
 
-      const { data: admin } = await supabase
-        .from('admins')
+      const { data: profile } = await supabase
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
 
-      if (!admin) {
+      if (!profile || !['principal', 'teacher'].includes(profile.role)) {
+        alert('⚠️ 您不是管理员\n\n只有校长和老师可以访问课程分配管理。')
         router.push('/admin')
         return
       }

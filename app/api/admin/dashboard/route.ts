@@ -10,48 +10,82 @@ export async function GET(request: Request) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
-    // 2. 获取总学员数
-    const { count: totalStudents } = await supabase
+    const isPrincipal = profile.role === 'principal'
+    const isTeacher = profile.role === 'teacher'
+
+    // 2. 获取老师管理的学员ID（如果是老师）
+    let managedStudentIds: string[] = []
+    if (isTeacher) {
+      const { data: assignment } = await supabase
+        .from('teacher_assignments')
+        .select('managed_student_ids')
+        .eq('teacher_id', user.id)
+        .single()
+
+      managedStudentIds = assignment?.managed_student_ids || []
+    }
+
+    // 3. 获取学员数（校长看全部，老师看自己管理的）
+    let studentCountQuery = supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
-      .neq('role', 'content_admin')
+      .eq('role', 'student')
 
-    // 3. 获取总分组数
+    if (isTeacher) {
+      if (managedStudentIds.length === 0) {
+        // 老师没有分配学员，返回空数据
+        return NextResponse.json({
+          overview: { total_students: 0, total_groups: 0, total_assignments: 0, total_conversations: 0, total_submissions: 0, avg_level: 0, avg_score: 0 },
+          level_distribution: {},
+          registration_trend: [],
+          activity_trend: [],
+          recent_level_changes: [],
+          course_stats: []
+        })
+      }
+      studentCountQuery = studentCountQuery.in('id', managedStudentIds)
+    }
+
+    const { count: totalStudents } = await studentCountQuery
+
+    // 4. 获取总分组数
     const { count: totalGroups } = await supabase
       .from('student_groups')
       .select('id', { count: 'exact', head: true })
 
-    // 4. 获取总课程分配数
-    const { count: totalGroupAssignments } = await supabase
-      .from('course_assignments')
-      .select('id', { count: 'exact', head: true })
-
+    // 5. 获取课程分配数
     const { count: totalStudentAssignments } = await supabase
       .from('student_course_assignments')
       .select('id', { count: 'exact', head: true })
 
-    // 5. 获取所有学员的等级和评分
-    const { data: students } = await supabase
+    // 6. 获取学员的等级和评分（校长看全部，老师看自己管理的）
+    let studentsQuery = supabase
       .from('profiles')
       .select('consciousness_level, composite_score, created_at')
-      .neq('role', 'content_admin')
+      .eq('role', 'student')
       .order('created_at', { ascending: true })
+
+    if (isTeacher && managedStudentIds.length > 0) {
+      studentsQuery = studentsQuery.in('id', managedStudentIds)
+    }
+
+    const { data: students } = await studentsQuery
 
     // 6. 计算等级分布
     const levelDistribution = students?.reduce((acc: any, s) => {
@@ -157,7 +191,7 @@ export async function GET(request: Request) {
       overview: {
         total_students: totalStudents || 0,
         total_groups: totalGroups || 0,
-        total_assignments: (totalGroupAssignments || 0) + (totalStudentAssignments || 0),
+        total_assignments: totalStudentAssignments || 0,
         total_conversations: totalConversations || 0,
         total_submissions: totalSubmissions || 0,
         avg_level: Math.round(avgLevel * 10) / 10,

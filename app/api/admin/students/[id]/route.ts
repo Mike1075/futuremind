@@ -14,20 +14,34 @@ export async function GET(
     const supabase = createRouteHandlerClient({ cookies })
     const studentId = params.id
 
-    // 1. 检查当前用户是否是管理员
+    // 1. 检查当前用户是否是管理员（校长或老师）
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: admin } = await supabase
-      .from('admins')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!admin) {
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
+    }
+
+    // 1.1 如果是老师，检查是否有权限查看该学员
+    if (profile.role === 'teacher') {
+      const { data: assignment } = await supabase
+        .from('teacher_assignments')
+        .select('managed_student_ids')
+        .eq('teacher_id', user.id)
+        .single()
+
+      const managedStudentIds = assignment?.managed_student_ids || []
+      if (!managedStudentIds.includes(studentId)) {
+        return NextResponse.json({ error: 'Forbidden - You do not manage this student' }, { status: 403 })
+      }
     }
 
     // 2. 获取学员基本信息（不含隐私字段）
