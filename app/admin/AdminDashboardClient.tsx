@@ -18,6 +18,10 @@ export default function AdminDashboardClient() {
   const [userRole, setUserRole] = useState<string>('')
   const [isMounted, setIsMounted] = useState(false)
 
+  // 所有 useState 必须在组件顶层声明（React Hooks 规则）
+  const [particles, setParticles] = useState<any[]>([])
+  const [portalCards, setPortalCards] = useState<any[]>([])
+
   useEffect(() => {
     setIsMounted(true)
     checkAuth()
@@ -65,9 +69,7 @@ export default function AdminDashboardClient() {
     }
   }
 
-  // 生成固定的粒子配置（避免 hydration 不匹配）
-  const [particles, setParticles] = useState<any[]>([])
-
+  // 生成粒子（仅在客户端挂载后）
   useEffect(() => {
     if (isMounted) {
       setParticles([...Array(50)].map((_, i) => ({
@@ -81,20 +83,7 @@ export default function AdminDashboardClient() {
     }
   }, [isMounted])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
-          <p className="text-purple-300 mt-4">加载中...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // 根据角色生成卡片（避免 hydration 不匹配）
-  const [portalCards, setPortalCards] = useState<any[]>([])
-
+  // 根据角色生成卡片
   useEffect(() => {
     const cards = []
 
@@ -138,6 +127,17 @@ export default function AdminDashboardClient() {
 
     setPortalCards(cards)
   }, [userRole])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
+          <p className="text-purple-300 mt-4">加载中...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
