@@ -32,6 +32,18 @@ interface Material {
   created_at: string
 }
 
+interface CourseContent {
+  id: string
+  sequence_number: number
+  title: string
+  original_text: string | null
+  deep_interpretation: string | null
+  meditation_guide: string | null
+  life_practice: string | null
+  documentary_url: string | null
+  pre_watch_guide: string | null
+}
+
 interface Group {
   id: string
   name: string
@@ -40,7 +52,7 @@ interface Group {
   created_at: string
 }
 
-type TabType = 'students' | 'materials' | 'groups'
+type TabType = 'students' | 'contents' | 'materials' | 'groups'
 
 export default function CourseDetailPage() {
   const router = useRouter()
@@ -51,6 +63,7 @@ export default function CourseDetailPage() {
   const [activeTab, setActiveTab] = useState<TabType>('students')
   const [course, setCourse] = useState<Course | null>(null)
   const [students, setStudents] = useState<Student[]>([])
+  const [courseContents, setCourseContents] = useState<CourseContent[]>([])
   const [materials, setMaterials] = useState<Material[]>([])
   const [groups, setGroups] = useState<Group[]>([])
 
@@ -70,6 +83,8 @@ export default function CourseDetailPage() {
   useEffect(() => {
     if (activeTab === 'students' && students.length === 0) {
       loadStudents()
+    } else if (activeTab === 'contents' && courseContents.length === 0) {
+      loadCourseContents()
     } else if (activeTab === 'materials' && materials.length === 0) {
       loadMaterials()
     } else if (activeTab === 'groups' && groups.length === 0) {
@@ -157,6 +172,22 @@ export default function CourseDetailPage() {
       setStudents(studentList)
     } catch (error) {
       console.error('加载学员列表失败:', error)
+    }
+  }
+
+  const loadCourseContents = async () => {
+    try {
+      const supabase = createClient()
+      const { data, error } = await (supabase
+        .from('course_contents') as any)
+        .select('id, sequence_number, title, original_text, deep_interpretation, meditation_guide, life_practice, documentary_url, pre_watch_guide')
+        .eq('system_id', courseId)
+        .order('sequence_number', { ascending: true })
+
+      if (error) throw error
+      setCourseContents(data || [])
+    } catch (error) {
+      console.error('加载课程内容失败:', error)
     }
   }
 
@@ -429,6 +460,17 @@ export default function CourseDetailPage() {
               选课学员
             </button>
             <button
+              onClick={() => setActiveTab('contents')}
+              className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
+                activeTab === 'contents'
+                  ? 'border-purple-500 text-white'
+                  : 'border-transparent text-gray-400 hover:text-white'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              课程内容
+            </button>
+            <button
               onClick={() => setActiveTab('materials')}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
                 activeTab === 'materials'
@@ -436,7 +478,7 @@ export default function CourseDetailPage() {
                   : 'border-transparent text-gray-400 hover:text-white'
               }`}
             >
-              <FileText className="w-4 h-4" />
+              <Upload className="w-4 h-4" />
               课程资料
             </button>
             <button
@@ -509,6 +551,98 @@ export default function CourseDetailPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Course Contents Tab */}
+        {activeTab === 'contents' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">课程内容 ({courseContents.length}个单元)</h2>
+            </div>
+
+            {courseContents.length === 0 ? (
+              <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+                <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400">暂无课程内容</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {courseContents.map((content) => (
+                  <div
+                    key={content.id}
+                    className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10"
+                  >
+                    <div className="mb-4">
+                      <h3 className="text-xl font-bold text-white mb-2">
+                        {content.title || `第 ${content.sequence_number} 天`}
+                      </h3>
+                    </div>
+
+                    <div className="space-y-4">
+                      {content.original_text && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-purple-300 mb-2">📖 原文摘录</h4>
+                          <div className="text-gray-300 text-sm whitespace-pre-wrap bg-black/30 rounded-lg p-4">
+                            {content.original_text}
+                          </div>
+                        </div>
+                      )}
+
+                      {content.deep_interpretation && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-cyan-300 mb-2">💡 深度解读</h4>
+                          <div className="text-gray-300 text-sm whitespace-pre-wrap bg-black/30 rounded-lg p-4">
+                            {content.deep_interpretation}
+                          </div>
+                        </div>
+                      )}
+
+                      {content.meditation_guide && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-green-300 mb-2">🧘 冥想练习与引导</h4>
+                          <div className="text-gray-300 text-sm whitespace-pre-wrap bg-black/30 rounded-lg p-4">
+                            {content.meditation_guide}
+                          </div>
+                        </div>
+                      )}
+
+                      {content.life_practice && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-yellow-300 mb-2">⚡ 生活中的小练习</h4>
+                          <div className="text-gray-300 text-sm whitespace-pre-wrap bg-black/30 rounded-lg p-4">
+                            {content.life_practice}
+                          </div>
+                        </div>
+                      )}
+
+                      {content.documentary_url && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-pink-300 mb-2">🎬 纪录片链接</h4>
+                          <a
+                            href={content.documentary_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-cyan-400 hover:text-cyan-300 text-sm underline"
+                          >
+                            {content.documentary_url}
+                          </a>
+                        </div>
+                      )}
+
+                      {content.pre_watch_guide && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-orange-300 mb-2">👁️ 观看前引导</h4>
+                          <div className="text-gray-300 text-sm whitespace-pre-wrap bg-black/30 rounded-lg p-4">
+                            {content.pre_watch_guide}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
