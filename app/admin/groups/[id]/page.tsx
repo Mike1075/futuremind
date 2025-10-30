@@ -10,6 +10,7 @@ interface Group {
   name: string
   description: string | null
   group_type: 'global' | 'course'
+  course_id: string | null
   member_ids: string[]
   created_at: string
 }
@@ -76,7 +77,11 @@ export default function GroupDetailPage() {
         return
       }
 
-      await Promise.all([loadGroup(), loadAllStudents()])
+      // 先加载分组信息，然后根据分组类型加载学生列表
+      const groupData = await loadGroup()
+      if (groupData) {
+        await loadAllStudents(groupData)
+      }
     } catch (error) {
       console.error('加载失败:', error)
       router.push('/admin/groups')
@@ -85,7 +90,7 @@ export default function GroupDetailPage() {
     }
   }
 
-  const loadGroup = async () => {
+  const loadGroup = async (): Promise<Group | null> => {
     try {
       const supabase = createClient()
       const { data, error } = await (supabase
@@ -98,8 +103,10 @@ export default function GroupDetailPage() {
 
       setGroup(data)
       await loadMembers(data.member_ids || [])
+      return data
     } catch (error) {
       console.error('加载分组失败:', error)
+      return null
     }
   }
 
@@ -123,17 +130,49 @@ export default function GroupDetailPage() {
     }
   }
 
-  const loadAllStudents = async () => {
+  const loadAllStudents = async (groupData: Group) => {
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('profiles') as any)
-        .select('id, full_name, email')
-        .eq('role', 'student')
-        .order('full_name', { ascending: true, nullsFirst: false })
 
-      if (error) throw error
-      setAllStudents(data || [])
+      // 如果是课程分组，只加载选择了该课程的学生
+      if (groupData.group_type === 'course' && groupData.course_id) {
+        // 先获取选择了该课程的学生ID列表
+        const { data: assignments, error: assignmentError } = await (supabase
+          .from('student_course_assignments') as any)
+          .select('student_id')
+          .eq('course_system_id', groupData.course_id)
+          .eq('status', 'active')
+
+        if (assignmentError) throw assignmentError
+
+        const studentIds = assignments?.map((a: any) => a.student_id) || []
+
+        if (studentIds.length === 0) {
+          setAllStudents([])
+          return
+        }
+
+        // 获取这些学生的详细信息
+        const { data, error } = await (supabase
+          .from('profiles') as any)
+          .select('id, full_name, email')
+          .in('id', studentIds)
+          .eq('role', 'student')
+          .order('full_name', { ascending: true, nullsFirst: false })
+
+        if (error) throw error
+        setAllStudents(data || [])
+      } else {
+        // 全局分组或自定义分组，加载所有学生
+        const { data, error } = await (supabase
+          .from('profiles') as any)
+          .select('id, full_name, email')
+          .eq('role', 'student')
+          .order('full_name', { ascending: true, nullsFirst: false })
+
+        if (error) throw error
+        setAllStudents(data || [])
+      }
     } catch (error) {
       console.error('加载学生列表失败:', error)
     }
@@ -223,7 +262,7 @@ export default function GroupDetailPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.push('/admin/groups')}
+                onClick={() => router.back()}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 text-gray-400" />
