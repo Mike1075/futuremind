@@ -85,7 +85,6 @@ export default function StudentsPage() {
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
   const [newGroupDescription, setNewGroupDescription] = useState('')
-  const [newGroupType, setNewGroupType] = useState<'global' | 'course' | 'custom'>('custom')
   const [submittingGroup, setSubmittingGroup] = useState(false)
 
   useEffect(() => {
@@ -213,7 +212,7 @@ export default function StudentsPage() {
         body: JSON.stringify({
           name: newGroupName.trim(),
           description: newGroupDescription.trim() || null,
-          group_type: newGroupType
+          group_type: 'custom'  // 全局学员管理的分组统一为自定义类型
         })
       })
 
@@ -227,7 +226,6 @@ export default function StudentsPage() {
       alert('✅ 分组创建成功')
       setNewGroupName('')
       setNewGroupDescription('')
-      setNewGroupType('custom')
       setShowCreateGroupModal(false)
       await loadGroups()
     } catch (error) {
@@ -623,25 +621,8 @@ export default function StudentsPage() {
                     rows={3}
                     className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    分组类型
-                  </label>
-                  <select
-                    value={newGroupType}
-                    onChange={(e) => setNewGroupType(e.target.value as 'global' | 'course' | 'custom')}
-                    className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                    style={{ colorScheme: 'dark' }}
-                  >
-                    <option value="custom" className="bg-gray-900">自定义分组</option>
-                    <option value="global" className="bg-gray-900">全局分组</option>
-                    <option value="course" className="bg-gray-900">课程分组</option>
-                  </select>
                   <p className="text-xs text-gray-500 mt-2">
-                    • 自定义分组：灵活的自定义分组<br />
-                    • 全局分组：跨课程的全局分组<br />
-                    • 课程分组：特定课程的分组
+                    💡 提示：这是一个自由分组，您可以随意添加任何学员
                   </p>
                 </div>
               </div>
@@ -652,7 +633,6 @@ export default function StudentsPage() {
                     setShowCreateGroupModal(false)
                     setNewGroupName('')
                     setNewGroupDescription('')
-                    setNewGroupType('custom')
                   }}
                   className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
                   disabled={submittingGroup}

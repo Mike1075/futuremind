@@ -211,7 +211,7 @@ export default function CoursesPage() {
 
           {/* 新增课程体系卡片 */}
           <button
-            onClick={() => alert('新增课程体系功能开发中...')}
+            onClick={() => router.push('/admin/courses/new')}
             className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border-2 border-dashed border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center"
           >
             {/* Icon */}
