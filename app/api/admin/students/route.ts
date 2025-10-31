@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
+    if (!profile || !['admin', 'principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
     }
 
