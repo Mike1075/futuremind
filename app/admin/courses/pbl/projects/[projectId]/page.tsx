@@ -263,7 +263,6 @@ export default function PBLProjectDetailPage() {
   const handleAddStudent = async (studentId: string) => {
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
 
       // 添加到项目注册
       const { error: enrollError } = await (supabase
@@ -271,15 +270,15 @@ export default function PBLProjectDetailPage() {
         .insert({
           student_id: studentId,
           project_id: projectId,
-          status: 'active',
-          enrolled_by: user?.id
+          status: 'active'
         })
 
       if (enrollError) {
+        console.error('添加学员错误详情:', enrollError)
         if (enrollError.code === '23505') {
           alert('该学员已经选择了此项目')
         } else {
-          throw enrollError
+          alert(`添加学员失败: ${enrollError.message}`)
         }
         return
       }
@@ -290,7 +289,7 @@ export default function PBLProjectDetailPage() {
       await loadStudents()
     } catch (error) {
       console.error('添加学员失败:', error)
-      alert('添加学员失败')
+      alert('添加学员失败，请查看控制台了解详情')
     }
   }
 
