@@ -435,6 +435,33 @@ export default function EarthCoursePage() {
         {/* 左侧栏 - 阶段列表 */}
         <div className="w-80 bg-white/5 backdrop-blur-md border-r border-white/10 overflow-y-auto">
           <div className="p-4">
+            {/* 管理功能链接 */}
+            <div className="space-y-2 mb-4">
+              <button
+                onClick={() => earthSystemId && router.push(`/admin/courses/${earthSystemId}?tab=students`)}
+                className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-lg transition-all flex items-center gap-3 text-left"
+              >
+                <Users className="w-5 h-5 text-cyan-400" />
+                <div>
+                  <p className="text-white font-medium">选课学员</p>
+                  <p className="text-gray-400 text-xs">管理课程学员</p>
+                </div>
+              </button>
+              <button
+                onClick={() => earthSystemId && router.push(`/admin/courses/${earthSystemId}?tab=groups`)}
+                className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-green-500/50 rounded-lg transition-all flex items-center gap-3 text-left"
+              >
+                <UsersRound className="w-5 h-5 text-green-400" />
+                <div>
+                  <p className="text-white font-medium">课程分组</p>
+                  <p className="text-gray-400 text-xs">管理课程分组</p>
+                </div>
+              </button>
+            </div>
+
+            {/* 分隔线 */}
+            <div className="mb-4 border-t border-white/10"></div>
+
             <button
               onClick={handleAddNewStage}
               className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
@@ -479,33 +506,6 @@ export default function EarthCoursePage() {
                   )}
                 </div>
               ))}
-            </div>
-
-            {/* 分隔线 */}
-            <div className="my-4 border-t border-white/10"></div>
-
-            {/* 管理功能链接 */}
-            <div className="space-y-2">
-              <button
-                onClick={() => earthSystemId && router.push(`/admin/courses/${earthSystemId}?tab=students`)}
-                className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-lg transition-all flex items-center gap-3 text-left"
-              >
-                <Users className="w-5 h-5 text-cyan-400" />
-                <div>
-                  <p className="text-white font-medium">选课学员</p>
-                  <p className="text-gray-400 text-xs">管理课程学员</p>
-                </div>
-              </button>
-              <button
-                onClick={() => earthSystemId && router.push(`/admin/courses/${earthSystemId}?tab=groups`)}
-                className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-green-500/50 rounded-lg transition-all flex items-center gap-3 text-left"
-              >
-                <UsersRound className="w-5 h-5 text-green-400" />
-                <div>
-                  <p className="text-white font-medium">课程分组</p>
-                  <p className="text-gray-400 text-xs">管理课程分组</p>
-                </div>
-              </button>
             </div>
           </div>
         </div>

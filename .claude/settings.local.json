@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/CursorWork/FutureMindInstitute/readme/**)",
+      "Bash(claude mcp reload)",
+      "WebSearch",
+      "WebFetch(domain:supabase.com)",
+      "WebFetch(domain:composio.dev)",
+      "Bash(echo:*)",
+      "Read(//c/Users/杜富陶/.config/**)",
+      "WebFetch(domain:scottspence.com)",
+      "Read(//c/Users/杜富陶/**)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__execute_sql",
+      "Bash(npx @modelcontextprotocol/inspector:*)",
+      "Bash(dir:*)",
+      "Bash(jobs)",
+      "Bash(awk:*)",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__list_edge_functions",
+      "mcp__supabase__deploy_edge_function",
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm run build:*)",
+      "Bash(git rm:*)",
+      "mcp__supabase__get_logs",
+      "Bash(node scripts/import-listening-course.mjs:*)",
+      "Bash(test:*)",
+      "Bash(xargs grep:*)",
+      "mcp__supabase__generate_typescript_types",
+      "Bash(del /F nul)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}

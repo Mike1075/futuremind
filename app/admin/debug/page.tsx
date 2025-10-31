@@ -30,29 +30,29 @@ export default function DebugPage() {
 
       setUserInfo(user)
 
-      // 查询 admins 表
-      const { data: admin, error: adminError } = await supabase
-        .from('admins')
+      // 查询 profiles 表
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
 
-      if (adminError) {
-        setError(`查询 admins 表失败: ${adminError.message} (code: ${adminError.code})`)
+      if (profileError) {
+        setError(`查询 profiles 表失败: ${profileError.message} (code: ${profileError.code})`)
       } else {
-        setAdminInfo(admin)
+        setAdminInfo(profile)
       }
 
       // 也尝试用 email 查询
       if (user.email) {
-        const { data: adminByEmail, error: emailError } = await supabase
-          .from('admins')
+        const { data: profileByEmail, error: emailError } = await supabase
+          .from('profiles')
           .select('*')
           .eq('email', user.email)
           .single()
 
-        if (!emailError && adminByEmail) {
-          setAdminInfo((prev: any) => ({ ...prev, foundByEmail: adminByEmail }))
+        if (!emailError && profileByEmail) {
+          setAdminInfo((prev: any) => ({ ...prev, foundByEmail: profileByEmail }))
         }
       }
 

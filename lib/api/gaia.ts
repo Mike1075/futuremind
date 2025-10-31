@@ -408,8 +408,9 @@ class GaiaAPI {
       }
 
       const { data, error } = await this.supabase
-        .from('pbl_projects')
+        .from('course_contents')
         .select('*')
+        .eq('content_type', 'pbl_project')
         .order('created_at', { ascending: false})
 
       if (error) {

@@ -483,7 +483,7 @@ export default function IcarusAdminPage() {
                         key={seq}
                         whileHover={{ scale: 1.02 }}
                         className={`bg-gradient-to-br ${diffConfig.color} p-0.5 rounded-lg cursor-pointer`}
-                        onClick={() => project && setSelectedProject(project)}
+                        onClick={() => project && router.push(`/admin/courses/pbl/projects/${project.id}`)}
                       >
                         <div className="bg-black/90 p-6 rounded-lg h-full">
                           <div className="flex items-center justify-between mb-3">
