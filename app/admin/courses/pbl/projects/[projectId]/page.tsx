@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Save, Users, UsersRound, FileText, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Users, UsersRound, FileText, Plus, Trash2, Search, UserPlus } from 'lucide-react'
 
 interface PBLProject {
   id: string
@@ -72,6 +72,9 @@ export default function PBLProjectDetailPage() {
   const [students, setStudents] = useState<Student[]>([])
   const [groups, setGroups] = useState<ProjectGroup[]>([])
   const [saving, setSaving] = useState(false)
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false)
+  const [allUsers, setAllUsers] = useState<any[]>([])
+  const [studentSearchTerm, setStudentSearchTerm] = useState('')
 
   // 编辑模式
   const [editMode, setEditMode] = useState(false)
@@ -103,8 +106,13 @@ export default function PBLProjectDetailPage() {
   }, [project])
 
   useEffect(() => {
-    if (activeTab === 'students' && students.length === 0) {
-      loadStudents()
+    if (activeTab === 'students') {
+      if (students.length === 0) {
+        loadStudents()
+      }
+      if (allUsers.length === 0) {
+        loadAllUsers()
+      }
     } else if (activeTab === 'groups' && groups.length === 0) {
       loadGroups()
     }
@@ -189,6 +197,22 @@ export default function PBLProjectDetailPage() {
     }
   }
 
+  const loadAllUsers = async () => {
+    try {
+      const supabase = createClient()
+      // 获取所有用户（包括老师和校长）
+      const { data: allProfiles, error: profilesError } = await (supabase
+        .from('profiles') as any)
+        .select('id, full_name, email, role')
+        .order('full_name')
+
+      if (profilesError) throw profilesError
+      setAllUsers(allProfiles || [])
+    } catch (error) {
+      console.error('加载用户列表失败:', error)
+    }
+  }
+
   const loadGroups = async () => {
     try {
       const supabase = createClient()
@@ -236,32 +260,19 @@ export default function PBLProjectDetailPage() {
     }
   }
 
-  const handleAddStudent = async () => {
-    const email = prompt('请输入学员邮箱:')
-    if (!email) return
-
+  const handleAddStudent = async (studentId: string) => {
     try {
       const supabase = createClient()
-
-      // 查找用户
-      const { data: user, error: userError } = await (supabase
-        .from('profiles') as any)
-        .select('id, email, full_name')
-        .eq('email', email.trim())
-        .single()
-
-      if (userError || !user) {
-        alert('未找到该邮箱的用户')
-        return
-      }
+      const { data: { user } } = await supabase.auth.getUser()
 
       // 添加到项目注册
       const { error: enrollError } = await (supabase
         .from('pbl_project_enrollments') as any)
         .insert({
-          student_id: user.id,
+          student_id: studentId,
           project_id: projectId,
-          status: 'active'
+          status: 'active',
+          enrolled_by: user?.id
         })
 
       if (enrollError) {
@@ -274,6 +285,8 @@ export default function PBLProjectDetailPage() {
       }
 
       alert('添加学员成功！')
+      setShowAddStudentModal(false)
+      setStudentSearchTerm('')
       await loadStudents()
     } catch (error) {
       console.error('添加学员失败:', error)
@@ -774,10 +787,10 @@ export default function PBLProjectDetailPage() {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-white">项目学员列表 ({students.length}人)</h2>
                 <button
-                  onClick={handleAddStudent}
+                  onClick={() => setShowAddStudentModal(true)}
                   className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-all flex items-center gap-2"
                 >
-                  <Plus className="w-4 h-4" />
+                  <UserPlus className="w-4 h-4" />
                   添加学员
                 </button>
               </div>
@@ -869,6 +882,72 @@ export default function PBLProjectDetailPage() {
           )}
         </div>
       </div>
+
+      {/* 添加学员模态框 */}
+      {showAddStudentModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg border border-white/10 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-white/10">
+              <h2 className="text-xl font-bold text-white">添加学员到项目</h2>
+              <p className="text-gray-400 text-sm mt-2">可以添加学员、老师或校长</p>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              {/* 搜索框 */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={studentSearchTerm}
+                    onChange={(e) => setStudentSearchTerm(e.target.value)}
+                    placeholder="搜索姓名或邮箱..."
+                    className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {allUsers
+                  .filter(u =>
+                    !students.some(s => s.id === u.id) &&
+                    (u.full_name?.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                     u.email.toLowerCase().includes(studentSearchTerm.toLowerCase()))
+                  )
+                  .map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => handleAddStudent(user.id)}
+                      className="w-full p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-left transition-all"
+                    >
+                      <p className="text-white font-medium">{user.full_name || '未设置姓名'}</p>
+                      <p className="text-gray-400 text-sm mt-1">{user.email}</p>
+                    </button>
+                  ))}
+                {allUsers.filter(u =>
+                  !students.some(s => s.id === u.id) &&
+                  (u.full_name?.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                   u.email.toLowerCase().includes(studentSearchTerm.toLowerCase()))
+                ).length === 0 && (
+                  <p className="text-gray-400 text-center py-8">
+                    {studentSearchTerm ? '未找到匹配的用户' : '所有用户都已添加到此项目'}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="p-6 border-t border-white/10">
+              <button
+                onClick={() => {
+                  setShowAddStudentModal(false)
+                  setStudentSearchTerm('')
+                }}
+                className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
