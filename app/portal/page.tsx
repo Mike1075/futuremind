@@ -18,7 +18,8 @@ import {
   Star,
   Leaf,
   BookOpen,
-  Plus
+  Plus,
+  Settings
 } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
 import { DatabaseConsciousnessRoots } from '@/components/ui/database-consciousness-roots'
@@ -63,6 +64,7 @@ export default function PortalPage() {
   const [currentDay, setCurrentDay] = useState(1)
   const [completedTasks, setCompletedTasks] = useState<string[]>([])
   const [consciousnessGrowth, setConsciousnessGrowth] = useState(0)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   // Course enrollment state
   const [allCourses, setAllCourses] = useState<Course[]>([])
@@ -77,6 +79,18 @@ export default function PortalPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user as User)
+
+        // Get user role
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (profile) {
+          setUserRole(profile.role)
+        }
+
         // Load user progress
         const { data: progress, error: progressError } = await supabase
           .from('user_progress')
@@ -334,6 +348,20 @@ export default function PortalPage() {
                   <Users className="w-5 h-5 text-purple-400" />
                 </div>
               </button>
+
+              {/* 管理后台入口 - 仅管理员可见 */}
+              {userRole && ['admin', 'principal', 'teacher'].includes(userRole) && (
+                <button
+                  onClick={() => router.push('/admin')}
+                  className="flex items-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors duration-300 group"
+                >
+                  <span className="font-medium">管理后台</span>
+                  <div className="w-8 h-8 bg-blue-600/20 rounded-full flex items-center justify-center group-hover:bg-blue-600/40 transition-colors duration-300">
+                    <Settings className="w-5 h-5 text-blue-400" />
+                  </div>
+                </button>
+              )}
+
               <button
                 onClick={handleLogout}
                 className="flex items-center space-x-2 text-red-300 hover:text-red-200 transition-colors duration-300 group"
