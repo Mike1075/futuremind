@@ -438,7 +438,7 @@ export default function EarthCoursePage() {
             {/* 管理功能链接 */}
             <div className="space-y-2 mb-4">
               <button
-                onClick={() => earthSystemId && router.push(`/admin/courses/${earthSystemId}?tab=students`)}
+                onClick={() => router.push('/admin/courses/earth/students')}
                 className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-lg transition-all flex items-center gap-3 text-left"
               >
                 <Users className="w-5 h-5 text-cyan-400" />
@@ -448,7 +448,7 @@ export default function EarthCoursePage() {
                 </div>
               </button>
               <button
-                onClick={() => earthSystemId && router.push(`/admin/courses/${earthSystemId}?tab=groups`)}
+                onClick={() => router.push('/admin/courses/earth/groups')}
                 className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-green-500/50 rounded-lg transition-all flex items-center gap-3 text-left"
               >
                 <UsersRound className="w-5 h-5 text-green-400" />

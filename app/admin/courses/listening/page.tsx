@@ -393,7 +393,7 @@ export default function ListeningCoursePage() {
             {/* 管理功能链接 */}
             <div className="space-y-2 mb-4">
               <button
-                onClick={() => listeningSystemId && router.push(`/admin/courses/${listeningSystemId}?tab=students`)}
+                onClick={() => router.push('/admin/courses/listening/students')}
                 className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-lg transition-all flex items-center gap-3 text-left"
               >
                 <Users className="w-5 h-5 text-purple-400" />
@@ -403,7 +403,7 @@ export default function ListeningCoursePage() {
                 </div>
               </button>
               <button
-                onClick={() => listeningSystemId && router.push(`/admin/courses/${listeningSystemId}?tab=groups`)}
+                onClick={() => router.push('/admin/courses/listening/groups')}
                 className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-lg transition-all flex items-center gap-3 text-left"
               >
                 <UsersRound className="w-5 h-5 text-cyan-400" />

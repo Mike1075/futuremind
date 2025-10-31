@@ -87,6 +87,7 @@ export default function CoursesPage() {
           icon: Globe,
           gradient: 'from-cyan-500 via-teal-500 to-green-500'
         }
+      case 'icarus':
       case 'pbl':
         return {
           icon: Rocket,
@@ -170,7 +171,7 @@ export default function CoursesPage() {
             const getCoursePath = () => {
               if (course.system_key === 'listening') return '/admin/courses/listening'
               if (course.system_key === 'earth') return '/admin/courses/earth'
-              if (course.system_key === 'pbl') return '/admin/courses/pbl'
+              if (course.system_key === 'icarus' || course.system_key === 'pbl') return '/admin/courses/pbl'
               return `/admin/courses/${course.id}`
             }
             return (
