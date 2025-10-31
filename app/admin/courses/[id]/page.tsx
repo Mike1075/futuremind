@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Users, FileText, UsersRound, Plus, Trash2, Upload } from 'lucide-react'
 
 interface Course {
@@ -45,10 +45,12 @@ type TabType = 'students' | 'materials' | 'groups'
 export default function CourseDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const courseId = params.id as string
+  const tabParam = searchParams.get('tab') as TabType | null
 
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<TabType>('students')
+  const [activeTab, setActiveTab] = useState<TabType>(tabParam || 'students')
   const [course, setCourse] = useState<Course | null>(null)
   const [students, setStudents] = useState<Student[]>([])
   const [materials, setMaterials] = useState<Material[]>([])
@@ -66,6 +68,13 @@ export default function CourseDetailPage() {
   useEffect(() => {
     checkAuthAndLoadData()
   }, [courseId])
+
+  // 监听URL参数变化，切换标签
+  useEffect(() => {
+    if (tabParam && (tabParam === 'students' || tabParam === 'materials' || tabParam === 'groups')) {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam])
 
   useEffect(() => {
     if (activeTab === 'students' && students.length === 0) {

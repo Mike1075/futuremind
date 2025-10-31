@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Edit, Save, X, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, Edit, Save, X, Trash2, Plus, Users, UsersRound } from 'lucide-react'
 
 interface PBLProject {
   id: string
@@ -424,6 +424,24 @@ export default function IcarusAdminPage() {
               <h1 className="text-2xl font-bold text-white">伊卡洛斯计划</h1>
               <p className="text-gray-400 text-sm">探索现实的边缘 - PBL项目体系</p>
             </div>
+          </div>
+
+          {/* 管理功能按钮 */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => icarusSystemId && router.push(`/admin/courses/${icarusSystemId}?tab=students`)}
+              className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-orange-500/50 rounded-lg transition-all flex items-center gap-2"
+            >
+              <Users className="w-4 h-4 text-orange-400" />
+              <span className="text-white text-sm">选课学员</span>
+            </button>
+            <button
+              onClick={() => icarusSystemId && router.push(`/admin/courses/${icarusSystemId}?tab=groups`)}
+              className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-pink-500/50 rounded-lg transition-all flex items-center gap-2"
+            >
+              <UsersRound className="w-4 h-4 text-pink-400" />
+              <span className="text-white text-sm">课程分组</span>
+            </button>
           </div>
         </div>
       </header>
