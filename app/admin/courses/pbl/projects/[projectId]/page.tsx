@@ -79,10 +79,12 @@ export default function PBLProjectDetailPage() {
     title: string
     original_text: string
     estimated_duration: number
+    week_plan: WeekPlan[]
   }>({
     title: '',
     original_text: '',
-    estimated_duration: 0
+    estimated_duration: 0,
+    week_plan: []
   })
 
   useEffect(() => {
@@ -94,7 +96,8 @@ export default function PBLProjectDetailPage() {
       setFormData({
         title: project.title || '',
         original_text: project.original_text || '',
-        estimated_duration: project.estimated_duration || 0
+        estimated_duration: project.estimated_duration || 0,
+        week_plan: project.week_plan || []
       })
     }
   }, [project])
@@ -215,6 +218,7 @@ export default function PBLProjectDetailPage() {
           title: formData.title,
           original_text: formData.original_text,
           estimated_duration: formData.estimated_duration,
+          week_plan: formData.week_plan,
           updated_at: new Date().toISOString()
         })
         .eq('id', projectId)
@@ -296,6 +300,100 @@ export default function PBLProjectDetailPage() {
       console.error('移除学员失败:', error)
       alert('移除失败')
     }
+  }
+
+  // 周计划管理函数
+  const handleAddWeek = () => {
+    const newWeek: WeekPlan = {
+      week: formData.week_plan.length + 1,
+      theme: '',
+      goals: [],
+      activities: []
+    }
+    setFormData({
+      ...formData,
+      week_plan: [...formData.week_plan, newWeek]
+    })
+  }
+
+  const handleDeleteWeek = (weekIndex: number) => {
+    setFormData({
+      ...formData,
+      week_plan: formData.week_plan.filter((_, i) => i !== weekIndex)
+    })
+  }
+
+  const handleUpdateWeek = (weekIndex: number, field: 'theme', value: string) => {
+    const updated = [...formData.week_plan]
+    updated[weekIndex][field] = value
+    setFormData({ ...formData, week_plan: updated })
+  }
+
+  const handleAddGoal = (weekIndex: number) => {
+    const updated = [...formData.week_plan]
+    updated[weekIndex].goals = [...updated[weekIndex].goals, '']
+    setFormData({ ...formData, week_plan: updated })
+  }
+
+  const handleUpdateGoal = (weekIndex: number, goalIndex: number, value: string) => {
+    const updated = [...formData.week_plan]
+    updated[weekIndex].goals[goalIndex] = value
+    setFormData({ ...formData, week_plan: updated })
+  }
+
+  const handleDeleteGoal = (weekIndex: number, goalIndex: number) => {
+    const updated = [...formData.week_plan]
+    updated[weekIndex].goals = updated[weekIndex].goals.filter((_, i) => i !== goalIndex)
+    setFormData({ ...formData, week_plan: updated })
+  }
+
+  const handleAddActivity = (weekIndex: number) => {
+    const newActivity: Activity = {
+      day: '',
+      title: '',
+      description: '',
+      deliverables: []
+    }
+    const updated = [...formData.week_plan]
+    updated[weekIndex].activities = [...updated[weekIndex].activities, newActivity]
+    setFormData({ ...formData, week_plan: updated })
+  }
+
+  const handleUpdateActivity = (weekIndex: number, activityIndex: number, field: keyof Activity, value: string) => {
+    const updated = [...formData.week_plan]
+    if (field === 'deliverables') {
+      return // Handle separately
+    }
+    updated[weekIndex].activities[activityIndex][field] = value as never
+    setFormData({ ...formData, week_plan: updated })
+  }
+
+  const handleDeleteActivity = (weekIndex: number, activityIndex: number) => {
+    const updated = [...formData.week_plan]
+    updated[weekIndex].activities = updated[weekIndex].activities.filter((_, i) => i !== activityIndex)
+    setFormData({ ...formData, week_plan: updated })
+  }
+
+  const handleAddDeliverable = (weekIndex: number, activityIndex: number) => {
+    const updated = [...formData.week_plan]
+    updated[weekIndex].activities[activityIndex].deliverables = [
+      ...updated[weekIndex].activities[activityIndex].deliverables,
+      ''
+    ]
+    setFormData({ ...formData, week_plan: updated })
+  }
+
+  const handleUpdateDeliverable = (weekIndex: number, activityIndex: number, deliverableIndex: number, value: string) => {
+    const updated = [...formData.week_plan]
+    updated[weekIndex].activities[activityIndex].deliverables[deliverableIndex] = value
+    setFormData({ ...formData, week_plan: updated })
+  }
+
+  const handleDeleteDeliverable = (weekIndex: number, activityIndex: number, deliverableIndex: number) => {
+    const updated = [...formData.week_plan]
+    updated[weekIndex].activities[activityIndex].deliverables =
+      updated[weekIndex].activities[activityIndex].deliverables.filter((_, i) => i !== deliverableIndex)
+    setFormData({ ...formData, week_plan: updated })
   }
 
   if (loading) {
@@ -454,73 +552,218 @@ export default function PBLProjectDetailPage() {
                 </div>
 
                 {/* 周计划 */}
-                {!editMode && project.week_plan && project.week_plan.length > 0 && (
-                  <div>
-                    <h3 className="text-white font-medium mb-4 text-lg">📅 周计划</h3>
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-white font-medium text-lg">📅 周计划</h3>
+                    {editMode && (
+                      <button
+                        onClick={handleAddWeek}
+                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm flex items-center gap-1"
+                      >
+                        <Plus className="w-4 h-4" />
+                        添加周
+                      </button>
+                    )}
+                  </div>
+
+                  {formData.week_plan.length === 0 && editMode ? (
+                    <p className="text-gray-400 text-sm">点击"添加周"按钮创建周计划</p>
+                  ) : (
                     <div className="space-y-4">
-                      {project.week_plan.map((week) => (
-                        <div key={week.week} className="bg-white/5 rounded-lg p-6 border border-white/10">
+                      {(editMode ? formData.week_plan : project.week_plan || []).map((week, weekIdx) => (
+                        <div key={weekIdx} className="bg-white/5 rounded-lg p-6 border border-white/10">
                           <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-white font-bold text-lg">第 {week.week} 周：{week.theme}</h4>
+                            <h4 className="text-white font-bold text-lg">第 {week.week} 周</h4>
+                            {editMode && (
+                              <button
+                                onClick={() => handleDeleteWeek(weekIdx)}
+                                className="p-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
+                                title="删除此周"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
 
-                          {/* 目标 */}
-                          {week.goals && week.goals.length > 0 && (
-                            <div className="mb-4">
-                              <p className="text-purple-300 font-medium mb-2">🎯 周目标</p>
-                              <ul className="list-disc list-inside space-y-1">
-                                {week.goals.map((goal, idx) => (
-                                  <li key={idx} className="text-gray-300 text-sm">{goal}</li>
+                          {/* 周主题 */}
+                          <div className="mb-4">
+                            <label className="block text-purple-300 font-medium mb-2">🎯 周主题</label>
+                            {editMode ? (
+                              <input
+                                type="text"
+                                value={week.theme}
+                                onChange={(e) => handleUpdateWeek(weekIdx, 'theme', e.target.value)}
+                                placeholder="例如：理解基本概念"
+                                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                              />
+                            ) : (
+                              <p className="text-white">{week.theme}</p>
+                            )}
+                          </div>
+
+                          {/* 周目标 */}
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-purple-300 font-medium">📝 周目标</label>
+                              {editMode && (
+                                <button
+                                  onClick={() => handleAddGoal(weekIdx)}
+                                  className="px-2 py-1 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 rounded text-xs flex items-center gap-1"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  添加目标
+                                </button>
+                              )}
+                            </div>
+                            {week.goals && week.goals.length > 0 ? (
+                              <ul className="space-y-2">
+                                {week.goals.map((goal, goalIdx) => (
+                                  <li key={goalIdx} className="flex items-start gap-2">
+                                    {editMode ? (
+                                      <>
+                                        <input
+                                          type="text"
+                                          value={goal}
+                                          onChange={(e) => handleUpdateGoal(weekIdx, goalIdx, e.target.value)}
+                                          placeholder="输入目标..."
+                                          className="flex-1 px-3 py-1.5 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-sm focus:outline-none focus:border-purple-500"
+                                        />
+                                        <button
+                                          onClick={() => handleDeleteGoal(weekIdx, goalIdx)}
+                                          className="p-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <span className="text-gray-300 text-sm">• {goal}</span>
+                                    )}
+                                  </li>
                                 ))}
                               </ul>
-                            </div>
-                          )}
+                            ) : (
+                              <p className="text-gray-500 text-sm">暂无目标</p>
+                            )}
+                          </div>
 
-                          {/* 活动 */}
-                          {week.activities && week.activities.length > 0 && (
-                            <div>
-                              <p className="text-cyan-300 font-medium mb-2">📝 活动安排</p>
+                          {/* 活动安排 */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-cyan-300 font-medium">🗓️ 活动安排</label>
+                              {editMode && (
+                                <button
+                                  onClick={() => handleAddActivity(weekIdx)}
+                                  className="px-2 py-1 bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 rounded text-xs flex items-center gap-1"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  添加活动
+                                </button>
+                              )}
+                            </div>
+                            {week.activities && week.activities.length > 0 ? (
                               <div className="space-y-3">
-                                {week.activities.map((activity, idx) => (
-                                  <div key={idx} className="bg-black/30 rounded-lg p-4">
-                                    <p className="text-white font-medium mb-1">
-                                      {activity.day} - {activity.title}
-                                    </p>
-                                    <p className="text-gray-400 text-sm mb-2">{activity.description}</p>
-                                    {activity.deliverables && activity.deliverables.length > 0 && (
-                                      <div>
-                                        <p className="text-green-300 text-xs mb-1">✅ 可交付成果：</p>
-                                        <ul className="list-disc list-inside">
-                                          {activity.deliverables.map((deliverable, dIdx) => (
-                                            <li key={dIdx} className="text-gray-400 text-xs">{deliverable}</li>
-                                          ))}
-                                        </ul>
+                                {week.activities.map((activity, actIdx) => (
+                                  <div key={actIdx} className="bg-black/30 rounded-lg p-4 border border-white/10">
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex-1 space-y-2">
+                                        {editMode ? (
+                                          <>
+                                            <input
+                                              type="text"
+                                              value={activity.day}
+                                              onChange={(e) => handleUpdateActivity(weekIdx, actIdx, 'day', e.target.value)}
+                                              placeholder="例如：第1天"
+                                              className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-sm focus:outline-none focus:border-cyan-500"
+                                            />
+                                            <input
+                                              type="text"
+                                              value={activity.title}
+                                              onChange={(e) => handleUpdateActivity(weekIdx, actIdx, 'title', e.target.value)}
+                                              placeholder="活动标题"
+                                              className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-sm font-medium focus:outline-none focus:border-cyan-500"
+                                            />
+                                            <textarea
+                                              value={activity.description}
+                                              onChange={(e) => handleUpdateActivity(weekIdx, actIdx, 'description', e.target.value)}
+                                              placeholder="活动描述"
+                                              rows={2}
+                                              className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-sm focus:outline-none focus:border-cyan-500"
+                                            />
+                                          </>
+                                        ) : (
+                                          <>
+                                            <p className="text-white font-medium">
+                                              {activity.day} - {activity.title}
+                                            </p>
+                                            <p className="text-gray-400 text-sm">{activity.description}</p>
+                                          </>
+                                        )}
+
+                                        {/* 可交付成果 */}
+                                        <div>
+                                          <div className="flex items-center justify-between mb-1">
+                                            <p className="text-green-300 text-xs">✅ 可交付成果</p>
+                                            {editMode && (
+                                              <button
+                                                onClick={() => handleAddDeliverable(weekIdx, actIdx)}
+                                                className="px-1.5 py-0.5 bg-green-600/30 hover:bg-green-600/50 text-green-300 rounded text-xs"
+                                              >
+                                                <Plus className="w-3 h-3" />
+                                              </button>
+                                            )}
+                                          </div>
+                                          {activity.deliverables && activity.deliverables.length > 0 ? (
+                                            <ul className="space-y-1">
+                                              {activity.deliverables.map((deliverable, delIdx) => (
+                                                <li key={delIdx} className="flex items-start gap-2">
+                                                  {editMode ? (
+                                                    <>
+                                                      <input
+                                                        type="text"
+                                                        value={deliverable}
+                                                        onChange={(e) => handleUpdateDeliverable(weekIdx, actIdx, delIdx, e.target.value)}
+                                                        placeholder="可交付成果"
+                                                        className="flex-1 px-2 py-1 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-xs focus:outline-none focus:border-green-500"
+                                                      />
+                                                      <button
+                                                        onClick={() => handleDeleteDeliverable(weekIdx, actIdx, delIdx)}
+                                                        className="p-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded"
+                                                      >
+                                                        <Trash2 className="w-2.5 h-2.5" />
+                                                      </button>
+                                                    </>
+                                                  ) : (
+                                                    <span className="text-gray-400 text-xs">• {deliverable}</span>
+                                                  )}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          ) : (
+                                            <p className="text-gray-500 text-xs">暂无可交付成果</p>
+                                          )}
+                                        </div>
                                       </div>
-                                    )}
+                                      {editMode && (
+                                        <button
+                                          onClick={() => handleDeleteActivity(weekIdx, actIdx)}
+                                          className="ml-2 p-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 ))}
                               </div>
-                            </div>
-                          )}
+                            ) : (
+                              <p className="text-gray-500 text-sm">暂无活动</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {/* 前置要求 */}
-                {!editMode && project.prerequisites && project.prerequisites.length > 0 && (
-                  <div>
-                    <h3 className="text-white font-medium mb-4 text-lg">📋 前置要求</h3>
-                    <div className="space-y-2">
-                      {project.prerequisites.map((prereq, idx) => (
-                        <div key={idx} className="bg-white/5 rounded-lg p-4 border border-white/10">
-                          <p className="text-gray-300">{prereq.description}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           )}

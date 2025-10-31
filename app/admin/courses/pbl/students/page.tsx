@@ -12,12 +12,12 @@ interface Student {
   assigned_at: string
 }
 
-export default function EarthStudentsPage() {
+export default function PBLStudentsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [students, setStudents] = useState<Student[]>([])
   const [allUsers, setAllUsers] = useState<any[]>([])
-  const [earthSystemId, setEarthSystemId] = useState<string | null>(null)
+  const [pblSystemId, setPblSystemId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [modalSearchTerm, setModalSearchTerm] = useState('')
@@ -49,15 +49,15 @@ export default function EarthStudentsPage() {
     try {
       const supabase = createClient()
 
-      // 获取地球课程 system_id
+      // 获取伊卡洛斯课程 system_id
       const { data: systemData, error: systemError } = await (supabase
         .from('course_systems') as any)
         .select('id')
-        .eq('system_key', 'earth')
+        .eq('system_key', 'icarus')
         .single()
 
       if (systemError) throw systemError
-      setEarthSystemId(systemData.id)
+      setPblSystemId(systemData.id)
 
       // 获取选课学员
       const { data: assignments, error: assignError } = await (supabase
@@ -99,7 +99,7 @@ export default function EarthStudentsPage() {
   }
 
   const handleAddStudent = async (studentId: string) => {
-    if (!earthSystemId) return
+    if (!pblSystemId) return
 
     try {
       const supabase = createClient()
@@ -109,7 +109,7 @@ export default function EarthStudentsPage() {
         .from('student_course_assignments') as any)
         .insert({
           student_id: studentId,
-          course_system_id: earthSystemId,
+          course_system_id: pblSystemId,
           assigned_by: user?.id,
           assigned_by_role: 'principal',
           status: 'active'
@@ -132,7 +132,7 @@ export default function EarthStudentsPage() {
   }
 
   const handleRemoveStudent = async (studentId: string) => {
-    if (!earthSystemId) return
+    if (!pblSystemId) return
     if (!confirm('确定要移除该学员吗？')) return
 
     try {
@@ -141,7 +141,7 @@ export default function EarthStudentsPage() {
         .from('student_course_assignments') as any)
         .delete()
         .eq('student_id', studentId)
-        .eq('course_system_id', earthSystemId)
+        .eq('course_system_id', pblSystemId)
 
       if (error) throw error
 
@@ -168,8 +168,8 @@ export default function EarthStudentsPage() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
-          <p className="text-cyan-300 mt-4">加载中...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-400 mx-auto"></div>
+          <p className="text-orange-300 mt-4">加载中...</p>
         </div>
       </div>
     )
@@ -183,19 +183,19 @@ export default function EarthStudentsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.push('/admin/courses/earth')}
+                onClick={() => router.push('/admin/courses/pbl')}
                 className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-white">欢迎来到地球 - 选课学员</h1>
-                <p className="text-sm text-cyan-300 mt-1">管理课程学员</p>
+                <h1 className="text-2xl font-bold text-white">伊卡洛斯计划 - 选课学员</h1>
+                <p className="text-sm text-orange-300 mt-1">管理课程学员</p>
               </div>
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-green-600 hover:from-cyan-700 hover:to-green-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
             >
               <UserPlus className="w-5 h-5" />
               添加学员
@@ -215,7 +215,7 @@ export default function EarthStudentsPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="搜索学员姓名或邮箱..."
-              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500"
+              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
             />
           </div>
         </div>
@@ -224,7 +224,7 @@ export default function EarthStudentsPage() {
         <div className="bg-white/5 backdrop-blur-md rounded-lg border border-white/10 overflow-hidden">
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center gap-2 text-white">
-              <Users className="w-5 h-5 text-cyan-400" />
+              <Users className="w-5 h-5 text-orange-400" />
               <span className="font-medium">选课学员列表</span>
               <span className="text-gray-400 text-sm">({filteredStudents.length} 人)</span>
             </div>
@@ -277,7 +277,7 @@ export default function EarthStudentsPage() {
                     value={modalSearchTerm}
                     onChange={(e) => setModalSearchTerm(e.target.value)}
                     placeholder="搜索姓名或邮箱..."
-                    className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500"
+                    className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
                   />
                 </div>
               </div>

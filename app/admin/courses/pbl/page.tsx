@@ -429,14 +429,14 @@ export default function IcarusAdminPage() {
           {/* 管理功能按钮 */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => icarusSystemId && router.push(`/admin/courses/${icarusSystemId}?tab=students`)}
+              onClick={() => router.push('/admin/courses/pbl/students')}
               className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-orange-500/50 rounded-lg transition-all flex items-center gap-2"
             >
               <Users className="w-4 h-4 text-orange-400" />
               <span className="text-white text-sm">选课学员</span>
             </button>
             <button
-              onClick={() => icarusSystemId && router.push(`/admin/courses/${icarusSystemId}?tab=groups`)}
+              onClick={() => router.push('/admin/courses/pbl/groups')}
               className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-pink-500/50 rounded-lg transition-all flex items-center gap-2"
             >
               <UsersRound className="w-4 h-4 text-pink-400" />

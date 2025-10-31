@@ -20,6 +20,7 @@ export default function ListeningStudentsPage() {
   const [listeningSystemId, setListeningSystemId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [modalSearchTerm, setModalSearchTerm] = useState('')
 
   useEffect(() => {
     checkAuth()
@@ -84,11 +85,11 @@ export default function ListeningStudentsPage() {
 
       setStudents(studentList)
 
-      // 获取所有学员（用于添加）
+      // 获取所有用户（用于添加，包括老师和校长）
       const { data: allProfiles, error: profilesError } = await (supabase
         .from('profiles') as any)
-        .select('id, full_name, email')
-        .eq('role', 'student')
+        .select('id, full_name, email, role')
+        .order('full_name')
 
       if (profilesError) throw profilesError
       setAllUsers(allProfiles || [])
@@ -118,6 +119,7 @@ export default function ListeningStudentsPage() {
 
       alert('添加成功！')
       setShowAddModal(false)
+      setModalSearchTerm('')
       await loadData()
     } catch (error: any) {
       console.error('添加学员失败:', error)
@@ -157,7 +159,9 @@ export default function ListeningStudentsPage() {
   )
 
   const availableUsers = allUsers.filter(u =>
-    !students.some(s => s.id === u.id)
+    !students.some(s => s.id === u.id) &&
+    (u.full_name?.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
+     u.email.toLowerCase().includes(modalSearchTerm.toLowerCase()))
   )
 
   if (loading) {
@@ -261,8 +265,23 @@ export default function ListeningStudentsPage() {
           <div className="bg-gray-900 rounded-lg border border-white/10 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-white/10">
               <h2 className="text-xl font-bold text-white">添加学员到课程</h2>
+              <p className="text-gray-400 text-sm mt-2">可以添加学员、老师或校长</p>
             </div>
             <div className="p-6 overflow-y-auto flex-1">
+              {/* 搜索框 */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={modalSearchTerm}
+                    onChange={(e) => setModalSearchTerm(e.target.value)}
+                    placeholder="搜索姓名或邮箱..."
+                    className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 {availableUsers.length === 0 ? (
                   <p className="text-gray-400 text-center py-8">所有学员都已添加</p>
@@ -282,7 +301,10 @@ export default function ListeningStudentsPage() {
             </div>
             <div className="p-6 border-t border-white/10">
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  setShowAddModal(false)
+                  setModalSearchTerm('')
+                }}
                 className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
               >
                 取消
