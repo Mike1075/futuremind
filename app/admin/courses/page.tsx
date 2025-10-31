@@ -166,10 +166,17 @@ export default function CoursesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {courseSystems.map((course) => {
             const { icon: Icon, gradient } = getIconAndGradient(course.system_key)
+            // 根据课程类型决定跳转路径
+            const getCoursePath = () => {
+              if (course.system_key === 'listening') return '/admin/courses/listening'
+              if (course.system_key === 'earth') return '/admin/courses/earth'
+              if (course.system_key === 'pbl') return '/admin/courses/pbl'
+              return `/admin/courses/${course.id}`
+            }
             return (
               <button
                 key={course.id}
-                onClick={() => router.push(`/admin/courses/${course.id}`)}
+                onClick={() => router.push(getCoursePath())}
                 className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center"
               >
                 {/* Gradient Background Effect */}
