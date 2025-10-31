@@ -75,6 +75,9 @@ export default function PBLProjectDetailPage() {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [allUsers, setAllUsers] = useState<any[]>([])
   const [studentSearchTerm, setStudentSearchTerm] = useState('')
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
+  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupDescription, setNewGroupDescription] = useState('')
 
   // 编辑模式
   const [editMode, setEditMode] = useState(false)
@@ -219,8 +222,8 @@ export default function PBLProjectDetailPage() {
       const { data, error } = await (supabase
         .from('student_groups') as any)
         .select('*')
-        .eq('course_id', projectId)
-        .eq('group_type', 'pbl_project')
+        .eq('project_id', projectId)
+        .eq('group_type', 'project')
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -406,6 +409,42 @@ export default function PBLProjectDetailPage() {
     updated[weekIndex].activities[activityIndex].deliverables =
       updated[weekIndex].activities[activityIndex].deliverables.filter((_, i) => i !== deliverableIndex)
     setFormData({ ...formData, week_plan: updated })
+  }
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) {
+      alert('请输入分组名称')
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const { data: newGroup, error } = await (supabase
+        .from('student_groups') as any)
+        .insert({
+          name: newGroupName,
+          description: newGroupDescription || null,
+          group_type: 'project',
+          project_id: projectId,
+          created_by: user?.id,
+          member_ids: []
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      alert('✅ 创建项目分组成功！')
+      setShowCreateGroupModal(false)
+      setNewGroupName('')
+      setNewGroupDescription('')
+      await loadGroups()
+    } catch (error) {
+      console.error('创建项目分组失败:', error)
+      alert('❌ 创建失败，请重试')
+    }
   }
 
   if (loading) {
@@ -844,7 +883,7 @@ export default function PBLProjectDetailPage() {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-white">项目分组 ({groups.length}个)</h2>
                 <button
-                  onClick={() => router.push(`/admin/groups?course=${projectId}&type=pbl_project`)}
+                  onClick={() => setShowCreateGroupModal(true)}
                   className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg transition-all flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
@@ -942,6 +981,62 @@ export default function PBLProjectDetailPage() {
                 className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
               >
                 取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 创建项目分组模态框 */}
+      {showCreateGroupModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg border border-white/10 w-full max-w-md">
+            <div className="p-6 border-b border-white/10">
+              <h2 className="text-xl font-bold text-white">创建项目分组</h2>
+              <p className="text-gray-400 text-sm mt-2">为此项目创建专属小组</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  分组名称 *
+                </label>
+                <input
+                  type="text"
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  placeholder="例如：第一小组"
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-pink-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  分组描述
+                </label>
+                <textarea
+                  value={newGroupDescription}
+                  onChange={(e) => setNewGroupDescription(e.target.value)}
+                  placeholder="可选：描述该分组的用途"
+                  rows={3}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-pink-500 resize-none"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-white/10 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCreateGroupModal(false)
+                  setNewGroupName('')
+                  setNewGroupDescription('')
+                }}
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleCreateGroup}
+                className="flex-1 px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg transition-all"
+              >
+                创建
               </button>
             </div>
           </div>
