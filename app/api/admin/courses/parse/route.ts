@@ -163,6 +163,74 @@ const PBL_PROMPT = `你是一个专业的课程内容结构化专家。请将以
 文档内容：
 `
 
+// 辅助函数：解析和清理JSON
+function parseAndCleanJSON(resultText: string): any | null {
+  // 清理返回的JSON（移除可能的Markdown代码块标记）
+  let cleanedText = resultText.trim()
+
+  // 尝试多种清理方式
+  if (cleanedText.startsWith('```json')) {
+    cleanedText = cleanedText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
+  } else if (cleanedText.startsWith('```')) {
+    cleanedText = cleanedText.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
+  }
+
+  // 移除可能的前后空白和注释
+  cleanedText = cleanedText.trim()
+
+  // 如果还不是以 { 开头，尝试找到第一个 {
+  if (!cleanedText.startsWith('{')) {
+    const firstBrace = cleanedText.indexOf('{')
+    if (firstBrace !== -1) {
+      cleanedText = cleanedText.substring(firstBrace)
+    }
+  }
+
+  // 如果还不是以 } 结尾，尝试找到最后一个 }
+  if (!cleanedText.endsWith('}')) {
+    const lastBrace = cleanedText.lastIndexOf('}')
+    if (lastBrace !== -1) {
+      cleanedText = cleanedText.substring(0, lastBrace + 1)
+    }
+  }
+
+  console.log('🔍 清理后的JSON预览 (前200字符):', cleanedText.substring(0, 200))
+  console.log('🔍 清理后的JSON预览 (后200字符):', cleanedText.substring(cleanedText.length - 200))
+
+  // 解析JSON
+  let parsedData
+  try {
+    parsedData = JSON.parse(cleanedText)
+    return parsedData
+  } catch (parseError) {
+    console.error('❌ 第一次JSON解析失败:', parseError)
+
+    // 尝试修复常见的JSON问题
+    console.log('🔧 尝试修复JSON格式...')
+
+    let fixedText = cleanedText
+
+    // 修复1: 移除对象/数组末尾的多余逗号
+    fixedText = fixedText.replace(/,(\s*[}\]])/g, '$1')
+
+    // 修复2: 移除可能的控制字符
+    fixedText = fixedText.replace(/[\x00-\x1F\x7F]/g, '')
+
+    console.log('🔍 修复后的JSON预览 (前200字符):', fixedText.substring(0, 200))
+
+    // 第二次尝试解析
+    try {
+      parsedData = JSON.parse(fixedText)
+      console.log('✅ JSON修复成功！')
+      return parsedData
+    } catch (secondError) {
+      console.error('❌ 修复后仍然解析失败:', secondError)
+      console.error('📄 清理后的内容 (前2000字符):', cleanedText.substring(0, 2000))
+      return null
+    }
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // 检查API密钥
@@ -299,119 +367,154 @@ export async function POST(request: NextRequest) {
 
     console.log('🤖 步骤2：详细解析课程内容...')
     console.log('📝 使用的提示词类型:', structureType)
-    console.log('📝 提示词长度:', systemPrompt.length)
+    console.log('📝 文档长度:', documentContent.length)
 
-    let response
-    try {
-      response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp',  // 使用最新的Flash模型
-        contents: systemPrompt,
-      })
-    } catch (apiError) {
-      console.error('❌ Gemini API 详细解析调用失败:', apiError)
-      return NextResponse.json(
-        {
-          error: 'Gemini API 详细解析调用失败',
-          details: apiError instanceof Error ? apiError.message : '未知错误'
-        },
-        { status: 500 }
-      )
-    }
+    // 判断是否需要分批处理
+    const MAX_CHUNK_SIZE = 15000 // 每批最多处理15000字符
+    let allContents: any[] = []
 
-    const resultText = response.text
-    console.log('📥 详细解析返回长度:', resultText?.length || 0)
-    console.log('📥 详细解析返回 (前500字符):', resultText?.substring(0, 500))
-    console.log('📥 详细解析返回 (后500字符):', resultText?.substring(Math.max(0, (resultText?.length || 0) - 500)))
+    if (documentContent.length > MAX_CHUNK_SIZE && courseType === 'listening') {
+      console.log('📦 文档过长，启用分批解析模式')
 
-    if (!resultText) {
-      console.error('❌ Gemini API 返回空内容')
-      return NextResponse.json(
-        { error: 'AI返回的内容为空，请重试' },
-        { status: 500 }
-      )
-    }
+      // 将文档按天分割（假设每天用 ### **第X天 开头）
+      const dayPattern = /###\s*\*\*第(\d+)天/g
+      const matches = [...documentContent.matchAll(dayPattern)]
 
-    console.log('✅ Gemini API 返回成功')
-    console.log('📊 返回内容长度:', resultText.length)
+      if (matches.length >= 2) {
+        console.log(`📦 检测到 ${matches.length} 天的内容，按天分批处理`)
 
-    // 清理返回的JSON（移除可能的Markdown代码块标记）
-    let cleanedText = resultText.trim()
+        // 分成两批：前7天和后7天
+        const midPoint = Math.floor(matches.length / 2)
+        const midIndex = matches[midPoint].index || 0
 
-    // 尝试多种清理方式
-    if (cleanedText.startsWith('```json')) {
-      cleanedText = cleanedText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
-    } else if (cleanedText.startsWith('```')) {
-      cleanedText = cleanedText.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
-    }
+        const chunk1 = documentContent.substring(0, midIndex)
+        const chunk2 = documentContent.substring(midIndex)
 
-    // 移除可能的前后空白和注释
-    cleanedText = cleanedText.trim()
+        console.log(`📦 第一批长度: ${chunk1.length}, 第二批长度: ${chunk2.length}`)
 
-    // 如果还不是以 { 开头，尝试找到第一个 {
-    if (!cleanedText.startsWith('{')) {
-      const firstBrace = cleanedText.indexOf('{')
-      if (firstBrace !== -1) {
-        cleanedText = cleanedText.substring(firstBrace)
+        // 解析第一批
+        console.log('📦 解析第一批...')
+        const prompt1 = LISTENING_PROMPT + chunk1
+        const response1 = await ai.models.generateContent({
+          model: 'gemini-2.0-flash-exp',
+          contents: prompt1,
+        })
+
+        const result1 = response1.text
+        if (result1) {
+          const parsed1 = parseAndCleanJSON(result1)
+          if (parsed1?.contents) {
+            allContents.push(...parsed1.contents)
+            console.log(`✅ 第一批解析成功: ${parsed1.contents.length} 个单元`)
+          }
+        }
+
+        // 解析第二批
+        console.log('📦 解析第二批...')
+        const prompt2 = LISTENING_PROMPT + chunk2
+        const response2 = await ai.models.generateContent({
+          model: 'gemini-2.0-flash-exp',
+          contents: prompt2,
+        })
+
+        const result2 = response2.text
+        if (result2) {
+          const parsed2 = parseAndCleanJSON(result2)
+          if (parsed2?.contents) {
+            // 调整sequence_number
+            const offset = allContents.length
+            parsed2.contents.forEach((content: any) => {
+              content.sequence_number = content.sequence_number + offset
+            })
+            allContents.push(...parsed2.contents)
+            console.log(`✅ 第二批解析成功: ${parsed2.contents.length} 个单元`)
+          }
+        }
+
+        console.log(`✅ 分批解析完成，共 ${allContents.length} 个单元`)
+      } else {
+        // 无法按天分割，使用简单的字符分割
+        console.log('📦 无法按天分割，使用字符分割')
+        const chunk1 = documentContent.substring(0, MAX_CHUNK_SIZE)
+        const chunk2 = documentContent.substring(MAX_CHUNK_SIZE)
+
+        const prompt1 = systemPrompt.replace(documentContent, chunk1)
+        const response1 = await ai.models.generateContent({
+          model: 'gemini-2.0-flash-exp',
+          contents: prompt1,
+        })
+
+        if (response1.text) {
+          const parsed1 = parseAndCleanJSON(response1.text)
+          if (parsed1?.contents) allContents.push(...parsed1.contents)
+        }
+
+        const prompt2 = systemPrompt.replace(documentContent, chunk2)
+        const response2 = await ai.models.generateContent({
+          model: 'gemini-2.0-flash-exp',
+          contents: prompt2,
+        })
+
+        if (response2.text) {
+          const parsed2 = parseAndCleanJSON(response2.text)
+          if (parsed2?.contents) {
+            const offset = allContents.length
+            parsed2.contents.forEach((content: any) => {
+              content.sequence_number = content.sequence_number + offset
+            })
+            allContents.push(...parsed2.contents)
+          }
+        }
       }
-    }
-
-    // 如果还不是以 } 结尾，尝试找到最后一个 }
-    if (!cleanedText.endsWith('}')) {
-      const lastBrace = cleanedText.lastIndexOf('}')
-      if (lastBrace !== -1) {
-        cleanedText = cleanedText.substring(0, lastBrace + 1)
-      }
-    }
-
-    console.log('🔍 清理后的JSON预览 (前200字符):', cleanedText.substring(0, 200))
-    console.log('🔍 清理后的JSON预览 (后200字符):', cleanedText.substring(cleanedText.length - 200))
-
-    // 解析JSON
-    let parsedData
-    try {
-      parsedData = JSON.parse(cleanedText)
-    } catch (parseError) {
-      console.error('❌ 第一次JSON解析失败:', parseError)
-
-      // 尝试修复常见的JSON问题
-      console.log('🔧 尝试修复JSON格式...')
-
-      let fixedText = cleanedText
-
-      // 修复1: 移除对象/数组末尾的多余逗号
-      fixedText = fixedText.replace(/,(\s*[}\]])/g, '$1')
-
-      // 修复2: 确保字符串中的双引号被转义
-      // 这个比较复杂，先跳过
-
-      // 修复3: 移除可能的控制字符
-      fixedText = fixedText.replace(/[\x00-\x1F\x7F]/g, '')
-
-      console.log('🔍 修复后的JSON预览 (前200字符):', fixedText.substring(0, 200))
-
-      // 第二次尝试解析
+    } else {
+      // 正常处理（不分批）
+      console.log('📝 文档长度适中，单次解析')
+      let response
       try {
-        parsedData = JSON.parse(fixedText)
-        console.log('✅ JSON修复成功！')
-      } catch (secondError) {
-        console.error('❌ 修复后仍然解析失败:', secondError)
-        console.error('📄 清理后的完整内容:', cleanedText)
+        response = await ai.models.generateContent({
+          model: 'gemini-2.0-flash-exp',
+          contents: systemPrompt,
+        })
+      } catch (apiError) {
+        console.error('❌ Gemini API 详细解析调用失败:', apiError)
         return NextResponse.json(
           {
-            error: 'AI返回的内容格式不正确',
-            details: parseError instanceof Error ? parseError.message : '未知错误',
-            preview: cleanedText.substring(0, 2000),
-            suggestion: '建议：尝试使用更短的文档，或者分段上传'
+            error: 'Gemini API 详细解析调用失败',
+            details: apiError instanceof Error ? apiError.message : '未知错误'
           },
           { status: 500 }
         )
       }
+
+      const resultText = response.text
+      console.log('📥 详细解析返回长度:', resultText?.length || 0)
+
+      if (!resultText) {
+        console.error('❌ Gemini API 返回空内容')
+        return NextResponse.json(
+          { error: 'AI返回的内容为空，请重试' },
+          { status: 500 }
+        )
+      }
+
+      const parsedData = parseAndCleanJSON(resultText)
+      if (!parsedData) {
+        return NextResponse.json(
+          { error: '解析失败' },
+          { status: 500 }
+        )
+      }
+
+      allContents = parsedData.contents || []
     }
 
+    console.log('✅ 解析完成')
+    console.log('📊 总内容单元数:', allContents.length)
+
     // 验证返回的数据结构
-    if (!parsedData.contents || !Array.isArray(parsedData.contents)) {
+    if (!allContents || !Array.isArray(allContents) || allContents.length === 0) {
       return NextResponse.json(
-        { error: 'AI返回的数据结构不完整（缺少contents数组）' },
+        { error: 'AI返回的数据结构不完整（缺少contents数组或内容为空）' },
         { status: 500 }
       )
     }
@@ -424,7 +527,7 @@ export async function POST(request: NextRequest) {
       structure_type: structureType,
       teaching_goals: description,
       guidance_keywords: [],
-      contents: parsedData.contents.map((content: any) => ({
+      contents: allContents.map((content: any) => ({
         ...content,
         content_type: structureType === 'pbl_project' ? 'pbl_project' : 'module',
         is_published: false
