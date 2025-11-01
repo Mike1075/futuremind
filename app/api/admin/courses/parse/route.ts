@@ -7,6 +7,32 @@ if (!apiKey) {
   console.error('❌ GEMINI_API_KEY is not set in environment variables')
 }
 
+// 智能识别课程类型的提示词
+const IDENTIFY_COURSE_TYPE_PROMPT = `你是一个专业的课程分析专家。请分析以下课程文档，识别其课程类型并提取基本信息。
+
+**课程类型分类**：
+1. **listening**：14天系列课程，每天包含原文摘录、深度解读、冥想练习、生活实践
+2. **earth**：模块化课程，包含知识点、苏格拉底式问题、观后思考
+3. **pbl**：项目式学习，包含周计划、每日计划、活动安排、可交付成果
+
+请严格按照以下JSON Schema格式输出：
+
+{
+  "course_type": "listening | earth | pbl",
+  "title": "课程标题",
+  "description": "课程描述",
+  "system_key": "课程唯一标识（小写英文，用-连接）"
+}
+
+**重要规则**：
+1. 只输出有效的JSON，不要添加任何Markdown代码块标记
+2. course_type必须是：listening、earth、pbl 其中之一
+3. 根据文档内容智能判断类型
+4. system_key应该简洁明了，例如：listening-journey, earth-exploration, pbl-project-1
+
+文档内容：
+`
+
 // Listening课程的提示词模板
 const LISTENING_PROMPT = `你是一个专业的课程内容结构化专家。请将以下Listening课程文档解析为JSON格式。
 
@@ -138,14 +164,59 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { title, description, courseType, documentContent } = await request.json()
+    const { documentContent } = await request.json()
 
-    if (!title || !description || !courseType || !documentContent) {
+    if (!documentContent) {
       return NextResponse.json(
-        { error: '缺少必要参数' },
+        { error: '缺少文档内容' },
         { status: 400 }
       )
     }
+
+    // 初始化 Gemini AI
+    const ai = new GoogleGenAI({ apiKey })
+
+    console.log('🤖 步骤1：智能识别课程类型...')
+    console.log('📄 文档长度:', documentContent.length)
+
+    // 第一步：识别课程类型
+    const identifyResponse = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
+      contents: IDENTIFY_COURSE_TYPE_PROMPT + documentContent.substring(0, 3000), // 只使用前3000字符识别类型
+    })
+
+    const identifyText = identifyResponse.text
+    if (!identifyText) {
+      return NextResponse.json(
+        { error: 'AI识别课程类型失败' },
+        { status: 500 }
+      )
+    }
+
+    // 解析识别结果
+    let cleanedIdentifyText = identifyText.trim()
+    if (cleanedIdentifyText.startsWith('```json')) {
+      cleanedIdentifyText = cleanedIdentifyText.replace(/```json\n?/, '').replace(/\n?```$/, '')
+    } else if (cleanedIdentifyText.startsWith('```')) {
+      cleanedIdentifyText = cleanedIdentifyText.replace(/```\n?/, '').replace(/\n?```$/, '')
+    }
+
+    let courseInfo
+    try {
+      courseInfo = JSON.parse(cleanedIdentifyText)
+    } catch (parseError) {
+      console.error('❌ 识别结果解析失败:', parseError)
+      return NextResponse.json(
+        { error: 'AI识别结果格式不正确' },
+        { status: 500 }
+      )
+    }
+
+    const { course_type: courseType, title, description, system_key } = courseInfo
+
+    console.log('✅ 课程类型识别成功:', courseType)
+    console.log('📚 课程标题:', title)
+    console.log('📝 课程描述:', description)
 
     // 根据课程类型选择提示词
     let systemPrompt = ''
@@ -166,17 +237,12 @@ export async function POST(request: NextRequest) {
         break
       default:
         return NextResponse.json(
-          { error: '不支持的课程类型' },
+          { error: `不支持的课程类型: ${courseType}` },
           { status: 400 }
         )
     }
 
-    // 调用 Gemini API
-    const ai = new GoogleGenAI({ apiKey })
-
-    console.log('🤖 开始调用 Gemini API...')
-    console.log('📝 课程类型:', courseType)
-    console.log('📄 文档长度:', documentContent.length)
+    console.log('🤖 步骤2：详细解析课程内容...')
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash-exp',  // 使用最新的Flash模型
@@ -227,16 +293,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 生成system_key（使用小写的标题拼音或简化标识）
-    const systemKey = title.toLowerCase()
-      .replace(/[·：:]/g, '-')
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9\u4e00-\u9fa5-]/gi, '')
-      .substring(0, 50)
-
-    // 构建完整的课程数据
+    // 构建完整的课程数据（使用AI识别的信息）
     const courseData = {
-      system_key: systemKey,
+      system_key: system_key || title.toLowerCase().replace(/[^a-z0-9]/gi, '-').substring(0, 50),
       title,
       description,
       structure_type: structureType,

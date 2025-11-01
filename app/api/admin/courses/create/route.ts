@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export async function POST(request: NextRequest) {
   try {
+    // 验证用户身份（使用普通client）
     const supabase = await createClient()
-
-    // 验证用户权限
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: '未授权' }, { status: 401 })
@@ -21,6 +21,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '权限不足' }, { status: 403 })
     }
 
+    // 使用Service Role Client进行数据库操作（绕过RLS）
+    const serviceSupabase = createServiceClient()
+
     // 获取课程数据
     const courseData = await request.json()
     const { system_key, title, description, structure_type, teaching_goals, guidance_keywords, contents } = courseData
@@ -33,8 +36,8 @@ export async function POST(request: NextRequest) {
     console.log('📚 课程标题:', title)
     console.log('📊 内容单元数:', contents.length)
 
-    // 1. 创建课程体系
-    const { data: courseSystem, error: systemError } = await (supabase
+    // 1. 创建课程体系（使用Service Role绕过RLS）
+    const { data: courseSystem, error: systemError } = await (serviceSupabase
       .from('course_systems') as any)
       .insert({
         system_key,
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ 课程体系创建成功, ID:', courseSystem.id)
 
-    // 2. 批量插入课程内容
+    // 2. 批量插入课程内容（使用Service Role绕过RLS）
     const contentsToInsert = contents.map((content: any) => ({
       system_id: courseSystem.id,
       content_type: content.content_type || structure_type,
@@ -83,14 +86,14 @@ export async function POST(request: NextRequest) {
       is_published: content.is_published || false
     }))
 
-    const { error: contentsError } = await (supabase
+    const { error: contentsError } = await (serviceSupabase
       .from('course_contents') as any)
       .insert(contentsToInsert)
 
     if (contentsError) {
       console.error('❌ 插入课程内容失败:', contentsError)
       // 如果内容插入失败，删除已创建的课程体系
-      await (supabase
+      await (serviceSupabase
         .from('course_systems') as any)
         .delete()
         .eq('id', courseSystem.id)

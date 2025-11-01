@@ -18,10 +18,7 @@ export default function NewCoursePage() {
   const router = useRouter()
   const [step, setStep] = useState<'upload' | 'parsing' | 'preview' | 'saving' | 'success'>('upload')
 
-  // 表单数据
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [courseType, setCourseType] = useState<'listening' | 'earth' | 'pbl'>('listening')
+  // 文档数据
   const [documentContent, setDocumentContent] = useState('')
   const [fileName, setFileName] = useState('')
 
@@ -50,8 +47,8 @@ export default function NewCoursePage() {
   }
 
   const handleParse = async () => {
-    if (!title.trim() || !description.trim() || !documentContent.trim()) {
-      alert('请填写完整信息并上传文档')
+    if (!documentContent.trim()) {
+      alert('请上传课程文档')
       return
     }
 
@@ -63,9 +60,6 @@ export default function NewCoursePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          courseType,
           documentContent
         })
       })
@@ -146,53 +140,25 @@ export default function NewCoursePage() {
         {/* 步骤1: 上传文档 */}
         {step === 'upload' && (
           <div className="space-y-6">
-            <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10">
-              <h2 className="text-lg font-semibold text-white mb-4">📝 课程基本信息</h2>
+            <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-md rounded-xl p-8 border border-purple-500/20">
+              <div className="text-center mb-6">
+                <Sparkles className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">AI 智能解析</h2>
+                <p className="text-gray-300">只需上传课程文档，AI 将自动识别课程类型、提取标题、描述等所有信息</p>
+              </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    课程标题 *
-                  </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="例如：自在聆听·观音之旅"
-                    className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-white/5 rounded-lg p-4 text-center">
+                  <div className="text-purple-400 mb-2">✨</div>
+                  <p className="text-sm text-gray-300">自动识别<br/>课程类型</p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    课程描述 *
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="简要描述课程的主要内容和目标..."
-                    rows={3}
-                    className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 resize-none"
-                  />
+                <div className="bg-white/5 rounded-lg p-4 text-center">
+                  <div className="text-pink-400 mb-2">🎯</div>
+                  <p className="text-sm text-gray-300">智能提取<br/>课程结构</p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    课程类型 *
-                  </label>
-                  <select
-                    value={courseType}
-                    onChange={(e) => setCourseType(e.target.value as 'listening' | 'earth' | 'pbl')}
-                    className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                    style={{ colorScheme: 'dark' }}
-                  >
-                    <option value="listening">Listening 课程（14天系列课程）</option>
-                    <option value="earth">Earth 课程（模块化课程）</option>
-                    <option value="pbl">PBL 项目式学习</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    不同类型的课程会使用不同的解析模板
-                  </p>
+                <div className="bg-white/5 rounded-lg p-4 text-center">
+                  <div className="text-blue-400 mb-2">🚀</div>
+                  <p className="text-sm text-gray-300">一键生成<br/>完整课程</p>
                 </div>
               </div>
             </div>
@@ -241,11 +207,11 @@ export default function NewCoursePage() {
 
             <button
               onClick={handleParse}
-              disabled={!title || !description || !documentContent}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+              disabled={!documentContent}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 disabled:cursor-not-allowed"
             >
               <Sparkles className="w-5 h-5" />
-              开始 AI 解析
+              {documentContent ? 'AI 一键智能解析' : '请先上传文档'}
             </button>
           </div>
         )}
