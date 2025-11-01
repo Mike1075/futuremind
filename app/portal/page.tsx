@@ -19,7 +19,10 @@ import {
   Leaf,
   BookOpen,
   Plus,
-  Settings
+  Settings,
+  Ear,
+  Globe,
+  Rocket
 } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
 import { DatabaseConsciousnessRoots } from '@/components/ui/database-consciousness-roots'
@@ -57,6 +60,36 @@ interface EnrolledCourse {
   assigned_at: string
 }
 
+interface CourseContent {
+  id: string
+  system_id: string
+  sequence_number: number
+  title: string
+  subtitle: string
+  original_text: string | null
+  deep_interpretation: string | null
+  meditation_guide: string | null
+  life_practice: string | null
+  documentary_url: string | null
+  pre_watch_guide: string | null
+  knowledge_points: any
+  socratic_questions: any
+  post_reflection: string | null
+  week_plan: any
+  day_plan: any
+  estimated_duration: number
+  content_type: string
+}
+
+interface TodayTask {
+  id: string
+  title: string
+  duration: string
+  completed: boolean
+  courseTitle?: string
+  courseIcon?: any
+}
+
 export default function PortalPage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -70,6 +103,7 @@ export default function PortalPage() {
   const [allCourses, setAllCourses] = useState<Course[]>([])
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([])
   const [enrolling, setEnrolling] = useState(false)
+  const [courseContents, setCourseContents] = useState<CourseContent[]>([])
 
   const router = useRouter()
   const supabase = createClient()
@@ -146,6 +180,22 @@ export default function PortalPage() {
       })) || []
 
       setEnrolledCourses(enrolled)
+
+      // Load course contents for enrolled courses
+      if (enrolled.length > 0) {
+        const enrolledCourseIds = enrolled.map(c => c.course_id)
+        const { data: contentsData, error: contentsError } = await (supabase
+          .from('course_contents') as any)
+          .select('*')
+          .in('system_id', enrolledCourseIds)
+          .order('sequence_number', { ascending: true })
+
+        if (contentsError) {
+          console.error('加载课程内容失败:', contentsError)
+        } else {
+          setCourseContents(contentsData || [])
+        }
+      }
     } catch (error) {
       console.error('加载课程失败:', error)
     }
@@ -227,6 +277,98 @@ export default function PortalPage() {
     }
   }
 
+  // Helper function to get course icon
+  const getCourseIcon = (systemKey: string) => {
+    switch (systemKey) {
+      case 'listening':
+        return Ear
+      case 'earth':
+        return Globe
+      case 'icarus':
+      case 'pbl':
+        return Rocket
+      default:
+        return BookOpen
+    }
+  }
+
+  // Generate today's tasks dynamically based on enrolled courses
+  const generateTodayTasks = (): TodayTask[] => {
+    const tasks: TodayTask[] = []
+
+    // For each enrolled course, find the content unit for current day
+    enrolledCourses.forEach(enrolledCourse => {
+      const course = allCourses.find(c => c.id === enrolledCourse.course_id)
+      if (!course) return
+
+      // Get contents for this course
+      const contents = courseContents.filter(c => c.system_id === enrolledCourse.course_id)
+
+      // For listening courses (14-day structure), use currentDay directly
+      // For modular courses, use sequence_number
+      let relevantContent: CourseContent | undefined
+
+      if (course.system_key === 'listening') {
+        // Day-based progression
+        relevantContent = contents.find(c => c.sequence_number === currentDay)
+      } else {
+        // Use first uncompleted unit (simplified logic)
+        relevantContent = contents[0]
+      }
+
+      if (relevantContent) {
+        const Icon = getCourseIcon(course.system_key)
+
+        // Generate tasks from content
+        if (relevantContent.meditation_guide) {
+          tasks.push({
+            id: `meditation-${relevantContent.id}`,
+            title: `冥想：${relevantContent.title}`,
+            duration: `${relevantContent.estimated_duration || 20}分钟`,
+            completed: completedTasks.includes(`meditation-${relevantContent.id}`),
+            courseTitle: course.title,
+            courseIcon: Icon
+          })
+        }
+
+        if (relevantContent.documentary_url) {
+          tasks.push({
+            id: `documentary-${relevantContent.id}`,
+            title: `观看纪录片：${relevantContent.subtitle || relevantContent.title}`,
+            duration: '30分钟',
+            completed: completedTasks.includes(`documentary-${relevantContent.id}`),
+            courseTitle: course.title,
+            courseIcon: Icon
+          })
+        }
+
+        if (relevantContent.life_practice) {
+          tasks.push({
+            id: `practice-${relevantContent.id}`,
+            title: `生活实践：${relevantContent.title}`,
+            duration: `${relevantContent.estimated_duration || 25}分钟`,
+            completed: completedTasks.includes(`practice-${relevantContent.id}`),
+            courseTitle: course.title,
+            courseIcon: Icon
+          })
+        }
+
+        if (relevantContent.post_reflection) {
+          tasks.push({
+            id: `reflection-${relevantContent.id}`,
+            title: `反思记录：${relevantContent.title}`,
+            duration: '15分钟',
+            completed: completedTasks.includes(`reflection-${relevantContent.id}`),
+            courseTitle: course.title,
+            courseIcon: Icon
+          })
+        }
+      }
+    })
+
+    return tasks
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -243,16 +385,18 @@ export default function PortalPage() {
     day: currentDay % 7 || 7
   }
 
+  // Generate today's tasks dynamically
+  const todayTasks = generateTodayTasks()
+
   // Today's main quest
   const todayQuest = {
-    title: `第${currentSeason.week}周 第${currentSeason.day}天：敞开与觉察`,
-    description: "今天我们将探索声音如何在寂静中诞生，以及觉察如何在敞开中涌现。",
-    tasks: [
-      { id: 'meditation', title: '晨间冥想：聆听内在的寂静', duration: '20分钟', completed: completedTasks.includes('meditation') },
-      { id: 'exploration', title: '探索：火山的次声波', duration: '30分钟', completed: completedTasks.includes('exploration') },
-      { id: 'reflection', title: '反思：记录今日的声音发现', duration: '15分钟', completed: completedTasks.includes('reflection') },
-      { id: 'practice', title: '实践：与一个声音对话', duration: '25分钟', completed: completedTasks.includes('practice') }
-    ]
+    title: todayTasks.length > 0
+      ? `第${currentDay}天：${enrolledCourses[0]?.course_title || '探索之旅'}`
+      : '今日探索',
+    description: todayTasks.length > 0
+      ? `基于您选修的 ${enrolledCourses.length} 门课程生成的学习任务`
+      : '您还没有选修任何课程，请先选择课程开始您的探索之旅',
+    tasks: todayTasks
   }
 
   // Today's meditation
@@ -339,6 +483,24 @@ export default function PortalPage() {
 
             {/* 右侧：快捷入口与登出 */}
             <div className="flex items-center space-x-4">
+              {/* 我的课程 */}
+              <button
+                onClick={() => router.push('/portal/courses')}
+                className="flex items-center space-x-2 text-cyan-300 hover:text-cyan-200 transition-colors duration-300 group"
+              >
+                <span className="font-medium flex items-center gap-2">
+                  我的课程
+                  {enrolledCourses.length > 0 && (
+                    <span className="px-2 py-0.5 bg-cyan-600 rounded-full text-xs">
+                      {enrolledCourses.length}
+                    </span>
+                  )}
+                </span>
+                <div className="w-8 h-8 bg-cyan-600/20 rounded-full flex items-center justify-center group-hover:bg-cyan-600/40 transition-colors duration-300">
+                  <BookOpen className="w-5 h-5 text-cyan-400" />
+                </div>
+              </button>
+
               <button
                 onClick={() => (window.location.href = '/alliance')}
                 className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
@@ -400,78 +562,103 @@ export default function PortalPage() {
               </div>
             </motion.div>
 
-            {/* My Courses */}
+            {/* Explorer Alliance - Three Modules */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
+              className="bg-gradient-to-br from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl p-8 border border-purple-400/20"
             >
-              <div className="flex items-center mb-4">
-                <BookOpen className="w-6 h-6 text-cyan-400 mr-3" />
-                <h3 className="text-xl font-semibold text-white">我的课程</h3>
+              <div className="flex items-center mb-6">
+                <Users className="w-6 h-6 text-purple-400 mr-3" />
+                <div>
+                  <h3 className="text-2xl font-bold text-white">探索者联盟</h3>
+                  <p className="text-sm text-gray-300">选择你的探索方向，开启意识觉醒之旅</p>
+                </div>
               </div>
 
-              {/* Enrolled Courses */}
-              {enrolledCourses.length > 0 ? (
-                <div className="space-y-3 mb-6">
-                  <p className="text-sm text-gray-400 mb-2">已选课程：</p>
-                  {enrolledCourses.map((course) => (
-                    <div
-                      key={course.course_id}
-                      className="flex items-center justify-between p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg"
-                    >
-                      <div>
-                        <p className="text-white font-medium">{course.course_title}</p>
-                        <p className="text-xs text-gray-400">
-                          选课时间：{new Date(course.assigned_at).toLocaleDateString('zh-CN')}
-                        </p>
-                      </div>
-                      <CheckCircle className="w-5 h-5 text-cyan-400" />
-                    </div>
-                  ))}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Module 1: Listening - 聆听之道 */}
+                <div className="bg-gradient-to-br from-purple-500/20 to-indigo-500/20 rounded-xl p-6 border border-purple-400/30 hover:border-purple-400/50 transition-all group">
+                  <div className="w-12 h-12 bg-purple-600/30 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Ear className="w-6 h-6 text-purple-300" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-white mb-2">聆听之道</h4>
+                  <p className="text-sm text-gray-300 mb-4">通过声音探索意识的深层奥秘</p>
+
+                  <div className="space-y-2">
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-purple-200 transition-colors">
+                      🌱 基础：觉察的艺术
+                    </button>
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-purple-200 transition-colors">
+                      🌿 进阶：寂静中的声音
+                    </button>
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-purple-200 transition-colors">
+                      🌳 深化：超越二元对立
+                    </button>
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-purple-200 transition-colors">
+                      🌲 实相：声音的本质
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-gray-400 text-sm mb-6">您还没有选修任何课程</p>
-              )}
 
-              {/* Available Courses */}
-              {(() => {
-                const availableCourses = allCourses.filter(
-                  course => !enrolledCourses.some(e => e.course_id === course.id)
-                )
+                {/* Module 2: Earth - 地球密码 */}
+                <div className="bg-gradient-to-br from-cyan-500/20 to-teal-500/20 rounded-xl p-6 border border-cyan-400/30 hover:border-cyan-400/50 transition-all group">
+                  <div className="w-12 h-12 bg-cyan-600/30 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Globe className="w-6 h-6 text-cyan-300" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-white mb-2">地球密码</h4>
+                  <p className="text-sm text-gray-300 mb-4">解读自然与生命的深层联结</p>
 
-                return availableCourses.length > 0 ? (
-                  <>
-                    <div className="border-t border-white/10 pt-4">
-                      <p className="text-sm text-gray-400 mb-3">可选课程：</p>
-                      <div className="space-y-3">
-                        {availableCourses.map((course) => (
-                          <div
-                            key={course.id}
-                            className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg hover:border-white/20 transition-colors"
-                          >
-                            <div className="flex-1 mr-3">
-                              <p className="text-white font-medium">{course.title}</p>
-                              {course.description && (
-                                <p className="text-sm text-gray-400 mt-1">{course.description}</p>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => handleEnrollCourse(course.id)}
-                              disabled={enrolling}
-                              className="flex items-center gap-2 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                            >
-                              <Plus className="w-4 h-4" />
-                              选课
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                ) : null
-              })()}
+                  <div className="space-y-2">
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-cyan-200 transition-colors">
+                      🌍 初探：地球的语言
+                    </button>
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-cyan-200 transition-colors">
+                      🌏 觉知：生命的韵律
+                    </button>
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-cyan-200 transition-colors">
+                      🌎 融合：人与自然一体
+                    </button>
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-cyan-200 transition-colors">
+                      🌐 超越：意识场的共振
+                    </button>
+                  </div>
+                </div>
+
+                {/* Module 3: PBL - 伊卡洛斯行动 */}
+                <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-xl p-6 border border-orange-400/30 hover:border-orange-400/50 transition-all group">
+                  <div className="w-12 h-12 bg-orange-600/30 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Rocket className="w-6 h-6 text-orange-300" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-white mb-2">伊卡洛斯行动</h4>
+                  <p className="text-sm text-gray-300 mb-4">项目式学习，探索未知领域</p>
+
+                  <div className="space-y-2">
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-orange-200 transition-colors">
+                      🚀 启航：团队协作基础
+                    </button>
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-orange-200 transition-colors">
+                      🛸 探索：科学实验设计
+                    </button>
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-orange-200 transition-colors">
+                      ✨ 创造：意识实验项目
+                    </button>
+                    <button className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-orange-200 transition-colors">
+                      🌟 突破：跨维度思维
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => router.push('/portal/courses')}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all transform hover:scale-105"
+                >
+                  查看全部课程 →
+                </button>
+              </div>
             </motion.div>
 
             {/* Main Quest */}
@@ -487,40 +674,61 @@ export default function PortalPage() {
               </div>
               <h4 className="text-lg font-medium text-purple-300 mb-2">{todayQuest.title}</h4>
               <p className="text-gray-300 mb-6">{todayQuest.description}</p>
-              
-              <div className="space-y-3">
-                {todayQuest.tasks.map((task, index) => (
-                  <motion.div
-                    key={task.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + index * 0.1 }}
-                    className={`flex items-center justify-between p-4 rounded-lg border ${
-                      task.completed 
-                        ? 'bg-green-500/10 border-green-500/30' 
-                        : 'bg-white/5 border-white/10 hover:border-white/20'
-                    } transition-colors cursor-pointer`}
-                                         onClick={() => handleTaskComplete(task.id)}
+
+              {todayQuest.tasks.length > 0 ? (
+                <div className="space-y-3">
+                  {todayQuest.tasks.map((task, index) => {
+                    const TaskIcon = task.courseIcon || BookOpen
+                    return (
+                      <motion.div
+                        key={task.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 + index * 0.1 }}
+                        className={`flex items-center justify-between p-4 rounded-lg border ${
+                          task.completed
+                            ? 'bg-green-500/10 border-green-500/30'
+                            : 'bg-white/5 border-white/10 hover:border-white/20'
+                        } transition-colors cursor-pointer`}
+                        onClick={() => handleTaskComplete(task.id)}
+                      >
+                        <div className="flex items-center flex-1">
+                          {task.completed ? (
+                            <CheckCircle className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" />
+                          ) : (
+                            <div className="w-5 h-5 border-2 border-gray-400 rounded-full mr-3 flex-shrink-0"></div>
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <TaskIcon className="w-4 h-4 text-purple-400" />
+                              <span className="text-xs text-gray-400">{task.courseTitle}</span>
+                            </div>
+                            <p className={`font-medium ${task.completed ? 'text-green-300' : 'text-white'}`}>
+                              {task.title}
+                            </p>
+                            <p className="text-sm text-gray-400">{task.duration}</p>
+                          </div>
+                        </div>
+                        {!task.completed && (
+                          <Play className="w-4 h-4 text-purple-400 flex-shrink-0 ml-2" />
+                        )}
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10">
+                  <BookOpen className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-400 mb-2">还没有今日任务</p>
+                  <p className="text-sm text-gray-500 mb-4">选择您感兴趣的课程开始探索</p>
+                  <button
+                    onClick={() => router.push('/portal/courses')}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                   >
-                    <div className="flex items-center">
-                      {task.completed ? (
-                        <CheckCircle className="w-5 h-5 text-green-400 mr-3" />
-                      ) : (
-                        <div className="w-5 h-5 border-2 border-gray-400 rounded-full mr-3"></div>
-                      )}
-                      <div>
-                        <p className={`font-medium ${task.completed ? 'text-green-300' : 'text-white'}`}>
-                          {task.title}
-                        </p>
-                        <p className="text-sm text-gray-400">{task.duration}</p>
-                      </div>
-                    </div>
-                    {!task.completed && (
-                      <Play className="w-4 h-4 text-purple-400" />
-                    )}
-                  </motion.div>
-                ))}
-              </div>
+                    浏览课程
+                  </button>
+                </div>
+              )}
             </motion.div>
 
             {/* Today's Meditation */}
