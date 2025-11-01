@@ -195,19 +195,46 @@ export async function POST(request: NextRequest) {
 
     // 解析识别结果
     let cleanedIdentifyText = identifyText.trim()
+
+    // 尝试多种清理方式
     if (cleanedIdentifyText.startsWith('```json')) {
-      cleanedIdentifyText = cleanedIdentifyText.replace(/```json\n?/, '').replace(/\n?```$/, '')
+      cleanedIdentifyText = cleanedIdentifyText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
     } else if (cleanedIdentifyText.startsWith('```')) {
-      cleanedIdentifyText = cleanedIdentifyText.replace(/```\n?/, '').replace(/\n?```$/, '')
+      cleanedIdentifyText = cleanedIdentifyText.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
     }
+
+    cleanedIdentifyText = cleanedIdentifyText.trim()
+
+    // 如果还不是以 { 开头，尝试找到第一个 {
+    if (!cleanedIdentifyText.startsWith('{')) {
+      const firstBrace = cleanedIdentifyText.indexOf('{')
+      if (firstBrace !== -1) {
+        cleanedIdentifyText = cleanedIdentifyText.substring(firstBrace)
+      }
+    }
+
+    // 如果还不是以 } 结尾，尝试找到最后一个 }
+    if (!cleanedIdentifyText.endsWith('}')) {
+      const lastBrace = cleanedIdentifyText.lastIndexOf('}')
+      if (lastBrace !== -1) {
+        cleanedIdentifyText = cleanedIdentifyText.substring(0, lastBrace + 1)
+      }
+    }
+
+    console.log('🔍 识别结果JSON预览:', cleanedIdentifyText.substring(0, 200))
 
     let courseInfo
     try {
       courseInfo = JSON.parse(cleanedIdentifyText)
     } catch (parseError) {
       console.error('❌ 识别结果解析失败:', parseError)
+      console.error('📄 识别返回内容:', cleanedIdentifyText)
       return NextResponse.json(
-        { error: 'AI识别结果格式不正确' },
+        {
+          error: 'AI识别结果格式不正确',
+          details: parseError instanceof Error ? parseError.message : '未知错误',
+          preview: cleanedIdentifyText.substring(0, 500)
+        },
         { status: 500 }
       )
     }
@@ -263,11 +290,35 @@ export async function POST(request: NextRequest) {
 
     // 清理返回的JSON（移除可能的Markdown代码块标记）
     let cleanedText = resultText.trim()
+
+    // 尝试多种清理方式
     if (cleanedText.startsWith('```json')) {
-      cleanedText = cleanedText.replace(/```json\n?/, '').replace(/\n?```$/, '')
+      cleanedText = cleanedText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
     } else if (cleanedText.startsWith('```')) {
-      cleanedText = cleanedText.replace(/```\n?/, '').replace(/\n?```$/, '')
+      cleanedText = cleanedText.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
     }
+
+    // 移除可能的前后空白和注释
+    cleanedText = cleanedText.trim()
+
+    // 如果还不是以 { 开头，尝试找到第一个 {
+    if (!cleanedText.startsWith('{')) {
+      const firstBrace = cleanedText.indexOf('{')
+      if (firstBrace !== -1) {
+        cleanedText = cleanedText.substring(firstBrace)
+      }
+    }
+
+    // 如果还不是以 } 结尾，尝试找到最后一个 }
+    if (!cleanedText.endsWith('}')) {
+      const lastBrace = cleanedText.lastIndexOf('}')
+      if (lastBrace !== -1) {
+        cleanedText = cleanedText.substring(0, lastBrace + 1)
+      }
+    }
+
+    console.log('🔍 清理后的JSON预览 (前200字符):', cleanedText.substring(0, 200))
+    console.log('🔍 清理后的JSON预览 (后200字符):', cleanedText.substring(cleanedText.length - 200))
 
     // 解析JSON
     let parsedData
@@ -275,11 +326,12 @@ export async function POST(request: NextRequest) {
       parsedData = JSON.parse(cleanedText)
     } catch (parseError) {
       console.error('❌ JSON解析失败:', parseError)
-      console.error('原始返回:', cleanedText.substring(0, 500))
+      console.error('📄 清理后的完整内容:', cleanedText)
       return NextResponse.json(
         {
           error: 'AI返回的内容格式不正确',
-          details: parseError instanceof Error ? parseError.message : '未知错误'
+          details: parseError instanceof Error ? parseError.message : '未知错误',
+          preview: cleanedText.substring(0, 1000)
         },
         { status: 500 }
       )
