@@ -67,7 +67,15 @@ export default function NewCoursePage() {
       const data = await response.json()
 
       if (data.error) {
-        setError(data.error)
+        // 构建详细的错误信息
+        let errorMessage = data.error
+        if (data.details) {
+          errorMessage += `\n\n详细信息: ${data.details}`
+        }
+        if (data.preview) {
+          errorMessage += `\n\nAI返回内容预览:\n${data.preview}`
+        }
+        setError(errorMessage)
         setStep('upload')
         return
       }
@@ -201,7 +209,10 @@ export default function NewCoursePage() {
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-red-300 text-sm">{error}</p>
+                <div className="flex-1">
+                  <p className="text-red-300 text-sm font-medium mb-2">❌ 解析失败</p>
+                  <pre className="text-red-200 text-xs whitespace-pre-wrap font-mono bg-black/30 p-3 rounded overflow-x-auto max-h-96 overflow-y-auto">{error}</pre>
+                </div>
               </div>
             )}
 
@@ -272,7 +283,10 @@ export default function NewCoursePage() {
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-red-300 text-sm">{error}</p>
+                <div className="flex-1">
+                  <p className="text-red-300 text-sm font-medium mb-2">❌ 解析失败</p>
+                  <pre className="text-red-200 text-xs whitespace-pre-wrap font-mono bg-black/30 p-3 rounded overflow-x-auto max-h-96 overflow-y-auto">{error}</pre>
+                </div>
               </div>
             )}
 

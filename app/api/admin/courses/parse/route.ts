@@ -178,17 +178,33 @@ export async function POST(request: NextRequest) {
 
     console.log('🤖 步骤1：智能识别课程类型...')
     console.log('📄 文档长度:', documentContent.length)
+    console.log('📄 文档预览 (前200字符):', documentContent.substring(0, 200))
 
     // 第一步：识别课程类型
-    const identifyResponse = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: IDENTIFY_COURSE_TYPE_PROMPT + documentContent.substring(0, 3000), // 只使用前3000字符识别类型
-    })
+    let identifyResponse
+    try {
+      identifyResponse = await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: IDENTIFY_COURSE_TYPE_PROMPT + documentContent.substring(0, 3000), // 只使用前3000字符识别类型
+      })
+    } catch (apiError) {
+      console.error('❌ Gemini API 调用失败:', apiError)
+      return NextResponse.json(
+        {
+          error: 'Gemini API 调用失败',
+          details: apiError instanceof Error ? apiError.message : '未知错误'
+        },
+        { status: 500 }
+      )
+    }
 
     const identifyText = identifyResponse.text
+    console.log('📥 识别步骤返回长度:', identifyText?.length || 0)
+    console.log('📥 识别步骤返回内容 (前500字符):', identifyText?.substring(0, 500))
+
     if (!identifyText) {
       return NextResponse.json(
-        { error: 'AI识别课程类型失败' },
+        { error: 'AI识别课程类型失败：返回内容为空' },
         { status: 500 }
       )
     }
@@ -270,13 +286,31 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🤖 步骤2：详细解析课程内容...')
+    console.log('📝 使用的提示词类型:', structureType)
+    console.log('📝 提示词长度:', systemPrompt.length)
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',  // 使用最新的Flash模型
-      contents: systemPrompt,
-    })
+    let response
+    try {
+      response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp',  // 使用最新的Flash模型
+        contents: systemPrompt,
+      })
+    } catch (apiError) {
+      console.error('❌ Gemini API 详细解析调用失败:', apiError)
+      return NextResponse.json(
+        {
+          error: 'Gemini API 详细解析调用失败',
+          details: apiError instanceof Error ? apiError.message : '未知错误'
+        },
+        { status: 500 }
+      )
+    }
 
     const resultText = response.text
+    console.log('📥 详细解析返回长度:', resultText?.length || 0)
+    console.log('📥 详细解析返回 (前500字符):', resultText?.substring(0, 500))
+    console.log('📥 详细解析返回 (后500字符):', resultText?.substring(Math.max(0, (resultText?.length || 0) - 500)))
+
     if (!resultText) {
       console.error('❌ Gemini API 返回空内容')
       return NextResponse.json(
