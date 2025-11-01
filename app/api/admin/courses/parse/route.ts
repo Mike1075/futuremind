@@ -58,9 +58,21 @@ const LISTENING_PROMPT = `你是一个专业的课程内容结构化专家。请
 
 **重要规则**：
 1. 只输出有效的JSON，不要添加任何Markdown代码块标记（如 \`\`\`json）
-2. sequence_number从1开始递增
-3. 确保所有字符串都正确转义
-4. 如果某个字段内容缺失，使用空字符串""
+2. 只输出纯JSON，不要添加任何解释性文字
+3. sequence_number从1开始递增
+4. 确保所有字符串都正确转义（特别是引号、换行符、反斜杠）
+5. 如果某个字段内容缺失，使用空字符串""
+6. 每个对象之间必须用逗号分隔
+7. 最后一个对象后面不要有逗号
+8. 确保所有的括号和引号都正确配对
+
+**JSON格式检查清单**：
+- [ ] 所有字符串都用双引号包裹
+- [ ] 特殊字符都已转义（\n, \", \\）
+- [ ] 数组元素之间有逗号
+- [ ] 对象属性之间有逗号
+- [ ] 最后一个元素后面没有逗号
+- [ ] 所有括号都正确闭合
 
 文档内容：
 `
@@ -359,16 +371,41 @@ export async function POST(request: NextRequest) {
     try {
       parsedData = JSON.parse(cleanedText)
     } catch (parseError) {
-      console.error('❌ JSON解析失败:', parseError)
-      console.error('📄 清理后的完整内容:', cleanedText)
-      return NextResponse.json(
-        {
-          error: 'AI返回的内容格式不正确',
-          details: parseError instanceof Error ? parseError.message : '未知错误',
-          preview: cleanedText.substring(0, 1000)
-        },
-        { status: 500 }
-      )
+      console.error('❌ 第一次JSON解析失败:', parseError)
+
+      // 尝试修复常见的JSON问题
+      console.log('🔧 尝试修复JSON格式...')
+
+      let fixedText = cleanedText
+
+      // 修复1: 移除对象/数组末尾的多余逗号
+      fixedText = fixedText.replace(/,(\s*[}\]])/g, '$1')
+
+      // 修复2: 确保字符串中的双引号被转义
+      // 这个比较复杂，先跳过
+
+      // 修复3: 移除可能的控制字符
+      fixedText = fixedText.replace(/[\x00-\x1F\x7F]/g, '')
+
+      console.log('🔍 修复后的JSON预览 (前200字符):', fixedText.substring(0, 200))
+
+      // 第二次尝试解析
+      try {
+        parsedData = JSON.parse(fixedText)
+        console.log('✅ JSON修复成功！')
+      } catch (secondError) {
+        console.error('❌ 修复后仍然解析失败:', secondError)
+        console.error('📄 清理后的完整内容:', cleanedText)
+        return NextResponse.json(
+          {
+            error: 'AI返回的内容格式不正确',
+            details: parseError instanceof Error ? parseError.message : '未知错误',
+            preview: cleanedText.substring(0, 2000),
+            suggestion: '建议：尝试使用更短的文档，或者分段上传'
+          },
+          { status: 500 }
+        )
+      }
     }
 
     // 验证返回的数据结构
