@@ -389,22 +389,22 @@ export async function POST(request: NextRequest) {
     console.log('📚 课程标题:', title)
     console.log('📝 课程描述:', description)
 
-    // 根据课程类型选择提示词
+    // 根据课程类型选择提示词和数据库structure_type
     let systemPrompt = ''
     let structureType = ''
 
     switch (courseType) {
       case 'listening':
         systemPrompt = LISTENING_PROMPT + documentContent
-        structureType = 'listening'
+        structureType = 'daily_sequential'  // 14天课程 = 日序列
         break
       case 'earth':
         systemPrompt = EARTH_PROMPT + documentContent
-        structureType = 'earth'
+        structureType = 'module_matrix'  // 模块化课程 = 模块矩阵
         break
       case 'pbl':
         systemPrompt = PBL_PROMPT + documentContent
-        structureType = 'pbl_project'
+        structureType = 'stage_sequential'  // PBL项目 = 阶段序列
         break
       default:
         return NextResponse.json(
@@ -591,7 +591,7 @@ export async function POST(request: NextRequest) {
       guidance_keywords: [],
       contents: allContents.map((content: any) => ({
         ...content,
-        content_type: structureType === 'pbl_project' ? 'pbl_project' : 'module',
+        content_type: structureType === 'stage_sequential' ? 'pbl_project' : 'module',
         is_published: false
       }))
     }
