@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+// 强制动态渲染，禁用缓存，确保用户进度实时更新
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface CoursePageProps {
   params: Promise<{ system_key: string }>
 }

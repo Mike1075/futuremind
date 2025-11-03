@@ -91,11 +91,7 @@ export default function SubmissionDialog({
         console.error('更新进度失败:', progressError)
       }
 
-      // 延迟关闭，让用户看到结果
-      setTimeout(() => {
-        onSuccess()
-        onClose()
-      }, 5000)
+      // 不自动关闭，让用户查看完整结果后手动关闭
 
     } catch (err) {
       console.error('提交作业失败:', err)

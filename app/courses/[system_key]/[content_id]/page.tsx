@@ -4,6 +4,10 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import SubmissionButton from './SubmissionButton'
 
+// 强制动态渲染，确保课程完成状态实时更新
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface ContentPageProps {
   params: Promise<{
     system_key: string
