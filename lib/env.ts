@@ -31,8 +31,8 @@ export function validateEnv() {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('❌ 环境变量验证失败:')
-      error.errors.forEach((err) => {
-        console.error(`  - ${err.path.join('.')}: ${err.message}`)
+      error.issues.forEach((issue) => {
+        console.error(`  - ${issue.path.join('.')}: ${issue.message}`)
       })
       throw new Error('环境变量配置错误，请检查 .env 文件')
     }
