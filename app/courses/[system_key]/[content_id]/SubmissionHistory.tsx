@@ -27,6 +27,8 @@ export default function SubmissionHistory({
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -50,6 +52,40 @@ export default function SubmissionHistory({
       console.error('加载提交历史失败:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDelete = async (submissionId: string, growthPoints: number) => {
+    setDeletingId(submissionId)
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-submission`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            submission_id: submissionId
+          })
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('删除失败')
+      }
+
+      // 删除成功，从列表中移除
+      setSubmissions(prev => prev.filter(s => s.id !== submissionId))
+      setConfirmDeleteId(null)
+      setExpandedId(null)
+    } catch (err) {
+      console.error('删除提交失败:', err)
+      alert('删除失败，请重试')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -118,7 +154,7 @@ export default function SubmissionHistory({
                       <div className="flex items-center gap-4 mb-2">
                         {/* 分数徽章 */}
                         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500">
-                          <span className="text-white font-bold text-lg">{submission.score}</span>
+                          <span className="text-white font-bold text-lg">{submission.score || 0}</span>
                         </div>
 
                         {/* 时间和成长点 */}
@@ -183,11 +219,63 @@ export default function SubmissionHistory({
                         </div>
                       </div>
 
-                      {/* 评估时间 */}
-                      {submission.reviewed_at && (
-                        <p className="text-sm text-gray-500 text-right">
-                          评估时间: {formatDate(submission.reviewed_at)}
-                        </p>
+                      {/* 评估时间和删除按钮 */}
+                      <div className="flex items-center justify-between">
+                        {submission.reviewed_at && (
+                          <p className="text-sm text-gray-500">
+                            评估时间: {formatDate(submission.reviewed_at)}
+                          </p>
+                        )}
+
+                        {/* 删除按钮 */}
+                        {confirmDeleteId === submission.id ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDelete(submission.id, submission.consciousness_growth_points)}
+                              disabled={deletingId === submission.id}
+                              className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              {deletingId === submission.id ? '删除中...' : '确认删除'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              disabled={deletingId === submission.id}
+                              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              取消
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setConfirmDeleteId(submission.id)
+                            }}
+                            className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 border border-red-600/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            删除记录
+                          </button>
+                        )}
+                      </div>
+
+                      {/* 删除警告提示 */}
+                      {confirmDeleteId === submission.id && submission.consciousness_growth_points > 0 && (
+                        <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <svg className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            <div>
+                              <p className="text-yellow-400 font-semibold mb-1">谨慎删除</p>
+                              <p className="text-yellow-200 text-sm">
+                                删除此提交将扣除 <strong>{submission.consciousness_growth_points}</strong> 点意识成长点数，此操作不可撤销！
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
                   )}

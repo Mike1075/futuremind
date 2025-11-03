@@ -263,7 +263,6 @@ serve(async (req) => {
       .update({
         feedback: aiResult.evaluation?.feedback || '',
         score: aiResult.evaluation?.score || 0,
-        private_notes: aiResult.evaluation?.private_notes_for_gaia || '',
         consciousness_growth_points: calculateGrowthPoints(aiResult.growth_impact),
         status: 'approved',
         reviewed_at: new Date().toISOString(),

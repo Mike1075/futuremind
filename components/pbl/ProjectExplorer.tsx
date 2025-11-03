@@ -1,7 +1,8 @@
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { PBLProject, pblDataService } from '@/lib/pbl-data'
+import { PBLProject } from '@/lib/pbl-data'
+import { pblDataService } from '@/lib/pbl-real-data'
 import { ProjectCard } from './ProjectCard'
 import { ProjectFilters } from './ProjectFilters'
 import { CreateProjectModal, ProjectFormData } from './CreateProjectModal'
