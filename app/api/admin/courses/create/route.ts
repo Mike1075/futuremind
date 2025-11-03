@@ -11,8 +11,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
 
-    const { data: profile } = await (supabase
-      .from('profiles') as any)
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
 
     // 1. 检查system_key是否已存在，如果存在则添加时间戳后缀
     let uniqueSystemKey = system_key
-    const { data: existingCourse } = await (serviceSupabase
-      .from('course_systems') as any)
+    const { data: existingCourse } = await serviceSupabase
+      .from('course_systems')
       .select('system_key')
       .eq('system_key', system_key)
       .single()
@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. 创建课程体系（使用Service Role绕过RLS）
-    const { data: courseSystem, error: systemError } = await (serviceSupabase
-      .from('course_systems') as any)
+    const { data: courseSystem, error: systemError } = await serviceSupabase
+      .from('course_systems')
       .insert({
         system_key: uniqueSystemKey,
         title,
@@ -111,15 +111,15 @@ export async function POST(request: NextRequest) {
       is_published: content.is_published || false
     }))
 
-    const { error: contentsError } = await (serviceSupabase
-      .from('course_contents') as any)
+    const { error: contentsError } = await serviceSupabase
+      .from('course_contents')
       .insert(contentsToInsert)
 
     if (contentsError) {
       console.error('❌ 插入课程内容失败:', contentsError)
       // 如果内容插入失败，删除已创建的课程体系
-      await (serviceSupabase
-        .from('course_systems') as any)
+      await serviceSupabase
+        .from('course_systems')
         .delete()
         .eq('id', courseSystem.id)
 

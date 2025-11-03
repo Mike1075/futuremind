@@ -27,8 +27,8 @@ export default function MarkCompleteButton({
     startTransition(async () => {
       try {
         // 检查是否已存在进度记录
-        const { data: existingProgress } = await (supabase
-          .from('user_progress') as any)
+        const { data: existingProgress } = await supabase
+          .from('user_progress')
           .select('id')
           .eq('user_id', userId)
           .eq('ref_item_id', contentId)
@@ -37,8 +37,8 @@ export default function MarkCompleteButton({
 
         if (existingProgress) {
           // 更新现有记录
-          const { error } = await (supabase
-            .from('user_progress') as any)
+          const { error } = await supabase
+            .from('user_progress')
             .update({
               progress_value: newCompletedState ? 100 : 0,
               updated_at: new Date().toISOString()
@@ -48,13 +48,14 @@ export default function MarkCompleteButton({
           if (error) throw error
         } else {
           // 创建新记录
-          const { error } = await (supabase
-            .from('user_progress') as any)
+          const { error } = await supabase
+            .from('user_progress')
             .insert({
               user_id: userId,
               ref_item_id: contentId,
               progress_type: 'course_content',
-              progress_value: newCompletedState ? 100 : 0
+              progress_value: newCompletedState ? 100 : 0,
+              daily_records: []
             })
 
           if (error) throw error

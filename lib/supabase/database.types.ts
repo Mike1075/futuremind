@@ -1,0 +1,351 @@
+// d‡ö1Supabase CLIê¨
+// }ä: npx supabase gen types typescript
+// öô: 2025-11-03
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  public: {
+    Tables: {
+      course_systems: {
+        Row: {
+          id: string
+          title: string
+          system_key: string
+          structure_type: string
+          description: string | null
+          teaching_goals: string | null
+          guidance_keywords: string[] | null
+          total_units: number | null
+          display_order: number | null
+          is_active: boolean | null
+          is_system_course: boolean | null
+          allow_collaboration: boolean | null
+          structure_config: Json | null
+          created_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          system_key: string
+          structure_type: string
+          description?: string | null
+          teaching_goals?: string | null
+          guidance_keywords?: string[] | null
+          total_units?: number | null
+          display_order?: number | null
+          is_active?: boolean | null
+          is_system_course?: boolean | null
+          allow_collaboration?: boolean | null
+          structure_config?: Json | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          system_key?: string
+          structure_type?: string
+          description?: string | null
+          teaching_goals?: string | null
+          guidance_keywords?: string[] | null
+          total_units?: number | null
+          display_order?: number | null
+          is_active?: boolean | null
+          is_system_course?: boolean | null
+          allow_collaboration?: boolean | null
+          structure_config?: Json | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      course_contents: {
+        Row: {
+          id: string
+          system_id: string | null
+          title: string
+          subtitle: string | null
+          sequence_number: number
+          content_type: string
+          original_text: string | null
+          deep_interpretation: string | null
+          meditation_guide: string | null
+          life_practice: string | null
+          goals: string | null
+          main_content: string | null
+          tips: string | null
+          knowledge_points: Json | null
+          socratic_questions: Json | null
+          post_reflection: Json | null
+          pre_watch_guide: string | null
+          documentary_url: string | null
+          estimated_duration: number | null
+          resources: Json | null
+          prerequisites: Json | null
+          duration: string | null
+          day_plan: Json | null
+          week_plan: Json | null
+          is_published: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          system_id?: string | null
+          title: string
+          subtitle?: string | null
+          sequence_number: number
+          content_type: string
+          original_text?: string | null
+          deep_interpretation?: string | null
+          meditation_guide?: string | null
+          life_practice?: string | null
+          goals?: string | null
+          main_content?: string | null
+          tips?: string | null
+          knowledge_points?: Json | null
+          socratic_questions?: Json | null
+          post_reflection?: Json | null
+          pre_watch_guide?: string | null
+          documentary_url?: string | null
+          estimated_duration?: number | null
+          resources?: Json | null
+          prerequisites?: Json | null
+          duration?: string | null
+          day_plan?: Json | null
+          week_plan?: Json | null
+          is_published?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          system_id?: string | null
+          title?: string
+          subtitle?: string | null
+          sequence_number?: number
+          content_type?: string
+          original_text?: string | null
+          deep_interpretation?: string | null
+          meditation_guide?: string | null
+          life_practice?: string | null
+          goals?: string | null
+          main_content?: string | null
+          tips?: string | null
+          knowledge_points?: Json | null
+          socratic_questions?: Json | null
+          post_reflection?: Json | null
+          pre_watch_guide?: string | null
+          documentary_url?: string | null
+          estimated_duration?: number | null
+          resources?: Json | null
+          prerequisites?: Json | null
+          duration?: string | null
+          day_plan?: Json | null
+          week_plan?: Json | null
+          is_published?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      user_progress: {
+        Row: {
+          id: string
+          user_id: string | null
+          ref_item_id: string | null
+          progress_type: string | null
+          progress_value: number | null
+          consciousness_growth: number | null
+          current_day: number | null
+          daily_records: Json
+          completed_tasks: string[] | null
+          note: string | null
+          season_id: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          ref_item_id?: string | null
+          progress_type?: string | null
+          progress_value?: number | null
+          consciousness_growth?: number | null
+          current_day?: number | null
+          daily_records?: Json
+          completed_tasks?: string[] | null
+          note?: string | null
+          season_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          ref_item_id?: string | null
+          progress_type?: string | null
+          progress_value?: number | null
+          consciousness_growth?: number | null
+          current_day?: number | null
+          daily_records?: Json
+          completed_tasks?: string[] | null
+          note?: string | null
+          season_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      user_submissions: {
+        Row: {
+          id: string
+          user_id: string | null
+          course_content_id: string | null
+          submission_type: string
+          content: string
+          attachments: Json | null
+          status: string | null
+          score: number | null
+          feedback: string | null
+          consciousness_growth_points: number | null
+          reviewer_id: string | null
+          submitted_at: string | null
+          reviewed_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          course_content_id?: string | null
+          submission_type: string
+          content: string
+          attachments?: Json | null
+          status?: string | null
+          score?: number | null
+          feedback?: string | null
+          consciousness_growth_points?: number | null
+          reviewer_id?: string | null
+          submitted_at?: string | null
+          reviewed_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          course_content_id?: string | null
+          submission_type?: string
+          content?: string
+          attachments?: Json | null
+          status?: string | null
+          score?: number | null
+          feedback?: string | null
+          consciousness_growth_points?: number | null
+          reviewer_id?: string | null
+          submitted_at?: string | null
+          reviewed_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      profiles: {
+        Row: {
+          id: string
+          email: string
+          full_name: string | null
+          avatar_url: string | null
+          role: string | null
+          consciousness_level: number | null
+          composite_score: number | null
+          percentile_rank: number | null
+          consciousness_tree_view: Json | null
+          level_updated_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id: string
+          email: string
+          full_name?: string | null
+          avatar_url?: string | null
+          role?: string | null
+          consciousness_level?: number | null
+          composite_score?: number | null
+          percentile_rank?: number | null
+          consciousness_tree_view?: Json | null
+          level_updated_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          email?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          role?: string | null
+          consciousness_level?: number | null
+          composite_score?: number | null
+          percentile_rank?: number | null
+          consciousness_tree_view?: Json | null
+          level_updated_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+  }
+}
+
+// …©{‹ - €h¿î
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
+export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+
+// 8({‹+
+export type CourseSystem = Tables<'course_systems'>
+export type CourseContent = Tables<'course_contents'>
+export type UserProgress = Tables<'user_progress'>
+export type UserSubmission = Tables<'user_submissions'>
+export type Profile = Tables<'profiles'>
+
+// êšI{‹ - Ó„JSONWµ
+export interface SocraticQuestions {
+  pre_watch: string[]
+  during_watch: string[]
+  post_watch: string[]
+}
+
+export interface KnowledgePoint {
+  title?: string
+  content: string
+}
+
+export interface Resource {
+  type: 'audio' | 'video' | 'pdf' | 'document' | 'link'
+  title: string
+  url: string
+  duration?: string
+  description?: string
+}
+
+// Progress Type T{‹
+export type ProgressType = 'reading' | 'meditation' | 'pbl' | 'insight' | 'artifact'

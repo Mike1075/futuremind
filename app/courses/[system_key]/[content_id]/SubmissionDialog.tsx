@@ -1,7 +1,28 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+
+interface EvaluationResult {
+  evaluation?: {
+    score: number
+    feedback: string
+  }
+  growth_impact?: {
+    roots_growth?: any
+    trunk_growth?: {
+      stability?: number
+      thickness?: number
+    }
+    new_leaf_generated?: {
+      count?: number
+    }
+    fruit_generated?: {
+      title?: string
+    }
+  }
+  error?: string
+}
 
 interface SubmissionDialogProps {
   userId: string
@@ -21,7 +42,7 @@ export default function SubmissionDialog({
   const [submissionContent, setSubmissionContent] = useState('')
   const submissionType = 'reflection' // 固定为学习反思类型
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<EvaluationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const supabase = createClient()
@@ -60,8 +81,8 @@ export default function SubmissionDialog({
       // 自动标记课程为已完成
       console.log('✅ 作业提交成功，自动标记课程为已完成')
       try {
-        const { data: existingProgress, error: selectError } = await (supabase
-          .from('user_progress') as any)
+        const { data: existingProgress, error: selectError } = await supabase
+          .from('user_progress')
           .select('id')
           .eq('user_id', userId)
           .eq('ref_item_id', contentId)
@@ -75,8 +96,8 @@ export default function SubmissionDialog({
 
         if (existingProgress) {
           console.log('更新现有进度记录...')
-          const { error: updateError } = await (supabase
-            .from('user_progress') as any)
+          const { error: updateError } = await supabase
+            .from('user_progress')
             .update({
               progress_value: 100,
               updated_at: new Date().toISOString()
@@ -89,8 +110,8 @@ export default function SubmissionDialog({
           }
         } else {
           console.log('创建新的进度记录...')
-          const { error: insertError } = await (supabase
-            .from('user_progress') as any)
+          const { error: insertError } = await supabase
+            .from('user_progress')
             .insert({
               user_id: userId,
               ref_item_id: contentId,

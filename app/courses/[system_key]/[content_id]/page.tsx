@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import SubmissionButton from './SubmissionButton'
+import { CourseService } from '@/lib/services/course.service'
+import { ProgressService } from '@/lib/services/progress.service'
+import type { Resource } from '@/lib/supabase/database.types'
 
 // 强制动态渲染，确保课程完成状态实时更新
 export const dynamic = 'force-dynamic'
@@ -24,70 +27,46 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     redirect('/login')
   }
 
-  // 获取课程体系信息
-  const { data: courseSystem } = await (supabase
-    .from('course_systems') as any)
-    .select('*')
-    .eq('system_key', systemKey)
-    .single()
+  // 获取课程内容及其所属体系
+  const data = await CourseService.getContentWithSystem(contentId)
 
-  if (!courseSystem) {
+  if (!data) {
     redirect('/portal')
   }
 
-  // 获取当前内容
-  const { data: content } = await (supabase
-    .from('course_contents') as any)
-    .select('*')
-    .eq('id', contentId)
-    .eq('system_id', courseSystem.id)
-    .single()
+  const { content, system: courseSystem } = data
 
-  if (!content) {
-    redirect(`/courses/${systemKey}`)
+  // 验证system_key匹配
+  if (courseSystem.system_key !== systemKey) {
+    redirect(`/courses/${courseSystem.system_key}/${contentId}`)
   }
 
-  // 获取上一个和下一个内容
-  const { data: prevContent } = await (supabase
-    .from('course_contents') as any)
-    .select('id')
-    .eq('system_id', courseSystem.id)
-    .eq('is_published', true)
-    .lt('sequence_number', content.sequence_number)
-    .order('sequence_number', { ascending: false })
-    .limit(1)
-    .single()
-
-  const { data: nextContent } = await (supabase
-    .from('course_contents') as any)
-    .select('id')
-    .eq('system_id', courseSystem.id)
-    .eq('is_published', true)
-    .gt('sequence_number', content.sequence_number)
-    .order('sequence_number', { ascending: true })
-    .limit(1)
-    .single()
+  // 获取相邻内容
+  const { prev: prevContent, next: nextContent } = await CourseService.getAdjacentContents(
+    courseSystem.id,
+    content.sequence_number,
+    false
+  )
 
   // 获取用户进度
-  const { data: progress } = await (supabase
-    .from('user_progress') as any)
-    .select('progress_value')
-    .eq('user_id', user.id)
-    .eq('ref_item_id', contentId)
-    .eq('progress_type', 'reading')
-    .single()
-
-  const isCompleted = progress?.progress_value === 100
+  const isCompleted = await ProgressService.isCompleted(
+    user.id,
+    contentId,
+    'reading'
+  )
 
   // 渲染资源（音频、视频等）
   const renderResources = () => {
-    if (!content.resources || content.resources.length === 0) return null
+    if (!content.resources) return null
+
+    const resources = content.resources as Resource[]
+    if (resources.length === 0) return null
 
     return (
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4 text-green-400">📦 课程资源</h2>
         <div className="space-y-4">
-          {content.resources.map((resource: any, index: number) => {
+          {resources.map((resource: Resource, index: number) => {
             if (resource.type === 'audio') {
               return (
                 <div key={index} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">

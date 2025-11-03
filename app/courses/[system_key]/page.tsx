@@ -2,6 +2,9 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { CourseService } from '@/lib/services/course.service'
+import { ProgressService } from '@/lib/services/progress.service'
+import type { CourseContent } from '@/lib/supabase/database.types'
 
 // 强制动态渲染，禁用缓存，确保用户进度实时更新
 export const dynamic = 'force-dynamic'
@@ -20,21 +23,10 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     redirect('/login')
   }
 
-  // 获取用户角色
-  const { data: profile } = await (supabase
-    .from('profiles') as any)
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  // 获取课程体系和内容
+  const courseData = await CourseService.getCourseWithContents(systemKey, false)
 
-  // 获取课程体系信息
-  const { data: courseSystem, error: systemError } = await (supabase
-    .from('course_systems') as any)
-    .select('*')
-    .eq('system_key', systemKey)
-    .single()
-
-  if (systemError || !courseSystem) {
+  if (!courseData) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -50,29 +42,30 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     )
   }
 
-  // 获取课程内容列表
-  const { data: contents } = await (supabase
-    .from('course_contents') as any)
-    .select('*')
-    .eq('system_id', courseSystem.id)
-    .eq('is_published', true)
-    .order('sequence_number', { ascending: true })
+  const { system: courseSystem, contents } = courseData
 
-  // 获取用户进度
-  const { data: userProgress } = await (supabase
-    .from('user_progress') as any)
-    .select('ref_item_id, progress_value')
-    .eq('user_id', user.id)
-    .eq('progress_type', 'reading')
+  // 获取内容ID列表
+  const contentIds = contents.map(c => c.id)
 
-  // 创建进度映射
-  const progressMap = new Map(
-    (userProgress || []).map((p: any) => [p.ref_item_id, p.progress_value === 100])
+  // 批量获取用户进度
+  const progressMap = await ProgressService.getBatchProgress(
+    user.id,
+    contentIds,
+    'reading'
   )
 
+  // 创建完成状态映射
+  const completionMap = new Map<string, boolean>()
+  progressMap.forEach((progress, contentId) => {
+    completionMap.set(contentId, progress.progress_value === 100)
+  })
+
   // 计算完成百分比
-  const totalContents = contents?.length || 0
-  const completedCount = (userProgress || []).filter((p: any) => p.progress_value === 100).length
+  const totalContents = contents.length
+  let completedCount = 0
+  completionMap.forEach(isCompleted => {
+    if (isCompleted) completedCount++
+  })
   const progressPercentage = totalContents > 0
     ? Math.round((completedCount / totalContents) * 100)
     : 0
@@ -118,10 +111,10 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold mb-4">课程内容</h2>
 
-          {contents && contents.length > 0 ? (
+          {contents.length > 0 ? (
             <div className="grid gap-4">
-              {contents.map((content: any, index: number) => {
-                const isCompleted = progressMap.get(content.id) === true
+              {contents.map((content: CourseContent, index: number) => {
+                const isCompleted = completionMap.get(content.id) === true
 
                 // 检查是否解锁（检查前置课程）
                 let isUnlocked = true
@@ -129,16 +122,16 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
 
                 if (content.prerequisites && Array.isArray(content.prerequisites) && content.prerequisites.length > 0) {
                   // 检查所有前置课程是否完成
-                  const prerequisiteId = content.prerequisites[0]
-                  const prerequisiteContent = contents.find((c: any) => c.id === prerequisiteId)
-                  const isPrerequisiteCompleted = progressMap.get(prerequisiteId) === true
+                  const prerequisiteId = content.prerequisites[0] as string
+                  const prerequisiteContent = contents.find(c => c.id === prerequisiteId)
+                  const isPrerequisiteCompleted = completionMap.get(prerequisiteId) === true
 
                   isUnlocked = isPrerequisiteCompleted
                   prerequisiteTitle = prerequisiteContent?.title || '前置课程'
                 } else if (index > 0 && courseSystem.structure_type === 'daily_sequential') {
                   // 对于日序列课程，如果没有明确的prerequisites，默认需要完成前一天
                   const previousContent = contents[index - 1]
-                  isUnlocked = progressMap.get(previousContent.id) === true || index === 0
+                  isUnlocked = completionMap.get(previousContent.id) === true || index === 0
                   prerequisiteTitle = previousContent?.title || `第${index}天`
                 }
 

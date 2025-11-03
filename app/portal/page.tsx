@@ -92,8 +92,8 @@ export default function PortalPage() {
 
   const loadEnrolledCourses = async (userId: string) => {
     try {
-      const { data: enrolledData, error } = await (supabase
-        .from('student_course_assignments') as any)
+      const { data: enrolledData, error } = await supabase
+        .from('student_course_assignments')
         .select(`
           assigned_at,
           course_systems (id, title, system_key)
@@ -107,15 +107,15 @@ export default function PortalPage() {
       const enrolled: EnrolledCourse[] = await Promise.all(
         (enrolledData || []).map(async (item: any) => {
           // 获取课程总内容数
-          const { count: totalContents } = await (supabase
-            .from('course_contents') as any)
+          const { count: totalContents } = await supabase
+            .from('course_contents')
             .select('*', { count: 'exact', head: true })
             .eq('system_id', item.course_systems.id)
             .eq('is_published', true)
 
           // 获取用户完成的内容数
-          const { count: completedCount } = await (supabase
-            .from('user_progress') as any)
+          const { count: completedCount } = await supabase
+            .from('user_progress')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
             .eq('course_system_id', item.course_systems.id)

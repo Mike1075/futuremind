@@ -38,8 +38,8 @@ export default function SubmissionHistory({
 
   const loadSubmissions = async () => {
     try {
-      const { data, error } = await (supabase
-        .from('user_submissions') as any)
+      const { data, error } = await supabase
+        .from('user_submissions')
         .select('id, content, feedback, score, consciousness_growth_points, submitted_at, reviewed_at')
         .eq('user_id', userId)
         .eq('course_content_id', contentId)

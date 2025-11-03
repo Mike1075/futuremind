@@ -46,8 +46,8 @@ export default function CoursesPage() {
       setUserId(user.id)
 
       // Load all active courses
-      const { data: coursesData } = await (supabase
-        .from('course_systems') as any)
+      const { data: coursesData } = await supabase
+        .from('course_systems')
         .select('id, title, description, system_key, is_active, structure_type')
         .eq('is_active', true)
         .order('display_order', { ascending: true })
@@ -55,8 +55,8 @@ export default function CoursesPage() {
       setAllCourses(coursesData || [])
 
       // Load enrolled courses
-      const { data: enrolledData } = await (supabase
-        .from('student_course_assignments') as any)
+      const { data: enrolledData } = await supabase
+        .from('student_course_assignments')
         .select(`
           assigned_at,
           course_systems (id, title)
@@ -89,8 +89,8 @@ export default function CoursesPage() {
 
     setEnrolling(true)
     try {
-      const { error } = await (supabase
-        .from('student_course_assignments') as any)
+      const { error } = await supabase
+        .from('student_course_assignments')
         .insert({
           student_id: userId,
           course_system_id: courseId,
