@@ -141,21 +141,17 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
                 // 第一个课程总是解锁的
                 if (index === 0) isUnlocked = true
 
-                const ContentCard = isUnlocked ? Link : 'div'
+                const cardClassName = `
+                  block rounded-lg p-6 transition-all relative overflow-hidden
+                  ${isUnlocked
+                    ? 'bg-gray-900/50 border border-gray-800 hover:border-gray-700 hover:bg-gray-900/70 cursor-pointer'
+                    : 'bg-gray-900/20 border border-gray-800/50 cursor-not-allowed'
+                  }
+                  ${isCompleted && isUnlocked ? 'ring-2 ring-green-500/20' : ''}
+                `
 
-                return (
-                  <ContentCard
-                    key={content.id}
-                    {...(isUnlocked ? { href: `/courses/${systemKey}/${content.id}` } : {})}
-                    className={`
-                      block rounded-lg p-6 transition-all relative overflow-hidden
-                      ${isUnlocked
-                        ? 'bg-gray-900/50 border border-gray-800 hover:border-gray-700 hover:bg-gray-900/70 cursor-pointer'
-                        : 'bg-gray-900/20 border border-gray-800/50 cursor-not-allowed'
-                      }
-                      ${isCompleted && isUnlocked ? 'ring-2 ring-green-500/20' : ''}
-                    `}
-                  >
+                const cardContent = (
+                  <>
                     {/* 未解锁遮罩 */}
                     {!isUnlocked && (
                       <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm z-10 flex items-center justify-center">
@@ -234,7 +230,24 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
                         </svg>
                       )}
                     </div>
-                  </ContentCard>
+                  </>
+                )
+
+                return isUnlocked ? (
+                  <Link
+                    key={content.id}
+                    href={`/courses/${systemKey}/${content.id}`}
+                    className={cardClassName}
+                  >
+                    {cardContent}
+                  </Link>
+                ) : (
+                  <div
+                    key={content.id}
+                    className={cardClassName}
+                  >
+                    {cardContent}
+                  </div>
                 )
               })}
             </div>
