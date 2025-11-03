@@ -245,7 +245,13 @@ serve(async (req) => {
       console.error('❌ 解析AI返回的JSON失败:', parseError)
       return new Response(
         JSON.stringify({ error: 'AI返回格式错误', details: aiResultText }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
       )
     }
 
