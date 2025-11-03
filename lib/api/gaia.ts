@@ -98,8 +98,7 @@ class GaiaAPI {
 
       const { data, error } = await this.supabase
         .from('gaia_conversations')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert(newConversation as any)
+        .insert(newConversation)
         .select()
         .single<{
           id: string
@@ -196,8 +195,8 @@ class GaiaAPI {
         return { success: false, error: '用户未登录' }
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (this.supabase.from('gaia_conversations') as any)
+      const { error } = await this.supabase
+        .from('gaia_conversations')
         .update({ is_active: false })
         .eq('id', conversationId)
         .eq('user_id', user.id)
@@ -227,8 +226,8 @@ class GaiaAPI {
         timestamp: msg.timestamp.toISOString()
       }))
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (this.supabase.from('gaia_conversations') as any)
+      const { error } = await this.supabase
+        .from('gaia_conversations')
         .update({
           messages: serializableMessages,
           updated_at: new Date().toISOString()
@@ -359,8 +358,8 @@ class GaiaAPI {
         return { success: false, error: '用户未登录' }
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (this.supabase.from('gaia_conversations') as any)
+      const { error } = await this.supabase
+        .from('gaia_conversations')
         .update({ is_active: false })
         .eq('user_id', user.id)
 
