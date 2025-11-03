@@ -103,13 +103,38 @@ export default function PortalPage() {
 
       if (error) throw error
 
-      const enrolled: EnrolledCourse[] = enrolledData?.map((item: any) => ({
-        course_id: item.course_systems.id,
-        course_title: item.course_systems.title,
-        course_system_key: item.course_systems.system_key,
-        assigned_at: item.assigned_at,
-        progress: Math.floor(Math.random() * 100) // TODO: 计算实际进度
-      })) || []
+      // 计算每个课程的真实进度
+      const enrolled: EnrolledCourse[] = await Promise.all(
+        (enrolledData || []).map(async (item: any) => {
+          // 获取课程总内容数
+          const { count: totalContents } = await (supabase
+            .from('course_contents') as any)
+            .select('*', { count: 'exact', head: true })
+            .eq('system_id', item.course_systems.id)
+            .eq('is_published', true)
+
+          // 获取用户完成的内容数
+          const { count: completedCount } = await (supabase
+            .from('user_progress') as any)
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('course_system_id', item.course_systems.id)
+            .eq('completed', true)
+
+          // 计算进度百分比
+          const progress = totalContents && totalContents > 0
+            ? Math.round(((completedCount || 0) / totalContents) * 100)
+            : 0
+
+          return {
+            course_id: item.course_systems.id,
+            course_title: item.course_systems.title,
+            course_system_key: item.course_systems.system_key,
+            assigned_at: item.assigned_at,
+            progress
+          }
+        })
+      )
 
       setEnrolledCourses(enrolled)
     } catch (error) {

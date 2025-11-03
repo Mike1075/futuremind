@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['admin', 'principal', 'teacher'].includes(profile.role)) {
-      return NextResponse.json({ error: '权限不足' }, { status: 403 })
+    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
+      return NextResponse.json({ error: '权限不足，仅限校长和老师创建课程' }, { status: 403 })
     }
 
     // 使用Service Role Client进行数据库操作（绕过RLS）
@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
         guidance_keywords: guidance_keywords || [],
         total_units: contents.length,
         is_active: true,
-        display_order: 999  // 新课程默认排最后
+        display_order: 999,  // 新课程默认排最后
+        created_by: user.id  // 记录创建者，用于权限控制
       })
       .select()
       .single()
@@ -71,16 +72,25 @@ export async function POST(request: NextRequest) {
       title: content.title,
       subtitle: content.subtitle || '',
       original_text: content.original_text || '',
+      // Listening课程字段
       deep_interpretation: content.deep_interpretation || null,
       meditation_guide: content.meditation_guide || null,
       life_practice: content.life_practice || null,
+      // Earth课程字段
       documentary_url: content.documentary_url || null,
       pre_watch_guide: content.pre_watch_guide || null,
       knowledge_points: content.knowledge_points || null,
       socratic_questions: content.socratic_questions || null,
       post_reflection: content.post_reflection || null,
+      // PBL课程字段
       week_plan: content.week_plan || null,
       day_plan: content.day_plan || null,
+      // 通用Daily课程字段
+      goals: content.goals || null,
+      main_content: content.main_content || null,
+      duration: content.duration || null,
+      tips: content.tips || null,
+      // 通用字段
       prerequisites: content.prerequisites || null,
       estimated_duration: content.estimated_duration || 0,
       is_published: content.is_published || false
