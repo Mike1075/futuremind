@@ -40,7 +40,6 @@ export default function ConsciousnessTree({
   const [loading, setLoading] = useState(true)
 
   // completedTasks will be used for future functionality
-  console.log('Completed tasks:', completedTasks.length);
 
   // Fetch real consciousness tree data
   useEffect(() => {

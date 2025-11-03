@@ -79,7 +79,6 @@ export default function SubmissionDialog({
       setResult(data)
 
       // 自动标记课程为已完成
-      console.log('✅ 作业提交成功，自动标记课程为已完成')
       try {
         const { data: existingProgress, error: selectError } = await supabase
           .from('user_progress')
@@ -95,7 +94,6 @@ export default function SubmissionDialog({
         }
 
         if (existingProgress) {
-          console.log('更新现有进度记录...')
           const { error: updateError } = await supabase
             .from('user_progress')
             .update({
@@ -109,7 +107,6 @@ export default function SubmissionDialog({
             throw updateError
           }
         } else {
-          console.log('创建新的进度记录...')
           const { error: insertError } = await supabase
             .from('user_progress')
             .insert({
@@ -125,7 +122,6 @@ export default function SubmissionDialog({
             throw insertError
           }
         }
-        console.log('✅ 课程进度已更新为100%')
       } catch (progressError) {
         console.error('❌ 更新进度失败，详细错误:', progressError)
         setError('作业已提交，但标记完成失败。请刷新页面后手动标记。')

@@ -23,7 +23,6 @@ export class RealPBLDataService {
       }
 
       if (!pblSystems || pblSystems.length === 0) {
-        console.log('未找到PBL课程体系')
         return []
       }
 
@@ -42,7 +41,6 @@ export class RealPBLDataService {
       }
 
       if (!contents || contents.length === 0) {
-        console.log('未找到PBL项目内容')
         return []
       }
 
@@ -130,7 +128,6 @@ export class RealPBLDataService {
         }
       })
 
-      console.log(`✅ 成功加载 ${projects.length} 个PBL项目`)
       return projects
 
     } catch (error) {

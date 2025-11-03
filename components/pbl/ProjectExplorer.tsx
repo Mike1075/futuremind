@@ -52,7 +52,7 @@ export function ProjectExplorer({ onProjectSelect }: ProjectExplorerProps) {
       const data = await pblDataService.getProjects()
       setProjects(data)
     } catch (error) {
-      console.error('加载项目失败:', error)
+      // 加载失败时静默处理
     } finally {
       setLoading(false)
     }
@@ -184,7 +184,6 @@ export function ProjectExplorer({ onProjectSelect }: ProjectExplorerProps) {
     setIsCreating(true)
     try {
       // 这里应该调用API创建项目
-      console.log('创建项目:', projectData)
       // 模拟创建延迟
       await new Promise(resolve => setTimeout(resolve, 1000))
       setShowCreateProject(false)

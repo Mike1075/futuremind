@@ -59,7 +59,6 @@ export default function TeachersPage() {
 
   const loadTeachers = async () => {
     try {
-      console.log('[加载教师] 开始加载教师列表')
       const response = await fetch('/api/admin/teachers', {
         cache: 'no-store',
         headers: {
@@ -67,16 +66,13 @@ export default function TeachersPage() {
         }
       })
 
-      console.log('[加载教师] 响应状态:', response.status)
       const data = await response.json()
-      console.log('[加载教师] 响应数据:', data)
 
       if (data.error) {
         console.error('[加载教师] 错误:', data.error)
         return
       }
 
-      console.log('[加载教师] 教师数量:', data.teachers?.length || 0)
       setTeachers(data.teachers || [])
     } catch (error) {
       console.error('[加载教师] 异常:', error)
@@ -127,13 +123,9 @@ export default function TeachersPage() {
     if (!confirmed) return
 
     try {
-      console.log('[删除教师] 开始删除:', teacher.id, teacher.email)
-
       const response = await fetch(`/api/admin/teachers/${teacher.id}`, {
         method: 'DELETE'
       })
-
-      console.log('[删除教师] 响应状态:', response.status, response.statusText)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -143,7 +135,6 @@ export default function TeachersPage() {
       }
 
       const data = await response.json()
-      console.log('[删除教师] 响应数据:', data)
 
       if (data.error) {
         console.error('[删除教师] 业务错误:', data.error)
@@ -152,9 +143,7 @@ export default function TeachersPage() {
       }
 
       alert(`✅ 已成功移除教师: ${teacher.email}`)
-      console.log('[删除教师] 开始刷新列表')
       await loadTeachers()
-      console.log('[删除教师] 列表刷新完成')
     } catch (error) {
       console.error('[删除教师] 异常:', error)
       alert('❌ 删除失败，请稍后重试')

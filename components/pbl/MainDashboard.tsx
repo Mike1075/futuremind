@@ -75,7 +75,6 @@ export function MainDashboard() {
       const project = await pblDataService.getProjectById(projectId)
       setSelectedProject(project)
       setShowProjectDetail(true)
-      console.log('选中项目:', project)
     } catch (error) {
       console.error('加载项目详情失败:', error)
     }
@@ -92,7 +91,6 @@ export function MainDashboard() {
   }
 
   const handleDeleteProject = (project: PBLProject) => {
-    console.log('删除项目:', project)
     // TODO: 实现实际的删除逻辑
     setShowProjectDetail(false)
   }

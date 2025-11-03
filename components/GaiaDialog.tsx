@@ -59,7 +59,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
           await loadChatHistory()
         }
       } catch (error) {
-        console.error('获取用户信息失败:', error)
         setUserId('guest')
       } finally {
         setIsLoading(false)
@@ -75,7 +74,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   const switchToConversation = async (conversationId: string) => {
     try {
       setIsLoading(true)
-      console.log('切换到对话:', conversationId)
 
       const result = await GaiaAPI.getConversation(conversationId)
       if (result.success && result.data) {
@@ -95,8 +93,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             timestamp: new Date()
           }])
         }
-
-        console.log(`成功切换到对话 "${result.data.title}"，包含 ${result.data.messages.length} 条消息`)
       } else {
         console.error('切换对话失败:', result.error)
       }
@@ -110,12 +106,9 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   // 加载聊天记录（支持多对话系统）
   const loadChatHistory = async () => {
     try {
-      console.log('开始从 Supabase 加载聊天记录...')
       const result = await GaiaAPI.getChatHistory()
 
       if (result.success && result.data) {
-        console.log(`成功从 Supabase 加载聊天记录，包含 ${result.data.messages.length} 条消息`)
-
         // 设置当前对话信息
         setCurrentConversationId(result.data.id)
         setConversationTitle(result.data.title)
@@ -132,8 +125,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             timestamp: new Date()
           }])
         }
-      } else {
-        console.log('没有找到聊天记录或加载失败:', result.error)
       }
     } catch (error) {
       console.error('从 Supabase 加载聊天记录失败:', error)
@@ -143,7 +134,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   // 保存聊天记录到 Supabase（支持多对话系统）
   const saveChatHistory = async (msgs: ChatMessage[]) => {
     try {
-      console.log('开始保存聊天记录到 Supabase...')
       const slice = msgs.slice(-50) // 只保留最近 50 条
 
       let result;
@@ -155,15 +145,8 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         result = await GaiaAPI.saveChatHistory(slice)
       }
 
-      if (result.success) {
-        console.log(`成功保存聊天记录到 Supabase，消息数量: ${slice.length}`)
-      } else {
-        // 如果是未登录错误，只在控制台显示警告（游客模式）
-        if (result.error?.includes('未登录')) {
-          console.warn('游客模式：聊天记录不会被保存')
-        } else {
-          console.error('保存聊天记录到 Supabase 失败:', result.error)
-        }
+      if (!result.success) {
+        console.error('保存聊天记录到 Supabase 失败:', result.error)
       }
     } catch (error) {
       console.error('保存聊天记录到 Supabase 失败:', error)
@@ -196,7 +179,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         project_id: '937504dc-db0d-498d-a7ce-a817a99d29ea',
         organization_id: 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
       }
-      console.log('🚀 发送到 N8N 的 payload:', JSON.stringify(payload, null, 2))
 
       const res = await fetch('/api/n8n/chat', {
         method: 'POST',
@@ -204,11 +186,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         body: JSON.stringify(payload)
       })
       const data = await res.json().catch(() => ({}))
-      
-      // 添加调试日志
-      console.log('n8n 返回的原始数据:', data)
-      console.log('n8n 返回的数据类型:', typeof data)
-      console.log('n8n 返回的数据结构:', JSON.stringify(data, null, 2))
       
       const pick = (d: unknown): string | undefined => {
         if (!d) return undefined
@@ -243,10 +220,9 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         const lastMessage = data.messages[data.messages.length - 1]
         if (lastMessage && lastMessage.content) {
           reply = lastMessage.content
-          console.log('从 messages 数组提取到回复:', reply)
         }
       }
-      
+
       // 如果没有从 messages 提取到，尝试其他字段
       if (!reply) {
         if (Array.isArray(data)) {
@@ -256,9 +232,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
           reply = pick(data) || pick(dataObj?.data) || pickFromMessages(data) || pickFromMessages(dataObj?.data) || ''
         }
       }
-      
-      console.log('最终提取的回复内容:', reply)
-      console.log('回复内容类型:', typeof reply)
 
       const finalReply = reply && typeof reply === 'string' ? reply : '（n8n 未返回内容）'
 
@@ -369,12 +342,9 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                     if (!confirm('确定要清除所有聊天记录吗？这将删除所有对话。')) return
 
                     try {
-                      console.log('开始清除 Supabase 中的聊天记录...')
                       const result = await GaiaAPI.clearChatHistory()
 
                       if (result.success) {
-                        console.log('成功清除 Supabase 中的聊天记录')
-
                         // 重置所有对话状态
                         setCurrentConversationId(null)
                         setConversationTitle('新对话')

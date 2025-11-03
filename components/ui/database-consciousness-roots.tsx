@@ -76,7 +76,6 @@ export function DatabaseConsciousnessRoots() {
   const handleMeditation = () => {
     setTrunkThickness(prev => {
       const newThickness = Math.min(prev + THICKNESS_INCREMENT, MAX_TRUNK_THICKNESS)
-      console.log(`冥想完成！树干粗细从 ${prev.toFixed(1)} 增加到 ${newThickness.toFixed(1)}`)
       return newThickness
     })
   }
@@ -325,7 +324,6 @@ export function DatabaseConsciousnessRoots() {
 
   // 根据意识树视图的根部长度自动生成初始根系
   const generateInitialRoots = useCallback((scores: Record<string, { depth_score: number }>) => {
-    console.log('开始根据根部长度生成初始根系', scores)
     // 等待树初始化完成
     setTimeout(() => {
       Object.entries(scores).forEach(([domainKey, data]) => {
@@ -333,7 +331,6 @@ export function DatabaseConsciousnessRoots() {
         const rootLength = data.depth_score
         // 非常缓慢增长：每3个深度点生成1个分支，最少1个，最多6个
         const branchCount = Math.max(1, Math.min(6, Math.ceil(rootLength / 3)))
-        console.log(`${domainKey}: 根部长度=${rootLength}, 分支数=${branchCount}`)
 
         // 为每个领域生成相应数量的分支
         for (let i = 0; i < branchCount; i++) {
@@ -356,7 +353,6 @@ export function DatabaseConsciousnessRoots() {
     // 找到主干（可能已经死亡或还活着）
     const mainTrunk = tree.branches.find(b => b.gen === 1)
     if (!mainTrunk) {
-      console.log('Main trunk not found')
       return
     }
 
@@ -391,7 +387,6 @@ export function DatabaseConsciousnessRoots() {
     domainBranch.isDomainRoot = true
 
     tree.branches.push(domainBranch)
-    console.log(`自动创建 ${domainKey} 分支`)
   }
 
   // 从主干末端创建领域分支 - 基于数据库深度分数
@@ -408,7 +403,6 @@ export function DatabaseConsciousnessRoots() {
       // FIRST CLICK: Create seed with FIXED parameters for consistent growth
       const mainTrunk = tree.branches.find(b => b.gen === 1 && !b.alive)
       if (!mainTrunk) {
-        console.log('Main trunk not ready yet - let it finish growing first')
         return
       }
 
@@ -451,7 +445,6 @@ export function DatabaseConsciousnessRoots() {
       domainBranch.deviation = 0.65 // FIXED deviation
 
       tree.branches.push(domainBranch)
-      console.log(`${domainKey} consistent seed branch created`)
 
     } else {
       // SUBSEQUENT CLICKS: Layered seeding strategy for sustained rich branching
@@ -460,7 +453,6 @@ export function DatabaseConsciousnessRoots() {
       )
 
       if (domainBranches.length === 0) {
-        console.log(`No existing ${domainKey} branches found to extend from`)
         return
       }
 
@@ -847,14 +839,11 @@ export function DatabaseConsciousnessRoots() {
 
     // 树创建完成后，触发自动生长（如果有数据的话）
     if (treeView && treeView.roots.main_roots.length > 0) {
-      console.log('树创建完成，开始自动生长', treeView.roots.main_roots)
       const rootsMap = treeView.roots.main_roots.reduce((acc, root) => {
         acc[root.domain] = { depth_score: root.length }
         return acc
       }, {} as Record<string, { depth_score: number }>)
       generateInitialRoots(rootsMap)
-    } else {
-      console.log('树创建完成，但暂无意识树数据')
     }
   }, [treeView, createTree, generateInitialRoots])
 
