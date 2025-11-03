@@ -63,7 +63,7 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     .from('user_progress') as any)
     .select('ref_item_id, progress_value')
     .eq('user_id', user.id)
-    .eq('progress_type', 'course_content')
+    .eq('progress_type', 'reading')
 
   // 创建进度映射
   const progressMap = new Map(

@@ -74,7 +74,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     .select('progress_value')
     .eq('user_id', user.id)
     .eq('ref_item_id', contentId)
-    .eq('progress_type', 'course_content')
+    .eq('progress_type', 'reading')
     .single()
 
   const isCompleted = progress?.progress_value === 100

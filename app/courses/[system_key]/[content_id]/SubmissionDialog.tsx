@@ -60,35 +60,54 @@ export default function SubmissionDialog({
       // 自动标记课程为已完成
       console.log('✅ 作业提交成功，自动标记课程为已完成')
       try {
-        const { data: existingProgress } = await (supabase
+        const { data: existingProgress, error: selectError } = await (supabase
           .from('user_progress') as any)
           .select('id')
           .eq('user_id', userId)
           .eq('ref_item_id', contentId)
-          .eq('progress_type', 'course_content')
+          .eq('progress_type', 'reading')
           .single()
 
+        if (selectError && selectError.code !== 'PGRST116') {
+          console.error('查询进度失败:', selectError)
+          throw selectError
+        }
+
         if (existingProgress) {
-          await (supabase
+          console.log('更新现有进度记录...')
+          const { error: updateError } = await (supabase
             .from('user_progress') as any)
             .update({
               progress_value: 100,
               updated_at: new Date().toISOString()
             })
             .eq('id', existingProgress.id)
+
+          if (updateError) {
+            console.error('更新进度失败:', updateError)
+            throw updateError
+          }
         } else {
-          await (supabase
+          console.log('创建新的进度记录...')
+          const { error: insertError } = await (supabase
             .from('user_progress') as any)
             .insert({
               user_id: userId,
               ref_item_id: contentId,
-              progress_type: 'course_content',
-              progress_value: 100
+              progress_type: 'reading',
+              progress_value: 100,
+              daily_records: []
             })
+
+          if (insertError) {
+            console.error('插入进度失败:', insertError)
+            throw insertError
+          }
         }
         console.log('✅ 课程进度已更新为100%')
       } catch (progressError) {
-        console.error('更新进度失败:', progressError)
+        console.error('❌ 更新进度失败，详细错误:', progressError)
+        setError('作业已提交，但标记完成失败。请刷新页面后手动标记。')
       }
 
       // 不自动关闭，让用户查看完整结果后手动关闭
