@@ -116,8 +116,8 @@ export default function EarthCoursePage() {
       const supabase = createClient()
 
       // First, get the earth system ID
-      const { data: systemData, error: systemError } = await (supabase
-        .from('course_systems') as any)
+      const { data: systemData, error: systemError } = await supabase
+        .from('course_systems')
         .select('id')
         .eq('system_key', 'earth')
         .single()
@@ -128,8 +128,8 @@ export default function EarthCoursePage() {
       setEarthSystemId(systemData.id)
 
       // Then, get all stages for this system
-      const { data, error } = await (supabase
-        .from('course_contents') as any)
+      const { data, error } = await supabase
+        .from('course_contents')
         .select('*')
         .eq('system_id', systemData.id)
         .order('sequence_number', { ascending: true })
@@ -147,8 +147,8 @@ export default function EarthCoursePage() {
   const loadMediaResources = async (stageId: string) => {
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('media_resources') as any)
+      const { data, error } = await supabase
+        .from('media_resources')
         .select('*')
         .eq('course_content_id', stageId)
         .order('created_at', { ascending: false })
@@ -166,8 +166,8 @@ export default function EarthCoursePage() {
     setSaving(true)
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('course_contents') as any)
+      const { error } = await supabase
+        .from('course_contents')
         .update({
           title: formData.title,
           subtitle: formData.subtitle,
@@ -203,8 +203,8 @@ export default function EarthCoursePage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('media_resources') as any)
+      const { error } = await supabase
+        .from('media_resources')
         .insert({
           course_content_id: selectedStage.id,
           file_name: description || '外部视频',
@@ -230,8 +230,8 @@ export default function EarthCoursePage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('media_resources') as any)
+      const { error } = await supabase
+        .from('media_resources')
         .delete()
         .eq('id', mediaId)
 
@@ -256,8 +256,8 @@ export default function EarthCoursePage() {
 
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('course_contents') as any)
+      const { data, error } = await supabase
+        .from('course_contents')
         .insert({
           system_id: earthSystemId,
           content_type: 'stage',
@@ -303,16 +303,16 @@ export default function EarthCoursePage() {
       const supabase = createClient()
 
       // 先删除关联的媒体资源
-      const { error: mediaError } = await (supabase
-        .from('media_resources') as any)
+      const { error: mediaError } = await supabase
+        .from('media_resources')
         .delete()
         .eq('course_content_id', stageId)
 
       if (mediaError) throw mediaError
 
       // 删除阶段内容
-      const { error } = await (supabase
-        .from('course_contents') as any)
+      const { error } = await supabase
+        .from('course_contents')
         .delete()
         .eq('id', stageId)
 
@@ -340,8 +340,8 @@ export default function EarthCoursePage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('media_resources') as any)
+      const { error } = await supabase
+        .from('media_resources')
         .update({
           file_url: newUrl,
           external_url: newUrl,

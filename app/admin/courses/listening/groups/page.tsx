@@ -51,7 +51,7 @@ export default function ListeningGroupsPage() {
 
       // 获取倾听课程 system_id
       const { data: systemData, error: systemError } = await (supabase
-        .from('course_systems') as any)
+        .from('course_systems')
         .select('id')
         .eq('system_key', 'listening')
         .single()
@@ -61,7 +61,7 @@ export default function ListeningGroupsPage() {
 
       // 获取课程分组
       const { data: groupsData, error: groupsError } = await (supabase
-        .from('student_groups') as any)
+        .from('student_groups')
         .select('*')
         .eq('course_id', systemData.id)
         .eq('group_type', 'course')
@@ -86,7 +86,7 @@ export default function ListeningGroupsPage() {
       const { data: { user } } = await supabase.auth.getUser()
 
       const { error } = await (supabase
-        .from('student_groups') as any)
+        .from('student_groups')
         .insert({
           name: groupName,
           description: groupDescription || null,
@@ -115,7 +115,7 @@ export default function ListeningGroupsPage() {
     try {
       const supabase = createClient()
       const { error } = await (supabase
-        .from('student_groups') as any)
+        .from('student_groups')
         .delete()
         .eq('id', groupId)
 

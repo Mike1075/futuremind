@@ -93,8 +93,8 @@ export default function GroupDetailPage() {
   const loadGroup = async (): Promise<Group | null> => {
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('student_groups') as any)
+      const { data, error } = await supabase
+        .from('student_groups')
         .select('*')
         .eq('id', groupId)
         .single()
@@ -118,8 +118,8 @@ export default function GroupDetailPage() {
 
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('profiles') as any)
+      const { data, error } = await supabase
+        .from('profiles')
         .select('id, full_name, email, consciousness_level, composite_score')
         .in('id', memberIds)
 
@@ -137,8 +137,8 @@ export default function GroupDetailPage() {
       // 如果是课程分组，只加载选择了该课程的学生
       if (groupData.group_type === 'course' && groupData.course_id) {
         // 先获取选择了该课程的学生ID列表
-        const { data: assignments, error: assignmentError } = await (supabase
-          .from('student_course_assignments') as any)
+        const { data: assignments, error: assignmentError } = await supabase
+          .from('student_course_assignments')
           .select('student_id')
           .eq('course_system_id', groupData.course_id)
           .eq('status', 'active')
@@ -153,8 +153,8 @@ export default function GroupDetailPage() {
         }
 
         // 获取这些学生的详细信息
-        const { data, error } = await (supabase
-          .from('profiles') as any)
+        const { data, error } = await supabase
+          .from('profiles')
           .select('id, full_name, email')
           .in('id', studentIds)
           .eq('role', 'student')
@@ -164,8 +164,8 @@ export default function GroupDetailPage() {
         setAllStudents(data || [])
       } else {
         // 全局分组或自定义分组，加载所有学生
-        const { data, error } = await (supabase
-          .from('profiles') as any)
+        const { data, error } = await supabase
+          .from('profiles')
           .select('id, full_name, email')
           .eq('role', 'student')
           .order('full_name', { ascending: true, nullsFirst: false })
@@ -192,8 +192,8 @@ export default function GroupDetailPage() {
       const supabase = createClient()
       const newMemberIds = [...group.member_ids, selectedStudentId]
 
-      const { error } = await (supabase
-        .from('student_groups') as any)
+      const { error } = await supabase
+        .from('student_groups')
         .update({ member_ids: newMemberIds })
         .eq('id', groupId)
 
@@ -222,8 +222,8 @@ export default function GroupDetailPage() {
       const supabase = createClient()
       const newMemberIds = group.member_ids.filter(id => id !== studentId)
 
-      const { error } = await (supabase
-        .from('student_groups') as any)
+      const { error } = await supabase
+        .from('student_groups')
         .update({ member_ids: newMemberIds })
         .eq('id', groupId)
 

@@ -48,8 +48,8 @@ export default function CoursesPage() {
   const loadCourses = async () => {
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('course_systems') as any)
+      const { data, error } = await supabase
+        .from('course_systems')
         .select('id, title, description, system_key')
         .eq('is_active', true)
         .order('display_order', { ascending: true })
@@ -67,8 +67,8 @@ export default function CoursesPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('course_systems') as any)
+      const { error } = await supabase
+        .from('course_systems')
         .update({ is_active: false })
         .eq('id', courseId)
 

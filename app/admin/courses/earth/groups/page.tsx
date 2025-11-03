@@ -50,8 +50,8 @@ export default function EarthGroupsPage() {
       const supabase = createClient()
 
       // 获取地球课程 system_id
-      const { data: systemData, error: systemError } = await (supabase
-        .from('course_systems') as any)
+      const { data: systemData, error: systemError } = await supabase
+        .from('course_systems')
         .select('id')
         .eq('system_key', 'earth')
         .single()
@@ -60,8 +60,8 @@ export default function EarthGroupsPage() {
       setEarthSystemId(systemData.id)
 
       // 获取课程分组
-      const { data: groupsData, error: groupsError } = await (supabase
-        .from('student_groups') as any)
+      const { data: groupsData, error: groupsError } = await supabase
+        .from('student_groups')
         .select('*')
         .eq('course_id', systemData.id)
         .eq('group_type', 'course')
@@ -85,8 +85,8 @@ export default function EarthGroupsPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      const { error } = await (supabase
-        .from('student_groups') as any)
+      const { error } = await supabase
+        .from('student_groups')
         .insert({
           name: groupName,
           description: groupDescription || null,
@@ -114,8 +114,8 @@ export default function EarthGroupsPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('student_groups') as any)
+      const { error } = await supabase
+        .from('student_groups')
         .delete()
         .eq('id', groupId)
 

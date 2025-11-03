@@ -12,7 +12,7 @@ export class RealPBLDataService {
     try {
       // 1. 获取所有PBL类型的课程体系
       const { data: pblSystems, error: systemsError } = await (supabase
-        .from('course_systems') as any)
+        .from('course_systems')
         .select('id, system_key, title, description')
         .or('system_key.eq.pbl,system_key.eq.icarus,structure_type.eq.stage_sequential')
         .eq('is_active', true)
@@ -30,7 +30,7 @@ export class RealPBLDataService {
       // 2. 获取这些体系下的所有内容（项目）
       const systemIds = pblSystems.map((s: any) => s.id)
       const { data: contents, error: contentsError } = await (supabase
-        .from('course_contents') as any)
+        .from('course_contents')
         .select('*')
         .in('system_id', systemIds)
         .eq('is_published', true)
@@ -48,7 +48,7 @@ export class RealPBLDataService {
 
       // 3. 获取项目注册情况
       const { data: enrollments } = await (supabase
-        .from('pbl_project_enrollments') as any)
+        .from('pbl_project_enrollments')
         .select('content_id')
 
       const enrollmentCounts = new Map<string, number>()
@@ -147,7 +147,7 @@ export class RealPBLDataService {
 
     try {
       const { data: content, error } = await (supabase
-        .from('course_contents') as any)
+        .from('course_contents')
         .select(`
           *,
           course_systems (

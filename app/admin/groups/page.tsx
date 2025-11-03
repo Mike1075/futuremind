@@ -81,8 +81,8 @@ export default function GroupsPage() {
       const supabase = createClient()
 
       // 获取所有全局分组（课程分组在课程详情页管理）
-      const { data, error } = await (supabase
-        .from('student_groups') as any)
+      const { data, error } = await supabase
+        .from('student_groups')
         .select(`
           id,
           name,
@@ -134,8 +134,8 @@ export default function GroupsPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      const { error } = await (supabase
-        .from('student_groups') as any)
+      const { error } = await supabase
+        .from('student_groups')
         .insert({
           name: newGroupName.trim(),
           description: newGroupDescription.trim() || null,
@@ -165,8 +165,8 @@ export default function GroupsPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('student_groups') as any)
+      const { error } = await supabase
+        .from('student_groups')
         .delete()
         .eq('id', group.id)
 

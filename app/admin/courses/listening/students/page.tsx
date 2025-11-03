@@ -50,8 +50,8 @@ export default function ListeningStudentsPage() {
       const supabase = createClient()
 
       // 获取倾听课程 system_id
-      const { data: systemData, error: systemError } = await (supabase
-        .from('course_systems') as any)
+      const { data: systemData, error: systemError } = await supabase
+        .from('course_systems')
         .select('id')
         .eq('system_key', 'listening')
         .single()
@@ -60,8 +60,8 @@ export default function ListeningStudentsPage() {
       setListeningSystemId(systemData.id)
 
       // 获取选课学员
-      const { data: assignments, error: assignError } = await (supabase
-        .from('student_course_assignments') as any)
+      const { data: assignments, error: assignError } = await supabase
+        .from('student_course_assignments')
         .select(`
           student_id,
           assigned_at,
@@ -86,8 +86,8 @@ export default function ListeningStudentsPage() {
       setStudents(studentList)
 
       // 获取所有用户（用于添加，包括老师和校长）
-      const { data: allProfiles, error: profilesError } = await (supabase
-        .from('profiles') as any)
+      const { data: allProfiles, error: profilesError } = await supabase
+        .from('profiles')
         .select('id, full_name, email, role')
         .order('full_name')
 
@@ -105,8 +105,8 @@ export default function ListeningStudentsPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      const { error } = await (supabase
-        .from('student_course_assignments') as any)
+      const { error } = await supabase
+        .from('student_course_assignments')
         .insert({
           student_id: studentId,
           course_system_id: listeningSystemId,
@@ -137,8 +137,8 @@ export default function ListeningStudentsPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('student_course_assignments') as any)
+      const { error } = await supabase
+        .from('student_course_assignments')
         .delete()
         .eq('student_id', studentId)
         .eq('course_system_id', listeningSystemId)

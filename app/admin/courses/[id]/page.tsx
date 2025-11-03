@@ -124,8 +124,8 @@ export default function CourseDetailPage() {
   const loadCourse = async () => {
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('course_systems') as any)
+      const { data, error } = await supabase
+        .from('course_systems')
         .select('*')
         .eq('id', courseId)
         .single()
@@ -144,8 +144,8 @@ export default function CourseDetailPage() {
       const supabase = createClient()
 
       // Get student assignments
-      const { data: assignments, error } = await (supabase
-        .from('student_course_assignments') as any)
+      const { data: assignments, error } = await supabase
+        .from('student_course_assignments')
         .select(`
           student_id,
           assigned_at,
@@ -174,8 +174,8 @@ export default function CourseDetailPage() {
       const supabase = createClient()
 
       // 首先获取该课程的所有 course_contents
-      const { data: contents, error: contentsError } = await (supabase
-        .from('course_contents') as any)
+      const { data: contents, error: contentsError } = await supabase
+        .from('course_contents')
         .select('id')
         .eq('system_id', courseId)
 
@@ -189,8 +189,8 @@ export default function CourseDetailPage() {
       }
 
       // 然后获取这些 course_contents 关联的所有资料
-      const { data, error } = await (supabase
-        .from('media_resources') as any)
+      const { data, error } = await supabase
+        .from('media_resources')
         .select('*')
         .in('course_content_id', contentIds)
         .order('display_order', { ascending: true })
@@ -206,8 +206,8 @@ export default function CourseDetailPage() {
   const loadGroups = async () => {
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('student_groups') as any)
+      const { data, error } = await supabase
+        .from('student_groups')
         .select('*')
         .eq('course_id', courseId)
         .eq('group_type', 'course')
@@ -232,8 +232,8 @@ export default function CourseDetailPage() {
       const supabase = createClient()
 
       // Find user by email
-      const { data: targetUser, error: findError } = await (supabase
-        .from('profiles') as any)
+      const { data: targetUser, error: findError } = await supabase
+        .from('profiles')
         .select('id, email, full_name')
         .eq('email', newStudentEmail.trim())
         .single()
@@ -244,8 +244,8 @@ export default function CourseDetailPage() {
       }
 
       // Check if already enrolled
-      const { data: existing } = await (supabase
-        .from('student_course_assignments') as any)
+      const { data: existing } = await supabase
+        .from('student_course_assignments')
         .select('id')
         .eq('student_id', targetUser.id)
         .eq('course_system_id', courseId)
@@ -260,8 +260,8 @@ export default function CourseDetailPage() {
       const { data: { user } } = await supabase.auth.getUser()
 
       // Add enrollment
-      const { error: insertError } = await (supabase
-        .from('student_course_assignments') as any)
+      const { error: insertError } = await supabase
+        .from('student_course_assignments')
         .insert({
           student_id: targetUser.id,
           course_system_id: courseId,
@@ -289,8 +289,8 @@ export default function CourseDetailPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('student_course_assignments') as any)
+      const { error } = await supabase
+        .from('student_course_assignments')
         .delete()
         .eq('student_id', student.id)
         .eq('course_system_id', courseId)
@@ -311,8 +311,8 @@ export default function CourseDetailPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('media_resources') as any)
+      const { error } = await supabase
+        .from('media_resources')
         .delete()
         .eq('id', materialId)
 
@@ -338,8 +338,8 @@ export default function CourseDetailPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      const { error } = await (supabase
-        .from('student_groups') as any)
+      const { error } = await supabase
+        .from('student_groups')
         .insert({
           name: newGroupName.trim(),
           description: newGroupDescription.trim() || null,
@@ -370,8 +370,8 @@ export default function CourseDetailPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('student_groups') as any)
+      const { error } = await supabase
+        .from('student_groups')
         .delete()
         .eq('id', groupId)
 

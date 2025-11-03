@@ -111,8 +111,8 @@ export async function POST(request: Request) {
 
     // 将用户角色设为 teacher - 使用管理员客户端绕过 RLS
     const adminSupabase = createAdminClient()
-    const { error: updateError } = await (adminSupabase
-      .from('profiles') as any)
+    const { error: updateError } = await adminSupabase
+      .from('profiles')
       .update({ role: 'teacher' })
       .eq('id', targetUserData.id)
 

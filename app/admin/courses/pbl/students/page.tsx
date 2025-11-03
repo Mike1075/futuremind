@@ -51,7 +51,7 @@ export default function PBLStudentsPage() {
 
       // 获取伊卡洛斯课程 system_id
       const { data: systemData, error: systemError } = await (supabase
-        .from('course_systems') as any)
+        .from('course_systems')
         .select('id')
         .eq('system_key', 'icarus')
         .single()
@@ -61,7 +61,7 @@ export default function PBLStudentsPage() {
 
       // 获取选课学员
       const { data: assignments, error: assignError } = await (supabase
-        .from('student_course_assignments') as any)
+        .from('student_course_assignments')
         .select(`
           student_id,
           assigned_at,
@@ -87,7 +87,7 @@ export default function PBLStudentsPage() {
 
       // 获取所有用户（用于添加，包括老师和校长）
       const { data: allProfiles, error: profilesError } = await (supabase
-        .from('profiles') as any)
+        .from('profiles')
         .select('id, full_name, email, role')
         .order('full_name')
 
@@ -106,7 +106,7 @@ export default function PBLStudentsPage() {
       const { data: { user } } = await supabase.auth.getUser()
 
       const { error } = await (supabase
-        .from('student_course_assignments') as any)
+        .from('student_course_assignments')
         .insert({
           student_id: studentId,
           course_system_id: pblSystemId,
@@ -138,7 +138,7 @@ export default function PBLStudentsPage() {
     try {
       const supabase = createClient()
       const { error } = await (supabase
-        .from('student_course_assignments') as any)
+        .from('student_course_assignments')
         .delete()
         .eq('student_id', studentId)
         .eq('course_system_id', pblSystemId)

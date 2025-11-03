@@ -143,8 +143,8 @@ export default function PBLProjectDetailPage() {
   const loadProject = async () => {
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('course_contents') as any)
+      const { data, error } = await supabase
+        .from('course_contents')
         .select('*')
         .eq('id', projectId)
         .single()
@@ -162,8 +162,8 @@ export default function PBLProjectDetailPage() {
       const supabase = createClient()
 
       // 查询选了这个项目的学员
-      const { data: enrollments, error: enrollError } = await (supabase
-        .from('pbl_project_enrollments') as any)
+      const { data: enrollments, error: enrollError } = await supabase
+        .from('pbl_project_enrollments')
         .select('student_id, enrolled_at')
         .eq('project_id', projectId)
         .eq('status', 'active')
@@ -178,8 +178,8 @@ export default function PBLProjectDetailPage() {
       const studentIds = enrollments.map((e: any) => e.student_id)
 
       // 获取学员详细信息
-      const { data: profiles, error: profileError } = await (supabase
-        .from('profiles') as any)
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
         .select('id, full_name, email')
         .in('id', studentIds)
 
@@ -204,8 +204,8 @@ export default function PBLProjectDetailPage() {
     try {
       const supabase = createClient()
       // 获取所有用户（包括老师和校长）
-      const { data: allProfiles, error: profilesError } = await (supabase
-        .from('profiles') as any)
+      const { data: allProfiles, error: profilesError } = await supabase
+        .from('profiles')
         .select('id, full_name, email, role')
         .order('full_name')
 
@@ -219,8 +219,8 @@ export default function PBLProjectDetailPage() {
   const loadGroups = async () => {
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('student_groups') as any)
+      const { data, error } = await supabase
+        .from('student_groups')
         .select('*')
         .eq('project_id', projectId)
         .eq('group_type', 'project')
@@ -239,8 +239,8 @@ export default function PBLProjectDetailPage() {
     setSaving(true)
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('course_contents') as any)
+      const { error } = await supabase
+        .from('course_contents')
         .update({
           title: formData.title,
           original_text: formData.original_text,
@@ -268,8 +268,8 @@ export default function PBLProjectDetailPage() {
       const supabase = createClient()
 
       // 添加到项目注册
-      const { error: enrollError } = await (supabase
-        .from('pbl_project_enrollments') as any)
+      const { error: enrollError } = await supabase
+        .from('pbl_project_enrollments')
         .insert({
           student_id: studentId,
           project_id: projectId,
@@ -301,8 +301,8 @@ export default function PBLProjectDetailPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('pbl_project_enrollments') as any)
+      const { error } = await supabase
+        .from('pbl_project_enrollments')
         .delete()
         .eq('student_id', studentId)
         .eq('project_id', projectId)
@@ -421,8 +421,8 @@ export default function PBLProjectDetailPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      const { data: newGroup, error } = await (supabase
-        .from('student_groups') as any)
+      const { data: newGroup, error } = await supabase
+        .from('student_groups')
         .insert({
           name: newGroupName,
           description: newGroupDescription || null,

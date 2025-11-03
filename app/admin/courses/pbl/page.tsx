@@ -118,8 +118,8 @@ export default function IcarusAdminPage() {
       const supabase = createClient()
 
       // Get icarus system ID
-      const { data: systemData, error: systemError } = await (supabase
-        .from('course_systems') as any)
+      const { data: systemData, error: systemError } = await supabase
+        .from('course_systems')
         .select('id')
         .eq('system_key', 'icarus')
         .single()
@@ -128,8 +128,8 @@ export default function IcarusAdminPage() {
       setIcarusSystemId(systemData.id)
 
       // Get all PBL projects
-      const { data, error } = await (supabase
-        .from('course_contents') as any)
+      const { data, error } = await supabase
+        .from('course_contents')
         .select('*')
         .eq('system_id', systemData.id)
         .eq('content_type', 'pbl_project')
@@ -185,8 +185,8 @@ export default function IcarusAdminPage() {
       ]
 
       for (let i = 0; i < 4; i++) {
-        const { error } = await (supabase
-          .from('course_contents') as any)
+        const { error } = await supabase
+          .from('course_contents')
           .insert({
             system_id: icarusSystemId,
             content_type: 'pbl_project',
@@ -229,14 +229,14 @@ export default function IcarusAdminPage() {
         const project = projects.find(p => p.sequence_number === seq)
         if (project) {
           // 先删除关联的媒体资源
-          await (supabase
-            .from('media_resources') as any)
+          await supabase
+            .from('media_resources')
             .delete()
             .eq('course_content_id', project.id)
 
           // 删除项目
-          const { error } = await (supabase
-            .from('course_contents') as any)
+          const { error } = await supabase
+            .from('course_contents')
             .delete()
             .eq('id', project.id)
 
@@ -259,8 +259,8 @@ export default function IcarusAdminPage() {
     try {
       const supabase = createClient()
 
-      const { error } = await (supabase
-        .from('course_contents') as any)
+      const { error } = await supabase
+        .from('course_contents')
         .update({
           title: formData.title,
           subtitle: formData.subtitle,

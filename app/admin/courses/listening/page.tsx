@@ -94,8 +94,8 @@ export default function ListeningCoursePage() {
       const supabase = createClient()
 
       // First, get the listening system ID
-      const { data: systemData, error: systemError } = await (supabase
-        .from('course_systems') as any)
+      const { data: systemData, error: systemError } = await supabase
+        .from('course_systems')
         .select('id')
         .eq('system_key', 'listening')
         .single()
@@ -106,8 +106,8 @@ export default function ListeningCoursePage() {
       setListeningSystemId(systemData.id)
 
       // Then, get all course contents for this system
-      const { data, error } = await (supabase
-        .from('course_contents') as any)
+      const { data, error } = await supabase
+        .from('course_contents')
         .select('*')
         .eq('system_id', systemData.id)
         .order('sequence_number', { ascending: true })
@@ -125,8 +125,8 @@ export default function ListeningCoursePage() {
   const loadMediaResources = async (contentId: string) => {
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('media_resources') as any)
+      const { data, error } = await supabase
+        .from('media_resources')
         .select('*')
         .eq('course_content_id', contentId)
         .order('created_at', { ascending: false })
@@ -144,8 +144,8 @@ export default function ListeningCoursePage() {
     setSaving(true)
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('course_contents') as any)
+      const { error } = await supabase
+        .from('course_contents')
         .update({
           title: formData.title,
           original_text: formData.original_text,
@@ -194,8 +194,8 @@ export default function ListeningCoursePage() {
         .getPublicUrl(filePath)
 
       // 保存到 media_resources 表
-      const { error: dbError } = await (supabase
-        .from('media_resources') as any)
+      const { error: dbError } = await supabase
+        .from('media_resources')
         .insert({
           course_content_id: selectedContent.id,
           file_name: file.name,
@@ -222,8 +222,8 @@ export default function ListeningCoursePage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
-        .from('media_resources') as any)
+      const { error } = await supabase
+        .from('media_resources')
         .delete()
         .eq('id', mediaId)
 
@@ -248,8 +248,8 @@ export default function ListeningCoursePage() {
 
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase
-        .from('course_contents') as any)
+      const { data, error } = await supabase
+        .from('course_contents')
         .insert({
           system_id: listeningSystemId,
           content_type: 'daily_lesson',
@@ -288,16 +288,16 @@ export default function ListeningCoursePage() {
       const supabase = createClient()
 
       // 先删除关联的媒体资源
-      const { error: mediaError } = await (supabase
-        .from('media_resources') as any)
+      const { error: mediaError } = await supabase
+        .from('media_resources')
         .delete()
         .eq('course_content_id', contentId)
 
       if (mediaError) throw mediaError
 
       // 删除课程内容
-      const { error } = await (supabase
-        .from('course_contents') as any)
+      const { error } = await supabase
+        .from('course_contents')
         .delete()
         .eq('id', contentId)
 
