@@ -94,9 +94,9 @@ serve(async (req) => {
       .from('user_submissions')
       .insert({
         user_id,
-        content_id,
+        course_content_id: content_id,  // 修正字段名
         submission_type,
-        submission_content,
+        content: submission_content,    // 修正字段名
         status: 'under_review',
       })
       .select()
@@ -148,7 +148,7 @@ serve(async (req) => {
     // 3.4 获取近期学习历史
     const { data: recentSubmissions } = await supabase
       .from('user_submissions')
-      .select('submission_type, submission_content, feedback, score, submitted_at')
+      .select('submission_type, content, feedback, score, submitted_at')  // 修正字段名
       .eq('user_id', user_id)
       .order('submitted_at', { ascending: false })
       .limit(5)
