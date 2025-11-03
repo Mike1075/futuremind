@@ -50,7 +50,7 @@ export default function PBLStudentsPage() {
       const supabase = createClient()
 
       // 获取伊卡洛斯课程 system_id
-      const { data: systemData, error: systemError } = await (supabase
+      const { data: systemData, error: systemError } = await supabase
         .from('course_systems')
         .select('id')
         .eq('system_key', 'icarus')
@@ -60,7 +60,7 @@ export default function PBLStudentsPage() {
       setPblSystemId(systemData.id)
 
       // 获取选课学员
-      const { data: assignments, error: assignError } = await (supabase
+      const { data: assignments, error: assignError } = await supabase
         .from('student_course_assignments')
         .select(`
           student_id,

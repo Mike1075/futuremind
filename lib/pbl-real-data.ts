@@ -11,7 +11,7 @@ export class RealPBLDataService {
 
     try {
       // 1. 获取所有PBL类型的课程体系
-      const { data: pblSystems, error: systemsError } = await (supabase
+      const { data: pblSystems, error: systemsError } = await supabase
         .from('course_systems')
         .select('id, system_key, title, description')
         .or('system_key.eq.pbl,system_key.eq.icarus,structure_type.eq.stage_sequential')

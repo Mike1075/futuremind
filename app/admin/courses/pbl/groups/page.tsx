@@ -50,7 +50,7 @@ export default function PBLGroupsPage() {
       const supabase = createClient()
 
       // 获取伊卡洛斯课程 system_id
-      const { data: systemData, error: systemError } = await (supabase
+      const { data: systemData, error: systemError } = await supabase
         .from('course_systems')
         .select('id')
         .eq('system_key', 'icarus')
@@ -60,7 +60,7 @@ export default function PBLGroupsPage() {
       setPblSystemId(systemData.id)
 
       // 获取课程分组
-      const { data: groupsData, error: groupsError } = await (supabase
+      const { data: groupsData, error: groupsError } = await supabase
         .from('student_groups')
         .select('*')
         .eq('course_id', systemData.id)
