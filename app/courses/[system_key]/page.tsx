@@ -57,18 +57,18 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
   // 获取用户进度
   const { data: userProgress } = await (supabase
     .from('user_progress') as any)
-    .select('content_id, completed')
+    .select('ref_item_id, progress_value')
     .eq('user_id', user.id)
-    .eq('course_system_id', courseSystem.id)
+    .eq('progress_type', 'course_content')
 
   // 创建进度映射
   const progressMap = new Map(
-    (userProgress || []).map((p: any) => [p.content_id, p.completed])
+    (userProgress || []).map((p: any) => [p.ref_item_id, p.progress_value === 100])
   )
 
   // 计算完成百分比
   const totalContents = contents?.length || 0
-  const completedCount = (userProgress || []).filter((p: any) => p.completed).length
+  const completedCount = (userProgress || []).filter((p: any) => p.progress_value === 100).length
   const progressPercentage = totalContents > 0
     ? Math.round((completedCount / totalContents) * 100)
     : 0
@@ -116,51 +116,125 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
 
           {contents && contents.length > 0 ? (
             <div className="grid gap-4">
-              {contents.map((content: any) => {
+              {contents.map((content: any, index: number) => {
                 const isCompleted = progressMap.get(content.id) === true
 
+                // 检查是否解锁（检查前置课程）
+                let isUnlocked = true
+                let prerequisiteTitle = ''
+
+                if (content.prerequisites && Array.isArray(content.prerequisites) && content.prerequisites.length > 0) {
+                  // 检查所有前置课程是否完成
+                  const prerequisiteId = content.prerequisites[0]
+                  const prerequisiteContent = contents.find((c: any) => c.id === prerequisiteId)
+                  const isPrerequisiteCompleted = progressMap.get(prerequisiteId) === true
+
+                  isUnlocked = isPrerequisiteCompleted
+                  prerequisiteTitle = prerequisiteContent?.title || '前置课程'
+                } else if (index > 0 && courseSystem.structure_type === 'daily_sequential') {
+                  // 对于日序列课程，如果没有明确的prerequisites，默认需要完成前一天
+                  const previousContent = contents[index - 1]
+                  isUnlocked = progressMap.get(previousContent.id) === true || index === 0
+                  prerequisiteTitle = previousContent?.title || `第${index}天`
+                }
+
+                // 第一个课程总是解锁的
+                if (index === 0) isUnlocked = true
+
+                const ContentCard = isUnlocked ? Link : 'div'
+
                 return (
-                  <Link
+                  <ContentCard
                     key={content.id}
-                    href={`/courses/${systemKey}/${content.id}`}
-                    className="block bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-gray-700 hover:bg-gray-900/70 transition-all"
+                    {...(isUnlocked ? { href: `/courses/${systemKey}/${content.id}` } : {})}
+                    className={`
+                      block rounded-lg p-6 transition-all relative overflow-hidden
+                      ${isUnlocked
+                        ? 'bg-gray-900/50 border border-gray-800 hover:border-gray-700 hover:bg-gray-900/70 cursor-pointer'
+                        : 'bg-gray-900/20 border border-gray-800/50 cursor-not-allowed'
+                      }
+                      ${isCompleted && isUnlocked ? 'ring-2 ring-green-500/20' : ''}
+                    `}
                   >
-                    <div className="flex items-start justify-between">
+                    {/* 未解锁遮罩 */}
+                    {!isUnlocked && (
+                      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm z-10 flex items-center justify-center">
+                        <div className="text-center">
+                          <svg className="w-12 h-12 text-gray-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
+                          <p className="text-gray-400 text-sm">
+                            完成「{prerequisiteTitle}」后解锁
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-start justify-between relative">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <span className="text-sm font-medium text-gray-500">
+                          {/* 序号或状态标识 */}
+                          <div className={`
+                            flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold
+                            ${isCompleted
+                              ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white'
+                              : isUnlocked
+                                ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
+                                : 'bg-gray-700 text-gray-500'
+                            }
+                          `}>
+                            {isCompleted ? (
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              content.sequence_number
+                            )}
+                          </div>
+
+                          <span className={`text-sm font-medium ${isUnlocked ? 'text-gray-400' : 'text-gray-600'}`}>
                             {courseSystem.structure_type === 'daily_sequential'
                               ? `第${content.sequence_number}天`
                               : `单元 ${content.sequence_number}`}
                           </span>
+
                           {isCompleted && (
-                            <span className="flex items-center text-green-500 text-sm">
-                              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
+                            <span className="px-2 py-1 bg-green-500/10 text-green-400 text-xs rounded-full font-medium">
                               已完成
                             </span>
                           )}
+
+                          {!isUnlocked && (
+                            <span className="px-2 py-1 bg-gray-700/50 text-gray-500 text-xs rounded-full font-medium">
+                              🔒 锁定
+                            </span>
+                          )}
                         </div>
-                        <h3 className="text-lg font-semibold text-white mb-2">
+
+                        <h3 className={`text-lg font-semibold mb-2 ${isUnlocked ? 'text-white' : 'text-gray-600'}`}>
                           {content.title}
                         </h3>
+
                         {content.subtitle && (
-                          <p className="text-gray-400 text-sm mb-2">
+                          <p className={`text-sm mb-2 ${isUnlocked ? 'text-gray-400' : 'text-gray-600'}`}>
                             {content.subtitle}
                           </p>
                         )}
+
                         {content.duration && (
-                          <p className="text-gray-500 text-sm">
-                            {content.duration}
+                          <p className={`text-sm ${isUnlocked ? 'text-gray-500' : 'text-gray-600'}`}>
+                            ⏱️ {content.duration}
                           </p>
                         )}
                       </div>
-                      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+
+                      {isUnlocked && (
+                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      )}
                     </div>
-                  </Link>
+                  </ContentCard>
                 )
               })}
             </div>

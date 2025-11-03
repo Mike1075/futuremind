@@ -5,14 +5,12 @@ import { createClient } from '@/lib/supabase/client'
 
 interface MarkCompleteButtonProps {
   userId: string
-  courseSystemId: string
   contentId: string
   initialCompleted: boolean
 }
 
 export default function MarkCompleteButton({
   userId,
-  courseSystemId,
   contentId,
   initialCompleted
 }: MarkCompleteButtonProps) {
@@ -33,7 +31,8 @@ export default function MarkCompleteButton({
           .from('user_progress') as any)
           .select('id')
           .eq('user_id', userId)
-          .eq('content_id', contentId)
+          .eq('ref_item_id', contentId)
+          .eq('progress_type', 'course_content')
           .single()
 
         if (existingProgress) {
@@ -41,7 +40,7 @@ export default function MarkCompleteButton({
           const { error } = await (supabase
             .from('user_progress') as any)
             .update({
-              completed: newCompletedState,
+              progress_value: newCompletedState ? 100 : 0,
               updated_at: new Date().toISOString()
             })
             .eq('id', existingProgress.id)
@@ -53,10 +52,9 @@ export default function MarkCompleteButton({
             .from('user_progress') as any)
             .insert({
               user_id: userId,
-              course_system_id: courseSystemId,
-              content_id: contentId,
-              completed: newCompletedState,
-              progress_percentage: newCompletedState ? 100 : 0
+              ref_item_id: contentId,
+              progress_type: 'course_content',
+              progress_value: newCompletedState ? 100 : 0
             })
 
           if (error) throw error

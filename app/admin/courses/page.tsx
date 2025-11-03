@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus } from 'lucide-react'
+import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2 } from 'lucide-react'
 
 interface CourseSystem {
   id: string
@@ -58,6 +58,27 @@ export default function CoursesPage() {
       setCourseSystems(data || [])
     } catch (error) {
       console.error('加载课程列表失败:', error)
+    }
+  }
+
+  const deleteCourse = async (courseId: string, courseTitle: string) => {
+    const confirmed = confirm(`确定要删除课程「${courseTitle}」吗？\n\n这将执行软删除（设置为不可见），不会真正删除数据。`)
+    if (!confirmed) return
+
+    try {
+      const supabase = createClient()
+      const { error } = await (supabase
+        .from('course_systems') as any)
+        .update({ is_active: false })
+        .eq('id', courseId)
+
+      if (error) throw error
+
+      alert('课程已删除')
+      await loadCourses() // 重新加载列表
+    } catch (error) {
+      console.error('删除课程失败:', error)
+      alert('删除失败，请重试')
     }
   }
 
@@ -175,37 +196,51 @@ export default function CoursesPage() {
               return `/admin/courses/${course.id}`
             }
             return (
-              <button
-                key={course.id}
-                onClick={() => router.push(getCoursePath())}
-                className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center"
-              >
+              <div key={course.id} className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center">
                 {/* Gradient Background Effect */}
-                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300`} />
+                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none`} />
 
-                {/* Icon */}
-                <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <Icon className="w-10 h-10 text-white" />
-                </div>
+                {/* Delete Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteCourse(course.id, course.title)
+                  }}
+                  className="absolute top-4 right-4 p-2 bg-red-500/20 hover:bg-red-500/40 text-red-300 hover:text-red-100 rounded-lg border border-red-500/30 transition-all z-20 opacity-0 group-hover:opacity-100"
+                  title="删除课程"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
 
-                {/* Title */}
-                <h2 className="relative text-2xl font-bold text-white mb-3 group-hover:scale-105 transition-transform duration-300">
-                  {course.title}
-                </h2>
+                {/* Main Content - Clickable */}
+                <button
+                  onClick={() => router.push(getCoursePath())}
+                  className="w-full h-full flex flex-col items-center justify-center"
+                >
+                  {/* Icon */}
+                  <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="w-10 h-10 text-white" />
+                  </div>
 
-                {/* Description */}
-                <p className="relative text-sm text-gray-300 group-hover:text-white transition-colors duration-300">
-                  {course.description}
-                </p>
+                  {/* Title */}
+                  <h2 className="relative text-2xl font-bold text-white mb-3 group-hover:scale-105 transition-transform duration-300">
+                    {course.title}
+                  </h2>
 
-                {/* Arrow Indicator */}
-                <div className="relative mt-6 flex items-center text-purple-300 group-hover:text-white transition-colors duration-300">
-                  <span className="text-xs mr-1">进入管理</span>
-                  <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </div>
-              </button>
+                  {/* Description */}
+                  <p className="relative text-sm text-gray-300 group-hover:text-white transition-colors duration-300">
+                    {course.description}
+                  </p>
+
+                  {/* Arrow Indicator */}
+                  <div className="mt-6 flex items-center text-purple-300 group-hover:text-white transition-colors duration-300">
+                    <span className="text-xs mr-1">进入管理</span>
+                    <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+                </button>
+              </div>
             )
           })}
 

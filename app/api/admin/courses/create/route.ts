@@ -36,11 +36,26 @@ export async function POST(request: NextRequest) {
     console.log('📚 课程标题:', title)
     console.log('📊 内容单元数:', contents.length)
 
-    // 1. 创建课程体系（使用Service Role绕过RLS）
+    // 1. 检查system_key是否已存在，如果存在则添加时间戳后缀
+    let uniqueSystemKey = system_key
+    const { data: existingCourse } = await (serviceSupabase
+      .from('course_systems') as any)
+      .select('system_key')
+      .eq('system_key', system_key)
+      .single()
+
+    if (existingCourse) {
+      console.log('⚠️ system_key已存在，添加时间戳后缀')
+      const timestamp = Date.now().toString().slice(-6) // 使用最后6位时间戳
+      uniqueSystemKey = `${system_key}-${timestamp}`
+      console.log('📝 新的system_key:', uniqueSystemKey)
+    }
+
+    // 2. 创建课程体系（使用Service Role绕过RLS）
     const { data: courseSystem, error: systemError } = await (serviceSupabase
       .from('course_systems') as any)
       .insert({
-        system_key,
+        system_key: uniqueSystemKey,
         title,
         description,
         structure_type,
