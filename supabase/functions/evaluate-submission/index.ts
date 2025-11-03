@@ -77,7 +77,13 @@ serve(async (req) => {
     if (!user_id || !content_id || !submission_content) {
       return new Response(
         JSON.stringify({ error: '缺少必要参数：user_id, content_id, submission_content' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
       )
     }
 
@@ -100,7 +106,13 @@ serve(async (req) => {
       console.error('❌ 创建提交记录失败:', insertError)
       return new Response(
         JSON.stringify({ error: '创建提交记录失败: ' + insertError.message }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
       )
     }
 

@@ -19,7 +19,7 @@ export default function SubmissionDialog({
   onSuccess
 }: SubmissionDialogProps) {
   const [submissionContent, setSubmissionContent] = useState('')
-  const [submissionType, setSubmissionType] = useState<'reflection' | 'assignment'>('reflection')
+  const submissionType = 'reflection' // 固定为学习反思类型
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -56,6 +56,40 @@ export default function SubmissionDialog({
 
       // 显示评估结果
       setResult(data)
+
+      // 自动标记课程为已完成
+      console.log('✅ 作业提交成功，自动标记课程为已完成')
+      try {
+        const { data: existingProgress } = await (supabase
+          .from('user_progress') as any)
+          .select('id')
+          .eq('user_id', userId)
+          .eq('ref_item_id', contentId)
+          .eq('progress_type', 'course_content')
+          .single()
+
+        if (existingProgress) {
+          await (supabase
+            .from('user_progress') as any)
+            .update({
+              progress_value: 100,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingProgress.id)
+        } else {
+          await (supabase
+            .from('user_progress') as any)
+            .insert({
+              user_id: userId,
+              ref_item_id: contentId,
+              progress_type: 'course_content',
+              progress_value: 100
+            })
+        }
+        console.log('✅ 课程进度已更新为100%')
+      } catch (progressError) {
+        console.error('更新进度失败:', progressError)
+      }
 
       // 延迟关闭，让用户看到结果
       setTimeout(() => {
@@ -94,50 +128,15 @@ export default function SubmissionDialog({
         <div className="p-6 space-y-6">
           {!result ? (
             <>
-              {/* 作业类型选择 */}
-              <div>
-                <label className="block text-white font-medium mb-3">作业类型</label>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setSubmissionType('reflection')}
-                    className={`
-                      flex-1 py-3 px-4 rounded-lg font-medium transition-all
-                      ${submissionType === 'reflection'
-                        ? 'bg-blue-600 text-white border-2 border-blue-400'
-                        : 'bg-gray-800 text-gray-400 border-2 border-gray-700 hover:border-gray-600'
-                      }
-                    `}
-                  >
-                    💭 学习反思
-                  </button>
-                  <button
-                    onClick={() => setSubmissionType('assignment')}
-                    className={`
-                      flex-1 py-3 px-4 rounded-lg font-medium transition-all
-                      ${submissionType === 'assignment'
-                        ? 'bg-purple-600 text-white border-2 border-purple-400'
-                        : 'bg-gray-800 text-gray-400 border-2 border-gray-700 hover:border-gray-600'
-                      }
-                    `}
-                  >
-                    📝 作业提交
-                  </button>
-                </div>
-              </div>
-
               {/* 作业内容输入 */}
               <div>
                 <label className="block text-white font-medium mb-3">
-                  {submissionType === 'reflection' ? '你的学习感悟' : '作业内容'}
+                  你的学习感悟
                 </label>
                 <textarea
                   value={submissionContent}
                   onChange={(e) => setSubmissionContent(e.target.value)}
-                  placeholder={
-                    submissionType === 'reflection'
-                      ? '分享你在本次学习中的感悟、体会和收获...'
-                      : '请提交你的作业内容...'
-                  }
+                  placeholder="分享你在本次学习中的感悟、体会和收获..."
                   className="w-full h-64 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none resize-none"
                 />
                 <div className="flex justify-between items-center mt-2">

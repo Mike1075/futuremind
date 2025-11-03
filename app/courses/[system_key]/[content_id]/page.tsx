@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import MarkCompleteButton from './MarkCompleteButton'
 import SubmissionButton from './SubmissionButton'
 
 interface ContentPageProps {
@@ -386,20 +385,12 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
           {renderContent()}
         </div>
 
-        {/* 作业提交和标记完成 */}
-        <div className="mb-8 space-y-4">
-          {/* 作业提交按钮 */}
+        {/* 作业提交按钮 */}
+        <div className="mb-8">
           <SubmissionButton
             userId={user.id}
             contentId={contentId}
             contentTitle={content.title}
-          />
-
-          {/* 标记完成按钮 */}
-          <MarkCompleteButton
-            userId={user.id}
-            contentId={contentId}
-            initialCompleted={isCompleted}
           />
         </div>
 
