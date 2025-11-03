@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenAI } from '@google/genai'
 
-// 初始化 Gemini AI
+// 初始化 Gemini AI（使用环境变量验证）
 const apiKey = process.env.GEMINI_API_KEY
 if (!apiKey) {
-  console.error('❌ GEMINI_API_KEY is not set in environment variables')
+  throw new Error('GEMINI_API_KEY 未配置，请在 .env 文件中添加')
 }
 
 // 智能识别课程类型的提示词 - 使用简单的键值对格式

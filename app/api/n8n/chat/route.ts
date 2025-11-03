@@ -31,14 +31,9 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(payload)
     })
 
-    console.log('=== N8N 聊天 API 调试信息 ===')
-    console.log('发送到 n8n 的 payload:', JSON.stringify(payload, null, 2))
-    console.log('n8n 响应状态:', res.status)
-    console.log('n8n 响应头:', Object.fromEntries(res.headers.entries()))
-
     if (!res.ok) {
       const errorText = await res.text()
-      console.log('n8n 错误响应:', errorText)
+      console.error('[N8N Chat] 错误响应:', errorText)
       return NextResponse.json({ error: 'N8N_CHAT_FAILED', status: res.status, body: errorText }, { status: 502 })
     }
 
@@ -56,7 +51,6 @@ export async function POST(req: NextRequest) {
 
           const chunk = decoder.decode(value, { stream: true })
           rawText += chunk
-          console.log('收到流式 chunk:', chunk)
 
           // 尝试解析每个 chunk（可能包含多个 JSON 对象或换行分隔的 JSON）
           const lines = chunk.split('\n').filter(line => line.trim())
@@ -75,7 +69,6 @@ export async function POST(req: NextRequest) {
                   // 如果包含 output 字段，这是完整的最终回复
                   if (innerJson.output) {
                     fullContent = innerJson.output // 直接使用完整回复，覆盖之前的累积
-                    console.log('找到 output 字段（完整回复）:', innerJson.output)
                   }
                 } catch {
                   // content 是纯文本，累加
@@ -91,11 +84,6 @@ export async function POST(req: NextRequest) {
         reader.releaseLock()
       }
     }
-
-    console.log('流式响应完成')
-    console.log('原始文本:', rawText)
-    console.log('提取的 content 内容:', fullContent)
-    console.log('================================')
 
     // 返回组合后的内容
     return NextResponse.json({

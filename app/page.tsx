@@ -27,8 +27,6 @@ export default function Home() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      console.log('🔍 [首页权限检查] 用户信息:', user?.email)
-
       // 如果用户已登录
       if (user) {
         setIsLoggedIn(true)
@@ -40,23 +38,17 @@ export default function Home() {
           .eq('id', user.id)
           .single()
 
-        console.log('🔍 [首页权限检查] 查询结果:', { profile, profileError })
-
         // 检查role字段是否为principal或teacher
         // principal: 校长，拥有最高管理员权限
         // teacher: 老师，拥有部分管理权限
         const userRole = (profile as unknown as { role?: string })?.role
-        console.log('🔍 [首页权限检查] 用户角色:', userRole)
 
         if (userRole === 'principal' || userRole === 'teacher') {
-          console.log('✅ [首页权限检查] 设置为管理员')
           setIsAdmin(true)
         } else {
-          console.log('❌ [首页权限检查] 不是管理员角色')
           setIsAdmin(false)
         }
       } else {
-        console.log('❌ [首页权限检查] 用户未登录')
         setIsLoggedIn(false)
         setIsAdmin(false)
       }

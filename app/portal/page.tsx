@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   TreePine,
   LogOut,
@@ -112,7 +113,7 @@ export default function PortalPage() {
 
       setEnrolledCourses(enrolled)
     } catch (error) {
-      console.error('加载课程失败:', error)
+      console.error('[Portal] 加载课程失败:', error)
     }
   }
 
@@ -151,14 +152,14 @@ export default function PortalPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden">
       {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(30)].map((_, i) => (
@@ -216,7 +217,7 @@ export default function PortalPage() {
             {/* 右侧：快捷入口与登出 */}
             <div className="flex items-center space-x-4">
               {/* 管理后台入口 - 仅管理员可见 */}
-              {userRole && ['admin', 'principal', 'teacher'].includes(userRole) && (
+              {userRole && ['principal', 'teacher'].includes(userRole) && (
                 <button
                   onClick={() => router.push('/admin')}
                   className="flex items-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors duration-300 group"
@@ -359,11 +360,13 @@ export default function PortalPage() {
                 <TreePine className="w-6 h-6 text-green-400 mr-3" />
                 <h3 className="text-lg font-semibold text-white">意识进化树</h3>
               </div>
-              <div className="relative h-80 w-full flex items-center justify-center bg-gradient-to-b from-white/5 to-white/10 rounded-lg mb-4">
-                <img
+              <div className="relative h-80 w-full bg-gradient-to-b from-white/5 to-white/10 rounded-lg mb-4">
+                <Image
                   src="/images/consciousness-tree-preview.png"
                   alt="意识进化树预览"
-                  className="max-h-full max-w-full object-contain opacity-80"
+                  fill
+                  className="object-contain opacity-80"
+                  sizes="(max-width: 768px) 100vw, 33vw"
                 />
               </div>
 
