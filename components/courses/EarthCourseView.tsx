@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import type { CourseContent } from '@/lib/supabase/database.types'
+import { EarthStageCircle } from './EarthStageCircle'
 
 interface Stage {
   stageNumber: number
@@ -166,8 +167,18 @@ export function EarthCourseView({
           </div>
         </div>
 
-        {/* 阶段列表 */}
-        <div className="space-y-6">
+        {/* 圆形阶段导航 */}
+        <div>
+          <h2 className="text-2xl font-bold mb-6 text-center">学习旅程</h2>
+          <EarthStageCircle
+            stages={stages}
+            completionMap={completionMap}
+            systemKey={courseSystem.system_key}
+          />
+        </div>
+
+        {/* 原列表视图（备用，已隐藏）*/}
+        <div className="hidden space-y-6">
           <h2 className="text-2xl font-bold mb-4">学习旅程</h2>
 
           {stages.map((stage, index) => {
