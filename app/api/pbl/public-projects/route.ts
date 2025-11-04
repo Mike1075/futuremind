@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       query = query.or(`title.ilike.%${search}%,subtitle.ilike.%${search}%,project_intro.ilike.%${search}%`)
     }
 
-    const { data: projects, error } = await query
+    const { data: projects, error } = (await query) as any
 
     if (error) {
       console.error('[API Error] Failed to fetch public projects:', error)
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取每个项目的参与人数
-    const projectIds = projects?.map(p => p.id) || []
+    const projectIds = projects?.map((p: any) => p.id) || []
 
     const { data: participationCounts } = await supabase
       .from('user_selected_projects')
@@ -79,13 +79,13 @@ export async function GET(request: NextRequest) {
       .in('status', ['active', 'completed'])
 
     // 统计每个项目的参与人数
-    const countMap = participationCounts?.reduce((acc, item) => {
+    const countMap = participationCounts?.reduce((acc: any, item: any) => {
       acc[item.project_id] = (acc[item.project_id] || 0) + 1
       return acc
     }, {} as Record<string, number>) || {}
 
     // 添加参与人数到项目数据
-    const projectsWithStats = projects?.map(project => ({
+    const projectsWithStats = projects?.map((project: any) => ({
       ...project,
       participant_count: countMap[project.id] || 0,
       is_system: project.project_visibility === 'system',
