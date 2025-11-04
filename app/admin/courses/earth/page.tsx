@@ -192,10 +192,10 @@ export default function EarthCoursePage() {
   const handleAddExternalVideo = async () => {
     if (!selectedStage) return
 
-    const url = prompt('请输入视频URL（YouTube/Bilibili）:')
+    const url = prompt('📺 请输入补充视频URL（YouTube/Bilibili）:\n\n注意：这是补充资源，不是主纪录片。')
     if (!url) return
 
-    const description = prompt('请输入视频描述:')
+    const description = prompt('📝 请输入视频描述（例如：相关资料片段、延伸阅读）:')
 
     try {
       const supabase = createClient()
@@ -203,7 +203,7 @@ export default function EarthCoursePage() {
         .from('media_resources')
         .insert({
           course_content_id: selectedStage.id,
-          file_name: description || '外部视频',
+          file_name: description || '补充视频',
           file_url: url,
           external_url: url,
           file_type: 'video/external',
@@ -213,7 +213,7 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      alert('视频链接添加成功！')
+      alert('补充视频添加成功！')
       await loadMediaResources(selectedStage.id)
     } catch (error) {
       console.error('添加视频失败:', error)
@@ -329,10 +329,10 @@ export default function EarthCoursePage() {
   }
 
   const handleEditVideoUrl = async (mediaId: string, currentUrl: string | null, currentName: string | null) => {
-    const newUrl = prompt('请输入新的视频URL:', currentUrl || '')
+    const newUrl = prompt('📺 请输入新的补充视频URL:', currentUrl || '')
     if (!newUrl || newUrl === currentUrl) return
 
-    const newName = prompt('请输入新的视频描述:', currentName || '')
+    const newName = prompt('📝 请输入新的视频描述:', currentName || '')
 
     try {
       const supabase = createClient()
@@ -547,14 +547,20 @@ export default function EarthCoursePage() {
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">纪录片URL</label>
+                  <label className="block text-white font-medium mb-2">
+                    📺 主纪录片URL
+                    <span className="text-purple-300 text-sm font-normal ml-2">（核心视频资源）</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.documentary_url}
                     onChange={(e) => setFormData({ ...formData, documentary_url: e.target.value })}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入纪录片URL..."
+                    placeholder="输入主纪录片URL（此阶段的核心观看内容）..."
                   />
+                  <p className="text-gray-400 text-xs mt-1">
+                    💡 这是本阶段的主要视频内容。补充视频资源请使用下方的"补充视频资源"模块添加。
+                  </p>
                 </div>
 
                 <div>
@@ -662,13 +668,18 @@ export default function EarthCoursePage() {
               {/* 资料管理模块 */}
               <div className="mt-12 pt-8 border-t border-white/10">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-white">资料管理</h3>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">📚 补充视频资源</h3>
+                    <p className="text-gray-400 text-sm mt-1">
+                      添加辅助学习的补充视频（例如：相关资料片段、延伸阅读视频等）
+                    </p>
+                  </div>
                   <button
                     onClick={handleAddExternalVideo}
                     className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
                   >
                     <Upload className="w-4 h-4" />
-                    添加视频链接
+                    添加补充视频
                   </button>
                 </div>
 
