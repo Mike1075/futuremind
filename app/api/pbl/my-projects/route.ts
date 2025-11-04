@@ -68,20 +68,20 @@ export async function GET(request: NextRequest) {
     // 统计各状态的项目数量
     const stats = {
       total: myProjects?.length || 0,
-      active: myProjects?.filter(p => p.status === 'active').length || 0,
-      paused: myProjects?.filter(p => p.status === 'paused').length || 0,
-      completed: myProjects?.filter(p => p.status === 'completed').length || 0,
-      cancelled: myProjects?.filter(p => p.status === 'cancelled').length || 0
+      active: myProjects?.filter((p: any) => p.status === 'active').length || 0,
+      paused: myProjects?.filter((p: any) => p.status === 'paused').length || 0,
+      completed: myProjects?.filter((p: any) => p.status === 'completed').length || 0,
+      cancelled: myProjects?.filter((p: any) => p.status === 'cancelled').length || 0
     }
 
     // 如果需要详细进度数据，获取每个项目的任务完成情况
     let projectsWithProgress = myProjects
 
     if (includeProgress && myProjects && myProjects.length > 0) {
-      const projectIds = myProjects.map(p => p.course_contents?.id).filter(Boolean)
+      const projectIds = myProjects.map((p: any) => p.course_contents?.id).filter(Boolean)
 
       // 获取每个项目的周计划任务数（从week_plan JSON计算）
-      projectsWithProgress = myProjects.map(project => {
+      projectsWithProgress = myProjects.map((project: any) => {
         const weekPlan = project.course_contents?.week_plan || []
 
         // 计算总任务数
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
 
         // 从progress JSON获取已完成任务数
         const progress = project.progress || {}
-        const completedTasks = Object.values(progress).filter(v => v === true).length
+        const completedTasks = Object.values(progress).filter((v: any) => v === true).length
 
         return {
           ...project,
