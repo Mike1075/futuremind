@@ -114,7 +114,7 @@ export default function ListeningGroupsPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
+      const { error } = await supabase
         .from('student_groups')
         .delete()
         .eq('id', groupId)

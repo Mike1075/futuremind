@@ -45,7 +45,7 @@ export class RealPBLDataService {
       }
 
       // 3. 获取项目注册情况
-      const { data: enrollments } = await (supabase
+      const { data: enrollments } = await supabase
         .from('pbl_project_enrollments')
         .select('content_id')
 
