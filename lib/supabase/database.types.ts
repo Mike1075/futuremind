@@ -1189,3 +1189,10 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+// Type aliases for convenience
+export type CourseContent = Tables<'course_contents'>
+export type CourseSystem = Tables<'course_systems'>
+export type UserProgress = Tables<'user_progress'>
+export type Profile = Tables<'profiles'>
+export type UserSelectedProject = Tables<'user_selected_projects'>
