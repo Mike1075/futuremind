@@ -68,7 +68,7 @@ export function ExplorerAlliance() {
 
       if (myResponse.ok) {
         const myData = await myResponse.json()
-        const ids = new Set(myData.projects.map((p: any) => p.course_contents.id))
+        const ids = new Set<string>(myData.projects.map((p: any) => p.course_contents.id))
         setMyProjectIds(ids)
       }
     } catch (error) {
