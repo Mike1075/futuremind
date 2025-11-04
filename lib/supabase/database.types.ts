@@ -1,7 +1,3 @@
-// d‡ö1Supabase CLIê¨
-// }ä: npx supabase gen types typescript
-// öô: 2025-11-03
-
 export type Json =
   | string
   | number
@@ -11,296 +7,1076 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.4"
+  }
   public: {
     Tables: {
-      course_systems: {
+      consciousness_level_history: {
         Row: {
+          activity_score: number | null
+          composite_score: number
+          consciousness_level: number
+          dialogue_depth_score: number | null
+          domain_depth_score: number | null
           id: string
-          title: string
-          system_key: string
-          structure_type: string
-          description: string | null
-          teaching_goals: string | null
-          guidance_keywords: string[] | null
-          total_units: number | null
-          display_order: number | null
-          is_active: boolean | null
-          is_system_course: boolean | null
-          allow_collaboration: boolean | null
-          structure_config: Json | null
-          created_by: string | null
-          created_at: string | null
-          updated_at: string | null
+          percentile_rank: number
+          quality_score: number | null
+          recorded_at: string | null
+          user_id: string | null
         }
         Insert: {
+          activity_score?: number | null
+          composite_score: number
+          consciousness_level: number
+          dialogue_depth_score?: number | null
+          domain_depth_score?: number | null
           id?: string
-          title: string
-          system_key: string
-          structure_type: string
-          description?: string | null
-          teaching_goals?: string | null
-          guidance_keywords?: string[] | null
-          total_units?: number | null
-          display_order?: number | null
-          is_active?: boolean | null
-          is_system_course?: boolean | null
-          allow_collaboration?: boolean | null
-          structure_config?: Json | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
+          percentile_rank: number
+          quality_score?: number | null
+          recorded_at?: string | null
+          user_id?: string | null
         }
         Update: {
+          activity_score?: number | null
+          composite_score?: number
+          consciousness_level?: number
+          dialogue_depth_score?: number | null
+          domain_depth_score?: number | null
           id?: string
-          title?: string
-          system_key?: string
-          structure_type?: string
-          description?: string | null
-          teaching_goals?: string | null
-          guidance_keywords?: string[] | null
-          total_units?: number | null
-          display_order?: number | null
-          is_active?: boolean | null
-          is_system_course?: boolean | null
-          allow_collaboration?: boolean | null
-          structure_config?: Json | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
+          percentile_rank?: number
+          quality_score?: number | null
+          recorded_at?: string | null
+          user_id?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "consciousness_level_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_collaborators: {
+        Row: {
+          accepted_at: string | null
+          collaborator_id: string
+          course_id: string
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          permission_level: string
+          status: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          collaborator_id: string
+          course_id: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          permission_level?: string
+          status?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          collaborator_id?: string
+          course_id?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          permission_level?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_collaborators_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_collaborators_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "course_systems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_collaborators_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       course_contents: {
         Row: {
-          id: string
-          system_id: string | null
-          title: string
-          subtitle: string | null
-          sequence_number: number
+          ai_review_result: Json | null
           content_type: string
-          original_text: string | null
+          created_at: string | null
+          created_by_user: string | null
+          day_plan: Json | null
           deep_interpretation: string | null
-          meditation_guide: string | null
-          life_practice: string | null
+          difficulty_level: string | null
+          documentary_url: string | null
+          duration: string | null
+          estimated_duration: number | null
           goals: string | null
-          main_content: string | null
-          tips: string | null
+          id: string
+          is_ai_reviewed: boolean | null
+          is_published: boolean | null
           knowledge_points: Json | null
-          socratic_questions: Json | null
+          life_practice: string | null
+          main_content: string | null
+          meditation_guide: string | null
+          module_name: string | null
+          original_text: string | null
           post_reflection: Json | null
           pre_watch_guide: string | null
-          documentary_url: string | null
-          estimated_duration: number | null
-          resources: Json | null
           prerequisites: Json | null
-          duration: string | null
-          day_plan: Json | null
-          week_plan: Json | null
-          is_published: boolean | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          system_id?: string | null
-          title: string
-          subtitle?: string | null
+          project_intro: string | null
+          project_tags: Json | null
+          project_visibility: string | null
+          resources: Json | null
+          review_status: string | null
           sequence_number: number
+          socratic_questions: Json | null
+          subtitle: string | null
+          system_id: string | null
+          tips: string | null
+          title: string
+          updated_at: string | null
+          week_plan: Json | null
+        }
+        Insert: {
+          ai_review_result?: Json | null
           content_type: string
-          original_text?: string | null
+          created_at?: string | null
+          created_by_user?: string | null
+          day_plan?: Json | null
           deep_interpretation?: string | null
-          meditation_guide?: string | null
-          life_practice?: string | null
+          difficulty_level?: string | null
+          documentary_url?: string | null
+          duration?: string | null
+          estimated_duration?: number | null
           goals?: string | null
-          main_content?: string | null
-          tips?: string | null
+          id?: string
+          is_ai_reviewed?: boolean | null
+          is_published?: boolean | null
           knowledge_points?: Json | null
-          socratic_questions?: Json | null
+          life_practice?: string | null
+          main_content?: string | null
+          meditation_guide?: string | null
+          module_name?: string | null
+          original_text?: string | null
           post_reflection?: Json | null
           pre_watch_guide?: string | null
-          documentary_url?: string | null
-          estimated_duration?: number | null
-          resources?: Json | null
           prerequisites?: Json | null
-          duration?: string | null
-          day_plan?: Json | null
-          week_plan?: Json | null
-          is_published?: boolean | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          system_id?: string | null
-          title?: string
+          project_intro?: string | null
+          project_tags?: Json | null
+          project_visibility?: string | null
+          resources?: Json | null
+          review_status?: string | null
+          sequence_number: number
+          socratic_questions?: Json | null
           subtitle?: string | null
-          sequence_number?: number
-          content_type?: string
-          original_text?: string | null
-          deep_interpretation?: string | null
-          meditation_guide?: string | null
-          life_practice?: string | null
-          goals?: string | null
-          main_content?: string | null
+          system_id?: string | null
           tips?: string | null
+          title: string
+          updated_at?: string | null
+          week_plan?: Json | null
+        }
+        Update: {
+          ai_review_result?: Json | null
+          content_type?: string
+          created_at?: string | null
+          created_by_user?: string | null
+          day_plan?: Json | null
+          deep_interpretation?: string | null
+          difficulty_level?: string | null
+          documentary_url?: string | null
+          duration?: string | null
+          estimated_duration?: number | null
+          goals?: string | null
+          id?: string
+          is_ai_reviewed?: boolean | null
+          is_published?: boolean | null
           knowledge_points?: Json | null
-          socratic_questions?: Json | null
+          life_practice?: string | null
+          main_content?: string | null
+          meditation_guide?: string | null
+          module_name?: string | null
+          original_text?: string | null
           post_reflection?: Json | null
           pre_watch_guide?: string | null
-          documentary_url?: string | null
-          estimated_duration?: number | null
-          resources?: Json | null
           prerequisites?: Json | null
-          duration?: string | null
-          day_plan?: Json | null
+          project_intro?: string | null
+          project_tags?: Json | null
+          project_visibility?: string | null
+          resources?: Json | null
+          review_status?: string | null
+          sequence_number?: number
+          socratic_questions?: Json | null
+          subtitle?: string | null
+          system_id?: string | null
+          tips?: string | null
+          title?: string
+          updated_at?: string | null
           week_plan?: Json | null
-          is_published?: boolean | null
-          created_at?: string | null
-          updated_at?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "course_contents_created_by_user_fkey"
+            columns: ["created_by_user"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_contents_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "course_systems"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      user_progress: {
+      course_systems: {
         Row: {
-          id: string
-          user_id: string | null
-          ref_item_id: string | null
-          progress_type: string | null
-          progress_value: number | null
-          consciousness_growth: number | null
-          current_day: number | null
-          daily_records: Json
-          completed_tasks: string[] | null
-          note: string | null
-          season_id: string | null
+          allow_collaboration: boolean | null
           created_at: string | null
+          created_by: string | null
+          description: string | null
+          display_order: number | null
+          guidance_keywords: string[] | null
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          is_system_course: boolean | null
+          structure_config: Json | null
+          structure_type: string
+          system_key: string
+          teaching_goals: string | null
+          title: string
+          total_units: number | null
           updated_at: string | null
         }
         Insert: {
-          id?: string
-          user_id?: string | null
-          ref_item_id?: string | null
-          progress_type?: string | null
-          progress_value?: number | null
-          consciousness_growth?: number | null
-          current_day?: number | null
-          daily_records?: Json
-          completed_tasks?: string[] | null
-          note?: string | null
-          season_id?: string | null
+          allow_collaboration?: boolean | null
           created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          guidance_keywords?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          is_system_course?: boolean | null
+          structure_config?: Json | null
+          structure_type: string
+          system_key: string
+          teaching_goals?: string | null
+          title: string
+          total_units?: number | null
           updated_at?: string | null
         }
         Update: {
-          id?: string
-          user_id?: string | null
-          ref_item_id?: string | null
-          progress_type?: string | null
-          progress_value?: number | null
-          consciousness_growth?: number | null
-          current_day?: number | null
-          daily_records?: Json
-          completed_tasks?: string[] | null
-          note?: string | null
-          season_id?: string | null
+          allow_collaboration?: boolean | null
           created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          guidance_keywords?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          is_system_course?: boolean | null
+          structure_config?: Json | null
+          structure_type?: string
+          system_key?: string
+          teaching_goals?: string | null
+          title?: string
+          total_units?: number | null
           updated_at?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "course_systems_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      user_submissions: {
+      documents: {
         Row: {
+          content: string | null
+          embedding: string | null
+          id: number
+          metadata: Json | null
+        }
+        Insert: {
+          content?: string | null
+          embedding?: string | null
+          id?: number
+          metadata?: Json | null
+        }
+        Update: {
+          content?: string | null
+          embedding?: string | null
+          id?: number
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
+      gaia_context_variables: {
+        Row: {
+          course_guidance_keywords: string[] | null
+          course_learning_summary: string | null
+          course_system_id: string | null
+          course_teaching_goals: string | null
+          generated_at: string | null
           id: string
+          student_profile: Json | null
           user_id: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          course_guidance_keywords?: string[] | null
+          course_learning_summary?: string | null
+          course_system_id?: string | null
+          course_teaching_goals?: string | null
+          generated_at?: string | null
+          id?: string
+          student_profile?: Json | null
+          user_id?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          course_guidance_keywords?: string[] | null
+          course_learning_summary?: string | null
+          course_system_id?: string | null
+          course_teaching_goals?: string | null
+          generated_at?: string | null
+          id?: string
+          student_profile?: Json | null
+          user_id?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gaia_context_variables_course_system_id_fkey"
+            columns: ["course_system_id"]
+            isOneToOne: false
+            referencedRelation: "course_systems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gaia_context_variables_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gaia_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          message_count: number | null
+          messages: Json
+          organization_id: string | null
+          project_id: string | null
+          session_id: string
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message_count?: number | null
+          messages?: Json
+          organization_id?: string | null
+          project_id?: string | null
+          session_id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message_count?: number | null
+          messages?: Json
+          organization_id?: string | null
+          project_id?: string | null
+          session_id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gaia_conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_resources: {
+        Row: {
           course_content_id: string | null
-          submission_type: string
-          content: string
-          attachments: Json | null
-          status: string | null
-          score: number | null
-          feedback: string | null
-          consciousness_growth_points: number | null
-          reviewer_id: string | null
-          submitted_at: string | null
-          reviewed_at: string | null
           created_at: string | null
+          description: string | null
+          display_order: number | null
+          duration_seconds: number | null
+          external_url: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          resource_type: string | null
+        }
+        Insert: {
+          course_content_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          duration_seconds?: number | null
+          external_url?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          resource_type?: string | null
+        }
+        Update: {
+          course_content_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          duration_seconds?: number | null
+          external_url?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          resource_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_resources_course_content_id_fkey"
+            columns: ["course_content_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pbl_project_enrollments: {
+        Row: {
+          created_at: string | null
+          enrolled_at: string | null
+          id: string
+          notes: string | null
+          progress: Json | null
+          project_id: string
+          status: string | null
+          student_id: string
           updated_at: string | null
         }
         Insert: {
-          id?: string
-          user_id?: string | null
-          course_content_id?: string | null
-          submission_type: string
-          content: string
-          attachments?: Json | null
-          status?: string | null
-          score?: number | null
-          feedback?: string | null
-          consciousness_growth_points?: number | null
-          reviewer_id?: string | null
-          submitted_at?: string | null
-          reviewed_at?: string | null
           created_at?: string | null
+          enrolled_at?: string | null
+          id?: string
+          notes?: string | null
+          progress?: Json | null
+          project_id: string
+          status?: string | null
+          student_id: string
           updated_at?: string | null
         }
         Update: {
-          id?: string
-          user_id?: string | null
-          course_content_id?: string | null
-          submission_type?: string
-          content?: string
-          attachments?: Json | null
-          status?: string | null
-          score?: number | null
-          feedback?: string | null
-          consciousness_growth_points?: number | null
-          reviewer_id?: string | null
-          submitted_at?: string | null
-          reviewed_at?: string | null
           created_at?: string | null
+          enrolled_at?: string | null
+          id?: string
+          notes?: string | null
+          progress?: Json | null
+          project_id?: string
+          status?: string | null
+          student_id?: string
           updated_at?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "pbl_project_enrollments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
-          id: string
+          avatar_url: string | null
+          composite_score: number | null
+          consciousness_level: number | null
+          consciousness_tree_view: Json | null
+          created_at: string | null
           email: string
           full_name: string | null
-          avatar_url: string | null
-          role: string | null
-          consciousness_level: number | null
-          composite_score: number | null
-          percentile_rank: number | null
-          consciousness_tree_view: Json | null
+          id: string
           level_updated_at: string | null
-          created_at: string | null
+          percentile_rank: number | null
+          role: string | null
           updated_at: string | null
         }
         Insert: {
-          id: string
+          avatar_url?: string | null
+          composite_score?: number | null
+          consciousness_level?: number | null
+          consciousness_tree_view?: Json | null
+          created_at?: string | null
           email: string
           full_name?: string | null
-          avatar_url?: string | null
-          role?: string | null
-          consciousness_level?: number | null
-          composite_score?: number | null
-          percentile_rank?: number | null
-          consciousness_tree_view?: Json | null
+          id: string
           level_updated_at?: string | null
-          created_at?: string | null
+          percentile_rank?: number | null
+          role?: string | null
           updated_at?: string | null
         }
         Update: {
-          id?: string
+          avatar_url?: string | null
+          composite_score?: number | null
+          consciousness_level?: number | null
+          consciousness_tree_view?: Json | null
+          created_at?: string | null
           email?: string
           full_name?: string | null
-          avatar_url?: string | null
-          role?: string | null
-          consciousness_level?: number | null
-          composite_score?: number | null
-          percentile_rank?: number | null
-          consciousness_tree_view?: Json | null
+          id?: string
           level_updated_at?: string | null
-          created_at?: string | null
+          percentile_rank?: number | null
+          role?: string | null
           updated_at?: string | null
         }
+        Relationships: []
+      }
+      prompt_optimization_rules: {
+        Row: {
+          rule_id: number
+          rules_text: string
+          updated_at: string | null
+        }
+        Insert: {
+          rule_id?: number
+          rules_text: string
+          updated_at?: string | null
+        }
+        Update: {
+          rule_id?: number
+          rules_text?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      student_course_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_by_role: string | null
+          course_system_id: string | null
+          id: string
+          status: string | null
+          student_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_by_role?: string | null
+          course_system_id?: string | null
+          id?: string
+          status?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_by_role?: string | null
+          course_system_id?: string | null
+          id?: string
+          status?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_course_assignments_course_system_id_fkey"
+            columns: ["course_system_id"]
+            isOneToOne: false
+            referencedRelation: "course_systems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_course_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_groups: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          created_by: string | null
+          criteria: Json | null
+          description: string | null
+          group_type: string | null
+          id: string
+          member_ids: string[] | null
+          name: string
+          project_id: string | null
+          updated_at: string | null
+          visible_resource_ids: string[] | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          criteria?: Json | null
+          description?: string | null
+          group_type?: string | null
+          id?: string
+          member_ids?: string[] | null
+          name: string
+          project_id?: string | null
+          updated_at?: string | null
+          visible_resource_ids?: string[] | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          criteria?: Json | null
+          description?: string | null
+          group_type?: string | null
+          id?: string
+          member_ids?: string[] | null
+          name?: string
+          project_id?: string | null
+          updated_at?: string | null
+          visible_resource_ids?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_groups_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "course_systems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_groups_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_summaries: {
+        Row: {
+          areas_for_growth: string[] | null
+          course_summaries: Json | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          learning_style: string | null
+          overall_summary: string | null
+          personality_traits: Json | null
+          strengths: string[] | null
+          user_id: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          areas_for_growth?: string[] | null
+          course_summaries?: Json | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          learning_style?: string | null
+          overall_summary?: string | null
+          personality_traits?: Json | null
+          strengths?: string[] | null
+          user_id?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          areas_for_growth?: string[] | null
+          course_summaries?: Json | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          learning_style?: string | null
+          overall_summary?: string | null
+          personality_traits?: Json | null
+          strengths?: string[] | null
+          user_id?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_summaries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_assignments: {
+        Row: {
+          created_at: string | null
+          id: string
+          teacher_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          teacher_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          teacher_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_assignments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_behavior_stats: {
+        Row: {
+          avg_submission_time_minutes: number | null
+          conversation_minutes: number | null
+          conversation_sessions: number | null
+          conversation_turns: number | null
+          courses_accessed: string[] | null
+          date: string
+          id: string
+          login_count: number | null
+          pages_viewed: number | null
+          submissions_count: number | null
+          total_online_minutes: number | null
+          user_id: string | null
+          video_watch_minutes: number | null
+          videos_completed: number | null
+        }
+        Insert: {
+          avg_submission_time_minutes?: number | null
+          conversation_minutes?: number | null
+          conversation_sessions?: number | null
+          conversation_turns?: number | null
+          courses_accessed?: string[] | null
+          date: string
+          id?: string
+          login_count?: number | null
+          pages_viewed?: number | null
+          submissions_count?: number | null
+          total_online_minutes?: number | null
+          user_id?: string | null
+          video_watch_minutes?: number | null
+          videos_completed?: number | null
+        }
+        Update: {
+          avg_submission_time_minutes?: number | null
+          conversation_minutes?: number | null
+          conversation_sessions?: number | null
+          conversation_turns?: number | null
+          courses_accessed?: string[] | null
+          date?: string
+          id?: string
+          login_count?: number | null
+          pages_viewed?: number | null
+          submissions_count?: number | null
+          total_online_minutes?: number | null
+          user_id?: string | null
+          video_watch_minutes?: number | null
+          videos_completed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_behavior_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_domain_exploration: {
+        Row: {
+          created_at: string | null
+          domain_scores: Json | null
+          last_evaluated_at: string | null
+          total_evaluations: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          domain_scores?: Json | null
+          last_evaluated_at?: string | null
+          total_evaluations?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          domain_scores?: Json | null
+          last_evaluated_at?: string | null
+          total_evaluations?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_domain_exploration_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_progress: {
+        Row: {
+          completed_tasks: string[] | null
+          consciousness_growth: number | null
+          created_at: string | null
+          current_day: number | null
+          daily_records: Json
+          id: string
+          note: string | null
+          progress_type: string | null
+          progress_value: number | null
+          ref_item_id: string | null
+          season_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_tasks?: string[] | null
+          consciousness_growth?: number | null
+          created_at?: string | null
+          current_day?: number | null
+          daily_records?: Json
+          id?: string
+          note?: string | null
+          progress_type?: string | null
+          progress_value?: number | null
+          ref_item_id?: string | null
+          season_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_tasks?: string[] | null
+          consciousness_growth?: number | null
+          created_at?: string | null
+          current_day?: number | null
+          daily_records?: Json
+          id?: string
+          note?: string | null
+          progress_type?: string | null
+          progress_value?: number | null
+          ref_item_id?: string | null
+          season_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_selected_projects: {
+        Row: {
+          completion_percentage: number | null
+          created_at: string | null
+          id: string
+          last_activity_at: string | null
+          notes: string | null
+          progress: Json | null
+          project_id: string
+          selected_at: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          notes?: string | null
+          progress?: Json | null
+          project_id: string
+          selected_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          notes?: string | null
+          progress?: Json | null
+          project_id?: string
+          selected_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_selected_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_selected_projects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_submissions: {
+        Row: {
+          attachments: Json | null
+          consciousness_growth_points: number | null
+          content: string
+          course_content_id: string | null
+          created_at: string | null
+          feedback: string | null
+          id: string
+          reviewed_at: string | null
+          reviewer_id: string | null
+          score: number | null
+          status: string | null
+          submission_type: string
+          submitted_at: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          consciousness_growth_points?: number | null
+          content: string
+          course_content_id?: string | null
+          created_at?: string | null
+          feedback?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          score?: number | null
+          status?: string | null
+          submission_type: string
+          submitted_at?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          consciousness_growth_points?: number | null
+          content?: string
+          course_content_id?: string | null
+          created_at?: string | null
+          feedback?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          score?: number | null
+          status?: string | null
+          submission_type?: string
+          submitted_at?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_submissions_course_content_id_fkey"
+            columns: ["course_content_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_submissions_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_submissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -312,40 +1088,104 @@ export type Database = {
     Enums: {
       [_ in never]: never
     }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
 
-// …©{‹ - €h¿î
-export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
-export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
-export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+type DefaultSchema = Database["public"]
 
-// 8({‹+
-export type CourseSystem = Tables<'course_systems'>
-export type CourseContent = Tables<'course_contents'>
-export type UserProgress = Tables<'user_progress'>
-export type UserSubmission = Tables<'user_submissions'>
-export type Profile = Tables<'profiles'>
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
-// êšI{‹ - Ó„JSONWµ
-export interface SocraticQuestions {
-  pre_watch: string[]
-  during_watch: string[]
-  post_watch: string[]
-}
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
-export interface KnowledgePoint {
-  title?: string
-  content: string
-}
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
-export interface Resource {
-  type: 'audio' | 'video' | 'pdf' | 'document' | 'link'
-  title: string
-  url: string
-  duration?: string
-  description?: string
-}
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
 
-// Progress Type T{‹
-export type ProgressType = 'reading' | 'meditation' | 'pbl' | 'insight' | 'artifact'
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
