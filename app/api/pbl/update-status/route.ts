@@ -35,12 +35,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 验证该选择记录是否属于当前用户
-    const { data: selection, error: fetchError } = await supabase
+    const { data: selection, error: fetchError } = (await supabase
       .from('user_selected_projects')
       .select('id, user_id, project_id, status')
       .eq('id', selectionId)
       .eq('user_id', user.id)
-      .single()
+      .single()) as any
 
     if (fetchError || !selection) {
       return NextResponse.json({ error: 'Selection not found' }, { status: 404 })
@@ -71,7 +71,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 更新记录
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updateError } = (await supabase
       .from('user_selected_projects')
       .update(updateData)
       .eq('id', selectionId)
@@ -84,7 +84,7 @@ export async function PATCH(request: NextRequest) {
           module_name
         )
       `)
-      .single()
+      .single()) as any
 
     if (updateError) {
       console.error('[API Error] Failed to update project status:', updateError)

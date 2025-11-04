@@ -27,12 +27,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证项目是否存在且可选
-    const { data: project, error: projectError } = await supabase
+    const { data: project, error: projectError } = (await supabase
       .from('course_contents')
       .select('id, title, project_visibility, review_status, is_published')
       .eq('id', projectId)
       .eq('content_type', 'icarus')
-      .single()
+      .single()) as any
 
     if (projectError || !project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
@@ -45,11 +45,11 @@ export async function POST(request: NextRequest) {
 
     if (!['system', 'public'].includes(project.project_visibility)) {
       // 如果是私有项目，检查是否是创建者本人
-      const { data: privateProject } = await supabase
+      const { data: privateProject } = (await supabase
         .from('course_contents')
         .select('created_by_user')
         .eq('id', projectId)
-        .single()
+        .single()) as any
 
       if (privateProject?.created_by_user !== user.id) {
         return NextResponse.json({ error: 'This project is private' }, { status: 403 })
@@ -57,17 +57,17 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查是否已经选择过该项目
-    const { data: existing } = await supabase
+    const { data: existing } = (await supabase
       .from('user_selected_projects')
       .select('id, status')
       .eq('user_id', user.id)
       .eq('project_id', projectId)
-      .single()
+      .single()) as any
 
     if (existing) {
       // 如果已存在但状态是取消，则重新激活
       if (existing.status === 'cancelled') {
-        const { data: updated, error: updateError } = await supabase
+        const { data: updated, error: updateError } = (await supabase
           .from('user_selected_projects')
           .update({
             status: 'active',
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', existing.id)
           .select()
-          .single()
+          .single()) as any
 
         if (updateError) {
           console.error('[API Error] Failed to reactivate project:', updateError)
