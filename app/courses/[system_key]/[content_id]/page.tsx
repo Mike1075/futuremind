@@ -60,13 +60,13 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
   // PBL项目使用专属详情页
   if (content.content_type === 'icarus') {
     // 检查用户是否已选择此项目
-    const { data: selection } = await supabase
-      .from('user_selected_projects')
+    const { data: selection } = (await (supabase
+      .from('user_selected_projects') as any)
       .select('id, status, progress')
       .eq('user_id', user.id)
       .eq('project_id', contentId)
       .in('status', ['active', 'paused', 'completed'])
-      .single()
+      .single()) as any
 
     return (
       <PBLProjectDetail
