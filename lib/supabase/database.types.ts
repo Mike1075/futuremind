@@ -128,6 +128,7 @@ export type Database = {
           documentary_url: string | null
           duration: string | null
           estimated_duration: number | null
+          explorer_projects: Json | null
           goals: string | null
           id: string
           is_ai_reviewed: boolean | null
@@ -141,6 +142,8 @@ export type Database = {
           post_reflection: Json | null
           pre_watch_guide: string | null
           prerequisites: Json | null
+          project_cover_image: string | null
+          project_icon_url: string | null
           project_intro: string | null
           project_tags: Json | null
           project_visibility: string | null
@@ -166,6 +169,7 @@ export type Database = {
           documentary_url?: string | null
           duration?: string | null
           estimated_duration?: number | null
+          explorer_projects?: Json | null
           goals?: string | null
           id?: string
           is_ai_reviewed?: boolean | null
@@ -179,6 +183,8 @@ export type Database = {
           post_reflection?: Json | null
           pre_watch_guide?: string | null
           prerequisites?: Json | null
+          project_cover_image?: string | null
+          project_icon_url?: string | null
           project_intro?: string | null
           project_tags?: Json | null
           project_visibility?: string | null
@@ -204,6 +210,7 @@ export type Database = {
           documentary_url?: string | null
           duration?: string | null
           estimated_duration?: number | null
+          explorer_projects?: Json | null
           goals?: string | null
           id?: string
           is_ai_reviewed?: boolean | null
@@ -217,6 +224,8 @@ export type Database = {
           post_reflection?: Json | null
           pre_watch_guide?: string | null
           prerequisites?: Json | null
+          project_cover_image?: string | null
+          project_icon_url?: string | null
           project_intro?: string | null
           project_tags?: Json | null
           project_visibility?: string | null
@@ -244,6 +253,64 @@ export type Database = {
             columns: ["system_id"]
             isOneToOne: false
             referencedRelation: "course_systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_discussions: {
+        Row: {
+          content: string
+          course_content_id: string
+          created_at: string | null
+          id: string
+          is_deleted: boolean | null
+          likes_count: number | null
+          parent_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          course_content_id: string
+          created_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          likes_count?: number | null
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          course_content_id?: string
+          created_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          likes_count?: number | null
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_discussions_course_content_id_fkey"
+            columns: ["course_content_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_discussions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "course_discussions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_discussions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -310,6 +377,42 @@ export type Database = {
           {
             foreignKeyName: "course_systems_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discussion_likes: {
+        Row: {
+          created_at: string | null
+          discussion_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          discussion_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          discussion_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discussion_likes_discussion_id_fkey"
+            columns: ["discussion_id"]
+            isOneToOne: false
+            referencedRelation: "course_discussions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discussion_likes_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1348,6 +1451,8 @@ export type UserProgress = Tables<'user_progress'>
 export type Profile = Tables<'profiles'>
 export type UserSelectedProject = Tables<'user_selected_projects'>
 export type MediaResource = Tables<'media_resources'>
+export type CourseDiscussion = Tables<'course_discussions'>
+export type DiscussionLike = Tables<'discussion_likes'>
 
 // Custom types for JSON fields
 export interface Resource {
@@ -1356,6 +1461,16 @@ export interface Resource {
   url: string
   duration?: string
   description?: string
+}
+
+// 小探险家项目结构
+export interface ExplorerProject {
+  title: string
+  goal: string
+  materials: string[]
+  steps: string[]
+  expectedOutcome?: string
+  tips?: string[]
 }
 
 // Enum types (string literals)
