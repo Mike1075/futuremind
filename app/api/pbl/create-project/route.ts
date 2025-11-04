@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建项目记录
-    const { data: project, error: insertError } = await supabase
+    const { data: project, error: insertError } = (await supabase
       .from('course_contents')
       .insert({
         system_id: null, // 用户项目不属于任何课程系统
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         is_published: reviewStatus === 'approved' // 只有通过审核的才自动发布
       } as any)
       .select()
-      .single()
+      .single()) as any
 
     if (insertError) {
       console.error('[API Error] Failed to create project:', insertError)

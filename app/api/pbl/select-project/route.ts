@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建新的项目选择记录
-    const { data: selection, error: insertError } = await supabase
+    const { data: selection, error: insertError } = (await supabase
       .from('user_selected_projects')
       .insert({
         user_id: user.id,
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         completion_percentage: 0
       } as any)
       .select()
-      .single()
+      .single()) as any
 
     if (insertError) {
       console.error('[API Error] Failed to select project:', insertError)
