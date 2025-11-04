@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', statusFilter)
     }
 
-    const { data: myProjects, error } = await query
+    const { data: myProjects, error } = (await query) as any
 
     if (error) {
       console.error('[API Error] Failed to fetch user projects:', error)
