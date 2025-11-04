@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .single() as { data: { role: string } | null }
 
     if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: '权限不足，仅限校长和老师创建课程' }, { status: 403 })

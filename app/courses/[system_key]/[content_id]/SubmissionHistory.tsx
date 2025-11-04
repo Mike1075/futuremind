@@ -6,11 +6,11 @@ import { createClient } from '@/lib/supabase/client'
 interface Submission {
   id: string
   content: string
-  feedback: string
-  score: number
-  consciousness_growth_points: number
-  submitted_at: string
-  reviewed_at: string
+  feedback: string | null
+  score: number | null
+  consciousness_growth_points: number | null
+  submitted_at: string | null
+  reviewed_at: string | null
 }
 
 interface SubmissionHistoryProps {
@@ -55,7 +55,7 @@ export default function SubmissionHistory({
     }
   }
 
-  const handleDelete = async (submissionId: string, growthPoints: number) => {
+  const handleDelete = async (submissionId: string, growthPoints: number | null) => {
     setDeletingId(submissionId)
     try {
       const response = await fetch(
@@ -89,7 +89,8 @@ export default function SubmissionHistory({
     }
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-'
     const date = new Date(dateString)
     return date.toLocaleString('zh-CN', {
       year: 'numeric',
@@ -262,7 +263,7 @@ export default function SubmissionHistory({
                       </div>
 
                       {/* 删除警告提示 */}
-                      {confirmDeleteId === submission.id && submission.consciousness_growth_points > 0 && (
+                      {confirmDeleteId === submission.id && submission.consciousness_growth_points != null && submission.consciousness_growth_points > 0 && (
                         <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
                           <div className="flex items-start gap-3">
                             <svg className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">

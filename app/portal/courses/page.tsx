@@ -11,7 +11,7 @@ interface Course {
   title: string
   description: string | null
   system_key: string
-  is_active: boolean
+  is_active: boolean | null
   structure_type: string
 }
 

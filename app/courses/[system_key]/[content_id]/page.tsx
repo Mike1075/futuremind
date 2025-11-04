@@ -59,7 +59,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
   const renderResources = () => {
     if (!content.resources) return null
 
-    const resources = content.resources as Resource[]
+    const resources = content.resources as unknown as Resource[]
     if (resources.length === 0) return null
 
     return (
@@ -282,7 +282,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
             </section>
           )}
 
-          {content.knowledge_points && content.knowledge_points.length > 0 && (
+          {Array.isArray(content.knowledge_points) && content.knowledge_points.length > 0 && (
             <section>
               <h2 className="text-xl font-semibold mb-4 text-green-400">知识点</h2>
               <div className="space-y-4">
@@ -296,7 +296,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
             </section>
           )}
 
-          {content.socratic_questions && content.socratic_questions.length > 0 && (
+          {Array.isArray(content.socratic_questions) && content.socratic_questions.length > 0 && (
             <section>
               <h2 className="text-xl font-semibold mb-4 text-purple-400">苏格拉底式问题</h2>
               <div className="space-y-4">

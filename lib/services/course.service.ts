@@ -224,7 +224,7 @@ export class CourseService {
       : []
 
     if (prerequisites.length > 0) {
-      const isUnlocked = await checkFunction(prerequisites)
+      const isUnlocked = await checkFunction(prerequisites as string[])
       if (!isUnlocked) {
         return {
           isUnlocked: false,

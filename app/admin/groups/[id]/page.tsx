@@ -19,8 +19,8 @@ interface Student {
   id: string
   full_name: string | null
   email: string
-  consciousness_level: number
-  composite_score: number
+  consciousness_level: number | null
+  composite_score: number | null
 }
 
 interface AllStudent {
@@ -182,7 +182,7 @@ export default function GroupDetailPage() {
     e.preventDefault()
     if (!selectedStudentId || !group) return
 
-    if (group.member_ids.includes(selectedStudentId)) {
+    if (group.member_ids?.includes(selectedStudentId)) {
       alert('该学员已在分组中')
       return
     }
@@ -190,7 +190,7 @@ export default function GroupDetailPage() {
     setSubmitting(true)
     try {
       const supabase = createClient()
-      const newMemberIds = [...group.member_ids, selectedStudentId]
+      const newMemberIds = [...(group.member_ids || []), selectedStudentId]
 
       const { error } = await supabase
         .from('student_groups')
@@ -220,7 +220,7 @@ export default function GroupDetailPage() {
 
     try {
       const supabase = createClient()
-      const newMemberIds = group.member_ids.filter(id => id !== studentId)
+      const newMemberIds = (group.member_ids || []).filter(id => id !== studentId)
 
       const { error } = await supabase
         .from('student_groups')
@@ -252,7 +252,7 @@ export default function GroupDetailPage() {
     return null
   }
 
-  const availableStudents = allStudents.filter(s => !group.member_ids.includes(s.id))
+  const availableStudents = allStudents.filter(s => !(group.member_ids || []).includes(s.id))
 
   return (
     <div className="min-h-screen bg-black">

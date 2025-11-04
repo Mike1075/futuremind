@@ -61,7 +61,7 @@ export class ProgressService {
 
     // 转换为Map，方便查找
     const progressMap = new Map<string, UserProgress>()
-    data?.forEach(progress => {
+    data?.forEach((progress: any) => {
       if (progress.ref_item_id) {
         progressMap.set(progress.ref_item_id, progress)
       }
@@ -79,7 +79,7 @@ export class ProgressService {
     progressValue: number,
     progressType: ProgressType = 'reading'
   ): Promise<UserProgress> {
-    const supabase = await createClient()
+    const supabase = (await createClient()) as any
 
     // 先检查是否已存在
     const existing = await this.getUserProgress(userId, contentId, progressType)
@@ -222,7 +222,7 @@ export class ProgressService {
     }
 
     // 获取用户完成的进度
-    const contentIds = contents.map(c => c.id)
+    const contentIds = contents.map((c: any) => c.id)
     const progressMap = await this.getBatchProgress(userId, contentIds, 'reading')
 
     let completed = 0

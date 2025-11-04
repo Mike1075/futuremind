@@ -58,7 +58,7 @@ export async function DELETE(
     }
 
     // 将角色改回 student - 使用管理员客户端绕过 RLS
-    const adminSupabase = createAdminClient()
+    const adminSupabase = createAdminClient() as any
     const { error: updateError } = await adminSupabase
       .from('profiles')
       .update({ role: 'student' })
