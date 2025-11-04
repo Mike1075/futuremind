@@ -8,36 +8,32 @@ import { ArrowLeft, Plus, Save, Upload, FileVideo, Trash2, ChevronRight, BookOpe
 
 interface EarthStage {
   id: string
-  system_id: string
+  system_id: string | null
   content_type: string
   sequence_number: number
   title: string
-  subtitle: string
-  documentary_url: string
-  pre_watch_guide: string
-  knowledge_points: any[]
-  socratic_questions: {
-    pre_watch: string[]
-    during_watch: string[]
-    post_watch: string[]
-  }
-  post_reflection: string[]
-  estimated_duration: number
-  is_published: boolean
-  created_at: string
-  updated_at: string
+  subtitle: string | null
+  documentary_url: string | null
+  pre_watch_guide: string | null
+  knowledge_points: any | null
+  socratic_questions: any | null
+  post_reflection: any | null
+  estimated_duration: number | null
+  is_published: boolean | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 interface MediaResource {
   id: string
-  course_content_id: string
-  file_name: string
-  file_url: string
-  file_type: string
-  file_size: number
-  resource_type: string
-  external_url: string
-  created_at: string
+  course_content_id: string | null
+  file_name: string | null
+  file_url: string | null
+  file_type: string | null
+  file_size: number | null
+  resource_type: string | null
+  external_url: string | null
+  created_at: string | null
 }
 
 export default function EarthCoursePage() {
@@ -332,11 +328,11 @@ export default function EarthCoursePage() {
     }
   }
 
-  const handleEditVideoUrl = async (mediaId: string, currentUrl: string, currentName: string) => {
-    const newUrl = prompt('请输入新的视频URL:', currentUrl)
+  const handleEditVideoUrl = async (mediaId: string, currentUrl: string | null, currentName: string | null) => {
+    const newUrl = prompt('请输入新的视频URL:', currentUrl || '')
     if (!newUrl || newUrl === currentUrl) return
 
-    const newName = prompt('请输入新的视频描述:', currentName)
+    const newName = prompt('请输入新的视频描述:', currentName || '')
 
     try {
       const supabase = createClient()
@@ -345,7 +341,7 @@ export default function EarthCoursePage() {
         .update({
           file_url: newUrl,
           external_url: newUrl,
-          file_name: newName || currentName,
+          file_name: newName || currentName || undefined,
           updated_at: new Date().toISOString()
         })
         .eq('id', mediaId)
@@ -699,7 +695,7 @@ export default function EarthCoursePage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <a
-                            href={media.external_url || media.file_url}
+                            href={(media.external_url || media.file_url) || undefined}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-sm transition-all"

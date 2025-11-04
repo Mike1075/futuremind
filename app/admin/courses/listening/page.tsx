@@ -8,28 +8,28 @@ import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, ChevronRight, Users, 
 
 interface CourseContent {
   id: string
-  system_id: string
+  system_id: string | null
   content_type: string
   sequence_number: number
   title: string
-  original_text: string
-  deep_interpretation: string
-  meditation_guide: string
-  life_practice: string
-  is_published: boolean
-  created_at: string
-  updated_at: string
+  original_text: string | null
+  deep_interpretation: string | null
+  meditation_guide: string | null
+  life_practice: string | null
+  is_published: boolean | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 interface MediaResource {
   id: string
-  course_content_id: string
-  file_name: string
-  file_url: string
-  file_type: string
-  file_size: number
-  resource_type: string
-  created_at: string
+  course_content_id: string | null
+  file_name: string | null
+  file_url: string | null
+  file_type: string | null
+  file_size: number | null
+  resource_type: string | null
+  created_at: string | null
 }
 
 export default function ListeningCoursePage() {
@@ -571,15 +571,15 @@ export default function ListeningCoursePage() {
                         <div className="flex items-center gap-3">
                           <FileAudio className="w-6 h-6 text-purple-400" />
                           <div>
-                            <p className="text-white font-medium">{media.file_name}</p>
+                            <p className="text-white font-medium">{media.file_name || '未命名文件'}</p>
                             <p className="text-gray-400 text-sm">
-                              {(media.file_size / 1024 / 1024).toFixed(2)} MB
+                              {media.file_size ? (media.file_size / 1024 / 1024).toFixed(2) : '0.00'} MB
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <a
-                            href={media.file_url}
+                            href={media.file_url || '#'}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-sm transition-all"

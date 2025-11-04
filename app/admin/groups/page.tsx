@@ -10,10 +10,10 @@ interface Group {
   name: string
   description: string | null
   group_type: 'global' | 'course'
-  member_ids: string[]
+  member_ids: string[] | null
   course_id: string | null
   course_title?: string
-  created_at: string
+  created_at: string | null
   creator_name?: string
 }
 
@@ -272,12 +272,12 @@ export default function GroupsPage() {
                 <div className="flex items-center justify-between text-sm mb-4">
                   <div className="flex items-center gap-2 text-cyan-400">
                     <Users className="w-4 h-4" />
-                    <span>{group.member_ids.length} 名成员</span>
+                    <span>{group.member_ids?.length || 0} 名成员</span>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-white/10">
-                  <span>{new Date(group.created_at).toLocaleDateString('zh-CN')}</span>
+                  <span>{group.created_at ? new Date(group.created_at).toLocaleDateString('zh-CN') : '-'}</span>
                   {group.creator_name && <span>创建者: {group.creator_name}</span>}
                 </div>
 

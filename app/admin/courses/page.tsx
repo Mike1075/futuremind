@@ -9,7 +9,7 @@ import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2 } from 'lucide-re
 interface CourseSystem {
   id: string
   title: string
-  description: string
+  description: string | null
   system_key: string
 }
 

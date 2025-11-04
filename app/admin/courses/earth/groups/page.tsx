@@ -9,8 +9,8 @@ interface Group {
   id: string
   name: string
   description: string | null
-  member_ids: string[]
-  created_at: string
+  member_ids: string[] | null
+  created_at: string | null
 }
 
 export default function EarthGroupsPage() {
@@ -213,7 +213,7 @@ export default function EarthGroupsPage() {
 
                 <div className="flex items-center justify-between pt-4 border-t border-white/10">
                   <p className="text-gray-500 text-xs">
-                    创建于: {new Date(group.created_at).toLocaleDateString('zh-CN')}
+                    创建于: {group.created_at ? new Date(group.created_at).toLocaleDateString('zh-CN') : '-'}
                   </p>
                   <button
                     onClick={() => router.push(`/admin/groups/${group.id}`)}

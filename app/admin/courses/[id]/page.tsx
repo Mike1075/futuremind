@@ -9,9 +9,9 @@ interface Course {
   id: string
   system_key: string
   title: string
-  description: string
+  description: string | null
   structure_type: string
-  total_units: number
+  total_units: number | null
 }
 
 interface Student {
@@ -23,21 +23,21 @@ interface Student {
 
 interface Material {
   id: string
-  file_name: string
+  file_name: string | null
   file_url: string | null
   external_url: string | null
-  resource_type: string
+  resource_type: string | null
   description: string | null
-  display_order: number
-  created_at: string
+  display_order: number | null
+  created_at: string | null
 }
 
 interface Group {
   id: string
   name: string
   description: string | null
-  member_ids: string[]
-  created_at: string
+  member_ids: string[] | null
+  created_at: string | null
 }
 
 type TabType = 'students' | 'materials' | 'groups'
@@ -595,7 +595,7 @@ export default function CourseDetailPage() {
                           {material.description || '-'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-400">
-                          {new Date(material.created_at).toLocaleDateString('zh-CN')}
+                          {material.created_at ? new Date(material.created_at).toLocaleDateString('zh-CN') : '-'}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button
@@ -661,7 +661,7 @@ export default function CourseDetailPage() {
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2 text-cyan-400">
                         <Users className="w-4 h-4" />
-                        <span>{group.member_ids.length} 名成员</span>
+                        <span>{group.member_ids?.length || 0} 名成员</span>
                       </div>
                       <button
                         onClick={() => router.push(`/admin/groups/${group.id}`)}
