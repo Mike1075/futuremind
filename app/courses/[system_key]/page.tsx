@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { CourseService } from '@/lib/services/course.service'
 import { ProgressService } from '@/lib/services/progress.service'
+import { PBLCourseView } from '@/components/courses/PBLCourseView'
+import { EarthCourseView } from '@/components/courses/EarthCourseView'
 import type { CourseContent } from '@/lib/supabase/database.types'
 
 // 强制动态渲染，禁用缓存，确保用户进度实时更新
@@ -44,6 +46,11 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
 
   const { system: courseSystem, contents } = courseData
 
+  // PBL课程使用专属视图
+  if (systemKey === 'icarus') {
+    return <PBLCourseView courseSystem={courseSystem} />
+  }
+
   // 获取内容ID列表
   const contentIds = contents.map(c => c.id)
 
@@ -59,6 +66,19 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
   progressMap.forEach((progress, contentId) => {
     completionMap.set(contentId, progress.progress_value === 100)
   })
+
+  // 地球课程使用专属视图
+  if (systemKey === 'earth') {
+    return (
+      <EarthCourseView
+        courseSystem={courseSystem}
+        contents={contents}
+        completionMap={completionMap}
+      />
+    )
+  }
+
+  // 继续使用已经获取的progressMap和completionMap处理倾听课程和每日课程
 
   // 计算完成百分比
   const totalContents = contents.length

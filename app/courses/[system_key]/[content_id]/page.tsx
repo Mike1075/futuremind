@@ -5,6 +5,8 @@ import Link from 'next/link'
 import SubmissionButton from './SubmissionButton'
 import { CourseService } from '@/lib/services/course.service'
 import { ProgressService } from '@/lib/services/progress.service'
+import { PBLProjectDetail } from '@/components/courses/PBLProjectDetail'
+import { EarthContentWrapper } from './EarthContentWrapper'
 import type { Resource } from '@/lib/supabase/database.types'
 
 // 强制动态渲染，确保课程完成状态实时更新
@@ -54,6 +56,41 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     contentId,
     'reading'
   )
+
+  // PBL项目使用专属详情页
+  if (content.content_type === 'icarus') {
+    // 检查用户是否已选择此项目
+    const { data: selection } = await supabase
+      .from('user_selected_projects')
+      .select('id, status, progress')
+      .eq('user_id', user.id)
+      .eq('project_id', contentId)
+      .in('status', ['active', 'paused', 'completed'])
+      .single()
+
+    return (
+      <PBLProjectDetail
+        project={content as any}
+        systemKey={systemKey}
+        userProgress={selection?.progress || {}}
+        isSelected={!!selection}
+        selectionId={selection?.id}
+      />
+    )
+  }
+
+  // 地球课程使用专属详情页（带盖亚对话）
+  if (systemKey === 'earth') {
+    return (
+      <EarthContentWrapper
+        content={content}
+        systemKey={systemKey}
+        isCompleted={isCompleted}
+        prevContent={prevContent}
+        nextContent={nextContent}
+      />
+    )
+  }
 
   // 渲染资源（音频、视频等）
   const renderResources = () => {

@@ -1,8 +1,8 @@
 "use client"
 
 import React from 'react'
-import { MainDashboard } from '@/components/pbl/MainDashboard'
+import { ExplorerAlliance } from '@/components/pbl/ExplorerAlliance'
 
 export default function PBLPage() {
-  return <MainDashboard />
+  return <ExplorerAlliance />
 }
