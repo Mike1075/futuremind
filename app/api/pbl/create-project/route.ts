@@ -112,8 +112,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建项目记录
-    const { data: project, error: insertError } = (await supabase
-      .from('course_contents')
+    const { data: project, error: insertError } = (await (supabase
+      .from('course_contents') as any)
       .insert({
         system_id: null, // 用户项目不属于任何课程系统
         content_type: 'icarus',
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         ai_review_result: aiReviewResult,
         review_status: reviewStatus,
         is_published: reviewStatus === 'approved' // 只有通过审核的才自动发布
-      } as any)
+      })
       .select()
       .single()) as any
 
@@ -143,14 +143,14 @@ export async function POST(request: NextRequest) {
 
     // 如果项目通过审核，自动将创建者添加到选择列表
     if (reviewStatus === 'approved') {
-      await supabase
-        .from('user_selected_projects')
+      await (supabase
+        .from('user_selected_projects') as any)
         .insert({
           user_id: user.id,
           project_id: project.id,
           status: 'active',
           completion_percentage: 0
-        } as any)
+        })
     }
 
     // 根据审核结果返回不同的消息

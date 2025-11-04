@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
     const includeProgress = searchParams.get('include_progress') !== 'false'
 
     // 构建查询
-    let query = supabase
-      .from('user_selected_projects')
+    let query = (supabase
+      .from('user_selected_projects') as any)
       .select(`
         id,
         selected_at,

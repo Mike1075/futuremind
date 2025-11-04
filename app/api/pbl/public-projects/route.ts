@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
 
     // 构建查询
-    let query = supabase
-      .from('course_contents')
+    let query = (supabase
+      .from('course_contents') as any)
       .select(`
         id,
         title,

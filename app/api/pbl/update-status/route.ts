@@ -35,8 +35,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 验证该选择记录是否属于当前用户
-    const { data: selection, error: fetchError } = (await supabase
-      .from('user_selected_projects')
+    const { data: selection, error: fetchError } = (await (supabase
+      .from('user_selected_projects') as any)
       .select('id, user_id, project_id, status')
       .eq('id', selectionId)
       .eq('user_id', user.id)
@@ -71,8 +71,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 更新记录
-    const { data: updated, error: updateError } = (await supabase
-      .from('user_selected_projects')
+    const { data: updated, error: updateError } = (await (supabase
+      .from('user_selected_projects') as any)
       .update(updateData)
       .eq('id', selectionId)
       .select(`

@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证项目是否存在且可选
-    const { data: project, error: projectError } = (await supabase
-      .from('course_contents')
+    const { data: project, error: projectError } = (await (supabase
+      .from('course_contents') as any)
       .select('id, title, project_visibility, review_status, is_published')
       .eq('id', projectId)
       .eq('content_type', 'icarus')
@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
 
     if (!['system', 'public'].includes(project.project_visibility)) {
       // 如果是私有项目，检查是否是创建者本人
-      const { data: privateProject } = (await supabase
-        .from('course_contents')
+      const { data: privateProject } = (await (supabase
+        .from('course_contents') as any)
         .select('created_by_user')
         .eq('id', projectId)
         .single()) as any
@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查是否已经选择过该项目
-    const { data: existing } = (await supabase
-      .from('user_selected_projects')
+    const { data: existing } = (await (supabase
+      .from('user_selected_projects') as any)
       .select('id, status')
       .eq('user_id', user.id)
       .eq('project_id', projectId)
@@ -67,14 +67,14 @@ export async function POST(request: NextRequest) {
     if (existing) {
       // 如果已存在但状态是取消，则重新激活
       if (existing.status === 'cancelled') {
-        const { data: updated, error: updateError } = (await supabase
-          .from('user_selected_projects')
+        const { data: updated, error: updateError } = (await (supabase
+          .from('user_selected_projects') as any)
           .update({
             status: 'active',
             selected_at: new Date().toISOString(),
             last_activity_at: new Date().toISOString(),
             notes: notes || null
-          } as any)
+          })
           .eq('id', existing.id)
           .select()
           .single()) as any
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建新的项目选择记录
-    const { data: selection, error: insertError } = (await supabase
-      .from('user_selected_projects')
+    const { data: selection, error: insertError } = (await (supabase
+      .from('user_selected_projects') as any)
       .insert({
         user_id: user.id,
         project_id: projectId,
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         notes: notes || null,
         progress: {},
         completion_percentage: 0
-      } as any)
+      })
       .select()
       .single()) as any
 
