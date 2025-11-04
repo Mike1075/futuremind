@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         notes: notes || null,
         progress: {},
         completion_percentage: 0
-      })
+      } as any)
       .select()
       .single()
 

@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
           project_id: project.id,
           status: 'active',
           completion_percentage: 0
-        })
+        } as any)
     }
 
     // 根据审核结果返回不同的消息
