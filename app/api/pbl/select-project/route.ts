@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
             selected_at: new Date().toISOString(),
             last_activity_at: new Date().toISOString(),
             notes: notes || null
-          })
+          } as any)
           .eq('id', existing.id)
           .select()
           .single()) as any
