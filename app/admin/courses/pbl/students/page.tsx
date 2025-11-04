@@ -86,7 +86,7 @@ export default function PBLStudentsPage() {
       setStudents(studentList)
 
       // 获取所有用户（用于添加，包括老师和校长）
-      const { data: allProfiles, error: profilesError } = await (supabase
+      const { data: allProfiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email, role')
         .order('full_name')

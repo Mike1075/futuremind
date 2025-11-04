@@ -85,7 +85,7 @@ export default function PBLGroupsPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      const { error } = await (supabase
+      const { error } = await supabase
         .from('student_groups')
         .insert({
           name: groupName,

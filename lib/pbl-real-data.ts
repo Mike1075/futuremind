@@ -28,7 +28,7 @@ export class RealPBLDataService {
 
       // 2. 获取这些体系下的所有内容（项目）
       const systemIds = pblSystems.map((s: any) => s.id)
-      const { data: contents, error: contentsError } = await (supabase
+      const { data: contents, error: contentsError } = await supabase
         .from('course_contents')
         .select('*')
         .in('system_id', systemIds)
