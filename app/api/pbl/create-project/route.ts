@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         ai_review_result: aiReviewResult,
         review_status: reviewStatus,
         is_published: reviewStatus === 'approved' // 只有通过审核的才自动发布
-      })
+      } as any)
       .select()
       .single()
 
