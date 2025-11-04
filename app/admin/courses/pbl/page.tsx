@@ -8,19 +8,19 @@ import { ArrowLeft, Edit, Save, X, Trash2, Plus, Users, UsersRound } from 'lucid
 
 interface PBLProject {
   id: string
-  system_id: string
+  system_id: string | null
   content_type: string
   sequence_number: number
   title: string
-  subtitle: string  // 用于存储difficulty: beginner/intermediate/advanced/expert
-  original_text: string
-  week_plan: any
-  day_plan: any
-  prerequisites: any
-  estimated_duration: number
-  is_published: boolean
-  created_at: string
-  updated_at: string
+  subtitle: string | null  // 用于存储difficulty: beginner/intermediate/advanced/expert
+  original_text: string | null
+  week_plan: any | null
+  day_plan: any | null
+  prerequisites: any | null
+  estimated_duration: number | null
+  is_published: boolean | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 const FIXED_MODULES = [

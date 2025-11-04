@@ -9,10 +9,10 @@ interface Group {
   id: string
   name: string
   description: string | null
-  group_type: 'global' | 'course'
+  group_type: string | null
   course_id: string | null
-  member_ids: string[]
-  created_at: string
+  member_ids: string[] | null
+  created_at: string | null
 }
 
 interface Student {

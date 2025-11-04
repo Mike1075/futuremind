@@ -7,15 +7,15 @@ import { ArrowLeft, Save, Users, UsersRound, FileText, Plus, Trash2, Search, Use
 
 interface PBLProject {
   id: string
-  system_id: string
+  system_id: string | null
   sequence_number: number
   title: string
-  subtitle: string
-  original_text: string
-  week_plan: WeekPlan[]
-  prerequisites: Prerequisite[]
-  estimated_duration: number
-  is_published: boolean
+  subtitle: string | null
+  original_text: string | null
+  week_plan: WeekPlan[] | any | null
+  prerequisites: Prerequisite[] | any | null
+  estimated_duration: number | null
+  is_published: boolean | null
 }
 
 interface WeekPlan {
@@ -48,8 +48,8 @@ interface ProjectGroup {
   id: string
   name: string
   description: string | null
-  member_ids: string[]
-  created_at: string
+  member_ids: string[] | null
+  created_at: string | null
 }
 
 type TabType = 'details' | 'students' | 'groups'
@@ -245,7 +245,7 @@ export default function PBLProjectDetailPage() {
           title: formData.title,
           original_text: formData.original_text,
           estimated_duration: formData.estimated_duration,
-          week_plan: formData.week_plan,
+          week_plan: formData.week_plan as any,
           updated_at: new Date().toISOString()
         })
         .eq('id', projectId)
@@ -621,7 +621,7 @@ export default function PBLProjectDetailPage() {
                     <p className="text-gray-400 text-sm">点击"添加周"按钮创建周计划</p>
                   ) : (
                     <div className="space-y-4">
-                      {(editMode ? formData.week_plan : project.week_plan || []).map((week, weekIdx) => (
+                      {(editMode ? formData.week_plan : project.week_plan || []).map((week: any, weekIdx: number) => (
                         <div key={weekIdx} className="bg-white/5 rounded-lg p-6 border border-white/10">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-white font-bold text-lg">第 {week.week} 周</h4>
@@ -668,7 +668,7 @@ export default function PBLProjectDetailPage() {
                             </div>
                             {week.goals && week.goals.length > 0 ? (
                               <ul className="space-y-2">
-                                {week.goals.map((goal, goalIdx) => (
+                                {week.goals.map((goal: any, goalIdx: number) => (
                                   <li key={goalIdx} className="flex items-start gap-2">
                                     {editMode ? (
                                       <>
@@ -713,7 +713,7 @@ export default function PBLProjectDetailPage() {
                             </div>
                             {week.activities && week.activities.length > 0 ? (
                               <div className="space-y-3">
-                                {week.activities.map((activity, actIdx) => (
+                                {week.activities.map((activity: any, actIdx: number) => (
                                   <div key={actIdx} className="bg-black/30 rounded-lg p-4 border border-white/10">
                                     <div className="flex items-start justify-between mb-2">
                                       <div className="flex-1 space-y-2">
@@ -765,7 +765,7 @@ export default function PBLProjectDetailPage() {
                                           </div>
                                           {activity.deliverables && activity.deliverables.length > 0 ? (
                                             <ul className="space-y-1">
-                                              {activity.deliverables.map((deliverable, delIdx) => (
+                                              {activity.deliverables.map((deliverable: any, delIdx: number) => (
                                                 <li key={delIdx} className="flex items-start gap-2">
                                                   {editMode ? (
                                                     <>
