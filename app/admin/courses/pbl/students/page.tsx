@@ -137,7 +137,7 @@ export default function PBLStudentsPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await (supabase
+      const { error } = await supabase
         .from('student_course_assignments')
         .delete()
         .eq('student_id', studentId)

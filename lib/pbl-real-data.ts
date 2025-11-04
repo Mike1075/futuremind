@@ -143,7 +143,7 @@ export class RealPBLDataService {
     const supabase = createClient()
 
     try {
-      const { data: content, error } = await (supabase
+      const { data: content, error } = await supabase
         .from('course_contents')
         .select(`
           *,
