@@ -1196,7 +1196,16 @@ export type CourseSystem = Tables<'course_systems'>
 export type UserProgress = Tables<'user_progress'>
 export type Profile = Tables<'profiles'>
 export type UserSelectedProject = Tables<'user_selected_projects'>
-export type Resource = Tables<'media_resources'>
+export type MediaResource = Tables<'media_resources'>
+
+// Custom types for JSON fields
+export interface Resource {
+  type: 'audio' | 'video' | 'pdf' | 'document' | string
+  title: string
+  url: string
+  duration?: string
+  description?: string
+}
 
 // Enum types (string literals)
 export type ProgressType = 'reading' | 'listening' | 'watching' | 'practicing' | 'project'
