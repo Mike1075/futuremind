@@ -1196,3 +1196,7 @@ export type CourseSystem = Tables<'course_systems'>
 export type UserProgress = Tables<'user_progress'>
 export type Profile = Tables<'profiles'>
 export type UserSelectedProject = Tables<'user_selected_projects'>
+export type Resource = Tables<'media_resources'>
+
+// Enum types (string literals)
+export type ProgressType = 'reading' | 'listening' | 'watching' | 'practicing' | 'project'
