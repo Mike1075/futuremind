@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 
 interface Stage {
   stageNumber: number
@@ -16,9 +17,9 @@ interface StageNodeProps {
   icon: string
   color: { from: string; to: string }
   progress: number
-  isSelected: boolean
-  onSelect: () => void
   delay: number
+  firstContentId: string | null
+  systemKey: string
 }
 
 export function StageNode({
@@ -27,20 +28,20 @@ export function StageNode({
   icon,
   color,
   progress,
-  isSelected,
-  onSelect,
-  delay
+  delay,
+  firstContentId,
+  systemKey
 }: StageNodeProps) {
   const isCompleted = progress === 100
   const isUnlocked = stage.isUnlocked
 
   // 节点尺寸
-  const nodeSize = isSelected ? 80 : 60
-  const iconSize = isSelected ? 32 : 24
+  const nodeSize = 60
+  const iconSize = 24
 
-  return (
+  const NodeContent = (
     <motion.div
-      className="absolute cursor-pointer"
+      className={`absolute ${isUnlocked ? 'cursor-pointer' : 'cursor-not-allowed'}`}
       style={{
         left: position.x,
         top: position.y,
@@ -52,7 +53,6 @@ export function StageNode({
       transition={{ duration: 0.5, delay }}
       whileHover={{ scale: isUnlocked ? 1.1 : 1 }}
       whileTap={{ scale: isUnlocked ? 0.95 : 1 }}
-      onClick={isUnlocked ? onSelect : undefined}
     >
       {/* 外圈进度环 */}
       <svg
@@ -110,9 +110,7 @@ export function StageNode({
           background: isUnlocked
             ? `linear-gradient(135deg, ${color.from}, ${color.to})`
             : 'linear-gradient(135deg, #4b5563, #374151)',
-          boxShadow: isSelected
-            ? `0 0 30px ${color.from}80`
-            : isCompleted
+          boxShadow: isCompleted
             ? `0 0 20px ${color.from}40`
             : '0 4px 12px rgba(0,0,0,0.3)'
         }}
@@ -151,25 +149,6 @@ export function StageNode({
             </svg>
           </div>
         )}
-
-        {/* 选中脉冲效果 */}
-        {isSelected && isUnlocked && (
-          <motion.div
-            className="absolute inset-0 rounded-full"
-            style={{
-              background: `linear-gradient(135deg, ${color.from}, ${color.to})`
-            }}
-            animate={{
-              scale: [1, 1.4, 1.4],
-              opacity: [0.5, 0, 0]
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              repeatDelay: 0.5
-            }}
-          />
-        )}
       </motion.div>
 
       {/* 阶段标签 */}
@@ -192,4 +171,16 @@ export function StageNode({
       </motion.div>
     </motion.div>
   )
+
+  // 如果解锁且有内容，包裹Link组件用于导航
+  if (isUnlocked && firstContentId) {
+    return (
+      <Link href={`/courses/${systemKey}/${firstContentId}`}>
+        {NodeContent}
+      </Link>
+    )
+  }
+
+  // 否则返回普通节点
+  return NodeContent
 }

@@ -31,7 +31,6 @@ export function EarthCourseView({
   contents,
   completionMap
 }: EarthCourseViewProps) {
-  const [expandedStages, setExpandedStages] = useState<Set<number>>(new Set([1]))
   const [showUnlockAnimation, setShowUnlockAnimation] = useState<number | null>(null)
 
   // 将内容按阶段分组（根据title中的"第X阶段"来分组）
@@ -89,18 +88,6 @@ export function EarthCourseView({
   const overallProgress = totalContents > 0
     ? Math.round((completedContents / totalContents) * 100)
     : 0
-
-  const toggleStage = (stageNumber: number) => {
-    setExpandedStages(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(stageNumber)) {
-        newSet.delete(stageNumber)
-      } else {
-        newSet.add(stageNumber)
-      }
-      return newSet
-    })
-  }
 
   // 获取阶段的图标
   const getStageIcon = (stageNumber: number) => {
@@ -182,7 +169,6 @@ export function EarthCourseView({
           <h2 className="text-2xl font-bold mb-4">学习旅程</h2>
 
           {stages.map((stage, index) => {
-            const isExpanded = expandedStages.has(stage.stageNumber)
             const stageProgress = stage.totalCount > 0
               ? Math.round((stage.completedCount / stage.totalCount) * 100)
               : 0
@@ -223,12 +209,8 @@ export function EarthCourseView({
                 )}
 
                 {/* 阶段头部 */}
-                <button
-                  onClick={() => stage.isUnlocked && toggleStage(stage.stageNumber)}
-                  disabled={!stage.isUnlocked}
-                  className={`w-full px-6 py-5 flex items-center justify-between transition-colors ${
-                    stage.isUnlocked ? 'hover:bg-gray-900/70 cursor-pointer' : 'cursor-not-allowed'
-                  }`}
+                <div
+                  className={`w-full px-6 py-5 flex items-center justify-between`}
                 >
                   <div className="flex items-center gap-4">
                     {/* 阶段图标 */}
@@ -277,23 +259,11 @@ export function EarthCourseView({
                         🎉 可解锁下一阶段
                       </span>
                     )}
-                    {stage.isUnlocked && (
-                      <svg
-                        className={`w-6 h-6 text-gray-400 transition-transform ${
-                          isExpanded ? 'rotate-180' : ''
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    )}
                   </div>
-                </button>
+                </div>
 
                 {/* 阶段内容列表 */}
-                {isExpanded && stage.isUnlocked && (
+                {stage.isUnlocked && (
                   <div className="px-6 pb-5 space-y-3 border-t border-gray-800">
                     {stage.contents.map((content, contentIndex) => {
                       const isCompleted = completionMap.get(content.id) === true
