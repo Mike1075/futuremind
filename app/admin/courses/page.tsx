@@ -61,46 +61,57 @@ export default function CoursesPage() {
     }
   }
 
-  const deleteCourse = async (courseId: string, courseTitle: string) => {
-    const confirmed = confirm(`⚠️ 警告：确定要**永久删除**课程「${courseTitle}」吗？\n\n这将：\n1. 永久删除课程系统记录\n2. 永久删除该课程下的所有内容（视频、问题、项目等）\n3. 删除学生的学习记录和进度\n\n此操作**不可恢复**！`)
+  const deleteCourse = async (courseId: string, courseTitle: string, systemKey: string) => {
+    // 检查是否是原始课程
+    const protectedCourses = ['listening', 'earth', 'pbl', 'icarus']
+    if (protectedCourses.includes(systemKey)) {
+      alert('⚠️ 原始课程不可删除\n\n「' + courseTitle + '」是系统预设课程，不能删除。\n只有新增的课程可以删除。')
+      return
+    }
+
+    // 第一次确认
+    const confirmed = confirm(
+      `⚠️ 警告：确定要**永久删除**课程「${courseTitle}」吗？\n\n` +
+      `这将：\n` +
+      `1. 永久删除课程系统记录\n` +
+      `2. 永久删除该课程下的所有内容（视频、问题、项目等）\n` +
+      `3. 删除所有学生的学习记录和进度\n` +
+      `4. 已选择该课程的学生将无法再看到此课程\n\n` +
+      `此操作**不可恢复**！`
+    )
     if (!confirmed) return
 
-    // 二次确认
-    const finalConfirm = confirm(`请再次确认删除「${courseTitle}」\n\n输入课程名称以确认删除（即将实施）`)
+    // 第二次确认
+    const finalConfirm = confirm(
+      `请再次确认删除「${courseTitle}」\n\n` +
+      `这是最后一次确认机会。\n` +
+      `点击"确定"将立即永久删除该课程。`
+    )
     if (!finalConfirm) return
 
     try {
-      const supabase = createClient()
+      // 调用删除API
+      const response = await fetch(`/api/admin/courses/${courseId}`, {
+        method: 'DELETE'
+      })
 
-      // 先删除关联的course_contents（级联删除）
-      const { error: contentsError } = await supabase
-        .from('course_contents')
-        .delete()
-        .eq('system_id', courseId)
+      const data = await response.json()
 
-      if (contentsError) {
-        console.error('删除课程内容失败:', contentsError)
-        alert('删除课程内容失败，请重试')
+      if (!response.ok) {
+        // 显示详细错误信息
+        if (data.message) {
+          alert(`❌ ${data.error}\n\n${data.message}`)
+        } else {
+          alert(`❌ 删除失败：${data.error}\n\n${data.details || ''}`)
+        }
         return
       }
 
-      // 再删除course_system
-      const { error: systemError } = await supabase
-        .from('course_systems')
-        .delete()
-        .eq('id', courseId)
-
-      if (systemError) {
-        console.error('删除课程系统失败:', systemError)
-        alert('删除课程系统失败，请重试')
-        return
-      }
-
-      alert('✅ 课程已永久删除')
+      alert(`✅ 删除成功\n\n${data.message}\n\n删除统计：\n- 阶段：${data.deletedCounts.stages}个\n- 内容：${data.deletedCounts.contents}个`)
       await loadCourses() // 重新加载列表
     } catch (error) {
       console.error('删除课程失败:', error)
-      alert('删除失败，请重试')
+      alert('❌ 删除失败，请检查网络连接后重试')
     }
   }
 
@@ -217,22 +228,36 @@ export default function CoursesPage() {
               if (course.system_key === 'icarus' || course.system_key === 'pbl') return '/admin/courses/pbl'
               return `/admin/courses/${course.id}`
             }
+
+            // 检查是否是原始课程（不可删除）
+            const protectedCourses = ['listening', 'earth', 'pbl', 'icarus']
+            const isDeletable = !protectedCourses.includes(course.system_key)
+
             return (
               <div key={course.id} className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center">
                 {/* Gradient Background Effect */}
                 <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none`} />
 
-                {/* Delete Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    deleteCourse(course.id, course.title)
-                  }}
-                  className="absolute top-4 right-4 p-2 bg-red-500/20 hover:bg-red-500/40 text-red-300 hover:text-red-100 rounded-lg border border-red-500/30 transition-all z-20 opacity-0 group-hover:opacity-100"
-                  title="删除课程"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Delete Button - 只在新增课程上显示 */}
+                {isDeletable && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteCourse(course.id, course.title, course.system_key)
+                    }}
+                    className="absolute top-4 right-4 p-2 bg-red-500/20 hover:bg-red-500/40 text-red-300 hover:text-red-100 rounded-lg border border-red-500/30 transition-all z-20 opacity-0 group-hover:opacity-100"
+                    title="永久删除课程"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* 原始课程标识 */}
+                {!isDeletable && (
+                  <div className="absolute top-4 right-4 px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded border border-blue-500/30 z-20">
+                    系统预设
+                  </div>
+                )}
 
                 {/* Main Content - Clickable */}
                 <button
