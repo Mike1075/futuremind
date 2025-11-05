@@ -132,7 +132,7 @@ export default function IcarusAdminPage() {
         .from('course_contents')
         .select('*')
         .eq('system_id', systemData.id)
-        .eq('content_type', 'pbl_project')
+        .eq('content_type', 'icarus')
         .order('sequence_number', { ascending: true })
 
       if (error) throw error
