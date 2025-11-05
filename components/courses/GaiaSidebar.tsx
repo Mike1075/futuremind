@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 interface Message {
   id: string
@@ -85,23 +86,22 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
         } else {
           // 3. 没有历史对话，生成启发性问题
           console.log('[Gaia] 生成启发性问题...', { topic: extractedTopic, originalText: initialContext.text })
-          const questionsResponse = await fetch('/api/gaia/generate-questions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+
+          // 调用Supabase边缘函数（已配置OPENAI_API_KEY）
+          const supabase = createClient()
+          const { data: questionsData, error: questionsError } = await supabase.functions.invoke('generate-inspiring-questions', {
+            body: {
               topic: extractedTopic,
               originalText: initialContext.text
-            })
+            }
           })
 
           let inspiringQuestions = '让我们一起深入探讨这个话题吧！'
-          if (questionsResponse.ok) {
-            const questionsData = await questionsResponse.json()
+          if (!questionsError && questionsData) {
             inspiringQuestions = questionsData.questions || inspiringQuestions
             console.log('[Gaia] AI生成问题成功:', inspiringQuestions.substring(0, 50) + '...')
           } else {
-            const errorText = await questionsResponse.text()
-            console.error('[Gaia] 生成问题失败:', questionsResponse.status, errorText)
+            console.error('[Gaia] 生成问题失败:', questionsError)
           }
 
           // 4. 将启发性问题作为盖亚的首次消息
