@@ -111,25 +111,44 @@ export default function PortalPage() {
       // 计算每个课程的真实进度
       const enrolled: EnrolledCourse[] = await Promise.all(
         validEnrollments.map(async (item: any) => {
-          // 获取课程总内容数
-          const { count: totalContents } = await supabase
+          // 获取该课程体系下的所有已发布内容ID
+          const { data: contents } = await supabase
             .from('course_contents')
-            .select('*', { count: 'exact', head: true })
+            .select('id')
             .eq('system_id', item.course_systems.id)
             .eq('is_published', true)
 
-          // 获取用户完成的内容数
-          const { count: completedCount } = await supabase
+          const totalContents = contents?.length || 0
+
+          if (totalContents === 0) {
+            return {
+              course_id: item.course_systems.id,
+              course_title: item.course_systems.title,
+              course_system_key: item.course_systems.system_key,
+              assigned_at: item.assigned_at,
+              progress: 0
+            }
+          }
+
+          // 获取用户对这些内容的进度记录
+          const contentIds = contents.map((c: any) => c.id)
+          const { data: progressRecords } = await supabase
             .from('user_progress')
-            .select('*', { count: 'exact', head: true })
+            .select('ref_item_id, progress_value')
             .eq('user_id', userId)
-            .eq('course_system_id', item.course_systems.id)
-            .eq('completed', true)
+            .in('ref_item_id', contentIds)
+            .eq('progress_type', 'reading')
+
+          // 统计完成数量（progress_value === 100）
+          let completedCount = 0
+          progressRecords?.forEach((record: any) => {
+            if (record.progress_value === 100) {
+              completedCount++
+            }
+          })
 
           // 计算进度百分比
-          const progress = totalContents && totalContents > 0
-            ? Math.round(((completedCount || 0) / totalContents) * 100)
-            : 0
+          const progress = Math.round((completedCount / totalContents) * 100)
 
           return {
             course_id: item.course_systems.id,
