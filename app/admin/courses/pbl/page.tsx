@@ -21,6 +21,10 @@ interface PBLProject {
   is_published: boolean | null
   created_at: string | null
   updated_at: string | null
+  project_intro: string | null
+  project_cover_image: string | null
+  module_name: string | null
+  difficulty_level: string | null
 }
 
 const FIXED_MODULES = [
@@ -51,6 +55,10 @@ export default function IcarusAdminPage() {
     title: string
     subtitle: string
     original_text: string
+    project_intro: string
+    project_cover_image: string
+    module_name: string
+    difficulty_level: string
     week_plan: Array<{
       week: number
       theme: string
@@ -71,6 +79,10 @@ export default function IcarusAdminPage() {
     title: '',
     subtitle: '',
     original_text: '',
+    project_intro: '',
+    project_cover_image: '',
+    module_name: '',
+    difficulty_level: '',
     week_plan: [],
     prerequisites: [],
     estimated_duration: 0
@@ -87,6 +99,10 @@ export default function IcarusAdminPage() {
         title: selectedProject.title || '',
         subtitle: selectedProject.subtitle || '',
         original_text: selectedProject.original_text || '',
+        project_intro: selectedProject.project_intro || '',
+        project_cover_image: selectedProject.project_cover_image || '',
+        module_name: selectedProject.module_name || '',
+        difficulty_level: selectedProject.difficulty_level || '',
         week_plan: Array.isArray(selectedProject.week_plan) ? selectedProject.week_plan : [],
         prerequisites: Array.isArray(selectedProject.prerequisites) ? selectedProject.prerequisites : [],
         estimated_duration: selectedProject.estimated_duration || 0
@@ -267,6 +283,10 @@ export default function IcarusAdminPage() {
           title: formData.title,
           subtitle: formData.subtitle,
           original_text: formData.original_text,
+          project_intro: formData.project_intro,
+          project_cover_image: formData.project_cover_image,
+          module_name: formData.module_name,
+          difficulty_level: formData.difficulty_level,
           week_plan: formData.week_plan,
           day_plan: [],  // day_plan不再使用，保留空数组
           prerequisites: formData.prerequisites,
@@ -573,6 +593,77 @@ export default function IcarusAdminPage() {
                   disabled={!editMode}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
                 />
+              </div>
+
+              {/* 项目简介 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">项目简介</label>
+                <textarea
+                  value={formData.project_intro}
+                  onChange={(e) => setFormData({ ...formData, project_intro: e.target.value })}
+                  disabled={!editMode}
+                  rows={4}
+                  placeholder="输入项目简介，用于在项目列表页显示..."
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                />
+                <p className="text-xs text-gray-500 mt-1">建议150-200字，简明扼要地介绍项目的核心价值和学习目标</p>
+              </div>
+
+              {/* 模块和难度 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">所属模块</label>
+                  <input
+                    type="text"
+                    value={formData.module_name}
+                    onChange={(e) => setFormData({ ...formData, module_name: e.target.value })}
+                    disabled={!editMode}
+                    placeholder="例如：模块1：观察与感知"
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">难度级别</label>
+                  <select
+                    value={formData.difficulty_level}
+                    onChange={(e) => setFormData({ ...formData, difficulty_level: e.target.value })}
+                    disabled={!editMode}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                  >
+                    <option value="">请选择...</option>
+                    <option value="基础探索">基础探索</option>
+                    <option value="进阶挑战">进阶挑战</option>
+                    <option value="深度研究">深度研究</option>
+                    <option value="创新实践">创新实践</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 封面图片 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">封面图片URL</label>
+                <input
+                  type="text"
+                  value={formData.project_cover_image}
+                  onChange={(e) => setFormData({ ...formData, project_cover_image: e.target.value })}
+                  disabled={!editMode}
+                  placeholder="输入图片URL（可选）"
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                />
+                {formData.project_cover_image && (
+                  <div className="mt-3">
+                    <p className="text-xs text-gray-500 mb-2">封面图片预览：</p>
+                    <img
+                      src={formData.project_cover_image}
+                      alt="封面预览"
+                      className="max-w-sm h-48 object-cover rounded-lg border border-white/10"
+                      onError={(e) => {
+                        e.currentTarget.src = ''
+                        e.currentTarget.alt = '图片加载失败'
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* 核心问题 */}
