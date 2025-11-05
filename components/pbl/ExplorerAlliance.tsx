@@ -110,19 +110,24 @@ export function ExplorerAlliance() {
       if (!systemData) return []
 
       // 获取所有阶段的explorer_projects
-      const { data: stages } = await supabase
+      const { data: stages } = (await supabase
         .from('course_contents')
         .select('id, title, sequence_number, explorer_projects')
         .eq('system_id', systemData.id)
         .not('explorer_projects', 'is', null)
-        .order('sequence_number')
+        .order('sequence_number')) as { data: Array<{
+          id: string
+          title: string
+          sequence_number: number
+          explorer_projects: unknown
+        }> | null }
 
       if (!stages) return []
 
       // 过滤出有项目的阶段
       return stages
         .filter(stage => {
-          const projects = stage.explorer_projects as any
+          const projects = stage.explorer_projects
           return Array.isArray(projects) && projects.length > 0
         })
         .map(stage => ({

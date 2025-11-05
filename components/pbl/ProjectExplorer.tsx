@@ -5,7 +5,7 @@ import { PBLProject } from '@/lib/pbl-data'
 import { pblDataService } from '@/lib/pbl-real-data'
 import { ProjectCard } from './ProjectCard'
 import { ProjectFilters } from './ProjectFilters'
-import { CreateProjectModal, ProjectFormData } from './CreateProjectModal'
+import { CreateProjectModal } from './CreateProjectModal'
 import {
   Plus,
   Search,
@@ -32,7 +32,6 @@ export function ProjectExplorer({ onProjectSelect }: ProjectExplorerProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [showCreateProject, setShowCreateProject] = useState(false)
-  const [isCreating, setIsCreating] = useState(false)
 
   // 筛选状态
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -180,21 +179,10 @@ export function ProjectExplorer({ onProjectSelect }: ProjectExplorerProps) {
     }
   }, [projects])
 
-  const handleCreateProject = async (projectData: ProjectFormData) => {
-    setIsCreating(true)
-    try {
-      // 这里应该调用API创建项目
-      // 模拟创建延迟
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setShowCreateProject(false)
-      // 重新加载项目列表
-      await loadProjects()
-    } catch (error) {
-      console.error('创建项目失败:', error)
-      alert('创建项目失败，请稍后重试')
-    } finally {
-      setIsCreating(false)
-    }
+  const handleProjectCreated = async () => {
+    setShowCreateProject(false)
+    // 重新加载项目列表
+    await loadProjects()
   }
 
   if (loading) {
@@ -586,8 +574,7 @@ export function ProjectExplorer({ onProjectSelect }: ProjectExplorerProps) {
       <CreateProjectModal
         isOpen={showCreateProject}
         onClose={() => setShowCreateProject(false)}
-        onConfirm={handleCreateProject}
-        loading={isCreating}
+        onSuccess={handleProjectCreated}
       />
     </div>
   )
