@@ -189,7 +189,7 @@ export default function IcarusAdminPage() {
           .from('course_contents')
           .insert({
             system_id: icarusSystemId,
-            content_type: 'pbl_project',
+            content_type: 'icarus',
             sequence_number: startSeq + i,
             title: newProjects[i].title,
             subtitle: newProjects[i].subtitle,
@@ -198,7 +198,9 @@ export default function IcarusAdminPage() {
             day_plan: [],
             prerequisites: [],
             estimated_duration: 30,
-            is_published: false
+            is_published: true,
+            review_status: 'approved',
+            project_visibility: 'system'
           })
 
         if (error) throw error
