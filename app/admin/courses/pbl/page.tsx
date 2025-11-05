@@ -152,7 +152,7 @@ export default function IcarusAdminPage() {
         .order('sequence_number', { ascending: true })
 
       if (error) throw error
-      setProjects((data as PBLProject[]) || [])
+      setProjects((data as unknown as PBLProject[]) || [])
     } catch (error) {
       console.error('加载项目列表失败:', error)
     }
