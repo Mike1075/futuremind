@@ -47,6 +47,8 @@ export async function GET(request: NextRequest) {
           estimated_duration,
           week_plan,
           project_visibility,
+          project_icon_url,
+          project_cover_image,
           created_by_user
         )
       `)

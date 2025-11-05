@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 
 interface Project {
@@ -13,6 +14,8 @@ interface Project {
   module_name: string | null
   estimated_duration: number | null
   project_visibility: string
+  project_icon_url: string | null
+  project_cover_image: string | null
   participant_count?: number
   is_system?: boolean
   creator?: {
@@ -228,51 +231,77 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                   return (
                     <div
                       key={selection.id}
-                      className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-all"
+                      className="bg-gray-900/50 border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition-all"
                     >
-                      {/* 难度标签 */}
-                      {project.difficulty_level && (
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mb-3 bg-gradient-to-r ${
-                          DIFFICULTY_COLORS[project.difficulty_level as keyof typeof DIFFICULTY_COLORS] || 'from-gray-500 to-gray-600'
-                        } text-white`}>
-                          {project.difficulty_level}
-                        </span>
+                      {/* Cover Image */}
+                      {project.project_cover_image && (
+                        <div className="relative w-full h-40 bg-gray-800">
+                          <Image
+                            src={project.project_cover_image}
+                            alt={project.title}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
                       )}
 
-                      {/* 项目标题 */}
-                      <h3 className="text-lg font-semibold mb-2">{project.title}</h3>
+                      <div className="p-6">
+                        {/* Icon + Difficulty Badge */}
+                        <div className="flex items-start justify-between mb-3">
+                          {project.project_icon_url && (
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 mr-3 border border-gray-700">
+                              <Image
+                                src={project.project_icon_url}
+                                alt={`${project.title} icon`}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                          {project.difficulty_level && (
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${
+                              DIFFICULTY_COLORS[project.difficulty_level as keyof typeof DIFFICULTY_COLORS] || 'from-gray-500 to-gray-600'
+                            } text-white flex-shrink-0`}>
+                              {project.difficulty_level}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 项目标题 */}
+                        <h3 className="text-lg font-semibold mb-2">{project.title}</h3>
                       {project.subtitle && (
                         <p className="text-gray-400 text-sm mb-3">{project.subtitle}</p>
                       )}
 
-                      {/* 进度条 */}
-                      <div className="mb-4">
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-500">进度</span>
-                          <span className="text-gray-400">{selection.completion_percentage}%</span>
+                        {/* 进度条 */}
+                        <div className="mb-4">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-500">进度</span>
+                            <span className="text-gray-400">{selection.completion_percentage}%</span>
+                          </div>
+                          <div className="w-full bg-gray-800 rounded-full h-1.5">
+                            <div
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all"
+                              style={{ width: `${selection.completion_percentage}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="w-full bg-gray-800 rounded-full h-1.5">
-                          <div
-                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all"
-                            style={{ width: `${selection.completion_percentage}%` }}
-                          />
-                        </div>
-                      </div>
 
-                      {/* 操作按钮 */}
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/courses/icarus/${project.id}`}
-                          className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium text-center hover:opacity-90 transition-opacity"
-                        >
-                          继续学习
-                        </Link>
-                        <button
-                          onClick={() => handleCancelProject(selection.id)}
-                          className="px-4 py-2 bg-gray-800 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
-                        >
-                          取消
-                        </button>
+                        {/* 操作按钮 */}
+                        <div className="flex gap-2">
+                          <Link
+                            href={`/courses/icarus/${project.id}`}
+                            className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium text-center hover:opacity-90 transition-opacity"
+                          >
+                            继续学习
+                          </Link>
+                          <button
+                            onClick={() => handleCancelProject(selection.id)}
+                            className="px-4 py-2 bg-gray-800 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+                          >
+                            取消
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )
@@ -366,59 +395,85 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                 return (
                   <div
                     key={project.id}
-                    className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-all"
+                    className="bg-gray-900/50 border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition-all cursor-pointer"
                   >
-                    {/* 难度标签 */}
-                    {project.difficulty_level && (
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mb-3 bg-gradient-to-r ${
-                        DIFFICULTY_COLORS[project.difficulty_level as keyof typeof DIFFICULTY_COLORS] || 'from-gray-500 to-gray-600'
-                      } text-white`}>
-                        {project.difficulty_level}
-                      </span>
+                    {/* Cover Image */}
+                    {project.project_cover_image && (
+                      <div className="relative w-full h-40 bg-gray-800">
+                        <Image
+                          src={project.project_cover_image}
+                          alt={project.title}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
                     )}
 
-                    {/* 项目信息 */}
-                    <h3 className="text-lg font-semibold mb-2">{project.title}</h3>
+                    <div className="p-6">
+                      {/* Icon + Difficulty Badge */}
+                      <div className="flex items-start justify-between mb-3">
+                        {project.project_icon_url && (
+                          <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 mr-3 border border-gray-700">
+                            <Image
+                              src={project.project_icon_url}
+                              alt={`${project.title} icon`}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        )}
+                        {project.difficulty_level && (
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${
+                            DIFFICULTY_COLORS[project.difficulty_level as keyof typeof DIFFICULTY_COLORS] || 'from-gray-500 to-gray-600'
+                          } text-white flex-shrink-0`}>
+                            {project.difficulty_level}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* 项目信息 */}
+                      <h3 className="text-lg font-semibold mb-2">{project.title}</h3>
                     {project.subtitle && (
                       <p className="text-gray-400 text-sm mb-3">{project.subtitle}</p>
                     )}
 
-                    {/* 项目简介 */}
-                    {project.project_intro && (
-                      <p className="text-gray-500 text-sm mb-4 line-clamp-2">
-                        {project.project_intro}
-                      </p>
-                    )}
+                      {/* 项目简介 */}
+                      {project.project_intro && (
+                        <p className="text-gray-500 text-sm mb-4 line-clamp-2">
+                          {project.project_intro}
+                        </p>
+                      )}
 
-                    {/* 元信息 */}
-                    <div className="flex gap-4 text-xs text-gray-500 mb-4">
-                      {project.module_name && (
-                        <span>📚 {project.module_name}</span>
-                      )}
-                      {project.estimated_duration && (
-                        <span>⏱️ {project.estimated_duration}分钟</span>
-                      )}
-                      {project.participant_count !== undefined && (
-                        <span>👥 {project.participant_count}人参与</span>
-                      )}
-                    </div>
+                      {/* 元信息 */}
+                      <div className="flex gap-4 text-xs text-gray-500 mb-4">
+                        {project.module_name && (
+                          <span>📚 {project.module_name}</span>
+                        )}
+                        {project.estimated_duration && (
+                          <span>⏱️ {project.estimated_duration}分钟</span>
+                        )}
+                        {project.participant_count !== undefined && (
+                          <span>👥 {project.participant_count}人参与</span>
+                        )}
+                      </div>
 
-                    {/* 操作按钮 */}
-                    <div className="flex gap-2">
-                      <Link
-                        href={`/courses/icarus/${project.id}`}
-                        className="flex-1 px-4 py-2 bg-gray-800 rounded-lg text-sm font-medium text-center hover:bg-gray-700 transition-colors"
-                      >
-                        查看详情
-                      </Link>
-                      {!isSelected && (
-                        <button
-                          onClick={() => handleSelectProject(project.id)}
-                          className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                      {/* 操作按钮 */}
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/courses/icarus/${project.id}`}
+                          className="flex-1 px-4 py-2 bg-gray-800 rounded-lg text-sm font-medium text-center hover:bg-gray-700 transition-colors"
                         >
-                          选择
-                        </button>
-                      )}
+                          查看详情
+                        </Link>
+                        {!isSelected && (
+                          <button
+                            onClick={() => handleSelectProject(project.id)}
+                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                          >
+                            选择
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )

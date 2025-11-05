@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
         week_plan,
         prerequisites,
         project_visibility,
+        project_icon_url,
+        project_cover_image,
         created_by_user,
         created_at,
         profiles:created_by_user (
