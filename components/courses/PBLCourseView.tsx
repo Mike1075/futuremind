@@ -16,6 +16,7 @@ interface Project {
   project_visibility: string
   project_icon_url: string | null
   project_cover_image: string | null
+  sequence_number: number
   participant_count?: number
   is_system?: boolean
   creator?: {
@@ -42,24 +43,20 @@ interface PBLCourseViewProps {
   }
 }
 
-const DIFFICULTY_LEVELS = ['基础探索', '进阶挑战', '深度研究', '创新实践']
-const MODULES = ['意识觉醒', '科学探索', '创意表达']
-
-const DIFFICULTY_COLORS = {
-  '基础探索': 'from-green-500 to-emerald-600',
-  '进阶挑战': 'from-blue-500 to-cyan-600',
-  '深度研究': 'from-purple-500 to-pink-600',
-  '创新实践': 'from-orange-500 to-red-600'
+// 项目图标映射 - 为12个伊卡洛斯项目提供默认图标
+const PROJECT_ICONS: Record<number, string> = {
+  1: '🐾', 2: '🐱', 3: '🐶', 4: '🌍',
+  5: '🌱', 6: '🐜', 7: '💧', 8: '🗺️',
+  9: '🎨', 10: '👁️', 11: '🎲', 12: '🤝'
 }
 
 export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
   const router = useRouter()
   const [myProjects, setMyProjects] = useState<UserSelectedProject[]>([])
   const [allProjects, setAllProjects] = useState<Project[]>([])
-  const [selectedModule, setSelectedModule] = useState<string | null>(null)
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'my' | 'explore'>('my')
+  const [activeTab, setActiveTab] = useState<'my' | 'explore'>('explore')
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
 
   useEffect(() => {
     loadData()
@@ -138,23 +135,10 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
     }
   }
 
-  // 筛选项目
-  const filteredProjects = allProjects.filter(project => {
-    if (selectedModule && project.module_name !== selectedModule) return false
-    if (selectedDifficulty && project.difficulty_level !== selectedDifficulty) return false
-    return true
-  })
-
-  // 按难度和模块分组项目（用于网格展示）
-  const projectGrid = DIFFICULTY_LEVELS.map(difficulty => ({
-    difficulty,
-    modules: MODULES.map(module => {
-      const project = filteredProjects.find(
-        p => p.difficulty_level === difficulty && p.module_name === module
-      )
-      return { module, project }
-    })
-  }))
+  // 获取伊卡洛斯系统的12个项目
+  const icarusProjects = allProjects
+    .filter(p => p.is_system && p.project_visibility === 'system')
+    .slice(0, 12)
 
   if (loading) {
     return (
@@ -246,9 +230,9 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                       )}
 
                       <div className="p-6">
-                        {/* Icon + Difficulty Badge */}
-                        <div className="flex items-start justify-between mb-3">
-                          {project.project_icon_url && (
+                        {/* Icon */}
+                        <div className="flex items-start mb-3">
+                          {project.project_icon_url ? (
                             <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 mr-3 border border-gray-700">
                               <Image
                                 src={project.project_icon_url}
@@ -257,19 +241,16 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                                 className="object-cover"
                               />
                             </div>
-                          )}
-                          {project.difficulty_level && (
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${
-                              DIFFICULTY_COLORS[project.difficulty_level as keyof typeof DIFFICULTY_COLORS] || 'from-gray-500 to-gray-600'
-                            } text-white flex-shrink-0`}>
-                              {project.difficulty_level}
-                            </span>
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-2xl flex-shrink-0 mr-3">
+                              {PROJECT_ICONS[selection.course_contents.sequence_number] || '📚'}
+                            </div>
                           )}
                         </div>
 
                         {/* 项目标题 */}
                         <h3 className="text-lg font-semibold mb-2">{project.title}</h3>
-                      {project.subtitle && (
+                      {project.subtitle && project.subtitle !== 'option_a' && project.subtitle !== 'option_b' && project.subtitle !== 'option_c' && project.subtitle !== 'option_d' && (
                         <p className="text-gray-400 text-sm mb-3">{project.subtitle}</p>
                       )}
 
@@ -324,70 +305,23 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
         {/* 探索项目 */}
         {activeTab === 'explore' && (
           <div>
-            {/* 筛选器 */}
-            <div className="mb-6 flex gap-4 flex-wrap">
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">模块</label>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  <button
-                    onClick={() => setSelectedModule(null)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                      selectedModule === null
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                    }`}
-                  >
-                    全部
-                  </button>
-                  {MODULES.map(module => (
-                    <button
-                      key={module}
-                      onClick={() => setSelectedModule(module)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                        selectedModule === module
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                      }`}
-                    >
-                      {module}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">难度</label>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  <button
-                    onClick={() => setSelectedDifficulty(null)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                      selectedDifficulty === null
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                    }`}
-                  >
-                    全部
-                  </button>
-                  {DIFFICULTY_LEVELS.map(level => (
-                    <button
-                      key={level}
-                      onClick={() => setSelectedDifficulty(level)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                        selectedDifficulty === level
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                      }`}
-                    >
-                      {level}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* 创建项目按钮 */}
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-2xl font-semibold">伊卡洛斯12个项目</h2>
+              <button
+                onClick={() => router.push('/projects/create')}
+                className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                创建我的项目
+              </button>
             </div>
 
-            {/* 项目网格 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProjects.map(project => {
+            {/* 项目网格 - 12个伊卡洛斯项目 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {icarusProjects.map(project => {
                 const isSelected = myProjects.some(
                   mp => mp.course_contents.id === project.id
                 )
@@ -395,11 +329,11 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                 return (
                   <div
                     key={project.id}
-                    className="bg-gray-900/50 border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition-all cursor-pointer"
+                    className="bg-gray-900/50 border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition-all group"
                   >
-                    {/* Cover Image */}
-                    {project.project_cover_image && (
-                      <div className="relative w-full h-40 bg-gray-800">
+                    {/* Cover Image or Gradient */}
+                    {project.project_cover_image ? (
+                      <div className="relative w-full h-32 bg-gray-800">
                         <Image
                           src={project.project_cover_image}
                           alt={project.title}
@@ -407,71 +341,48 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                           className="object-cover"
                         />
                       </div>
-                    )}
-
-                    <div className="p-6">
-                      {/* Icon + Difficulty Badge */}
-                      <div className="flex items-start justify-between mb-3">
-                        {project.project_icon_url && (
-                          <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 mr-3 border border-gray-700">
-                            <Image
-                              src={project.project_icon_url}
-                              alt={`${project.title} icon`}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        )}
-                        {project.difficulty_level && (
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${
-                            DIFFICULTY_COLORS[project.difficulty_level as keyof typeof DIFFICULTY_COLORS] || 'from-gray-500 to-gray-600'
-                          } text-white flex-shrink-0`}>
-                            {project.difficulty_level}
-                          </span>
-                        )}
+                    ) : (
+                      <div className="relative w-full h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                        <div className="text-5xl">
+                          {PROJECT_ICONS[project.sequence_number] || '📚'}
+                        </div>
                       </div>
-
-                      {/* 项目信息 */}
-                      <h3 className="text-lg font-semibold mb-2">{project.title}</h3>
-                    {project.subtitle && (
-                      <p className="text-gray-400 text-sm mb-3">{project.subtitle}</p>
                     )}
+
+                    <div className="p-4">
+                      {/* 项目标题 */}
+                      <h3 className="text-base font-semibold mb-2 line-clamp-2 min-h-[3rem]">{project.title}</h3>
 
                       {/* 项目简介 */}
-                      {project.project_intro && (
-                        <p className="text-gray-500 text-sm mb-4 line-clamp-2">
+                      {project.project_intro ? (
+                        <p className="text-gray-500 text-sm mb-4 line-clamp-3 min-h-[4rem]">
                           {project.project_intro}
+                        </p>
+                      ) : (
+                        <p className="text-gray-600 text-sm mb-4 italic min-h-[4rem]">
+                          点击查看项目详情
                         </p>
                       )}
 
-                      {/* 元信息 */}
-                      <div className="flex gap-4 text-xs text-gray-500 mb-4">
-                        {project.module_name && (
-                          <span>📚 {project.module_name}</span>
-                        )}
-                        {project.estimated_duration && (
-                          <span>⏱️ {project.estimated_duration}分钟</span>
-                        )}
-                        {project.participant_count !== undefined && (
-                          <span>👥 {project.participant_count}人参与</span>
-                        )}
-                      </div>
-
                       {/* 操作按钮 */}
                       <div className="flex gap-2">
-                        <Link
-                          href={`/courses/icarus/${project.id}`}
-                          className="flex-1 px-4 py-2 bg-gray-800 rounded-lg text-sm font-medium text-center hover:bg-gray-700 transition-colors"
+                        <button
+                          onClick={() => setSelectedProject(project)}
+                          className="flex-1 px-3 py-2 bg-gray-800 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
                         >
-                          查看详情
-                        </Link>
-                        {!isSelected && (
+                          查看介绍
+                        </button>
+                        {!isSelected ? (
                           <button
                             onClick={() => handleSelectProject(project.id)}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                            className="px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
                           >
                             选择
                           </button>
+                        ) : (
+                          <div className="px-3 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium whitespace-nowrap">
+                            ✓ 已选
+                          </div>
                         )}
                       </div>
                     </div>
@@ -480,14 +391,132 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
               })}
             </div>
 
-            {filteredProjects.length === 0 && (
+            {icarusProjects.length === 0 && (
               <div className="text-center py-12 text-gray-500">
-                暂无符合条件的项目
+                暂无项目
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* 项目介绍模态框 */}
+      {selectedProject && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedProject(null)}
+        >
+          <div
+            className="bg-gray-900 border border-gray-800 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-6 flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                {selectedProject.project_icon_url ? (
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-gray-700">
+                    <Image
+                      src={selectedProject.project_icon_url}
+                      alt={selectedProject.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-3xl flex-shrink-0">
+                    {PROJECT_ICONS[selectedProject.sequence_number] || '📚'}
+                  </div>
+                )}
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">{selectedProject.title}</h2>
+                  {selectedProject.subtitle && selectedProject.subtitle !== 'option_a' && selectedProject.subtitle !== 'option_b' && selectedProject.subtitle !== 'option_c' && selectedProject.subtitle !== 'option_d' && (
+                    <p className="text-gray-400">{selectedProject.subtitle}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedProject(null)}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Cover Image */}
+            {selectedProject.project_cover_image && (
+              <div className="relative w-full h-64 bg-gray-800">
+                <Image
+                  src={selectedProject.project_cover_image}
+                  alt={selectedProject.title}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="p-6">
+              {/* Project Intro */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-3 text-gray-300">项目介绍</h3>
+                <p className="text-gray-400 leading-relaxed whitespace-pre-wrap">
+                  {selectedProject.project_intro || '暂无项目介绍，点击"查看详情"进入项目页面了解更多。'}
+                </p>
+              </div>
+
+              {/* Meta Info */}
+              {(selectedProject.module_name || selectedProject.estimated_duration || selectedProject.participant_count !== undefined) && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-300">项目信息</h3>
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                    {selectedProject.module_name && (
+                      <div className="flex items-center gap-2">
+                        <span>📚</span>
+                        <span>{selectedProject.module_name}</span>
+                      </div>
+                    )}
+                    {selectedProject.estimated_duration && (
+                      <div className="flex items-center gap-2">
+                        <span>⏱️</span>
+                        <span>{selectedProject.estimated_duration}分钟</span>
+                      </div>
+                    )}
+                    {selectedProject.participant_count !== undefined && (
+                      <div className="flex items-center gap-2">
+                        <span>👥</span>
+                        <span>{selectedProject.participant_count}人参与</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Link
+                  href={`/courses/icarus/${selectedProject.id}`}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium text-center hover:opacity-90 transition-opacity"
+                >
+                  查看详情
+                </Link>
+                {!myProjects.some(mp => mp.course_contents.id === selectedProject.id) && (
+                  <button
+                    onClick={() => {
+                      handleSelectProject(selectedProject.id)
+                      setSelectedProject(null)
+                    }}
+                    className="px-6 py-3 bg-green-500 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                  >
+                    选择项目
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
