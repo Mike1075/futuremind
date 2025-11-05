@@ -27,6 +27,7 @@ export function EarthStageCircle({
   systemKey
 }: EarthStageCircleProps) {
   const [containerSize, setContainerSize] = useState({ width: 600, height: 600 })
+  const [stageProgressMap, setStageProgressMap] = useState<Map<number, number>>(new Map())
   const containerRef = useRef<HTMLDivElement>(null)
 
   // 响应式容器尺寸
@@ -42,6 +43,44 @@ export function EarthStageCircle({
     window.addEventListener('resize', updateSize)
     return () => window.removeEventListener('resize', updateSize)
   }, [])
+
+  // 获取各阶段的学习进度
+  useEffect(() => {
+    const fetchStageProgress = async () => {
+      const progressMap = new Map<number, number>()
+
+      for (const stage of stages) {
+        if (stage.contents.length === 0) {
+          progressMap.set(stage.stageNumber, 0)
+          continue
+        }
+
+        try {
+          const contentIds = stage.contents.map(c => c.id).join(',')
+          const response = await fetch(`/api/progress/calculate?contentIds=${contentIds}`)
+
+          if (response.ok) {
+            const data = await response.json()
+            const results = data.results || []
+
+            // 计算平均进度
+            const totalProgress = results.reduce((sum: number, r: any) => sum + r.progress, 0)
+            const avgProgress = results.length > 0 ? totalProgress / results.length : 0
+            progressMap.set(stage.stageNumber, Math.round(avgProgress * 100))
+          } else {
+            progressMap.set(stage.stageNumber, 0)
+          }
+        } catch (error) {
+          console.error(`Failed to fetch progress for stage ${stage.stageNumber}:`, error)
+          progressMap.set(stage.stageNumber, 0)
+        }
+      }
+
+      setStageProgressMap(progressMap)
+    }
+
+    fetchStageProgress()
+  }, [stages])
 
   const radius = containerSize.width * 0.35
   const centerX = containerSize.width / 2
@@ -164,9 +203,8 @@ export function EarthStageCircle({
         {/* 阶段节点 */}
         {stages.map((stage, index) => {
           const position = getNodePosition(index, stages.length)
-          const stageProgress = stage.totalCount > 0
-            ? Math.round((stage.completedCount / stage.totalCount) * 100)
-            : 0
+          // 使用新的进度计算系统
+          const stageProgress = stageProgressMap.get(stage.stageNumber) || 0
 
           // 获取阶段的第一个内容ID用于导航
           const firstContentId = stage.contents.length > 0 ? stage.contents[0].id : null

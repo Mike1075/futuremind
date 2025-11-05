@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { EarthContentDetail } from '@/components/courses/EarthContentDetail'
 import { GaiaSidebar } from '@/components/courses/GaiaSidebar'
 import type { CourseContent } from '@/lib/supabase/database.types'
@@ -26,6 +26,24 @@ export function EarthContentWrapper({
     type: 'knowledge_point' | 'question'
     contentId: string
   } | undefined>(undefined)
+
+  // 自动记录访问
+  useEffect(() => {
+    const recordVisit = async () => {
+      try {
+        await fetch('/api/progress/visit', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contentId: content.id })
+        })
+      } catch (error) {
+        // 静默失败，不影响用户体验
+        console.error('Failed to record visit:', error)
+      }
+    }
+
+    recordVisit()
+  }, [content.id])
 
   const handleDiscussWithGaia = (
     context: string,
