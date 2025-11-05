@@ -120,7 +120,7 @@ export default function PortalPage() {
 
           const totalContents = contents?.length || 0
 
-          if (totalContents === 0) {
+          if (totalContents === 0 || !contents) {
             return {
               course_id: item.course_systems.id,
               course_title: item.course_systems.title,
