@@ -96,7 +96,7 @@ export default function PortalPage() {
         .from('student_course_assignments')
         .select(`
           assigned_at,
-          course_systems (id, title, system_key)
+          course_systems (id, title, system_key, is_active)
         `)
         .eq('student_id', userId)
         .eq('status', 'active')
