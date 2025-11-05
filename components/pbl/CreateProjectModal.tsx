@@ -4,6 +4,19 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Loader2, AlertCircle, CheckCircle, Sparkles, Globe, Lock } from 'lucide-react'
 
+export interface ProjectFormData {
+  title: string
+  subtitle: string
+  projectIntro: string
+  difficultyLevel: string
+  moduleName: string
+  estimatedDuration: number
+  projectVisibility: string
+  projectTags: string[]
+  projectIconUrl?: string
+  projectCoverImage?: string
+}
+
 interface CreateProjectModalProps {
   isOpen: boolean
   onClose: () => void
@@ -23,7 +36,7 @@ export function CreateProjectModal({
   onClose,
   onSuccess
 }: CreateProjectModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProjectFormData>({
     title: '',
     subtitle: '',
     projectIntro: '',
@@ -31,7 +44,7 @@ export function CreateProjectModal({
     moduleName: '',
     estimatedDuration: 60,
     projectVisibility: 'private',
-    projectTags: [] as string[],
+    projectTags: [],
     projectIconUrl: '',
     projectCoverImage: ''
   })
