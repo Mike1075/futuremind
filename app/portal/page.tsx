@@ -103,8 +103,10 @@ export default function PortalPage() {
 
       if (error) throw error
 
-      // 过滤掉已删除的课程（course_systems为null）
-      const validEnrollments = (enrolledData || []).filter((item: any) => item.course_systems !== null)
+      // 过滤掉已删除的课程（course_systems为null）以及已停用的课程（is_active为false）
+      const validEnrollments = (enrolledData || []).filter((item: any) =>
+        item.course_systems !== null && item.course_systems.is_active === true
+      )
 
       // 计算每个课程的真实进度
       const enrolled: EnrolledCourse[] = await Promise.all(
