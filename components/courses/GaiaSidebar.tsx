@@ -24,6 +24,7 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [discussionId, setDiscussionId] = useState<string | null>(null)
+  const [topic, setTopic] = useState<string>('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // 当提供初始上下文时，加载历史对话或发送欢迎消息
@@ -39,10 +40,25 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
     // 清空当前消息（切换到新的知识点）
     setMessages([])
     setDiscussionId(null)
+    setTopic('')
     setIsLoading(true)
 
     try {
-      // 尝试从数据库加载历史对话
+      // 1. 提炼主题
+      const topicResponse = await fetch('/api/gaia/extract-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: initialContext.text })
+      })
+
+      let extractedTopic = initialContext.text.substring(0, 15) + '...'
+      if (topicResponse.ok) {
+        const topicData = await topicResponse.json()
+        extractedTopic = topicData.topic || extractedTopic
+      }
+      setTopic(extractedTopic)
+
+      // 2. 尝试从数据库加载历史对话
       const response = await fetch('/api/n8n/gaia-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -67,12 +83,33 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
           }))
           setMessages(historyMessages)
         } else {
-          // 没有历史对话，发送首次欢迎消息
-          const welcomeMessage = initialContext.type === 'knowledge_point'
-            ? `我想深入了解这个知识点，能引导我思考吗？`
-            : `关于这个问题，我想听听你的引导`
+          // 3. 没有历史对话，生成启发性问题
+          const questionsResponse = await fetch('/api/gaia/generate-questions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              topic: extractedTopic,
+              originalText: initialContext.text
+            })
+          })
 
-          await handleSendMessage(welcomeMessage)
+          let inspiringQuestions = '让我们一起深入探讨这个话题吧！'
+          if (questionsResponse.ok) {
+            const questionsData = await questionsResponse.json()
+            inspiringQuestions = questionsData.questions || inspiringQuestions
+          }
+
+          // 4. 将启发性问题作为盖亚的首次消息
+          const gaiaMessage: Message = {
+            id: `gaia-${Date.now()}`,
+            role: 'assistant',
+            content: inspiringQuestions,
+            timestamp: new Date()
+          }
+          setMessages([gaiaMessage])
+
+          // 5. 保存到数据库（通过一次API调用完成讨论创建和消息保存）
+          // 这里我们只是展示消息，实际的数据库保存会在用户首次回复时进行
         }
       }
     } catch (error) {
@@ -103,6 +140,9 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
     setIsLoading(true)
 
     try {
+      // 如果是首次发送消息且有AI生成的启发性问题，先保存那条消息
+      const isFirstUserMessage = !discussionId && messages.length === 1 && messages[0].role === 'assistant'
+
       // 调用新的Gaia Chat API
       const response = await fetch('/api/n8n/gaia-chat', {
         method: 'POST',
@@ -111,7 +151,9 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
           message: textToSend,
           contentId: initialContext.contentId,
           knowledgePointText: initialContext.text,
-          discussionType: initialContext.type
+          discussionType: initialContext.type,
+          // 如果是首次消息，传递AI的启发性问题
+          firstAssistantMessage: isFirstUserMessage ? messages[0].content : undefined
         })
       })
 
@@ -159,24 +201,36 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
   return (
     <div className="fixed inset-y-0 right-0 w-full md:w-96 bg-gray-900 border-l border-gray-800 z-50 flex flex-col shadow-2xl">
       {/* 头部 */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gradient-to-r from-purple-900/30 to-blue-900/30">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-xl">
-            🌌
+      <div className="border-b border-gray-800 bg-gradient-to-r from-purple-900/30 to-blue-900/30">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-xl">
+              🌌
+            </div>
+            <div>
+              <h2 className="font-semibold text-white">盖亚 Gaia</h2>
+              <p className="text-xs text-gray-400">你的学习伙伴</p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-semibold text-white">盖亚 Gaia</h2>
-            <p className="text-xs text-gray-400">你的学习伙伴</p>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-        >
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+
+        {/* 主题标题 */}
+        {topic && (
+          <div className="px-6 pb-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-500">探讨主题：</span>
+              <span className="text-purple-300 font-medium">{topic}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 消息列表 */}

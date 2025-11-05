@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = user.id
-    const { message, contentId, knowledgePointText, discussionType } = await req.json()
+    const { message, contentId, knowledgePointText, discussionType, firstAssistantMessage } = await req.json()
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
@@ -75,7 +75,18 @@ export async function POST(req: NextRequest) {
       .eq('discussion_id', discussionId)
       .order('created_at', { ascending: true })
 
-    // 3. 保存用户消息
+    // 3. 如果是首次消息且有AI生成的启发性问题，先保存
+    if (firstAssistantMessage && historyMessages?.length === 0) {
+      await (supabase as any)
+        .from('discussion_messages')
+        .insert({
+          discussion_id: discussionId,
+          role: 'assistant',
+          content: firstAssistantMessage
+        })
+    }
+
+    // 4. 保存用户消息
     await (supabase as any)
       .from('discussion_messages')
       .insert({
