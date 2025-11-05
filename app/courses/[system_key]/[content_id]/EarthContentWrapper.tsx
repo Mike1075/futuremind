@@ -24,13 +24,18 @@ export function EarthContentWrapper({
   const [gaiaContext, setGaiaContext] = useState<{
     text: string
     type: 'knowledge_point' | 'question'
+    contentId: string
   } | undefined>(undefined)
 
   const handleDiscussWithGaia = (
     context: string,
     contextType: 'knowledge_point' | 'question'
   ) => {
-    setGaiaContext({ text: context, type: contextType })
+    setGaiaContext({
+      text: context,
+      type: contextType,
+      contentId: content.id
+    })
     setGaiaOpen(true)
   }
 

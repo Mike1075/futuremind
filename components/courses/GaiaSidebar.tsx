@@ -15,6 +15,7 @@ interface GaiaSidebarProps {
   initialContext?: {
     text: string
     type: 'knowledge_point' | 'question'
+    contentId: string
   }
 }
 
@@ -22,18 +23,30 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [discussionId, setDiscussionId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // 当提供初始上下文时，自动发送
+  // 当提供初始上下文时，加载历史对话或发送欢迎消息
   useEffect(() => {
     if (initialContext && isOpen) {
-      const contextMessage = initialContext.type === 'knowledge_point'
-        ? `关于这个知识点：${initialContext.text}\n\n我想了解更多，你能帮我解释一下吗？`
-        : `关于这个问题：${initialContext.text}\n\n你能帮我思考一下吗？`
-
-      handleSendMessage(contextMessage)
+      loadDiscussionHistory()
     }
   }, [initialContext, isOpen])
+
+  const loadDiscussionHistory = async () => {
+    if (!initialContext) return
+
+    try {
+      // 首次点击时，发送欢迎消息
+      const welcomeMessage = initialContext.type === 'knowledge_point'
+        ? `我想深入了解这个知识点，能引导我思考吗？`
+        : `关于这个问题，我想听听你的引导`
+
+      await handleSendMessage(welcomeMessage)
+    } catch (error) {
+      console.error('Failed to load discussion:', error)
+    }
+  }
 
   // 滚动到底部
   useEffect(() => {
@@ -42,7 +55,7 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
 
   const handleSendMessage = async (message?: string) => {
     const textToSend = message || inputValue.trim()
-    if (!textToSend) return
+    if (!textToSend || !initialContext) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -56,21 +69,26 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
     setIsLoading(true)
 
     try {
-      // 调用N8N代理API
+      // 调用新的Gaia Chat API
       const response = await fetch('/api/n8n/gaia-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: textToSend,
-          history: messages.map(m => ({
-            role: m.role,
-            content: m.content
-          }))
+          contentId: initialContext.contentId,
+          knowledgePointText: initialContext.text,
+          discussionType: initialContext.type
         })
       })
 
       if (response.ok) {
         const data = await response.json()
+
+        // 保存discussion ID
+        if (data.discussionId) {
+          setDiscussionId(data.discussionId)
+        }
+
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -129,11 +147,12 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
 
       {/* 消息列表 */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-        {messages.length === 0 && !initialContext && (
+        {messages.length === 0 && (
           <div className="text-center text-gray-500 mt-8">
-            <div className="text-5xl mb-4">💬</div>
-            <p>向盖亚提问，开始对话</p>
-            <p className="text-sm mt-2">我可以帮你理解知识点、思考问题</p>
+            <div className="text-5xl mb-4">🌌</div>
+            <p className="text-lg font-medium text-white mb-2">欢迎来到盖亚的探索空间</p>
+            <p className="text-sm">我会通过提问引导你深入思考</p>
+            <p className="text-xs mt-2 text-gray-600">而不是直接告诉你答案</p>
           </div>
         )}
 
