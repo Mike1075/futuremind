@@ -32,6 +32,16 @@ interface EarthStageWithProjects {
   explorer_projects: ExplorerProject[]
 }
 
+interface EarthCourseContent {
+  id: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  sequence_number: number
+  stage_id: string
+  duration: string | null
+}
+
 const DIFFICULTY_LEVELS = ['基础探索', '进阶挑战', '深度研究', '创新实践']
 const MODULES = ['意识觉醒', '科学探索', '创意表达']
 
@@ -48,8 +58,10 @@ export function ExplorerAlliance() {
   const router = useRouter()
   const [icarusProjects, setIcarusProjects] = useState<Project[]>([])
   const [earthProjects, setEarthProjects] = useState<EarthStageWithProjects[]>([])
+  const [earthContents, setEarthContents] = useState<EarthCourseContent[]>([])
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([])
   const [filteredEarthProjects, setFilteredEarthProjects] = useState<EarthStageWithProjects[]>([])
+  const [filteredEarthContents, setFilteredEarthContents] = useState<EarthCourseContent[]>([])
   const [selectedModule, setSelectedModule] = useState<string | null>(null)
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<ProjectType>('all')
@@ -64,17 +76,18 @@ export function ExplorerAlliance() {
 
   useEffect(() => {
     applyFilters()
-  }, [icarusProjects, earthProjects, selectedModule, selectedDifficulty, selectedType, searchQuery])
+  }, [icarusProjects, earthProjects, earthContents, selectedModule, selectedDifficulty, selectedType, searchQuery])
 
   const loadAllProjects = async () => {
     try {
       setLoading(true)
 
       // 并行加载所有类型的项目
-      const [publicResponse, myResponse, earthResponse] = await Promise.all([
+      const [publicResponse, myResponse, earthResponse, earthContentsData] = await Promise.all([
         fetch('/api/pbl/public-projects'),
         fetch('/api/pbl/my-projects?status=active'),
-        loadEarthProjects()
+        loadEarthProjects(),
+        loadEarthCourseContents()
       ])
 
       if (publicResponse.ok) {
@@ -89,6 +102,7 @@ export function ExplorerAlliance() {
       }
 
       setEarthProjects(earthResponse)
+      setEarthContents(earthContentsData)
     } catch (error) {
       console.error('Failed to load projects:', error)
     } finally {
@@ -140,6 +154,34 @@ export function ExplorerAlliance() {
     }
   }
 
+  const loadEarthCourseContents = async (): Promise<EarthCourseContent[]> => {
+    try {
+      const supabase = createClient()
+
+      // 获取地球课程体系ID
+      const { data: systemData } = await supabase
+        .from('course_systems')
+        .select('id')
+        .eq('system_key', 'earth')
+        .single()
+
+      if (!systemData) return []
+
+      // 获取所有地球课程内容
+      const { data: contents } = (await supabase
+        .from('course_contents')
+        .select('id, title, subtitle, description, sequence_number, stage_id, duration')
+        .eq('system_id', systemData.id)
+        .eq('is_published', true)
+        .order('sequence_number')) as { data: EarthCourseContent[] | null }
+
+      return contents || []
+    } catch (error) {
+      console.error('Failed to load earth course contents:', error)
+      return []
+    }
+  }
+
   const applyFilters = () => {
     // 筛选伊卡洛斯项目
     let filteredIcarus = [...icarusProjects]
@@ -164,7 +206,7 @@ export function ExplorerAlliance() {
       )
     }
 
-    // 筛选地球项目
+    // 筛选地球项目（explorer_projects字段）
     let filteredEarth = [...earthProjects]
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
@@ -177,8 +219,20 @@ export function ExplorerAlliance() {
       })).filter(stage => stage.explorer_projects.length > 0)
     }
 
+    // 筛选地球课程内容
+    let filteredEarthCourseContents = [...earthContents]
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filteredEarthCourseContents = filteredEarthCourseContents.filter(c =>
+        c.title.toLowerCase().includes(query) ||
+        c.subtitle?.toLowerCase().includes(query) ||
+        c.description?.toLowerCase().includes(query)
+      )
+    }
+
     setFilteredProjects(filteredIcarus)
     setFilteredEarthProjects(filteredEarth)
+    setFilteredEarthContents(filteredEarthCourseContents)
   }
 
   const handleSelectProject = async (projectId: string) => {
@@ -202,7 +256,9 @@ export function ExplorerAlliance() {
   }
 
   // 统计信息
-  const totalEarthProjects = earthProjects.reduce((sum, stage) => sum + stage.explorer_projects.length, 0)
+  const totalEarthExplorerProjects = earthProjects.reduce((sum, stage) => sum + stage.explorer_projects.length, 0)
+  const totalEarthCourseContents = earthContents.length
+  const totalEarthProjects = totalEarthExplorerProjects + totalEarthCourseContents
   const icarusSystemProjects = icarusProjects.filter(p => p.is_system).length
   const communityProjects = icarusProjects.filter(p => !p.is_system).length
 
@@ -390,6 +446,63 @@ export function ExplorerAlliance() {
           </div>
         </div>
 
+        {/* 地球课程内容 */}
+        {shouldShowEarth && filteredEarthContents.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              🌍 地球课程 - 全部内容
+            </h2>
+            <p className="text-gray-400 text-sm mb-6">
+              "欢迎来到地球"课程的所有学习内容，系统化的知识体系
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredEarthContents.map((content) => (
+                <Link
+                  key={content.id}
+                  href={`/courses/earth/${content.id}`}
+                  className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-all group"
+                >
+                  {/* 序号标识 */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold">
+                      {content.sequence_number}
+                    </div>
+                    {content.duration && (
+                      <span className="text-xs text-gray-500">⏱️ {content.duration}</span>
+                    )}
+                  </div>
+
+                  {/* 标题 */}
+                  <h3 className="text-lg font-semibold mb-2 group-hover:text-amber-400 transition-colors">
+                    {content.title}
+                  </h3>
+
+                  {/* 副标题 */}
+                  {content.subtitle && (
+                    <p className="text-gray-400 text-sm mb-3">{content.subtitle}</p>
+                  )}
+
+                  {/* 描述 */}
+                  {content.description && (
+                    <p className="text-gray-500 text-sm line-clamp-3">
+                      {content.description}
+                    </p>
+                  )}
+
+                  {/* 查看箭头 */}
+                  <div className="mt-4 flex items-center text-sm text-amber-400 group-hover:gap-2 transition-all">
+                    <span>开始学习</span>
+                    <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 小探险家项目 */}
         {shouldShowEarth && filteredEarthProjects.length > 0 && (
           <div className="mb-12">
@@ -538,7 +651,7 @@ export function ExplorerAlliance() {
           </div>
         )}
 
-        {shouldShowEarth && filteredEarthProjects.length === 0 &&
+        {shouldShowEarth && filteredEarthProjects.length === 0 && filteredEarthContents.length === 0 &&
          shouldShowIcarus && filteredIcarusByType.length === 0 && (
           <div className="text-center py-12 text-gray-500">
             {searchQuery || selectedModule || selectedDifficulty
