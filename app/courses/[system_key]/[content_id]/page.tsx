@@ -81,6 +81,51 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 
   // 地球课程使用专属详情页（带盖亚对话）
   if (systemKey === 'earth') {
+    // 获取阶段信息
+    const contentWithStage = content as any
+    const { data: stage } = await supabase
+      .from('course_stages')
+      .select('id, stage_number, stage_name')
+      .eq('id', contentWithStage.stage_id)
+      .single()
+
+    const stageData = stage as { id: string; stage_number: number; stage_name: string } | null
+
+    // 获取当前阶段的所有内容
+    const { data: stageContents } = await supabase
+      .from('course_contents')
+      .select('id')
+      .eq('stage_id', contentWithStage.stage_id)
+      .eq('is_published', true)
+      .order('sequence_number')
+
+    const contentsData = stageContents as { id: string }[] | null
+
+    // 获取下一个阶段信息
+    const { data: nextStage } = await supabase
+      .from('course_stages')
+      .select('id, stage_number, stage_name')
+      .eq('system_id', courseSystem.id)
+      .eq('stage_number', (stageData?.stage_number || 0) + 1)
+      .single()
+
+    const nextStageData = nextStage as { id: string; stage_number: number; stage_name: string } | null
+
+    // 获取下一阶段的第一个内容
+    let nextStageFirstContent = null
+    if (nextStageData) {
+      const { data: nextStageContent } = await supabase
+        .from('course_contents')
+        .select('id')
+        .eq('stage_id', nextStageData.id)
+        .eq('is_published', true)
+        .order('sequence_number')
+        .limit(1)
+        .single()
+
+      nextStageFirstContent = nextStageContent as { id: string } | null
+    }
+
     return (
       <EarthContentWrapper
         content={content}
@@ -88,6 +133,10 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
         isCompleted={isCompleted}
         prevContent={prevContent}
         nextContent={nextContent}
+        currentStage={stageData}
+        stageContentIds={contentsData?.map(c => c.id) || []}
+        nextStage={nextStageData}
+        nextStageFirstContentId={nextStageFirstContent?.id || null}
       />
     )
   }

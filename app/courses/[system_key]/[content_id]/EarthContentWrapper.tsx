@@ -5,12 +5,22 @@ import { EarthContentDetail } from '@/components/courses/EarthContentDetail'
 import { GaiaSidebar } from '@/components/courses/GaiaSidebar'
 import type { CourseContent } from '@/lib/supabase/database.types'
 
+interface StageInfo {
+  id: string
+  stage_number: number
+  stage_name: string
+}
+
 interface EarthContentWrapperProps {
   content: CourseContent
   systemKey: string
   isCompleted: boolean
   prevContent: CourseContent | null
   nextContent: CourseContent | null
+  currentStage: StageInfo | null
+  stageContentIds: string[]
+  nextStage: StageInfo | null
+  nextStageFirstContentId: string | null
 }
 
 export function EarthContentWrapper({
@@ -18,7 +28,11 @@ export function EarthContentWrapper({
   systemKey,
   isCompleted,
   prevContent,
-  nextContent
+  nextContent,
+  currentStage,
+  stageContentIds,
+  nextStage,
+  nextStageFirstContentId
 }: EarthContentWrapperProps) {
   const [gaiaOpen, setGaiaOpen] = useState(false)
   const [gaiaContext, setGaiaContext] = useState<{
@@ -68,6 +82,10 @@ export function EarthContentWrapper({
           prevContent={prevContent}
           nextContent={nextContent}
           onDiscussWithGaia={handleDiscussWithGaia}
+          currentStage={currentStage}
+          stageContentIds={stageContentIds}
+          nextStage={nextStage}
+          nextStageFirstContentId={nextStageFirstContentId}
         />
       </div>
 

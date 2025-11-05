@@ -1,14 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { CourseContent } from '@/lib/supabase/database.types'
+import { Lock, Unlock } from 'lucide-react'
 
 interface SocraticQuestions {
   pre_watch?: string[]
   during_watch?: string[]
   post_watch?: string[]
+}
+
+interface StageInfo {
+  id: string
+  stage_number: number
+  stage_name: string
 }
 
 interface EarthContentDetailProps {
@@ -18,6 +25,10 @@ interface EarthContentDetailProps {
   prevContent: CourseContent | null
   nextContent: CourseContent | null
   onDiscussWithGaia: (context: string, contextType: 'knowledge_point' | 'question') => void
+  currentStage: StageInfo | null
+  stageContentIds: string[]
+  nextStage: StageInfo | null
+  nextStageFirstContentId: string | null
 }
 
 export function EarthContentDetail({
@@ -26,9 +37,54 @@ export function EarthContentDetail({
   isCompleted,
   prevContent,
   nextContent,
-  onDiscussWithGaia
+  onDiscussWithGaia,
+  currentStage,
+  stageContentIds,
+  nextStage,
+  nextStageFirstContentId
 }: EarthContentDetailProps) {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null)
+  const [stageProgress, setStageProgress] = useState(0)
+  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [showUnlockAnimation, setShowUnlockAnimation] = useState(false)
+
+  // 计算阶段进度
+  useEffect(() => {
+    const fetchStageProgress = async () => {
+      if (!stageContentIds || stageContentIds.length === 0) return
+
+      try {
+        const contentIds = stageContentIds.join(',')
+        const response = await fetch(`/api/progress/calculate?contentIds=${contentIds}`)
+
+        if (response.ok) {
+          const data = await response.json()
+          const results = data.results || []
+
+          // 计算平均进度
+          const totalProgress = results.reduce((sum: number, r: any) => sum + r.progress, 0)
+          const avgProgress = results.length > 0 ? (totalProgress / results.length) * 100 : 0
+          setStageProgress(Math.round(avgProgress))
+
+          // 检查是否达到解锁条件（80%）
+          const wasUnlocked = isUnlocked
+          const shouldUnlock = avgProgress >= 80
+
+          if (!wasUnlocked && shouldUnlock) {
+            // 触发解锁动画
+            setShowUnlockAnimation(true)
+            setTimeout(() => setShowUnlockAnimation(false), 2000)
+          }
+
+          setIsUnlocked(shouldUnlock)
+        }
+      } catch (error) {
+        console.error('Failed to fetch stage progress:', error)
+      }
+    }
+
+    fetchStageProgress()
+  }, [stageContentIds, isUnlocked])
 
   const knowledgePoints = (content.knowledge_points as string[]) || []
   const socraticQuestions = (content.socratic_questions as SocraticQuestions) || {}
@@ -461,6 +517,148 @@ export function EarthContentDetail({
                 </motion.div>
               ))}
             </div>
+          </motion.div>
+        )}
+
+        {/* 阶段进度条和下一阶段 */}
+        {currentStage && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-12 mb-8"
+          >
+            {/* 阶段标题 */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">
+                第{currentStage.stage_number}阶段：{currentStage.stage_name}
+              </h3>
+              <span className="text-lg font-semibold text-green-400">
+                {stageProgress}%
+              </span>
+            </div>
+
+            {/* 进度条 */}
+            <div className="relative h-3 bg-gray-800 rounded-full overflow-hidden mb-6">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${stageProgress}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="h-full bg-gradient-to-r from-green-500 via-emerald-500 to-cyan-500 relative"
+              >
+                {/* 进度条光效 */}
+                <motion.div
+                  animate={{
+                    x: ['-100%', '200%']
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                />
+              </motion.div>
+            </div>
+
+            {/* 下一阶段按钮 */}
+            {nextStage && (
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent" />
+
+                {isUnlocked && nextStageFirstContentId ? (
+                  // 解锁状态 - 可点击
+                  <Link href={`/courses/${systemKey}/${nextStageFirstContentId}`}>
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="relative px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl cursor-pointer group overflow-hidden"
+                    >
+                      {/* 解锁动画背景 */}
+                      {showUnlockAnimation && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 1 }}
+                          animate={{ scale: 3, opacity: 0 }}
+                          transition={{ duration: 1.5 }}
+                          className="absolute inset-0 bg-yellow-400 rounded-xl"
+                        />
+                      )}
+
+                      <div className="relative flex items-center gap-3">
+                        <Unlock className="w-6 h-6 text-white" />
+                        <div>
+                          <div className="text-sm text-white/80">下一阶段已解锁</div>
+                          <div className="text-lg font-bold text-white">
+                            第{nextStage.stage_number}阶段：{nextStage.stage_name}
+                          </div>
+                        </div>
+                        <svg className="w-6 h-6 text-white ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </div>
+
+                      {/* 光效 */}
+                      <motion.div
+                        animate={{
+                          x: ['-100%', '200%']
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                      />
+                    </motion.div>
+                  </Link>
+                ) : (
+                  // 锁定状态
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="relative px-8 py-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl cursor-not-allowed"
+                  >
+                    <div className="flex items-center gap-3 opacity-60">
+                      <Lock className="w-6 h-6 text-gray-500" />
+                      <div>
+                        <div className="text-sm text-gray-500">
+                          {stageProgress >= 80 ? '即将解锁...' : `完成本阶段${Math.ceil(80 - stageProgress)}%后解锁`}
+                        </div>
+                        <div className="text-lg font-bold text-gray-400">
+                          第{nextStage.stage_number}阶段：{nextStage.stage_name}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 锁定粒子效果 */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      {[...Array(5)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          animate={{
+                            y: [0, -20, 0],
+                            opacity: [0.2, 0.5, 0.2]
+                          }}
+                          transition={{
+                            duration: 2 + i * 0.3,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: i * 0.2
+                          }}
+                          className="absolute w-1 h-1 bg-gray-600 rounded-full"
+                          style={{
+                            left: `${20 + i * 15}%`,
+                            top: '50%'
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                <div className="flex-1 h-px bg-gradient-to-r from-gray-700 via-transparent to-transparent" />
+              </div>
+            )}
           </motion.div>
         )}
 
