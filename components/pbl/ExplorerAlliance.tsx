@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ExplorerProjectCard } from '@/components/courses/ExplorerProjectCard'
+import type { ExplorerProject } from '@/lib/supabase/database.types'
+import { createClient } from '@/lib/supabase/client'
 
 interface Project {
   id: string
@@ -22,6 +25,13 @@ interface Project {
   } | null
 }
 
+interface EarthStageWithProjects {
+  id: string
+  title: string
+  sequence_number: number
+  explorer_projects: ExplorerProject[]
+}
+
 const DIFFICULTY_LEVELS = ['基础探索', '进阶挑战', '深度研究', '创新实践']
 const MODULES = ['意识觉醒', '科学探索', '创意表达']
 
@@ -32,38 +42,44 @@ const DIFFICULTY_COLORS = {
   '创新实践': 'from-orange-500 to-red-600'
 }
 
+type ProjectType = 'all' | 'icarus' | 'earth' | 'community'
+
 export function ExplorerAlliance() {
   const router = useRouter()
-  const [projects, setProjects] = useState<Project[]>([])
+  const [icarusProjects, setIcarusProjects] = useState<Project[]>([])
+  const [earthProjects, setEarthProjects] = useState<EarthStageWithProjects[]>([])
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([])
+  const [filteredEarthProjects, setFilteredEarthProjects] = useState<EarthStageWithProjects[]>([])
   const [selectedModule, setSelectedModule] = useState<string | null>(null)
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null)
+  const [selectedType, setSelectedType] = useState<ProjectType>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [myProjectIds, setMyProjectIds] = useState<Set<string>>(new Set())
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   useEffect(() => {
-    loadProjects()
+    loadAllProjects()
   }, [])
 
   useEffect(() => {
     applyFilters()
-  }, [projects, selectedModule, selectedDifficulty, searchQuery])
+  }, [icarusProjects, earthProjects, selectedModule, selectedDifficulty, selectedType, searchQuery])
 
-  const loadProjects = async () => {
+  const loadAllProjects = async () => {
     try {
       setLoading(true)
 
-      // 并行加载公开项目和我的项目
-      const [publicResponse, myResponse] = await Promise.all([
+      // 并行加载所有类型的项目
+      const [publicResponse, myResponse, earthResponse] = await Promise.all([
         fetch('/api/pbl/public-projects'),
-        fetch('/api/pbl/my-projects?status=active')
+        fetch('/api/pbl/my-projects?status=active'),
+        loadEarthProjects()
       ])
 
       if (publicResponse.ok) {
         const data = await publicResponse.json()
-        setProjects(data.projects || [])
+        setIcarusProjects(data.projects || [])
       }
 
       if (myResponse.ok) {
@@ -71,6 +87,8 @@ export function ExplorerAlliance() {
         const ids = new Set<string>(myData.projects.map((p: any) => p.course_contents.id))
         setMyProjectIds(ids)
       }
+
+      setEarthProjects(earthResponse)
     } catch (error) {
       console.error('Failed to load projects:', error)
     } finally {
@@ -78,30 +96,84 @@ export function ExplorerAlliance() {
     }
   }
 
+  const loadEarthProjects = async (): Promise<EarthStageWithProjects[]> => {
+    try {
+      const supabase = createClient()
+
+      // 获取地球课程体系ID
+      const { data: systemData } = await supabase
+        .from('course_systems')
+        .select('id')
+        .eq('system_key', 'earth')
+        .single()
+
+      if (!systemData) return []
+
+      // 获取所有阶段的explorer_projects
+      const { data: stages } = await supabase
+        .from('course_contents')
+        .select('id, title, sequence_number, explorer_projects')
+        .eq('system_id', systemData.id)
+        .not('explorer_projects', 'is', null)
+        .order('sequence_number')
+
+      if (!stages) return []
+
+      // 过滤出有项目的阶段
+      return stages
+        .filter(stage => {
+          const projects = stage.explorer_projects as any
+          return Array.isArray(projects) && projects.length > 0
+        })
+        .map(stage => ({
+          ...stage,
+          explorer_projects: stage.explorer_projects as ExplorerProject[]
+        }))
+    } catch (error) {
+      console.error('Failed to load earth projects:', error)
+      return []
+    }
+  }
+
   const applyFilters = () => {
-    let filtered = [...projects]
+    // 筛选伊卡洛斯项目
+    let filteredIcarus = [...icarusProjects]
 
     // 应用模块筛选
     if (selectedModule) {
-      filtered = filtered.filter(p => p.module_name === selectedModule)
+      filteredIcarus = filteredIcarus.filter(p => p.module_name === selectedModule)
     }
 
     // 应用难度筛选
     if (selectedDifficulty) {
-      filtered = filtered.filter(p => p.difficulty_level === selectedDifficulty)
+      filteredIcarus = filteredIcarus.filter(p => p.difficulty_level === selectedDifficulty)
     }
 
     // 应用搜索
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(p =>
+      filteredIcarus = filteredIcarus.filter(p =>
         p.title.toLowerCase().includes(query) ||
         p.subtitle?.toLowerCase().includes(query) ||
         p.project_intro?.toLowerCase().includes(query)
       )
     }
 
-    setFilteredProjects(filtered)
+    // 筛选地球项目
+    let filteredEarth = [...earthProjects]
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filteredEarth = filteredEarth.map(stage => ({
+        ...stage,
+        explorer_projects: stage.explorer_projects.filter(p =>
+          p.title.toLowerCase().includes(query) ||
+          p.goal?.toLowerCase().includes(query)
+        )
+      })).filter(stage => stage.explorer_projects.length > 0)
+    }
+
+    setFilteredProjects(filteredIcarus)
+    setFilteredEarthProjects(filteredEarth)
   }
 
   const handleSelectProject = async (projectId: string) => {
@@ -113,8 +185,7 @@ export function ExplorerAlliance() {
       })
 
       if (response.ok) {
-        // 重新加载项目列表
-        await loadProjects()
+        await loadAllProjects()
       } else {
         const error = await response.json()
         alert(error.error || '选择项目失败')
@@ -126,17 +197,28 @@ export function ExplorerAlliance() {
   }
 
   // 统计信息
+  const totalEarthProjects = earthProjects.reduce((sum, stage) => sum + stage.explorer_projects.length, 0)
+  const icarusSystemProjects = icarusProjects.filter(p => p.is_system).length
+  const communityProjects = icarusProjects.filter(p => !p.is_system).length
+
   const stats = {
-    total: projects.length,
-    byDifficulty: DIFFICULTY_LEVELS.map(level => ({
-      level,
-      count: projects.filter(p => p.difficulty_level === level).length
-    })),
-    byModule: MODULES.map(module => ({
-      module,
-      count: projects.filter(p => p.module_name === module).length
-    }))
+    total: icarusProjects.length + totalEarthProjects,
+    icarus: icarusSystemProjects,
+    earth: totalEarthProjects,
+    community: communityProjects,
+    myProjects: myProjectIds.size
   }
+
+  // 根据类型筛选决定显示什么
+  const shouldShowIcarus = selectedType === 'all' || selectedType === 'icarus' || selectedType === 'community'
+  const shouldShowEarth = selectedType === 'all' || selectedType === 'earth'
+  const filteredIcarusByType = shouldShowIcarus
+    ? filteredProjects.filter(p => {
+        if (selectedType === 'icarus') return p.is_system
+        if (selectedType === 'community') return !p.is_system
+        return true
+      })
+    : []
 
   if (loading) {
     return (
@@ -157,7 +239,7 @@ export function ExplorerAlliance() {
                 探索者联盟
               </h1>
               <p className="text-gray-400 text-lg">
-                发现并加入精彩的PBL项目，与全球学习者一起探索未知
+                发现并加入精彩的学习项目，与全球学习者一起探索未知
               </p>
             </div>
             <Link
@@ -169,27 +251,71 @@ export function ExplorerAlliance() {
           </div>
 
           {/* 统计卡片 */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
               <div className="text-2xl font-bold text-blue-400">{stats.total}</div>
-              <div className="text-sm text-gray-400">可选项目</div>
+              <div className="text-sm text-gray-400">全部项目</div>
             </div>
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
-              <div className="text-2xl font-bold text-green-400">{myProjectIds.size}</div>
-              <div className="text-sm text-gray-400">我的项目</div>
+              <div className="text-2xl font-bold text-purple-400">{stats.icarus}</div>
+              <div className="text-sm text-gray-400">伊卡洛斯</div>
             </div>
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
-              <div className="text-2xl font-bold text-purple-400">
-                {projects.reduce((sum, p) => sum + (p.participant_count || 0), 0)}
-              </div>
-              <div className="text-sm text-gray-400">总参与人次</div>
+              <div className="text-2xl font-bold text-amber-400">{stats.earth}</div>
+              <div className="text-sm text-gray-400">小探险家</div>
             </div>
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
-              <div className="text-2xl font-bold text-orange-400">
-                {projects.filter(p => !p.is_system).length}
-              </div>
+              <div className="text-2xl font-bold text-orange-400">{stats.community}</div>
               <div className="text-sm text-gray-400">社区项目</div>
             </div>
+            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-400">{stats.myProjects}</div>
+              <div className="text-sm text-gray-400">我的项目</div>
+            </div>
+          </div>
+
+          {/* 项目类型筛选 */}
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+            <button
+              onClick={() => setSelectedType('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedType === 'all'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              全部项目 ({stats.total})
+            </button>
+            <button
+              onClick={() => setSelectedType('icarus')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedType === 'icarus'
+                  ? 'bg-purple-500 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              🚀 伊卡洛斯项目 ({stats.icarus})
+            </button>
+            <button
+              onClick={() => setSelectedType('earth')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedType === 'earth'
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              🌍 小探险家项目 ({stats.earth})
+            </button>
+            <button
+              onClick={() => setSelectedType('community')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedType === 'community'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              👥 社区项目 ({stats.community})
+            </button>
           </div>
 
           {/* 筛选器 */}
@@ -207,179 +333,208 @@ export function ExplorerAlliance() {
                 />
               </div>
 
-              {/* 模块筛选 */}
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">模块</label>
-                <select
-                  value={selectedModule || ''}
-                  onChange={(e) => setSelectedModule(e.target.value || null)}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">全部模块</option>
-                  {MODULES.map(module => (
-                    <option key={module} value={module}>{module}</option>
-                  ))}
-                </select>
-              </div>
+              {/* 模块筛选 (仅伊卡洛斯) */}
+              {shouldShowIcarus && (
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">模块</label>
+                  <select
+                    value={selectedModule || ''}
+                    onChange={(e) => setSelectedModule(e.target.value || null)}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">全部模块</option>
+                    {MODULES.map(module => (
+                      <option key={module} value={module}>{module}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-              {/* 难度筛选 */}
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">难度</label>
-                <select
-                  value={selectedDifficulty || ''}
-                  onChange={(e) => setSelectedDifficulty(e.target.value || null)}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">全部难度</option>
-                  {DIFFICULTY_LEVELS.map(level => (
-                    <option key={level} value={level}>{level}</option>
-                  ))}
-                </select>
-              </div>
+              {/* 难度筛选 (仅伊卡洛斯) */}
+              {shouldShowIcarus && (
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">难度</label>
+                  <select
+                    value={selectedDifficulty || ''}
+                    onChange={(e) => setSelectedDifficulty(e.target.value || null)}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">全部难度</option>
+                    {DIFFICULTY_LEVELS.map(level => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
-            {/* 视图切换 */}
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                }`}
-              >
-                网格视图
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                }`}
-              >
-                列表视图
-              </button>
-            </div>
-          </div>
-
-          {/* 结果计数 */}
-          <div className="text-gray-400 text-sm mb-4">
-            找到 {filteredProjects.length} 个项目
-            {(selectedModule || selectedDifficulty || searchQuery) && (
+            {/* 清除筛选 */}
+            {(selectedModule || selectedDifficulty || searchQuery || selectedType !== 'all') && (
               <button
                 onClick={() => {
                   setSelectedModule(null)
                   setSelectedDifficulty(null)
                   setSearchQuery('')
+                  setSelectedType('all')
                 }}
-                className="ml-3 text-blue-400 hover:text-blue-300"
+                className="mt-4 text-sm text-blue-400 hover:text-blue-300"
               >
-                清除筛选
+                清除所有筛选
               </button>
             )}
           </div>
         </div>
 
-        {/* 项目列表 */}
-        {filteredProjects.length > 0 ? (
-          <div className={viewMode === 'grid'
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-            : 'space-y-4'
-          }>
-            {filteredProjects.map(project => {
-              const isSelected = myProjectIds.has(project.id)
+        {/* 小探险家项目 */}
+        {shouldShowEarth && filteredEarthProjects.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              🌍 地球课程 - 小探险家项目
+            </h2>
+            <p className="text-gray-400 text-sm mb-6">
+              来自"欢迎来到地球"课程的动手实践项目，帮助你将学到的知识应用到实际中
+            </p>
 
-              return (
-                <div
-                  key={project.id}
-                  className={`bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-all ${
-                    isSelected ? 'ring-2 ring-blue-500/30' : ''
-                  }`}
-                >
-                  {/* 标签 */}
-                  <div className="flex gap-2 mb-3 flex-wrap">
-                    {project.difficulty_level && (
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${
-                        DIFFICULTY_COLORS[project.difficulty_level as keyof typeof DIFFICULTY_COLORS] || 'from-gray-500 to-gray-600'
-                      } text-white`}>
-                        {project.difficulty_level}
-                      </span>
-                    )}
-                    {isSelected && (
-                      <span className="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
-                        ✓ 已选择
-                      </span>
-                    )}
-                    {project.is_system && (
-                      <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-                        官方项目
-                      </span>
-                    )}
-                  </div>
-
-                  {/* 项目信息 */}
-                  <h3 className="text-lg font-semibold mb-2">{project.title}</h3>
-                  {project.subtitle && (
-                    <p className="text-gray-400 text-sm mb-3">{project.subtitle}</p>
-                  )}
-
-                  {project.project_intro && (
-                    <p className="text-gray-500 text-sm mb-4 line-clamp-3">
-                      {project.project_intro}
-                    </p>
-                  )}
-
-                  {/* 元信息 */}
-                  <div className="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
-                    {project.module_name && (
-                      <span>📚 {project.module_name}</span>
-                    )}
-                    {project.estimated_duration && (
-                      <span>⏱️ {project.estimated_duration}分钟</span>
-                    )}
-                    {project.participant_count !== undefined && (
-                      <span>👥 {project.participant_count}人</span>
-                    )}
-                  </div>
-
-                  {/* 创建者 (用户项目) */}
-                  {project.creator && (
-                    <div className="text-xs text-gray-500 mb-4">
-                      创建者: {project.creator.full_name || project.creator.username}
-                    </div>
-                  )}
-
-                  {/* 操作按钮 */}
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/courses/icarus/${project.id}`}
-                      className="flex-1 px-4 py-2 bg-gray-800 rounded-lg text-sm font-medium text-center hover:bg-gray-700 transition-colors"
-                    >
-                      查看详情
-                    </Link>
-                    {!isSelected && (
-                      <button
-                        onClick={() => handleSelectProject(project.id)}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
-                      >
-                        选择
-                      </button>
-                    )}
-                    {isSelected && (
-                      <Link
-                        href="/courses/icarus"
-                        className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors whitespace-nowrap"
-                      >
-                        去学习
-                      </Link>
-                    )}
-                  </div>
+            {filteredEarthProjects.map((stage) => (
+              <div key={stage.id} className="mb-8">
+                <h3 className="text-lg font-semibold text-blue-400 mb-4">
+                  {stage.title}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {stage.explorer_projects.map((project, idx) => (
+                    <ExplorerProjectCard
+                      key={`${stage.id}-${idx}`}
+                      project={project}
+                      index={idx}
+                      source="earth"
+                      stageTitle={`第${stage.sequence_number}阶段`}
+                    />
+                  ))}
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
-        ) : (
+        )}
+
+        {/* 伊卡洛斯和社区项目 */}
+        {shouldShowIcarus && filteredIcarusByType.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              {selectedType === 'icarus' && '🚀 伊卡洛斯项目'}
+              {selectedType === 'community' && '👥 社区项目'}
+              {selectedType === 'all' && '🚀 伊卡洛斯 & 社区项目'}
+            </h2>
+            <p className="text-gray-400 text-sm mb-6">
+              {selectedType === 'icarus' && '官方策划的PBL项目，系统化的学习路径'}
+              {selectedType === 'community' && '由学习者创建的创新项目，激发无限可能'}
+              {selectedType === 'all' && 'PBL项目式学习，理论与实践相结合'}
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredIcarusByType.map(project => {
+                const isSelected = myProjectIds.has(project.id)
+
+                return (
+                  <div
+                    key={project.id}
+                    className={`bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-all ${
+                      isSelected ? 'ring-2 ring-blue-500/30' : ''
+                    }`}
+                  >
+                    {/* 标签 */}
+                    <div className="flex gap-2 mb-3 flex-wrap">
+                      {project.difficulty_level && (
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${
+                          DIFFICULTY_COLORS[project.difficulty_level as keyof typeof DIFFICULTY_COLORS] || 'from-gray-500 to-gray-600'
+                        } text-white`}>
+                          {project.difficulty_level}
+                        </span>
+                      )}
+                      {isSelected && (
+                        <span className="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+                          ✓ 已选择
+                        </span>
+                      )}
+                      {project.is_system && (
+                        <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
+                          官方项目
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 项目信息 */}
+                    <h3 className="text-lg font-semibold mb-2">{project.title}</h3>
+                    {project.subtitle && (
+                      <p className="text-gray-400 text-sm mb-3">{project.subtitle}</p>
+                    )}
+
+                    {project.project_intro && (
+                      <p className="text-gray-500 text-sm mb-4 line-clamp-3">
+                        {project.project_intro}
+                      </p>
+                    )}
+
+                    {/* 元信息 */}
+                    <div className="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
+                      {project.module_name && (
+                        <span>📚 {project.module_name}</span>
+                      )}
+                      {project.estimated_duration && (
+                        <span>⏱️ {project.estimated_duration}分钟</span>
+                      )}
+                      {project.participant_count !== undefined && (
+                        <span>👥 {project.participant_count}人</span>
+                      )}
+                    </div>
+
+                    {/* 创建者 (用户项目) */}
+                    {project.creator && (
+                      <div className="text-xs text-gray-500 mb-4">
+                        创建者: {project.creator.full_name || project.creator.username}
+                      </div>
+                    )}
+
+                    {/* 操作按钮 */}
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/courses/icarus/${project.id}`}
+                        className="flex-1 px-4 py-2 bg-gray-800 rounded-lg text-sm font-medium text-center hover:bg-gray-700 transition-colors"
+                      >
+                        查看详情
+                      </Link>
+                      {!isSelected && (
+                        <button
+                          onClick={() => handleSelectProject(project.id)}
+                          className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                        >
+                          选择
+                        </button>
+                      )}
+                      {isSelected && (
+                        <Link
+                          href="/courses/icarus"
+                          className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors whitespace-nowrap"
+                        >
+                          去学习
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 空状态 */}
+        {!shouldShowEarth && !shouldShowIcarus && (
+          <div className="text-center py-12 text-gray-500">
+            请选择项目类型
+          </div>
+        )}
+
+        {shouldShowEarth && filteredEarthProjects.length === 0 &&
+         shouldShowIcarus && filteredIcarusByType.length === 0 && (
           <div className="text-center py-12 text-gray-500">
             {searchQuery || selectedModule || selectedDifficulty
               ? '没有找到符合条件的项目'
