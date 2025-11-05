@@ -68,9 +68,44 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
       .in('status', ['active', 'paused', 'completed'])
       .single()) as any
 
+    // 转换week_plan数据结构：activities -> days
+    const transformedProject = {
+      ...content,
+      week_plan: (content.week_plan as any)?.map((week: any) => ({
+        week: week.week,
+        theme: week.theme,
+        goals: week.goals,
+        days: week.activities?.flatMap((activity: any) => {
+          // 解析day字段，可能是 "1", "2", 或 "3-5"
+          const dayStr = activity.day?.toString() || ''
+
+          if (dayStr.includes('-')) {
+            // 处理范围，如 "3-5"
+            const [start, end] = dayStr.split('-').map((d: string) => parseInt(d.trim()))
+            return Array.from({ length: end - start + 1 }, (_, i) => ({
+              day: start + i,
+              title: activity.title,
+              description: activity.description,
+              tasks: [], // 数据库中没有tasks字段，使用空数组
+              deliverables: activity.deliverables || []
+            }))
+          } else {
+            // 单日活动
+            return [{
+              day: parseInt(dayStr) || 1,
+              title: activity.title,
+              description: activity.description,
+              tasks: [],
+              deliverables: activity.deliverables || []
+            }]
+          }
+        }) || []
+      })) || []
+    }
+
     return (
       <PBLProjectDetail
-        project={content as any}
+        project={transformedProject as any}
         systemKey={systemKey}
         userProgress={selection?.progress || {}}
         isSelected={!!selection}
