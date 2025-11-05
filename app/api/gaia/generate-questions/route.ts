@@ -11,14 +11,20 @@ export async function POST(req: NextRequest) {
   try {
     const { topic, originalText } = await req.json()
 
+    console.log('[Generate Questions] 收到请求:', { topic, originalTextLength: originalText?.length })
+
     if (!topic || !originalText) {
+      console.error('[Generate Questions] 缺少必要字段')
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY
     if (!OPENAI_API_KEY) {
+      console.error('[Generate Questions] OpenAI API key未配置')
       return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 })
     }
+
+    console.log('[Generate Questions] 调用OpenAI API...')
 
     // 调用OpenAI生成启发性问题
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -61,6 +67,7 @@ export async function POST(req: NextRequest) {
     const data = await response.json()
     const questions = data.choices?.[0]?.message?.content?.trim() || '让我们一起探讨这个有趣的话题吧！'
 
+    console.log('[Generate Questions] 成功生成:', questions.substring(0, 100) + '...')
     return NextResponse.json({ questions })
   } catch (error) {
     console.error('[Generate Questions] Internal error:', error)

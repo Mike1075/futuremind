@@ -84,6 +84,7 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
           setMessages(historyMessages)
         } else {
           // 3. 没有历史对话，生成启发性问题
+          console.log('[Gaia] 生成启发性问题...', { topic: extractedTopic, originalText: initialContext.text })
           const questionsResponse = await fetch('/api/gaia/generate-questions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -97,6 +98,10 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
           if (questionsResponse.ok) {
             const questionsData = await questionsResponse.json()
             inspiringQuestions = questionsData.questions || inspiringQuestions
+            console.log('[Gaia] AI生成问题成功:', inspiringQuestions.substring(0, 50) + '...')
+          } else {
+            const errorText = await questionsResponse.text()
+            console.error('[Gaia] 生成问题失败:', questionsResponse.status, errorText)
           }
 
           // 4. 将启发性问题作为盖亚的首次消息
@@ -225,9 +230,9 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
         {/* 主题标题 */}
         {topic && (
           <div className="px-6 pb-3">
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex flex-col gap-1 text-sm">
               <span className="text-gray-500">探讨主题：</span>
-              <span className="text-purple-300 font-medium">{topic}</span>
+              <span className="text-purple-300 font-medium break-words leading-relaxed">{topic}</span>
             </div>
           </div>
         )}
