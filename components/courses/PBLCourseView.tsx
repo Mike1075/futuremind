@@ -328,10 +328,10 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
             <div className="mb-6 flex gap-4 flex-wrap">
               <div>
                 <label className="text-sm text-gray-400 mb-2 block">模块</label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-2">
                   <button
                     onClick={() => setSelectedModule(null)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                       selectedModule === null
                         ? 'bg-blue-500 text-white'
                         : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
@@ -343,7 +343,7 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                     <button
                       key={module}
                       onClick={() => setSelectedModule(module)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                         selectedModule === module
                           ? 'bg-blue-500 text-white'
                           : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
@@ -357,10 +357,10 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
 
               <div>
                 <label className="text-sm text-gray-400 mb-2 block">难度</label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-2">
                   <button
                     onClick={() => setSelectedDifficulty(null)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                       selectedDifficulty === null
                         ? 'bg-blue-500 text-white'
                         : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
@@ -372,7 +372,7 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                     <button
                       key={level}
                       onClick={() => setSelectedDifficulty(level)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                         selectedDifficulty === level
                           ? 'bg-blue-500 text-white'
                           : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
