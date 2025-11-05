@@ -20,8 +20,8 @@ interface Project {
   is_system?: boolean
   creator?: {
     id: string
-    username: string
     full_name: string | null
+    email: string | null
   } | null
 }
 
@@ -42,16 +42,6 @@ interface EarthCourseContent {
   duration: string | null
 }
 
-const DIFFICULTY_LEVELS = ['基础探索', '进阶挑战', '深度研究', '创新实践']
-const MODULES = ['意识觉醒', '科学探索', '创意表达']
-
-const DIFFICULTY_COLORS = {
-  '基础探索': 'from-green-500 to-emerald-600',
-  '进阶挑战': 'from-blue-500 to-cyan-600',
-  '深度研究': 'from-purple-500 to-pink-600',
-  '创新实践': 'from-orange-500 to-red-600'
-}
-
 type ProjectType = 'all' | 'icarus' | 'earth' | 'community'
 
 export function ExplorerAlliance() {
@@ -62,13 +52,10 @@ export function ExplorerAlliance() {
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([])
   const [filteredEarthProjects, setFilteredEarthProjects] = useState<EarthStageWithProjects[]>([])
   const [filteredEarthContents, setFilteredEarthContents] = useState<EarthCourseContent[]>([])
-  const [selectedModule, setSelectedModule] = useState<string | null>(null)
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<ProjectType>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [myProjectIds, setMyProjectIds] = useState<Set<string>>(new Set())
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   useEffect(() => {
     loadAllProjects()
@@ -76,7 +63,7 @@ export function ExplorerAlliance() {
 
   useEffect(() => {
     applyFilters()
-  }, [icarusProjects, earthProjects, earthContents, selectedModule, selectedDifficulty, selectedType, searchQuery])
+  }, [icarusProjects, earthProjects, earthContents, selectedType, searchQuery])
 
   const loadAllProjects = async () => {
     try {
@@ -186,23 +173,15 @@ export function ExplorerAlliance() {
     // 筛选伊卡洛斯项目
     let filteredIcarus = [...icarusProjects]
 
-    // 应用模块筛选
-    if (selectedModule) {
-      filteredIcarus = filteredIcarus.filter(p => p.module_name === selectedModule)
-    }
-
-    // 应用难度筛选
-    if (selectedDifficulty) {
-      filteredIcarus = filteredIcarus.filter(p => p.difficulty_level === selectedDifficulty)
-    }
-
-    // 应用搜索
+    // 应用模糊搜索
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filteredIcarus = filteredIcarus.filter(p =>
         p.title.toLowerCase().includes(query) ||
         p.subtitle?.toLowerCase().includes(query) ||
-        p.project_intro?.toLowerCase().includes(query)
+        p.project_intro?.toLowerCase().includes(query) ||
+        p.module_name?.toLowerCase().includes(query) ||
+        p.difficulty_level?.toLowerCase().includes(query)
       )
     }
 
@@ -379,70 +358,39 @@ export function ExplorerAlliance() {
             </button>
           </div>
 
-          {/* 筛选器 */}
+          {/* 搜索框 */}
           <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* 搜索 */}
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">搜索</label>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="搜索项目标题或描述..."
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="搜索项目标题、描述、模块或难度..."
+                    className="w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
               </div>
-
-              {/* 模块筛选 (仅伊卡洛斯) */}
-              {shouldShowIcarus && (
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">模块</label>
-                  <select
-                    value={selectedModule || ''}
-                    onChange={(e) => setSelectedModule(e.target.value || null)}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">全部模块</option>
-                    {MODULES.map(module => (
-                      <option key={module} value={module}>{module}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* 难度筛选 (仅伊卡洛斯) */}
-              {shouldShowIcarus && (
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">难度</label>
-                  <select
-                    value={selectedDifficulty || ''}
-                    onChange={(e) => setSelectedDifficulty(e.target.value || null)}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">全部难度</option>
-                    {DIFFICULTY_LEVELS.map(level => (
-                      <option key={level} value={level}>{level}</option>
-                    ))}
-                  </select>
-                </div>
+              {/* 清除搜索 */}
+              {(searchQuery || selectedType !== 'all') && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('')
+                    setSelectedType('all')
+                  }}
+                  className="px-4 py-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  清除筛选
+                </button>
               )}
             </div>
-
-            {/* 清除筛选 */}
-            {(selectedModule || selectedDifficulty || searchQuery || selectedType !== 'all') && (
-              <button
-                onClick={() => {
-                  setSelectedModule(null)
-                  setSelectedDifficulty(null)
-                  setSearchQuery('')
-                  setSelectedType('all')
-                }}
-                className="mt-4 text-sm text-blue-400 hover:text-blue-300"
-              >
-                清除所有筛选
-              </button>
-            )}
+            <p className="text-xs text-gray-500 mt-3">
+              💡 提示：支持模糊搜索，可以搜索标题、描述、模块名称、难度等任何相关内容
+            </p>
           </div>
         </div>
 
@@ -561,13 +509,6 @@ export function ExplorerAlliance() {
                   >
                     {/* 标签 */}
                     <div className="flex gap-2 mb-3 flex-wrap">
-                      {project.difficulty_level && (
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${
-                          DIFFICULTY_COLORS[project.difficulty_level as keyof typeof DIFFICULTY_COLORS] || 'from-gray-500 to-gray-600'
-                        } text-white`}>
-                          {project.difficulty_level}
-                        </span>
-                      )}
                       {isSelected && (
                         <span className="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
                           ✓ 已选择
@@ -576,6 +517,11 @@ export function ExplorerAlliance() {
                       {project.is_system && (
                         <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
                           官方项目
+                        </span>
+                      )}
+                      {!project.is_system && (
+                        <span className="px-3 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
+                          社区项目
                         </span>
                       )}
                     </div>
@@ -608,7 +554,7 @@ export function ExplorerAlliance() {
                     {/* 创建者 (用户项目) */}
                     {project.creator && (
                       <div className="text-xs text-gray-500 mb-4">
-                        创建者: {project.creator.full_name || project.creator.username}
+                        创建者: {project.creator.full_name || project.creator.email}
                       </div>
                     )}
 
@@ -654,7 +600,7 @@ export function ExplorerAlliance() {
         {shouldShowEarth && filteredEarthProjects.length === 0 && filteredEarthContents.length === 0 &&
          shouldShowIcarus && filteredIcarusByType.length === 0 && (
           <div className="text-center py-12 text-gray-500">
-            {searchQuery || selectedModule || selectedDifficulty
+            {searchQuery
               ? '没有找到符合条件的项目'
               : '暂无可用项目'}
           </div>

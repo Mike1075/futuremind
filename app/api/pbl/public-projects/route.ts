@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
         created_at,
         profiles:created_by_user (
           id,
-          username,
           full_name,
+          email,
           avatar_url
         )
       `)
