@@ -62,19 +62,41 @@ export default function CoursesPage() {
   }
 
   const deleteCourse = async (courseId: string, courseTitle: string) => {
-    const confirmed = confirm(`确定要删除课程「${courseTitle}」吗？\n\n这将执行软删除（设置为不可见），不会真正删除数据。`)
+    const confirmed = confirm(`⚠️ 警告：确定要**永久删除**课程「${courseTitle}」吗？\n\n这将：\n1. 永久删除课程系统记录\n2. 永久删除该课程下的所有内容（视频、问题、项目等）\n3. 删除学生的学习记录和进度\n\n此操作**不可恢复**！`)
     if (!confirmed) return
+
+    // 二次确认
+    const finalConfirm = confirm(`请再次确认删除「${courseTitle}」\n\n输入课程名称以确认删除（即将实施）`)
+    if (!finalConfirm) return
 
     try {
       const supabase = createClient()
-      const { error } = await supabase
+
+      // 先删除关联的course_contents（级联删除）
+      const { error: contentsError } = await supabase
+        .from('course_contents')
+        .delete()
+        .eq('system_id', courseId)
+
+      if (contentsError) {
+        console.error('删除课程内容失败:', contentsError)
+        alert('删除课程内容失败，请重试')
+        return
+      }
+
+      // 再删除course_system
+      const { error: systemError } = await supabase
         .from('course_systems')
-        .update({ is_active: false })
+        .delete()
         .eq('id', courseId)
 
-      if (error) throw error
+      if (systemError) {
+        console.error('删除课程系统失败:', systemError)
+        alert('删除课程系统失败，请重试')
+        return
+      }
 
-      alert('课程已删除')
+      alert('✅ 课程已永久删除')
       await loadCourses() // 重新加载列表
     } catch (error) {
       console.error('删除课程失败:', error)
