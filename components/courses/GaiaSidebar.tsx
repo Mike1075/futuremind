@@ -31,20 +31,54 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
     if (initialContext && isOpen) {
       loadDiscussionHistory()
     }
-  }, [initialContext, isOpen])
+  }, [initialContext?.text, initialContext?.type, isOpen])
 
   const loadDiscussionHistory = async () => {
     if (!initialContext) return
 
-    try {
-      // 首次点击时，发送欢迎消息
-      const welcomeMessage = initialContext.type === 'knowledge_point'
-        ? `我想深入了解这个知识点，能引导我思考吗？`
-        : `关于这个问题，我想听听你的引导`
+    // 清空当前消息（切换到新的知识点）
+    setMessages([])
+    setDiscussionId(null)
+    setIsLoading(true)
 
-      await handleSendMessage(welcomeMessage)
+    try {
+      // 尝试从数据库加载历史对话
+      const response = await fetch('/api/n8n/gaia-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentId: initialContext.contentId,
+          knowledgePointText: initialContext.text,
+          discussionType: initialContext.type
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+
+        if (data.discussion && data.messages && data.messages.length > 0) {
+          // 有历史对话，加载历史消息
+          setDiscussionId(data.discussion.id)
+          const historyMessages: Message[] = data.messages.map((msg: any, index: number) => ({
+            id: `${Date.now()}-${index}`,
+            role: msg.role,
+            content: msg.content,
+            timestamp: new Date(msg.created_at)
+          }))
+          setMessages(historyMessages)
+        } else {
+          // 没有历史对话，发送首次欢迎消息
+          const welcomeMessage = initialContext.type === 'knowledge_point'
+            ? `我想深入了解这个知识点，能引导我思考吗？`
+            : `关于这个问题，我想听听你的引导`
+
+          await handleSendMessage(welcomeMessage)
+        }
+      }
     } catch (error) {
       console.error('Failed to load discussion:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 

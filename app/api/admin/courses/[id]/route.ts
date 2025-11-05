@@ -137,14 +137,24 @@ export async function DELETE(
       }
     }
 
-    // 5. 删除用户选课记录（如果存在user_course_selections表）
-    // 注意：这样删除后，用户将看不到该课程
+    // 5. 删除学生课程分配记录（student_course_assignments）
+    // 注意：这样删除后，学生门户将看不到该课程
+    const { error: assignmentsError } = await supabase
+      .from('student_course_assignments')
+      .delete()
+      .eq('course_system_id', courseId)
+
+    if (assignmentsError) {
+      console.error('删除学生课程分配失败:', assignmentsError)
+      // 不抛出错误，继续删除其他记录
+    }
+
+    // 删除用户选课记录（如果存在user_course_selections表）
     const { error: selectionsError } = await supabase
       .from('user_course_selections')
       .delete()
       .eq('course_system_id', courseId)
 
-    // 不抛出错误，因为这个表可能不存在
     if (selectionsError) {
       console.log('用户选课记录删除（可能不存在该表）:', selectionsError)
     }

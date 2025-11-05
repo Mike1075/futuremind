@@ -103,9 +103,12 @@ export default function PortalPage() {
 
       if (error) throw error
 
+      // 过滤掉已删除的课程（course_systems为null）
+      const validEnrollments = (enrolledData || []).filter((item: any) => item.course_systems !== null)
+
       // 计算每个课程的真实进度
       const enrolled: EnrolledCourse[] = await Promise.all(
-        (enrolledData || []).map(async (item: any) => {
+        validEnrollments.map(async (item: any) => {
           // 获取课程总内容数
           const { count: totalContents } = await supabase
             .from('course_contents')
