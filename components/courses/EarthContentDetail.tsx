@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { CourseContent } from '@/lib/supabase/database.types'
 import { Lock, Unlock } from 'lucide-react'
-import { recordInteraction, getEarthProgress } from '@/lib/utils/interaction-tracker'
+import { recordInteraction, getEarthProgress, type ItemType } from '@/lib/utils/interaction-tracker'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -25,7 +25,7 @@ interface EarthContentDetailProps {
   isCompleted: boolean
   prevContent: CourseContent | null
   nextContent: CourseContent | null
-  onDiscussWithGaia: (context: string, contextType: 'knowledge_point' | 'question') => void
+  onDiscussWithGaia: (context: string, contextType: 'knowledge_point' | 'question', itemIndex: number, itemType: ItemType) => void
   currentStage: StageInfo | null
   stageContentIds: string[]
   prevStage: StageInfo | null
@@ -54,11 +54,6 @@ export function EarthContentDetail({
   const [showUnlockAnimation, setShowUnlockAnimation] = useState(false)
   const [contentProgress, setContentProgress] = useState(0) // 当前内容的进度
   const [showMilestone, setShowMilestone] = useState<number | null>(null) // 里程碑动画
-
-  // Refs for section visibility tracking
-  const knowledgeRef = useRef<HTMLDivElement>(null)
-  const questionsRef = useRef<HTMLDivElement>(null)
-  const reflectionRef = useRef<HTMLDivElement>(null)
 
   // 计算阶段进度
   useEffect(() => {
@@ -113,34 +108,6 @@ export function EarthContentDetail({
     refreshProgress()
   }, [content.id])
 
-  // 区域可见性追踪（Level 1）
-  useEffect(() => {
-    const options = {
-      threshold: 0.5 // 50%可见时触发
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const target = entry.target as HTMLElement
-          const sectionType = target.dataset.section
-          if (sectionType) {
-            recordInteraction({
-              contentId: content.id,
-              interactionType: 'section_view',
-              metadata: { section: sectionType }
-            })
-          }
-        }
-      })
-    }, options)
-
-    if (knowledgeRef.current) observer.observe(knowledgeRef.current)
-    if (questionsRef.current) observer.observe(questionsRef.current)
-    if (reflectionRef.current) observer.observe(reflectionRef.current)
-
-    return () => observer.disconnect()
-  }, [content.id])
 
   // 刷新进度
   const refreshProgress = async () => {
@@ -181,23 +148,23 @@ export function EarthContentDetail({
     await refreshProgress()
 
     // 打开盖亚对话
-    onDiscussWithGaia(point, 'knowledge_point')
+    onDiscussWithGaia(point, 'knowledge_point', index, 'knowledge_point')
   }
 
-  const handleQuestionClick = async (question: string, stage: string, index: number) => {
+  const handleQuestionClick = async (question: string, stage: ItemType, index: number) => {
     // 记录点击（Level 2）
     await recordInteraction({
       contentId: content.id,
       interactionType: 'question_click',
       itemIndex: index,
-      itemType: stage as any // 'pre_watch', 'during_watch', 'post_watch'
+      itemType: stage // 'pre_watch', 'during_watch', 'post_watch', 'reflection'
     })
 
     // 刷新进度
     await refreshProgress()
 
     // 打开盖亚对话
-    onDiscussWithGaia(question, 'question')
+    onDiscussWithGaia(question, 'question', index, stage)
   }
 
   return (
@@ -234,8 +201,6 @@ export function EarthContentDetail({
         {/* 知识点 - 创意卡片网格 */}
         {knowledgePoints.length > 0 && (
           <motion.div
-            ref={knowledgeRef}
-            data-section="knowledge"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
@@ -289,7 +254,7 @@ export function EarthContentDetail({
                       }}
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleKnowledgePointClick(point)
+                        handleKnowledgePointClick(point, index)
                       }}
                       className="w-full px-4 py-2.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all flex items-center justify-center gap-2"
                     >
@@ -346,7 +311,7 @@ export function EarthContentDetail({
                     </div>
 
                     <div
-                      onClick={() => handleQuestionClick(question)}
+                      onClick={() => handleQuestionClick(question, 'pre_watch', index)}
                       onMouseEnter={() => setHoveredCard(`pre-${index}`)}
                       onMouseLeave={() => setHoveredCard(null)}
                       className="relative group cursor-pointer"
@@ -372,7 +337,7 @@ export function EarthContentDetail({
                               }}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleQuestionClick(question)
+                                handleQuestionClick(question, 'pre_watch', index)
                               }}
                               className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all inline-flex items-center gap-2"
                             >
@@ -401,7 +366,7 @@ export function EarthContentDetail({
                     </div>
 
                     <div
-                      onClick={() => handleQuestionClick(question)}
+                      onClick={() => handleQuestionClick(question, 'during_watch', index)}
                       onMouseEnter={() => setHoveredCard(`during-${index}`)}
                       onMouseLeave={() => setHoveredCard(null)}
                       className="relative group cursor-pointer"
@@ -427,7 +392,7 @@ export function EarthContentDetail({
                               }}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleQuestionClick(question)
+                                handleQuestionClick(question, 'during_watch', index)
                               }}
                               className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all inline-flex items-center gap-2"
                             >
@@ -456,7 +421,7 @@ export function EarthContentDetail({
                     </div>
 
                     <div
-                      onClick={() => handleQuestionClick(question)}
+                      onClick={() => handleQuestionClick(question, 'post_watch', index)}
                       onMouseEnter={() => setHoveredCard(`post-${index}`)}
                       onMouseLeave={() => setHoveredCard(null)}
                       className="relative group cursor-pointer"
@@ -482,7 +447,7 @@ export function EarthContentDetail({
                               }}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleQuestionClick(question)
+                                handleQuestionClick(question, 'post_watch', index)
                               }}
                               className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all inline-flex items-center gap-2"
                             >
@@ -528,7 +493,7 @@ export function EarthContentDetail({
                   transition={{ delay: index * 0.15 }}
                   onMouseEnter={() => setHoveredCard(`reflection-${index}`)}
                   onMouseLeave={() => setHoveredCard(null)}
-                  onClick={() => handleQuestionClick(reflection)}
+                  onClick={() => handleQuestionClick(reflection, 'reflection', index)}
                   className="relative group cursor-pointer"
                 >
                   {/* 动态背景光晕 */}
@@ -577,7 +542,7 @@ export function EarthContentDetail({
                             }}
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleQuestionClick(reflection)
+                              handleQuestionClick(reflection, 'reflection', index)
                             }}
                             className="px-6 py-3 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-rose-500/20 hover:from-purple-500/30 hover:via-pink-500/30 hover:to-rose-500/30 text-purple-300 rounded-xl text-sm font-semibold border border-purple-500/30 hover:border-purple-400/50 transition-all inline-flex items-center gap-3 shadow-lg shadow-purple-500/10"
                           >

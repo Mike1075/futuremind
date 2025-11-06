@@ -38,9 +38,10 @@ export async function GET(req: NextRequest) {
     }
 
     // 解析内容结构
-    const knowledgePoints = (content.knowledge_points as string[]) || []
-    const socraticQuestions = (content.socratic_questions as any) || {}
-    const postReflection = (content.post_reflection as string[]) || []
+    const contentData = content as any
+    const knowledgePoints = (contentData.knowledge_points as string[]) || []
+    const socraticQuestions = (contentData.socratic_questions as any) || {}
+    const postReflection = (contentData.post_reflection as string[]) || []
 
     const questionCounts = {
       pre: socraticQuestions.pre_watch?.length || 0,

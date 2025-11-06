@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { EarthContentDetail } from '@/components/courses/EarthContentDetail'
 import { GaiaSidebar } from '@/components/courses/GaiaSidebar'
 import type { CourseContent } from '@/lib/supabase/database.types'
+import type { ItemType } from '@/lib/utils/interaction-tracker'
 
 interface StageInfo {
   id: string
@@ -43,6 +44,8 @@ export function EarthContentWrapper({
     text: string
     type: 'knowledge_point' | 'question'
     contentId: string
+    itemIndex: number
+    itemType: ItemType
   } | undefined>(undefined)
 
   // 自动记录访问
@@ -65,12 +68,16 @@ export function EarthContentWrapper({
 
   const handleDiscussWithGaia = (
     context: string,
-    contextType: 'knowledge_point' | 'question'
+    contextType: 'knowledge_point' | 'question',
+    itemIndex: number,
+    itemType: ItemType
   ) => {
     setGaiaContext({
       text: context,
       type: contextType,
-      contentId: content.id
+      contentId: content.id,
+      itemIndex,
+      itemType
     })
     setGaiaOpen(true)
   }

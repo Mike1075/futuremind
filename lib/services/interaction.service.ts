@@ -36,8 +36,8 @@ export class InteractionService {
   }) {
     const supabase = await createClient()
 
-    const { error } = await supabase
-      .from('user_content_interactions')
+    const { error } = await (supabase
+      .from('user_content_interactions') as any)
       .upsert({
         user_id: params.userId,
         content_id: params.contentId,
@@ -76,8 +76,8 @@ export class InteractionService {
     const totalItems = knowledgePointCount + totalQuestions + reflectionCount
 
     // 获取所有互动记录
-    const { data: interactions, error } = await supabase
-      .from('user_content_interactions')
+    const { data: interactions, error } = await (supabase
+      .from('user_content_interactions') as any)
       .select('*')
       .eq('user_id', params.userId)
       .eq('content_id', params.contentId)
@@ -87,16 +87,27 @@ export class InteractionService {
       return { progress: 0, breakdown: {} }
     }
 
-    const interactionSet = new Set(interactions?.map(i => `${i.interaction_type}_${i.item_index}_${i.item_type}`) || [])
+    const interactionSet = new Set(interactions?.map((i: any) => `${i.interaction_type}_${i.item_index}_${i.item_type}`) || [])
 
     // Level 1: 接触探索（20%）
-    const hasVisited = interactions?.some(i => i.interaction_type === 'page_visit') || false
-    const sectionsViewed = interactions?.filter(i => i.interaction_type === 'section_view').length || 0
-    const level1Progress = (hasVisited ? 10 : 0) + Math.min(10, sectionsViewed * 3.33) // 3个区域
+    // 1% 页面访问 + 19% 点击触发AI问题（不是滚动，是点击每个知识点/问题/反思）
+    const hasVisited = interactions?.some((i: any) => i.interaction_type === 'page_visit') || false
+
+    // 统计点击触发AI的次数（knowledge_click, question_click, reflection_click）
+    const totalClickableItems = knowledgePointCount + totalQuestions + reflectionCount
+    const itemsClicked = new Set(
+      interactions?.filter((i: any) =>
+        i.interaction_type === 'knowledge_click' ||
+        i.interaction_type === 'question_click' ||
+        i.interaction_type === 'reflection_click'
+      ).map((i: any) => `${i.item_type}_${i.item_index}`) || []
+    ).size
+
+    const level1Progress = (hasVisited ? 1 : 0) + (itemsClicked / totalClickableItems * 19)
 
     // Level 2: 主动思考（30%）
-    const knowledgeClicks = interactions?.filter(i => i.interaction_type === 'knowledge_click').length || 0
-    const questionClicks = interactions?.filter(i => i.interaction_type === 'question_click').length || 0
+    const knowledgeClicks = interactions?.filter((i: any) => i.interaction_type === 'knowledge_click').length || 0
+    const questionClicks = interactions?.filter((i: any) => i.interaction_type === 'question_click').length || 0
     const level2Progress =
       (knowledgeClicks / knowledgePointCount * 15) +
       (questionClicks / totalQuestions * 15)
@@ -106,7 +117,7 @@ export class InteractionService {
     const discussionsByTopic = new Map<string, number>()
 
     // 统计每个主题的讨论轮数
-    interactions?.forEach(i => {
+    interactions?.forEach((i: any) => {
       if (i.interaction_type === 'discussion_message') {
         const key = `${i.item_type}_${i.item_index}`
         discussionsByTopic.set(key, (discussionsByTopic.get(key) || 0) + 1)
@@ -130,11 +141,11 @@ export class InteractionService {
     const level3Progress = Math.min(40, totalDepthScore)
 
     // Level 4: 知识内化（10%）
-    const crossTopicDiscussions = interactions?.filter(i =>
+    const crossTopicDiscussions = interactions?.filter((i: any) =>
       i.interaction_type === 'discussion_message' &&
       i.metadata?.crossTopic === true
     ).length || 0
-    const reflectionDiscussions = interactions?.filter(i =>
+    const reflectionDiscussions = interactions?.filter((i: any) =>
       i.interaction_type === 'discussion_start' &&
       i.item_type === 'reflection'
     ).length || 0
@@ -175,8 +186,8 @@ export class InteractionService {
   static async getUserInteractions(userId: string, contentId: string) {
     const supabase = await createClient()
 
-    const { data, error } = await supabase
-      .from('user_content_interactions')
+    const { data, error } = await (supabase
+      .from('user_content_interactions') as any)
       .select('*')
       .eq('user_id', userId)
       .eq('content_id', contentId)

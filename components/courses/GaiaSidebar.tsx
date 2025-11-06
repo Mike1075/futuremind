@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { recordInteraction, type ItemType } from '@/lib/utils/interaction-tracker'
 
 interface Message {
   id: string
@@ -17,6 +18,8 @@ interface GaiaSidebarProps {
     text: string
     type: 'knowledge_point' | 'question'
     contentId: string
+    itemIndex: number
+    itemType: ItemType
   }
 }
 
@@ -119,7 +122,15 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
           }
           setMessages([gaiaMessage])
 
-          // 5. 保存到数据库（通过一次API调用完成讨论创建和消息保存）
+          // 5. 记录讨论开始（Level 2/3）
+          await recordInteraction({
+            contentId: initialContext.contentId,
+            interactionType: 'discussion_start',
+            itemIndex: initialContext.itemIndex,
+            itemType: initialContext.itemType
+          })
+
+          // 6. 保存到数据库（通过一次API调用完成讨论创建和消息保存）
           // 这里我们只是展示消息，实际的数据库保存会在用户首次回复时进行
         }
       }
@@ -149,6 +160,14 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
     setMessages(prev => [...prev, userMessage])
     setInputValue('')
     setIsLoading(true)
+
+    // 记录讨论消息（Level 3 - 深度对话计数）
+    await recordInteraction({
+      contentId: initialContext.contentId,
+      interactionType: 'discussion_message',
+      itemIndex: initialContext.itemIndex,
+      itemType: initialContext.itemType
+    })
 
     try {
       // 如果是首次发送消息且有AI生成的启发性问题，先保存那条消息
