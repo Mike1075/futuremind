@@ -306,8 +306,11 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
         {activeTab === 'explore' && (
           <div>
             {/* 创建项目按钮 */}
-            <div className="mb-6 flex justify-between items-center">
-              <h2 className="text-2xl font-semibold">伊卡洛斯12个项目</h2>
+            <div className="mb-8 flex justify-between items-center">
+              <div>
+                <h2 className="text-3xl font-bold mb-2">探索现实的边界</h2>
+                <p className="text-gray-400">FBI项目体系 · 探索真实世界的隐藏维度</p>
+              </div>
               <button
                 onClick={() => router.push('/projects/create')}
                 className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
@@ -319,31 +322,68 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
               </button>
             </div>
 
-            {/* 项目网格 - 12个伊卡洛斯项目 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {icarusProjects.map(project => {
-                const isSelected = myProjects.some(
-                  mp => mp.course_contents.id === project.id
-                )
-
-                // 难度颜色映射
-                const difficultyColors: Record<string, string> = {
-                  '基础探索': 'from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-400',
-                  '进阶挑战': 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-400',
-                  '深度研究': 'from-purple-500/20 to-pink-500/20 border-purple-500/30 text-purple-400',
-                  '创新实践': 'from-orange-500/20 to-red-500/20 border-orange-500/30 text-orange-400'
+            {/* 按模块分组显示项目 */}
+            {(() => {
+              // 按模块分组
+              const modules = icarusProjects.reduce((acc, project) => {
+                const moduleName = project.module_name || '未分类'
+                if (!acc[moduleName]) {
+                  acc[moduleName] = []
                 }
+                acc[moduleName].push(project)
+                return acc
+              }, {} as Record<string, typeof icarusProjects>)
 
-                const difficultyClass = project.difficulty_level
-                  ? difficultyColors[project.difficulty_level] || 'from-gray-500/20 to-gray-600/20 border-gray-500/30 text-gray-400'
-                  : 'from-gray-500/20 to-gray-600/20 border-gray-500/30 text-gray-400'
+              // 模块图标和颜色配置
+              const moduleConfig: Record<string, { icon: string; colors: string }> = {
+                '模块1：观察与感知': { icon: '🌱', colors: 'from-green-500 via-emerald-500 to-teal-500' },
+                '模块2：量子与意识': { icon: '🌿', colors: 'from-blue-500 via-cyan-500 to-sky-500' },
+                '模块3：集体意识': { icon: '🌳', colors: 'from-purple-500 via-pink-500 to-rose-500' }
+              }
+
+              return Object.entries(modules).map(([moduleName, projects], moduleIndex) => {
+                const config = moduleConfig[moduleName] || { icon: '📚', colors: 'from-gray-500 to-gray-600' }
 
                 return (
-                  <div
-                    key={project.id}
-                    className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 group cursor-pointer"
-                    onClick={() => setSelectedProject(project)}
-                  >
+                  <div key={moduleName} className="mb-12">
+                    {/* 模块标题 */}
+                    <div className="mb-6">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${config.colors} flex items-center justify-center text-3xl shadow-lg`}>
+                          {config.icon}
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-white">{moduleName}</h3>
+                          <p className="text-gray-400 text-sm">{projects.length}个探索方向</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 项目网格 */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      {projects.map(project => {
+                        const isSelected = myProjects.some(
+                          mp => mp.course_contents.id === project.id
+                        )
+
+                        // 难度颜色映射
+                        const difficultyColors: Record<string, string> = {
+                          '基础探索': 'from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-400',
+                          '进阶挑战': 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-400',
+                          '深度研究': 'from-purple-500/20 to-pink-500/20 border-purple-500/30 text-purple-400',
+                          '创新实践': 'from-orange-500/20 to-red-500/20 border-orange-500/30 text-orange-400'
+                        }
+
+                        const difficultyClass = project.difficulty_level
+                          ? difficultyColors[project.difficulty_level] || 'from-gray-500/20 to-gray-600/20 border-gray-500/30 text-gray-400'
+                          : 'from-gray-500/20 to-gray-600/20 border-gray-500/30 text-gray-400'
+
+                        return (
+                          <div
+                            key={project.id}
+                            className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 group cursor-pointer"
+                            onClick={() => setSelectedProject(project)}
+                          >
                     {/* Cover Image or Gradient */}
                     {project.project_cover_image ? (
                       <div className="relative w-full h-48 bg-gray-800 overflow-hidden">
@@ -422,9 +462,13 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                       </div>
                     </div>
                   </div>
+                        )
+                      })}
+                    </div>
+                  </div>
                 )
-              })}
-            </div>
+              })
+            })()}
 
             {icarusProjects.length === 0 && (
               <div className="text-center py-12 text-gray-500">
