@@ -137,22 +137,42 @@ serve(async (req) => {
     }
 
     // activities数组存储每天的活动，使用day字段或索引来匹配
-    const dayPlan = weekPlan?.activities?.find((d: any) => {
-      // 支持多种day格式："1", "Day 1", "第1天", "3-5" (范围)
-      const dayStr = String(d.day || '').toLowerCase()
-      return dayStr.includes(dayNum.toString()) ||
-             dayStr === `day ${dayNum}` ||
-             dayStr === `第${dayNum}天` ||
-             dayStr === dayNum.toString()
-    }) || weekPlan?.activities?.[dayNum - 1] // 如果找不到，尝试使用索引
+    let dayPlan
+
+    // 如果activities数组只有1个元素，直接使用它（适用于简化的项目结构）
+    if (weekPlan.activities && weekPlan.activities.length === 1) {
+      console.log('📌 本周只有1个活动，直接使用')
+      dayPlan = weekPlan.activities[0]
+    } else {
+      // 尝试通过day字段匹配
+      dayPlan = weekPlan?.activities?.find((d: any) => {
+        // 支持多种day格式："1", "Day 1", "第1天", "3-5" (范围)
+        const dayStr = String(d.day || '').toLowerCase()
+        return dayStr.includes(dayNum.toString()) ||
+               dayStr === `day ${dayNum}` ||
+               dayStr === `第${dayNum}天` ||
+               dayStr === dayNum.toString()
+      })
+
+      // 如果找不到，尝试使用索引
+      if (!dayPlan) {
+        dayPlan = weekPlan?.activities?.[dayNum - 1]
+      }
+
+      // 最后的fallback：如果还找不到，使用第一个activity
+      if (!dayPlan && weekPlan.activities && weekPlan.activities.length > 0) {
+        console.log('⚠️ 未找到匹配的活动，使用第一个活动作为fallback')
+        dayPlan = weekPlan.activities[0]
+      }
+    }
 
     if (!dayPlan) {
-      console.error(`❌ 未找到第${weekNum}周第${dayNum}天的任务`)
-      console.error('可用的活动:', weekPlan.activities?.map((a: any) => a.day))
+      console.error(`❌ 未找到第${weekNum}周的任何活动`)
+      console.error('可用的活动:', weekPlan.activities)
       return new Response(
         JSON.stringify({
           error: '未找到对应的任务计划',
-          details: `第${weekNum}周没有第${dayNum}天的任务。可用的天数：${weekPlan.activities?.map((a: any) => a.day).join(', ')}`
+          details: `第${weekNum}周没有任何活动。请检查项目设置。`
         }),
         {
           status: 404,
