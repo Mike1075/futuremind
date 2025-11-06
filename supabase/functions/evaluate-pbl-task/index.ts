@@ -118,7 +118,14 @@ serve(async (req) => {
     const dayNum = parseInt(dayMatch[2])
 
     const weekPlan = project.week_plan?.find((w: any) => w.week === weekNum)
-    const dayPlan = weekPlan?.days?.find((d: any) => d.day === dayNum)
+    // activities数组存储每天的活动，使用day字段或索引来匹配
+    const dayPlan = weekPlan?.activities?.find((d: any) => {
+      // 支持多种day格式："Day 1", "第1天", 或直接使用索引
+      const dayStr = d.day?.toLowerCase() || ''
+      return dayStr.includes(dayNum.toString()) ||
+             dayStr === `day ${dayNum}` ||
+             dayStr === `第${dayNum}天`
+    }) || weekPlan?.activities?.[dayNum - 1] // 如果找不到，尝试使用索引
 
     if (!dayPlan) {
       return new Response(
@@ -181,9 +188,11 @@ serve(async (req) => {
 
     const taskGoals = `任务标题：${dayPlan.title}
 任务描述：${dayPlan.description || '无'}
-任务列表：${dayPlan.tasks?.join('\n') || '无'}`
+时间安排：${dayPlan.day || '无'}`
 
-    const deliverables = dayPlan.deliverables?.join('\n') || '无特定交付物'
+    const deliverables = Array.isArray(dayPlan.deliverables)
+      ? dayPlan.deliverables.join('\n')
+      : (dayPlan.deliverables || '无特定交付物')
 
     const attachmentsInfo = attachments.length > 0
       ? attachments.map((a: any, i: number) => `附件${i + 1}：${a.name} (${a.type})`).join('\n')
@@ -299,7 +308,7 @@ serve(async (req) => {
       }
 
       // 计算完成百分比
-      const totalDays = project.week_plan?.reduce((sum: number, week: any) => sum + (week.days?.length || 0), 0) || 0
+      const totalDays = project.week_plan?.reduce((sum: number, week: any) => sum + (week.activities?.length || 0), 0) || 0
       const completedDays = Object.values(updatedProgress).filter(Boolean).length
       const completionPercentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0
 
