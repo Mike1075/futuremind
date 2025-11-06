@@ -55,36 +55,38 @@ export function EarthContentDetail({
   const [contentProgress, setContentProgress] = useState(0) // 当前内容的进度
   const [showMilestone, setShowMilestone] = useState<number | null>(null) // 里程碑动画
 
-  // 计算阶段进度
+  // 计算阶段进度（使用新的进度系统）
   useEffect(() => {
     const fetchStageProgress = async () => {
       if (!stageContentIds || stageContentIds.length === 0) return
 
       try {
-        const contentIds = stageContentIds.join(',')
-        const response = await fetch(`/api/progress/calculate?contentIds=${contentIds}`)
+        // 批量查询每个内容的进度
+        const progressPromises = stageContentIds.map(id => getEarthProgress(id))
+        const progressResults = await Promise.all(progressPromises)
 
-        if (response.ok) {
-          const data = await response.json()
-          const results = data.results || []
-
-          // 计算平均进度
-          const totalProgress = results.reduce((sum: number, r: any) => sum + r.progress, 0)
-          const avgProgress = results.length > 0 ? (totalProgress / results.length) * 100 : 0
-          setStageProgress(Math.round(avgProgress))
-
-          // 检查是否达到解锁条件（80%）
-          const wasUnlocked = isUnlocked
-          const shouldUnlock = avgProgress >= 80
-
-          if (!wasUnlocked && shouldUnlock) {
-            // 触发解锁动画
-            setShowUnlockAnimation(true)
-            setTimeout(() => setShowUnlockAnimation(false), 2000)
-          }
-
-          setIsUnlocked(shouldUnlock)
+        // 过滤掉null结果，计算平均进度
+        const validResults = progressResults.filter(r => r !== null)
+        if (validResults.length === 0) {
+          setStageProgress(0)
+          return
         }
+
+        const totalProgress = validResults.reduce((sum, r) => sum + (r?.progress || 0), 0)
+        const avgProgress = totalProgress / validResults.length
+        setStageProgress(Math.round(avgProgress))
+
+        // 检查是否达到解锁条件（80%）
+        const wasUnlocked = isUnlocked
+        const shouldUnlock = avgProgress >= 80
+
+        if (!wasUnlocked && shouldUnlock) {
+          // 触发解锁动画
+          setShowUnlockAnimation(true)
+          setTimeout(() => setShowUnlockAnimation(false), 2000)
+        }
+
+        setIsUnlocked(shouldUnlock)
       } catch (error) {
         console.error('Failed to fetch stage progress:', error)
       }

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import type { CourseContent } from '@/lib/supabase/database.types'
 import { StageNode } from './StageNode'
+import { getEarthProgress } from '@/lib/utils/interaction-tracker'
 
 interface Stage {
   stageNumber: number
@@ -44,7 +45,7 @@ export function EarthStageCircle({
     return () => window.removeEventListener('resize', updateSize)
   }, [])
 
-  // 获取各阶段的学习进度
+  // 获取各阶段的学习进度（使用新的进度系统）
   useEffect(() => {
     const fetchStageProgress = async () => {
       const progressMap = new Map<number, number>()
@@ -56,20 +57,21 @@ export function EarthStageCircle({
         }
 
         try {
-          const contentIds = stage.contents.map(c => c.id).join(',')
-          const response = await fetch(`/api/progress/calculate?contentIds=${contentIds}`)
+          // 批量查询每个内容的进度
+          const contentIds = stage.contents.map(c => c.id)
+          const progressPromises = contentIds.map(id => getEarthProgress(id))
+          const progressResults = await Promise.all(progressPromises)
 
-          if (response.ok) {
-            const data = await response.json()
-            const results = data.results || []
-
-            // 计算平均进度
-            const totalProgress = results.reduce((sum: number, r: any) => sum + r.progress, 0)
-            const avgProgress = results.length > 0 ? totalProgress / results.length : 0
-            progressMap.set(stage.stageNumber, Math.round(avgProgress * 100))
-          } else {
+          // 过滤掉null结果，计算平均进度
+          const validResults = progressResults.filter(r => r !== null)
+          if (validResults.length === 0) {
             progressMap.set(stage.stageNumber, 0)
+            continue
           }
+
+          const totalProgress = validResults.reduce((sum, r) => sum + (r?.progress || 0), 0)
+          const avgProgress = totalProgress / validResults.length
+          progressMap.set(stage.stageNumber, Math.round(avgProgress))
         } catch (error) {
           console.error(`Failed to fetch progress for stage ${stage.stageNumber}:`, error)
           progressMap.set(stage.stageNumber, 0)
