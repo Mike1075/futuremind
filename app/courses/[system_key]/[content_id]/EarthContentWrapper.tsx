@@ -47,6 +47,7 @@ export function EarthContentWrapper({
     itemIndex: number
     itemType: ItemType
   } | undefined>(undefined)
+  const [refreshTrigger, setRefreshTrigger] = useState(0) // 用于触发进度刷新
 
   // 自动记录访问
   useEffect(() => {
@@ -99,6 +100,7 @@ export function EarthContentWrapper({
           prevStageFirstContentId={prevStageFirstContentId}
           nextStage={nextStage}
           nextStageFirstContentId={nextStageFirstContentId}
+          refreshTrigger={refreshTrigger}
         />
       </div>
 
@@ -119,6 +121,8 @@ export function EarthContentWrapper({
         onClose={() => {
           setGaiaOpen(false)
           setGaiaContext(undefined)
+          // 触发进度刷新
+          setRefreshTrigger(prev => prev + 1)
         }}
         initialContext={gaiaContext}
       />

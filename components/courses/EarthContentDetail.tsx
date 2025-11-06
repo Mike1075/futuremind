@@ -32,6 +32,7 @@ interface EarthContentDetailProps {
   prevStageFirstContentId: string | null
   nextStage: StageInfo | null
   nextStageFirstContentId: string | null
+  refreshTrigger?: number
 }
 
 export function EarthContentDetail({
@@ -46,7 +47,8 @@ export function EarthContentDetail({
   prevStage,
   prevStageFirstContentId,
   nextStage,
-  nextStageFirstContentId
+  nextStageFirstContentId,
+  refreshTrigger
 }: EarthContentDetailProps) {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null)
   const [stageProgress, setStageProgress] = useState(0)
@@ -110,6 +112,15 @@ export function EarthContentDetail({
     refreshProgress()
   }, [content.id])
 
+  // 监听刷新触发器（当盖亚对话框关闭时）
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      // 延迟100ms刷新，确保数据库已更新
+      setTimeout(() => {
+        refreshProgress()
+      }, 100)
+    }
+  }, [refreshTrigger])
 
   // 刷新进度
   const refreshProgress = async () => {
