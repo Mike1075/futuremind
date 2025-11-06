@@ -100,6 +100,7 @@ export function EarthContentDetail({
   const knowledgePoints = (content.knowledge_points as string[]) || []
   const socraticQuestions = (content.socratic_questions as SocraticQuestions) || {}
   const postReflection = (content.post_reflection as string[]) || []
+  const explorerProjects = (content.explorer_projects as any[]) || []
 
   // 页面访问追踪（Level 1）
   useEffect(() => {
@@ -594,6 +595,138 @@ export function EarthContentDetail({
                         delay: 0.5
                       }}
                       className="absolute bottom-6 right-8 w-2 h-2 rounded-full bg-teal-400 blur-sm"
+                    />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* 小探险家项目 - 探索者联盟 */}
+        {explorerProjects.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mb-12"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 via-amber-400 to-yellow-400 flex items-center justify-center text-2xl shadow-lg shadow-orange-500/20">
+                🔬
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">探索者联盟 - 小探险家项目</h2>
+                <p className="text-sm text-gray-400">动手实践，化知识为体验</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {explorerProjects.map((project, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ scale: 1.02, y: -5 }}
+                  className="relative group cursor-pointer"
+                >
+                  {/* 背景光晕 */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-yellow-500/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                  <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-orange-500/30 rounded-2xl p-6 hover:border-orange-400 transition-all duration-300 overflow-hidden h-full flex flex-col">
+                    {/* 背景装饰 */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-2xl" />
+
+                    {/* 难度标签 */}
+                    <div className="absolute top-4 right-4">
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                        project.difficulty === '基础'
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                      }`}>
+                        {project.difficulty}
+                      </span>
+                    </div>
+
+                    {/* 图标 */}
+                    <div className="relative w-16 h-16 mb-4">
+                      <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-xl rotate-6 group-hover:rotate-12 transition-transform duration-300" />
+                      <div className="relative w-full h-full rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/40 flex items-center justify-center text-3xl">
+                        {index % 3 === 0 ? '🔭' : index % 3 === 1 ? '🧪' : '🎯'}
+                      </div>
+                    </div>
+
+                    {/* 标题和副标题 */}
+                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-orange-400 transition-colors">
+                      {project.title}
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-3">{project.subtitle}</p>
+
+                    {/* 时长 */}
+                    <div className="flex items-center gap-2 mb-4 text-xs text-gray-500">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{project.duration}</span>
+                    </div>
+
+                    {/* 目标 */}
+                    <div className="flex-1 mb-4">
+                      <p className="text-sm text-gray-300 leading-relaxed">
+                        <span className="text-orange-400 font-semibold">目标：</span>
+                        {project.goal}
+                      </p>
+                    </div>
+
+                    {/* 材料列表 */}
+                    <div className="mb-4">
+                      <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span>所需材料</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {project.materials?.slice(0, 3).map((material: string, i: number) => (
+                          <span key={i} className="text-xs bg-gray-800/50 text-gray-400 px-2 py-1 rounded">
+                            {material}
+                          </span>
+                        ))}
+                        {project.materials?.length > 3 && (
+                          <span className="text-xs bg-gray-800/50 text-gray-400 px-2 py-1 rounded">
+                            +{project.materials.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 查看详情按钮 */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="pt-4 border-t border-gray-700/50"
+                    >
+                      <button className="w-full px-4 py-2 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-orange-300 rounded-lg text-sm font-semibold border border-orange-500/30 hover:border-orange-400/50 transition-all flex items-center justify-center gap-2">
+                        <span>查看详细步骤</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </motion.div>
+
+                    {/* 浮动光点 */}
+                    <motion.div
+                      animate={{
+                        y: [0, -8, 0],
+                        opacity: [0.3, 0.6, 0.3]
+                      }}
+                      transition={{
+                        duration: 2.5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                      className="absolute top-6 right-6 w-2 h-2 rounded-full bg-orange-400 blur-sm"
                     />
                   </div>
                 </motion.div>
