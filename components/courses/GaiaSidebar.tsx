@@ -55,7 +55,11 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
         body: JSON.stringify({ text: initialContext.text })
       })
 
-      let extractedTopic = initialContext.text.substring(0, 15) + '...'
+      // 默认使用完整文本，最多100字符
+      let extractedTopic = initialContext.text.length > 100
+        ? initialContext.text.substring(0, 100) + '...'
+        : initialContext.text
+
       if (topicResponse.ok) {
         const topicData = await topicResponse.json()
         extractedTopic = topicData.topic || extractedTopic
@@ -256,11 +260,10 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
         {topic && (
           <div className="px-6 pb-3">
             <div className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-500">探讨主题：</span>
-              <p className="text-purple-300 font-medium break-words whitespace-normal leading-relaxed m-0"
-                 style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+              <span className="text-gray-500 text-xs">探讨主题：</span>
+              <div className="text-purple-300 font-medium text-sm leading-relaxed break-words overflow-wrap-anywhere">
                 {topic}
-              </p>
+              </div>
             </div>
           </div>
         )}
