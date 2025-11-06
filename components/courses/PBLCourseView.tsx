@@ -137,7 +137,8 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
 
   // 获取伊卡洛斯系统的12个项目
   const icarusProjects = allProjects
-    .filter(p => p.is_system && p.project_visibility === 'system')
+    .filter(p => p.project_visibility === 'system')
+    .sort((a, b) => a.sequence_number - b.sequence_number)
     .slice(0, 12)
 
   if (loading) {

@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         project_visibility,
         project_icon_url,
         project_cover_image,
+        sequence_number,
         created_by_user,
         created_at,
         profiles:created_by_user (
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       .eq('is_published', true)
       .eq('review_status', 'approved')
       .in('project_visibility', ['system', 'public'])
-      .order('created_at', { ascending: false })
+      .order('sequence_number', { ascending: true })
 
     // 应用筛选条件
     if (difficulty) {
