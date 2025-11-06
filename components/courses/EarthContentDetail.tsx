@@ -27,6 +27,8 @@ interface EarthContentDetailProps {
   onDiscussWithGaia: (context: string, contextType: 'knowledge_point' | 'question') => void
   currentStage: StageInfo | null
   stageContentIds: string[]
+  prevStage: StageInfo | null
+  prevStageFirstContentId: string | null
   nextStage: StageInfo | null
   nextStageFirstContentId: string | null
 }
@@ -40,6 +42,8 @@ export function EarthContentDetail({
   onDiscussWithGaia,
   currentStage,
   stageContentIds,
+  prevStage,
+  prevStageFirstContentId,
   nextStage,
   nextStageFirstContentId
 }: EarthContentDetailProps) {
@@ -530,7 +534,7 @@ export function EarthContentDetail({
             {/* 阶段标题 */}
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-white">
-                第{currentStage.stage_number}阶段：{currentStage.stage_name}
+                {currentStage.stage_name}
               </h3>
               <span className="text-lg font-semibold text-green-400">
                 {stageProgress}%
@@ -560,20 +564,44 @@ export function EarthContentDetail({
               </motion.div>
             </div>
 
-            {/* 下一阶段按钮 */}
-            {nextStage && (
-              <div className="flex items-center gap-4">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent" />
+            {/* 阶段导航 - 左右布局 */}
+            <div className="flex items-stretch gap-4 mt-6">
+              {/* 左侧：上一阶段 */}
+              {prevStage && prevStageFirstContentId ? (
+                <Link href={`/courses/${systemKey}/${prevStageFirstContentId}`} className="flex-1">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="h-full px-6 py-4 bg-gray-800/50 border border-gray-700 hover:border-blue-500/50 rounded-xl cursor-pointer transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      <div>
+                        <div className="text-xs text-gray-500 group-hover:text-blue-400 transition-colors">回顾上一阶段</div>
+                        <div className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                          {prevStage.stage_name}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              ) : (
+                <div className="flex-1" />
+              )}
 
-                {isUnlocked && nextStageFirstContentId ? (
+              {/* 右侧：下一阶段 */}
+              {nextStage && (
+                isUnlocked && nextStageFirstContentId ? (
                   // 解锁状态 - 可点击
-                  <Link href={`/courses/${systemKey}/${nextStageFirstContentId}`}>
+                  <Link href={`/courses/${systemKey}/${nextStageFirstContentId}`} className="flex-1">
                     <motion.div
                       initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="relative px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl cursor-pointer group overflow-hidden"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="relative h-full px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl cursor-pointer group overflow-hidden"
                     >
                       {/* 解锁动画背景 */}
                       {showUnlockAnimation && (
@@ -586,117 +614,61 @@ export function EarthContentDetail({
                       )}
 
                       <div className="relative flex items-center gap-3">
-                        <Unlock className="w-6 h-6 text-white" />
-                        <div>
-                          <div className="text-sm text-white/80">下一阶段已解锁</div>
-                          <div className="text-lg font-bold text-white">
-                            第{nextStage.stage_number}阶段：{nextStage.stage_name}
+                        <div className="flex-1">
+                          <div className="text-xs text-white/80">下一阶段已解锁</div>
+                          <div className="text-sm font-bold text-white">
+                            {nextStage.stage_name}
                           </div>
                         </div>
-                        <svg className="w-6 h-6 text-white ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
+                        <Unlock className="w-5 h-5 text-white flex-shrink-0" />
                       </div>
 
                       {/* 光效 */}
                       <motion.div
-                        animate={{
-                          x: ['-100%', '200%']
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "linear"
-                        }}
+                        animate={{ x: ['-100%', '200%'] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                       />
                     </motion.div>
                   </Link>
                 ) : (
                   // 锁定状态
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className="relative px-8 py-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl cursor-not-allowed"
-                  >
-                    <div className="flex items-center gap-3 opacity-60">
-                      <Lock className="w-6 h-6 text-gray-500" />
-                      <div>
-                        <div className="text-sm text-gray-500">
-                          {stageProgress >= 80 ? '即将解锁...' : `完成本阶段${Math.ceil(80 - stageProgress)}%后解锁`}
+                  <div className="flex-1">
+                    <motion.div
+                      whileHover={{ scale: 1.01 }}
+                      className="relative h-full px-6 py-4 bg-gray-800/30 border-2 border-gray-700/50 rounded-xl cursor-not-allowed"
+                    >
+                      <div className="flex items-center gap-3 opacity-50">
+                        <div className="flex-1">
+                          <div className="text-xs text-gray-500">
+                            {stageProgress >= 80 ? '即将解锁...' : `完成${Math.ceil(80 - stageProgress)}%后解锁`}
+                          </div>
+                          <div className="text-sm font-medium text-gray-400">
+                            {nextStage.stage_name}
+                          </div>
                         </div>
-                        <div className="text-lg font-bold text-gray-400">
-                          第{nextStage.stage_number}阶段：{nextStage.stage_name}
-                        </div>
+                        <Lock className="w-5 h-5 text-gray-600 flex-shrink-0" />
                       </div>
-                    </div>
 
-                    {/* 锁定粒子效果 */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      {[...Array(5)].map((_, i) => (
-                        <motion.div
-                          key={i}
-                          animate={{
-                            y: [0, -20, 0],
-                            opacity: [0.2, 0.5, 0.2]
-                          }}
-                          transition={{
-                            duration: 2 + i * 0.3,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                            delay: i * 0.2
-                          }}
-                          className="absolute w-1 h-1 bg-gray-600 rounded-full"
-                          style={{
-                            left: `${20 + i * 15}%`,
-                            top: '50%'
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-
-                <div className="flex-1 h-px bg-gradient-to-r from-gray-700 via-transparent to-transparent" />
-              </div>
-            )}
+                      {/* 锁定粒子效果 */}
+                      <div className="absolute inset-0 pointer-events-none">
+                        {[...Array(3)].map((_, i) => (
+                          <motion.div
+                            key={i}
+                            animate={{ y: [0, -10, 0], opacity: [0.2, 0.4, 0.2] }}
+                            transition={{ duration: 2 + i * 0.3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
+                            className="absolute w-1 h-1 bg-gray-600 rounded-full"
+                            style={{ left: `${30 + i * 20}%`, top: '50%' }}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  </div>
+                )
+              )}
+            </div>
           </motion.div>
         )}
-
-        {/* 导航按钮 */}
-        <div className="flex items-center justify-between pt-8 border-t border-gray-800">
-          {prevContent ? (
-            <Link
-              href={`/courses/${systemKey}/${prevContent.id}`}
-              className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              上一课
-            </Link>
-          ) : (
-            <div />
-          )}
-
-          {nextContent ? (
-            <Link
-              href={`/courses/${systemKey}/${nextContent.id}`}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 rounded-lg transition-opacity"
-            >
-              下一课
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          ) : (
-            <Link
-              href={`/courses/${systemKey}`}
-              className="px-6 py-3 bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
-            >
-              完成课程 ✓
-            </Link>
-          )}
-        </div>
       </div>
     </div>
   )

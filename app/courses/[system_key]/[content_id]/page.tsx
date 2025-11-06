@@ -136,6 +136,31 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 
     const contentsData = stageContents as { id: string }[] | null
 
+    // 获取上一个阶段信息
+    const { data: prevStage } = await supabase
+      .from('course_stages')
+      .select('id, stage_number, stage_name')
+      .eq('system_id', courseSystem.id)
+      .eq('stage_number', (stageData?.stage_number || 0) - 1)
+      .single()
+
+    const prevStageData = prevStage as { id: string; stage_number: number; stage_name: string } | null
+
+    // 获取上一阶段的第一个内容
+    let prevStageFirstContent = null
+    if (prevStageData) {
+      const { data: prevStageContent } = await supabase
+        .from('course_contents')
+        .select('id')
+        .eq('stage_id', prevStageData.id)
+        .eq('is_published', true)
+        .order('sequence_number')
+        .limit(1)
+        .single()
+
+      prevStageFirstContent = prevStageContent as { id: string } | null
+    }
+
     // 获取下一个阶段信息
     const { data: nextStage } = await supabase
       .from('course_stages')
@@ -170,6 +195,8 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
         nextContent={nextContent}
         currentStage={stageData}
         stageContentIds={contentsData?.map(c => c.id) || []}
+        prevStage={prevStageData}
+        prevStageFirstContentId={prevStageFirstContent?.id || null}
         nextStage={nextStageData}
         nextStageFirstContentId={nextStageFirstContent?.id || null}
       />

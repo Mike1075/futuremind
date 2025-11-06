@@ -19,6 +19,8 @@ interface EarthContentWrapperProps {
   nextContent: CourseContent | null
   currentStage: StageInfo | null
   stageContentIds: string[]
+  prevStage: StageInfo | null
+  prevStageFirstContentId: string | null
   nextStage: StageInfo | null
   nextStageFirstContentId: string | null
 }
@@ -31,6 +33,8 @@ export function EarthContentWrapper({
   nextContent,
   currentStage,
   stageContentIds,
+  prevStage,
+  prevStageFirstContentId,
   nextStage,
   nextStageFirstContentId
 }: EarthContentWrapperProps) {
@@ -84,6 +88,8 @@ export function EarthContentWrapper({
           onDiscussWithGaia={handleDiscussWithGaia}
           currentStage={currentStage}
           stageContentIds={stageContentIds}
+          prevStage={prevStage}
+          prevStageFirstContentId={prevStageFirstContentId}
           nextStage={nextStage}
           nextStageFirstContentId={nextStageFirstContentId}
         />
