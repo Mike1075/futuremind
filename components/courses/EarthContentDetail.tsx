@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { CourseContent } from '@/lib/supabase/database.types'
 import { Lock, Unlock } from 'lucide-react'
+import { recordInteraction, getEarthProgress } from '@/lib/utils/interaction-tracker'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -51,6 +52,13 @@ export function EarthContentDetail({
   const [stageProgress, setStageProgress] = useState(0)
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [showUnlockAnimation, setShowUnlockAnimation] = useState(false)
+  const [contentProgress, setContentProgress] = useState(0) // 当前内容的进度
+  const [showMilestone, setShowMilestone] = useState<number | null>(null) // 里程碑动画
+
+  // Refs for section visibility tracking
+  const knowledgeRef = useRef<HTMLDivElement>(null)
+  const questionsRef = useRef<HTMLDivElement>(null)
+  const reflectionRef = useRef<HTMLDivElement>(null)
 
   // 计算阶段进度
   useEffect(() => {
@@ -94,11 +102,101 @@ export function EarthContentDetail({
   const socraticQuestions = (content.socratic_questions as SocraticQuestions) || {}
   const postReflection = (content.post_reflection as string[]) || []
 
-  const handleKnowledgePointClick = (point: string) => {
+  // 页面访问追踪（Level 1）
+  useEffect(() => {
+    recordInteraction({
+      contentId: content.id,
+      interactionType: 'page_visit'
+    })
+
+    // 初始加载进度
+    refreshProgress()
+  }, [content.id])
+
+  // 区域可见性追踪（Level 1）
+  useEffect(() => {
+    const options = {
+      threshold: 0.5 // 50%可见时触发
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const target = entry.target as HTMLElement
+          const sectionType = target.dataset.section
+          if (sectionType) {
+            recordInteraction({
+              contentId: content.id,
+              interactionType: 'section_view',
+              metadata: { section: sectionType }
+            })
+          }
+        }
+      })
+    }, options)
+
+    if (knowledgeRef.current) observer.observe(knowledgeRef.current)
+    if (questionsRef.current) observer.observe(questionsRef.current)
+    if (reflectionRef.current) observer.observe(reflectionRef.current)
+
+    return () => observer.disconnect()
+  }, [content.id])
+
+  // 刷新进度
+  const refreshProgress = async () => {
+    const result = await getEarthProgress(content.id)
+    if (result) {
+      const oldProgress = contentProgress
+      setContentProgress(result.progress)
+
+      // 检测里程碑
+      if (oldProgress < 25 && result.progress >= 25) {
+        triggerMilestone(25)
+      } else if (oldProgress < 50 && result.progress >= 50) {
+        triggerMilestone(50)
+      } else if (oldProgress < 75 && result.progress >= 75) {
+        triggerMilestone(75)
+      } else if (oldProgress < 80 && result.progress >= 80) {
+        triggerMilestone(80)
+      }
+    }
+  }
+
+  // 触发里程碑动画
+  const triggerMilestone = (milestone: number) => {
+    setShowMilestone(milestone)
+    setTimeout(() => setShowMilestone(null), 3000)
+  }
+
+  const handleKnowledgePointClick = async (point: string, index: number) => {
+    // 记录点击（Level 2）
+    await recordInteraction({
+      contentId: content.id,
+      interactionType: 'knowledge_click',
+      itemIndex: index,
+      itemType: 'knowledge_point'
+    })
+
+    // 刷新进度
+    await refreshProgress()
+
+    // 打开盖亚对话
     onDiscussWithGaia(point, 'knowledge_point')
   }
 
-  const handleQuestionClick = (question: string) => {
+  const handleQuestionClick = async (question: string, stage: string, index: number) => {
+    // 记录点击（Level 2）
+    await recordInteraction({
+      contentId: content.id,
+      interactionType: 'question_click',
+      itemIndex: index,
+      itemType: stage as any // 'pre_watch', 'during_watch', 'post_watch'
+    })
+
+    // 刷新进度
+    await refreshProgress()
+
+    // 打开盖亚对话
     onDiscussWithGaia(question, 'question')
   }
 
@@ -136,6 +234,8 @@ export function EarthContentDetail({
         {/* 知识点 - 创意卡片网格 */}
         {knowledgePoints.length > 0 && (
           <motion.div
+            ref={knowledgeRef}
+            data-section="knowledge"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
@@ -159,7 +259,7 @@ export function EarthContentDetail({
                   transition={{ delay: index * 0.1 }}
                   onMouseEnter={() => setHoveredCard(`knowledge-${index}`)}
                   onMouseLeave={() => setHoveredCard(null)}
-                  onClick={() => handleKnowledgePointClick(point)}
+                  onClick={() => handleKnowledgePointClick(point, index)}
                   className="relative group cursor-pointer"
                 >
                   {/* 背景渐变效果 */}
