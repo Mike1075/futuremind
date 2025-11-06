@@ -89,10 +89,16 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
 
           // 调用Supabase边缘函数（已配置OPENAI_API_KEY）
           const supabase = createClient()
+
+          // 获取当前用户ID
+          const { data: { user } } = await supabase.auth.getUser()
+
           const { data: questionsData, error: questionsError } = await supabase.functions.invoke('generate-inspiring-questions', {
             body: {
               topic: extractedTopic,
-              originalText: initialContext.text
+              originalText: initialContext.text,
+              userId: user?.id || null,
+              contentId: initialContext.contentId
             }
           })
 
@@ -232,7 +238,10 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
           <div className="px-6 pb-3">
             <div className="flex flex-col gap-1 text-sm">
               <span className="text-gray-500">探讨主题：</span>
-              <span className="text-purple-300 font-medium break-words leading-relaxed">{topic}</span>
+              <p className="text-purple-300 font-medium break-words whitespace-normal leading-relaxed m-0"
+                 style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+                {topic}
+              </p>
             </div>
           </div>
         )}
