@@ -322,40 +322,14 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
               </button>
             </div>
 
-            {/* 按模块分组显示项目 */}
+            {/* 按模块分组显示项目 - 使用固定的sequence_number范围 */}
             {(() => {
-              // 按模块分组
-              const modules = icarusProjects.reduce((acc, project) => {
-                const moduleName = project.module_name || '未分类'
-                if (!acc[moduleName]) {
-                  acc[moduleName] = []
-                }
-                acc[moduleName].push(project)
-                return acc
-              }, {} as Record<string, typeof icarusProjects>)
-
-              // 模块配置
-              const moduleConfig: Record<string, {
-                icon: string
-                gradient: string
-                description: string
-              }> = {
-                '模块1：观察与感知': {
-                  icon: '🌱',
-                  gradient: 'from-emerald-500 to-teal-500',
-                  description: '通过观察和感知开始你的探索之旅'
-                },
-                '模块2：量子与意识': {
-                  icon: '🔬',
-                  gradient: 'from-blue-500 to-cyan-500',
-                  description: '深入量子世界，探索意识的奥秘'
-                },
-                '模块3：集体意识': {
-                  icon: '🌐',
-                  gradient: 'from-purple-500 to-pink-500',
-                  description: '研究集体意识的力量和影响'
-                }
-              }
+              // 固定的模块结构（与管理后台一致）
+              const FIXED_MODULES = [
+                { id: 1, name: '模块1：观察与感知', range: [1, 2, 3, 4], icon: '🌱', gradient: 'from-emerald-500 to-teal-500', description: '通过观察和感知开始你的探索之旅' },
+                { id: 2, name: '模块2：量子与意识', range: [5, 6, 7, 8], icon: '🔬', gradient: 'from-blue-500 to-cyan-500', description: '深入量子世界，探索意识的奥秘' },
+                { id: 3, name: '模块3：集体意识', range: [9, 10, 11, 12], icon: '🌐', gradient: 'from-purple-500 to-pink-500', description: '研究集体意识的力量和影响' }
+              ]
 
               // 难度颜色配置 - 简洁的边框颜色
               const difficultyColors: Record<string, string> = {
@@ -365,15 +339,20 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                 '创新实践': 'border-orange-500/30 hover:border-orange-500/60'
               }
 
-              return Object.entries(modules).map(([moduleName, projects]) => {
-                const config = moduleConfig[moduleName] || {
-                  icon: '📚',
-                  gradient: 'from-gray-500 to-gray-600',
-                  description: '探索未知'
+              // 按sequence_number查找项目
+              const getProjectBySequence = (seq: number): Project | undefined => {
+                return icarusProjects.find(p => p.sequence_number === seq)
+              }
+
+              return FIXED_MODULES.map((module) => {
+                const config = {
+                  icon: module.icon,
+                  gradient: module.gradient,
+                  description: module.description
                 }
 
                 return (
-                  <div key={moduleName} className="mb-16">
+                  <div key={module.name} className="mb-16">
                     {/* 模块标题 - 简洁设计 */}
                     <div className="mb-8">
                       <div className="flex items-center gap-4 mb-3">
@@ -381,7 +360,7 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                           {config.icon}
                         </div>
                         <div>
-                          <h3 className="text-2xl font-bold text-white">{moduleName}</h3>
+                          <h3 className="text-2xl font-bold text-white">{module.name}</h3>
                           <p className="text-sm text-gray-400 mt-1">{config.description}</p>
                         </div>
                       </div>
@@ -390,7 +369,24 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
 
                     {/* 项目网格 - 干净简洁的卡片 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      {projects.map(project => {
+                      {module.range.map(seq => {
+                        const project = getProjectBySequence(seq)
+
+                        // 如果项目不存在，显示空占位符
+                        if (!project) {
+                          return (
+                            <div
+                              key={seq}
+                              className="group relative bg-gray-900/50 backdrop-blur-sm border-2 border-gray-800 rounded-xl p-6 opacity-50"
+                            >
+                              <div className="text-center text-gray-600">
+                                <p className="text-sm">项目 {seq}</p>
+                                <p className="text-xs mt-2">暂未创建</p>
+                              </div>
+                            </div>
+                          )
+                        }
+
                         const isSelected = myProjects.some(
                           mp => mp.course_contents.id === project.id
                         )
