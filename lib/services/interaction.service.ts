@@ -36,20 +36,33 @@ export class InteractionService {
   }) {
     const supabase = await createClient()
 
-    const { error } = await (supabase
-      .from('user_content_interactions') as any)
-      .upsert({
-        user_id: params.userId,
-        content_id: params.contentId,
-        interaction_type: params.interactionType,
-        item_index: params.itemIndex ?? null,
-        item_type: params.itemType ?? null,
-        metadata: params.metadata || {},
-        created_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,content_id,interaction_type,item_index,item_type',
-        ignoreDuplicates: true // 重复点击不覆盖
-      })
+    const record = {
+      user_id: params.userId,
+      content_id: params.contentId,
+      interaction_type: params.interactionType,
+      item_index: params.itemIndex ?? null,
+      item_type: params.itemType ?? null,
+      metadata: params.metadata || {},
+      created_at: new Date().toISOString()
+    }
+
+    // 对于讨论消息，使用 INSERT 而不是 UPSERT，确保每条消息都被记录
+    // 对于其他交互类型（点击等），使用 UPSERT 防止重复记录
+    let error
+    if (params.interactionType === 'discussion_message' || params.interactionType === 'deep_discussion') {
+      const { error: insertError } = await (supabase
+        .from('user_content_interactions') as any)
+        .insert(record)
+      error = insertError
+    } else {
+      const { error: upsertError } = await (supabase
+        .from('user_content_interactions') as any)
+        .upsert(record, {
+          onConflict: 'user_id,content_id,interaction_type,item_index,item_type',
+          ignoreDuplicates: true // 重复点击不覆盖
+        })
+      error = upsertError
+    }
 
     if (error) {
       console.error('[InteractionService] Record error:', error)
