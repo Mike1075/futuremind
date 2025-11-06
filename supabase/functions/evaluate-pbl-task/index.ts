@@ -118,18 +118,42 @@ serve(async (req) => {
     const dayNum = parseInt(dayMatch[2])
 
     const weekPlan = project.week_plan?.find((w: any) => w.week === weekNum)
+
+    if (!weekPlan) {
+      console.error(`❌ 未找到第${weekNum}周的计划`)
+      return new Response(
+        JSON.stringify({
+          error: '未找到对应的周计划',
+          details: `项目「${project.title}」没有第${weekNum}周的计划`
+        }),
+        {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
+      )
+    }
+
     // activities数组存储每天的活动，使用day字段或索引来匹配
     const dayPlan = weekPlan?.activities?.find((d: any) => {
-      // 支持多种day格式："Day 1", "第1天", 或直接使用索引
-      const dayStr = d.day?.toLowerCase() || ''
+      // 支持多种day格式："1", "Day 1", "第1天", "3-5" (范围)
+      const dayStr = String(d.day || '').toLowerCase()
       return dayStr.includes(dayNum.toString()) ||
              dayStr === `day ${dayNum}` ||
-             dayStr === `第${dayNum}天`
+             dayStr === `第${dayNum}天` ||
+             dayStr === dayNum.toString()
     }) || weekPlan?.activities?.[dayNum - 1] // 如果找不到，尝试使用索引
 
     if (!dayPlan) {
+      console.error(`❌ 未找到第${weekNum}周第${dayNum}天的任务`)
+      console.error('可用的活动:', weekPlan.activities?.map((a: any) => a.day))
       return new Response(
-        JSON.stringify({ error: '未找到对应的任务计划' }),
+        JSON.stringify({
+          error: '未找到对应的任务计划',
+          details: `第${weekNum}周没有第${dayNum}天的任务。可用的天数：${weekPlan.activities?.map((a: any) => a.day).join(', ')}`
+        }),
         {
           status: 404,
           headers: {
