@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 interface WeekDay {
   day: number
@@ -58,12 +59,28 @@ export function PBLProjectDetail({
   selectionId
 }: PBLProjectDetailProps) {
   const router = useRouter()
+  const supabase = createClient()
   const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set([1])) // 默认展开第1周
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
   const [submittingDay, setSubmittingDay] = useState<string | null>(null)
   const [submissionContent, setSubmissionContent] = useState('')
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
   const [currentDayKey, setCurrentDayKey] = useState<string | null>(null)
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [submissionResult, setSubmissionResult] = useState<any | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+
+  // 获取用户ID
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserId(user.id)
+      }
+    }
+    fetchUser()
+  }, [])
 
   const toggleWeek = (weekNumber: number) => {
     setExpandedWeeks(prev => {
@@ -161,7 +178,22 @@ export function PBLProjectDetail({
     const dayKey = `week${weekNumber}_day${dayNumber}`
     setCurrentDayKey(dayKey)
     setSubmissionContent('')
+    setUploadedFiles([])
+    setSubmissionResult(null)
     setShowSubmitDialog(true)
+  }
+
+  // 处理文件选择
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files)
+      setUploadedFiles(prev => [...prev, ...filesArray])
+    }
+  }
+
+  // 移除已选择的文件
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   // 提交任务
@@ -171,32 +203,66 @@ export function PBLProjectDetail({
       return
     }
 
+    if (!userId) {
+      alert('请先登录')
+      return
+    }
+
     try {
       setSubmittingDay(currentDayKey)
+      setUploading(true)
 
-      // TODO: 调用提交API
-      const response = await fetch('/api/courses/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contentId: project.id,
-          progressKey: currentDayKey,
-          submission: submissionContent
-        })
+      // 上传文件（如果有）
+      const attachments: any[] = []
+      if (uploadedFiles.length > 0) {
+        for (const file of uploadedFiles) {
+          const formData = new FormData()
+          formData.append('file', file)
+
+          const uploadResponse = await fetch('/api/media/upload', {
+            method: 'POST',
+            body: formData
+          })
+
+          if (uploadResponse.ok) {
+            const { fileUrl, fileName } = await uploadResponse.json()
+            attachments.push({
+              type: file.type.startsWith('image/') ? 'image' : 'file',
+              url: fileUrl,
+              name: fileName
+            })
+          }
+        }
+      }
+
+      // 调用边缘函数进行评估
+      const { data, error: functionError } = await supabase.functions.invoke('evaluate-pbl-task', {
+        body: {
+          user_id: userId,
+          project_id: project.id,
+          day_key: currentDayKey,
+          submission_content: submissionContent,
+          attachments
+        }
       })
 
-      if (response.ok) {
-        setShowSubmitDialog(false)
-        setSubmissionContent('')
-        router.refresh()
-      } else {
-        alert('提交失败，请重试')
+      if (functionError) {
+        throw functionError
       }
+
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      // 显示评估结果
+      setSubmissionResult(data)
+
     } catch (error) {
       console.error('Failed to submit task:', error)
       alert('提交失败，请重试')
     } finally {
       setSubmittingDay(null)
+      setUploading(false)
     }
   }
 
@@ -506,31 +572,160 @@ export function PBLProjectDetail({
 
       {/* 提交对话框 */}
       {showSubmitDialog && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-lg max-w-2xl w-full p-6">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-gray-900 border border-gray-800 rounded-lg max-w-2xl w-full p-6 my-8">
             <h3 className="text-xl font-bold mb-4">提交今日任务</h3>
-            <textarea
-              value={submissionContent}
-              onChange={(e) => setSubmissionContent(e.target.value)}
-              placeholder="请描述你今天完成的任务和收获..."
-              className="w-full h-40 bg-gray-800 border border-gray-700 rounded-lg p-4 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={handleSubmitTask}
-                disabled={!!submittingDay || !submissionContent.trim()}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submittingDay ? '提交中...' : '确认提交'}
-              </button>
-              <button
-                onClick={() => setShowSubmitDialog(false)}
-                disabled={!!submittingDay}
-                className="px-4 py-2 bg-gray-800 rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
-              >
-                取消
-              </button>
-            </div>
+
+            {/* 如果没有AI评估结果，显示提交表单 */}
+            {!submissionResult && (
+              <>
+                <textarea
+                  value={submissionContent}
+                  onChange={(e) => setSubmissionContent(e.target.value)}
+                  placeholder="请描述你今天完成的任务和收获..."
+                  className="w-full h-40 bg-gray-800 border border-gray-700 rounded-lg p-4 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                />
+
+                {/* 文件上传区域 */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    上传附件（可选）
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <label className="flex-1 cursor-pointer">
+                      <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 text-center hover:border-blue-500 transition-colors">
+                        <svg className="w-8 h-8 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p className="text-sm text-gray-400">点击选择文件或拖拽到此处</p>
+                        <p className="text-xs text-gray-500 mt-1">支持图片、文档等文件</p>
+                      </div>
+                      <input
+                        type="file"
+                        multiple
+                        onChange={handleFileChange}
+                        className="hidden"
+                        disabled={uploading}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* 已选择的文件列表 */}
+                {uploadedFiles.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                    <p className="text-sm font-medium text-gray-400">已选择的文件：</p>
+                    {uploadedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg p-3"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <svg className="w-5 h-5 text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clipRule="evenodd" />
+                          </svg>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white truncate">{file.name}</p>
+                            <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="ml-3 text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
+                          disabled={uploading}
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 上传进度提示 */}
+                {uploading && (
+                  <div className="mb-4 flex items-center gap-3 bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                    <svg className="animate-spin h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-sm text-blue-400">正在上传文件和提交作业...</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSubmitTask}
+                    disabled={!!submittingDay || !submissionContent.trim() || uploading}
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {uploading ? '上传中...' : submittingDay ? '提交中...' : '确认提交'}
+                  </button>
+                  <button
+                    onClick={() => setShowSubmitDialog(false)}
+                    disabled={!!submittingDay || uploading}
+                    className="px-4 py-2 bg-gray-800 rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  >
+                    取消
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* AI评估结果 */}
+            {submissionResult?.evaluation && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 pb-4 border-b border-gray-800">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-white">提交成功！</h4>
+                    <p className="text-sm text-gray-400">AI助教已完成批改</p>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h5 className="font-semibold text-blue-400">评分</h5>
+                    <span className="text-2xl font-bold text-white">
+                      {submissionResult.evaluation.score || '-'}/100
+                    </span>
+                  </div>
+
+                  {submissionResult.evaluation.feedback && (
+                    <div className="mt-4">
+                      <h5 className="font-semibold text-purple-400 mb-2">反馈意见</h5>
+                      <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                        {submissionResult.evaluation.feedback}
+                      </p>
+                    </div>
+                  )}
+
+                  {submissionResult.evaluation.suggestions && (
+                    <div className="mt-4">
+                      <h5 className="font-semibold text-green-400 mb-2">改进建议</h5>
+                      <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                        {submissionResult.evaluation.suggestions}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowSubmitDialog(false)
+                    router.refresh()
+                  }}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                >
+                  关闭
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
