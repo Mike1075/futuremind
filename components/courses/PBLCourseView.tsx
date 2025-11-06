@@ -322,192 +322,141 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
               </button>
             </div>
 
-            {/* 按难度级别分组显示项目 */}
+            {/* 按模块分组显示项目 */}
             {(() => {
-              // 按难度级别分组
-              const difficulties = icarusProjects.reduce((acc, project) => {
-                const difficulty = project.difficulty_level || '未分类'
-                if (!acc[difficulty]) {
-                  acc[difficulty] = []
+              // 按模块分组
+              const modules = icarusProjects.reduce((acc, project) => {
+                const moduleName = project.module_name || '未分类'
+                if (!acc[moduleName]) {
+                  acc[moduleName] = []
                 }
-                acc[difficulty].push(project)
+                acc[moduleName].push(project)
                 return acc
               }, {} as Record<string, typeof icarusProjects>)
 
-              // 难度级别配置 - 炫酷的渐变和样式
-              const difficultyConfig: Record<string, {
-                name: string
+              // 模块配置
+              const moduleConfig: Record<string, {
                 icon: string
                 gradient: string
-                borderGlow: string
                 description: string
               }> = {
-                '基础探索': {
-                  name: '基础探索',
+                '模块1：观察与感知': {
                   icon: '🌱',
-                  gradient: 'from-emerald-400 via-green-400 to-teal-400',
-                  borderGlow: 'shadow-emerald-500/50',
-                  description: '入门级探索，适合初次接触量子意识的你'
+                  gradient: 'from-emerald-500 to-teal-500',
+                  description: '通过观察和感知开始你的探索之旅'
                 },
-                '进阶挑战': {
-                  name: '进阶挑战',
+                '模块2：量子与意识': {
                   icon: '🔬',
-                  gradient: 'from-blue-400 via-cyan-400 to-sky-400',
-                  borderGlow: 'shadow-blue-500/50',
-                  description: '需要一定基础，开始深入探索的奇妙旅程'
+                  gradient: 'from-blue-500 to-cyan-500',
+                  description: '深入量子世界，探索意识的奥秘'
                 },
-                '深度研究': {
-                  name: '深度研究',
-                  icon: '🧬',
-                  gradient: 'from-purple-400 via-pink-400 to-fuchsia-400',
-                  borderGlow: 'shadow-purple-500/50',
-                  description: '适合有经验的探索者，挑战认知边界'
-                },
-                '创新实践': {
-                  name: '创新实践',
-                  icon: '💫',
-                  gradient: 'from-orange-400 via-amber-400 to-yellow-400',
-                  borderGlow: 'shadow-orange-500/50',
-                  description: '创造性实验，开拓未知领域的先锋'
+                '模块3：集体意识': {
+                  icon: '🌐',
+                  gradient: 'from-purple-500 to-pink-500',
+                  description: '研究集体意识的力量和影响'
                 }
               }
 
-              // 按指定顺序显示难度级别
-              const orderedDifficulties = ['基础探索', '进阶挑战', '深度研究', '创新实践']
+              // 难度颜色配置 - 简洁的边框颜色
+              const difficultyColors: Record<string, string> = {
+                '基础探索': 'border-emerald-500/30 hover:border-emerald-500/60',
+                '进阶挑战': 'border-blue-500/30 hover:border-blue-500/60',
+                '深度研究': 'border-purple-500/30 hover:border-purple-500/60',
+                '创新实践': 'border-orange-500/30 hover:border-orange-500/60'
+              }
 
-              return orderedDifficulties.map((difficulty) => {
-                const projects = difficulties[difficulty]
-                if (!projects || projects.length === 0) return null
-
-                const config = difficultyConfig[difficulty] || {
-                  name: difficulty,
+              return Object.entries(modules).map(([moduleName, projects]) => {
+                const config = moduleConfig[moduleName] || {
                   icon: '📚',
-                  gradient: 'from-gray-400 to-gray-500',
-                  borderGlow: 'shadow-gray-500/50',
+                  gradient: 'from-gray-500 to-gray-600',
                   description: '探索未知'
                 }
 
                 return (
-                  <div key={difficulty} className="mb-16">
-                    {/* 难度级别标题 - 炫酷的渐变效果 */}
-                    <div className="mb-8 relative">
-                      <div className="flex items-center gap-6">
-                        {/* 3D icon with glow effect */}
-                        <div className={`relative w-20 h-20 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-4xl shadow-2xl ${config.borderGlow} transform hover:scale-110 hover:rotate-6 transition-all duration-300`}>
-                          <div className="absolute inset-0 rounded-2xl bg-white/20 animate-pulse" />
-                          <span className="relative z-10 drop-shadow-lg">{config.icon}</span>
+                  <div key={moduleName} className="mb-16">
+                    {/* 模块标题 - 简洁设计 */}
+                    <div className="mb-8">
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-3xl shadow-lg`}>
+                          {config.icon}
                         </div>
-
-                        <div className="flex-1">
-                          {/* Gradient text title */}
-                          <h3 className={`text-3xl font-black mb-2 bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent drop-shadow-lg`}>
-                            {config.name}
-                          </h3>
-                          <p className="text-gray-400 text-sm">{config.description}</p>
-                          <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                            </svg>
-                            <span>{projects.length} 个探索项目</span>
-                          </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-white">{moduleName}</h3>
+                          <p className="text-sm text-gray-400 mt-1">{config.description}</p>
                         </div>
                       </div>
-
-                      {/* Decorative line */}
-                      <div className="absolute -bottom-4 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent" />
+                      <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent" />
                     </div>
 
-                    {/* 项目网格 - 现代卡片设计 */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* 项目网格 - 干净简洁的卡片 */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                       {projects.map(project => {
                         const isSelected = myProjects.some(
                           mp => mp.course_contents.id === project.id
                         )
 
+                        const difficultyBorder = project.difficulty_level
+                          ? difficultyColors[project.difficulty_level] || 'border-gray-700 hover:border-gray-600'
+                          : 'border-gray-700 hover:border-gray-600'
+
                         return (
                           <div
                             key={project.id}
-                            className="group relative bg-gray-900/40 backdrop-blur-sm border border-gray-800/50 rounded-2xl overflow-hidden hover:border-gray-700 transition-all duration-500 cursor-pointer hover:shadow-2xl hover:shadow-purple-500/20 hover:-translate-y-2"
+                            className={`group relative bg-gray-900/50 backdrop-blur-sm border-2 ${difficultyBorder} rounded-xl p-6 transition-all duration-300 cursor-pointer hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1`}
                             onClick={() => setSelectedProject(project)}
                           >
-                            {/* 3D Gradient Header - 纯CSS效果 */}
-                            <div className={`relative h-32 bg-gradient-to-br ${config.gradient} overflow-hidden`}>
-                              {/* Animated geometric patterns */}
-                              <div className="absolute inset-0">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '3s' }} />
-                                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-xl animate-pulse" style={{ animationDelay: '1s', animationDuration: '2s' }} />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 border-white/20 rounded-lg rotate-45 group-hover:rotate-90 transition-transform duration-700" />
+                            {/* 难度标签 */}
+                            {project.difficulty_level && (
+                              <div className="mb-4">
+                                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-gray-800/80 border border-gray-700/50 text-gray-300">
+                                  {project.difficulty_level}
+                                </span>
                               </div>
+                            )}
 
-                              {/* Glass morphism overlay */}
-                              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-gray-900/60" />
+                            {/* 项目标题 */}
+                            <h3 className="text-base font-bold mb-3 line-clamp-2 min-h-[3rem] text-white group-hover:text-blue-400 transition-colors">
+                              {project.title}
+                            </h3>
 
-                              {/* Hover glow effect */}
-                              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                                <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} mix-blend-overlay`} />
-                              </div>
-                            </div>
+                            {/* 项目简介 */}
+                            {project.project_intro && (
+                              <p className="text-gray-400 text-sm mb-4 line-clamp-3 leading-relaxed">
+                                {project.project_intro}
+                              </p>
+                            )}
 
-                            <div className="p-6 relative">
-                              {/* 模块标签 */}
-                              {project.module_name && (
-                                <div className="mb-3">
-                                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-800/80 border border-gray-700/50 text-gray-300">
-                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                      <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                                    </svg>
-                                    {project.module_name}
-                                  </span>
+                            {/* 操作按钮 */}
+                            <div className="mt-auto pt-4 border-t border-gray-800/50" onClick={(e) => e.stopPropagation()}>
+                              {!isSelected ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleSelectProject(project.id)
+                                  }}
+                                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                  </svg>
+                                  选择项目
+                                </button>
+                              ) : (
+                                <div className="w-full px-4 py-2 bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  已选择
                                 </div>
                               )}
-
-                              {/* 项目标题 - Gradient on hover */}
-                              <h3 className="text-lg font-bold mb-3 line-clamp-2 min-h-[3.5rem] group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-300 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
-                                {project.title}
-                              </h3>
-
-                              {/* 项目简介 */}
-                              {project.project_intro && (
-                                <p className="text-gray-400 text-sm mb-4 line-clamp-2 leading-relaxed">
-                                  {project.project_intro}
-                                </p>
-                              )}
-
-                              {/* 操作按钮 */}
-                              <div className="mt-auto pt-4 border-t border-gray-800/50" onClick={(e) => e.stopPropagation()}>
-                                {!isSelected ? (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleSelectProject(project.id)
-                                    }}
-                                    className={`w-full px-4 py-2.5 bg-gradient-to-r ${config.gradient} rounded-xl text-sm font-bold text-gray-900 hover:shadow-lg hover:shadow-current/50 transition-all duration-300 flex items-center justify-center gap-2 group/btn`}
-                                  >
-                                    <svg className="w-4 h-4 group-hover/btn:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    开始探索
-                                  </button>
-                                ) : (
-                                  <div className="w-full px-4 py-2.5 bg-gradient-to-r from-emerald-500/20 to-green-500/20 border-2 border-emerald-500/50 text-emerald-400 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
-                                    探索中
-                                  </div>
-                                )}
-                              </div>
                             </div>
-
-                            {/* Corner accent */}
-                            <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${config.gradient} opacity-0 group-hover:opacity-20 blur-2xl transition-opacity duration-500 pointer-events-none`} />
                           </div>
                         )
                       })}
                     </div>
                   </div>
                 )
-              }).filter(Boolean)
+              })
             })()}
 
             {icarusProjects.length === 0 && (
