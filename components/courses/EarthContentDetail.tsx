@@ -280,7 +280,7 @@ export function EarthContentDetail({
           content_id: content.id,
           day_key: projectKey,
           submission_content: submissionContent,
-          submission_type: 'explorer_project'
+          submission_type: 'project_deliverable'
         }
       })
 
