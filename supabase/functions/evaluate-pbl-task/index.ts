@@ -185,6 +185,21 @@ serve(async (req) => {
     }
 
     // 4. 创建提交记录
+    // 将元数据信息添加到attachments数组中（因为表没有metadata列）
+    const enrichedAttachments = [
+      ...attachments,
+      {
+        type: '_metadata',
+        name: 'submission_metadata',
+        data: {
+          day_key,
+          week: weekNum,
+          day: dayNum,
+          task_title: dayPlan.title
+        }
+      }
+    ]
+
     const { data: newSubmission, error: insertError } = await supabase
       .from('user_submissions')
       .insert({
@@ -192,13 +207,7 @@ serve(async (req) => {
         course_content_id: project_id,
         submission_type: 'pbl_task',
         content: submission_content,
-        attachments: attachments,
-        metadata: {
-          day_key,
-          week: weekNum,
-          day: dayNum,
-          task_title: dayPlan.title
-        },
+        attachments: enrichedAttachments,
         status: 'under_review',
       })
       .select()
