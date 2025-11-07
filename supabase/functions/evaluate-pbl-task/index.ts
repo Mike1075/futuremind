@@ -45,7 +45,7 @@ serve(async (req) => {
 
   try {
     // 1. 解析请求 - 与evaluate-submission完全一样的方式
-    const { user_id, content_id, submission_content, submission_type = 'pbl_task', day_key } = await req.json()
+    const { user_id, content_id, submission_content, submission_type = 'project_deliverable', day_key } = await req.json()
 
     if (!user_id || !content_id || !submission_content) {
       return new Response(

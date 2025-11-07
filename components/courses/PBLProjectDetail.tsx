@@ -242,7 +242,7 @@ export function PBLProjectDetail({
           content_id: project.id,
           day_key: currentDayKey,
           submission_content: submissionContent,
-          submission_type: 'pbl_task'
+          submission_type: 'project_deliverable'
         }
       })
 
