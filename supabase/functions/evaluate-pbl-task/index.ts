@@ -251,42 +251,52 @@ serve(async (req) => {
 
     // 6. 调用Gemini API
     console.log('🤖 调用Gemini API进行评估...')
+    console.log('🔑 API Key存在:', !!GEMINI_API_KEY, 'Key长度:', GEMINI_API_KEY?.length)
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1000,
+    let geminiResponse
+    try {
+      geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        }),
-      }
-    )
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 1000,
+            },
+          }),
+        }
+      )
+      console.log('✅ Gemini API请求完成, Status:', geminiResponse.status)
+    } catch (fetchError) {
+      console.error('❌ Gemini API fetch失败:', fetchError)
+      throw new Error(`Gemini API fetch error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`)
+    }
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text()
       console.error('❌ Gemini API调用失败:', errorText)
-      throw new Error(`Gemini API error: ${errorText}`)
+      throw new Error(`Gemini API error (${geminiResponse.status}): ${errorText}`)
     }
 
     const geminiData = await geminiResponse.json()
+    console.log('📦 Gemini返回数据结构:', JSON.stringify(geminiData).substring(0, 300))
     const aiResultText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
 
     if (!aiResultText) {
+      console.error('❌ Gemini API未返回有效内容, 完整响应:', JSON.stringify(geminiData))
       throw new Error('Gemini API未返回有效内容')
     }
 
@@ -394,11 +404,16 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('❌ 评估失败:', error)
+    console.error('❌ 评估失败 - 完整错误:', error)
+    console.error('❌ 错误类型:', error instanceof Error ? error.constructor.name : typeof error)
+    console.error('❌ 错误消息:', error instanceof Error ? error.message : String(error))
+    console.error('❌ 错误堆栈:', error instanceof Error ? error.stack : '无堆栈信息')
+
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : '评估失败',
-        details: error instanceof Error ? error.stack : undefined,
+        details: error instanceof Error ? error.stack : String(error),
+        errorType: error instanceof Error ? error.constructor.name : typeof error
       }),
       {
         status: 500,
