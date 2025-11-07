@@ -198,16 +198,14 @@ export default function PortalPage() {
             .in('ref_item_id', contentIds)
             .eq('progress_type', 'reading')
 
-          // 统计完成数量（progress_value === 100）
-          let completedCount = 0
+          // 计算平均进度（考虑所有内容的进度值，包括部分完成的）
+          let totalProgress = 0
           progressRecords?.forEach((record: any) => {
-            if (record.progress_value === 100) {
-              completedCount++
-            }
+            totalProgress += record.progress_value || 0
           })
 
-          // 计算进度百分比
-          const progress = Math.round((completedCount / totalContents) * 100)
+          // 计算进度百分比：平均进度 = 总进度 / 内容总数
+          const progress = Math.round(totalProgress / totalContents)
 
           return {
             course_id: item.course_systems.id,
