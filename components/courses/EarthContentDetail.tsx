@@ -306,7 +306,7 @@ export function EarthContentDetail({
           const formData = new FormData()
           formData.append('file', file)
 
-          const uploadResponse = await fetch('/api/media/upload', {
+          const uploadResponse = await fetch('/api/submissions/upload', {
             method: 'POST',
             body: formData
           })
@@ -320,7 +320,8 @@ export function EarthContentDetail({
               name: fileName
             })
           } else {
-            console.error('❌ 文件上传失败:', file.name, uploadResponse.status)
+            const errorData = await uploadResponse.json()
+            console.error('❌ 文件上传失败:', file.name, uploadResponse.status, errorData)
           }
         }
       }
