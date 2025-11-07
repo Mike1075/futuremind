@@ -169,7 +169,73 @@ export default function PortalPage() {
             }
           }
 
-          // 其他课程（倾听、地球）使用原有的进度计算方式
+          // 地球课程使用阶段进度计算
+          if (courseSystemKey === 'earth') {
+            // 获取所有阶段
+            const { data: stages } = await supabase
+              .from('course_stages')
+              .select('id, stage_number')
+              .eq('system_id', item.course_systems.id)
+              .eq('is_published', true)
+              .order('stage_number', { ascending: true })
+
+            if (!stages || stages.length === 0) {
+              return {
+                course_id: item.course_systems.id,
+                course_title: item.course_systems.title,
+                course_system_key: courseSystemKey,
+                assigned_at: item.assigned_at,
+                progress: 0
+              }
+            }
+
+            // 计算每个阶段的平均进度
+            const stageProgresses: number[] = []
+            for (const stage of stages) {
+              // 获取该阶段的所有内容
+              const { data: stageContents } = await supabase
+                .from('course_contents')
+                .select('id')
+                .eq('stage_id', stage.id)
+                .eq('is_published', true)
+
+              if (!stageContents || stageContents.length === 0) {
+                stageProgresses.push(0)
+                continue
+              }
+
+              // 获取这些内容的进度记录
+              const contentIds = stageContents.map((c: any) => c.id)
+              const { data: progressRecords } = await supabase
+                .from('user_progress')
+                .select('ref_item_id, progress_value')
+                .eq('user_id', userId)
+                .in('ref_item_id', contentIds)
+                .eq('progress_type', 'reading')
+
+              // 计算该阶段的平均进度
+              let stageTotal = 0
+              progressRecords?.forEach((record: any) => {
+                stageTotal += record.progress_value || 0
+              })
+              const stageProgress = Math.round(stageTotal / stageContents.length)
+              stageProgresses.push(stageProgress)
+            }
+
+            // 计算所有阶段的平均进度作为总进度
+            const totalStageProgress = stageProgresses.reduce((sum, p) => sum + p, 0)
+            const progress = Math.round(totalStageProgress / stages.length)
+
+            return {
+              course_id: item.course_systems.id,
+              course_title: item.course_systems.title,
+              course_system_key: courseSystemKey,
+              assigned_at: item.assigned_at,
+              progress
+            }
+          }
+
+          // 其他课程（倾听）使用原有的进度计算方式
           // 获取该课程体系下的所有已发布内容ID
           const { data: contents } = await supabase
             .from('course_contents')
