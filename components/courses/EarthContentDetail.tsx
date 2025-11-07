@@ -69,6 +69,12 @@ export function EarthContentDetail({
   const [submitting, setSubmitting] = useState(false)
   const [submissionResult, setSubmissionResult] = useState<any | null>(null)
 
+  // 提交记录相关状态
+  const [showSubmissionsHistory, setShowSubmissionsHistory] = useState(false)
+  const [submissionsHistory, setSubmissionsHistory] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null)
+
   // 计算阶段进度（使用新的进度系统）
   useEffect(() => {
     const fetchStageProgress = async () => {
@@ -226,6 +232,48 @@ export function EarthContentDetail({
     setUploadedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
+  // 获取提交记录
+  const fetchSubmissionsHistory = async () => {
+    if (!selectedProject) return
+
+    setLoadingHistory(true)
+    try {
+      const response = await fetch(`/api/submissions?contentId=${content.id}`)
+      if (response.ok) {
+        const { submissions } = await response.json()
+        setSubmissionsHistory(submissions || [])
+      } else {
+        console.error('Failed to fetch submissions')
+      }
+    } catch (error) {
+      console.error('Error fetching submissions:', error)
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  // 删除提交记录
+  const handleDeleteSubmission = async (submissionId: string) => {
+    if (!confirm('确定要删除这条提交记录吗？')) return
+
+    try {
+      const response = await fetch(`/api/submissions?id=${submissionId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // 重新加载提交记录列表
+        await fetchSubmissionsHistory()
+        alert('删除成功')
+      } else {
+        alert('删除失败，请重试')
+      }
+    } catch (error) {
+      console.error('Error deleting submission:', error)
+      alert('删除失败，请重试')
+    }
+  }
+
   // 提交任务
   const handleSubmitTask = async () => {
     if (!submissionContent.trim()) {
@@ -249,8 +297,11 @@ export function EarthContentDetail({
 
       // 上传文件（如果有）
       const attachments: any[] = []
+      console.log('📎 准备上传文件，数量:', uploadedFiles.length)
+
       if (uploadedFiles.length > 0) {
         for (const file of uploadedFiles) {
+          console.log('📤 上传文件:', file.name, '类型:', file.type)
           const formData = new FormData()
           formData.append('file', file)
 
@@ -261,14 +312,19 @@ export function EarthContentDetail({
 
           if (uploadResponse.ok) {
             const { fileUrl, fileName } = await uploadResponse.json()
+            console.log('✅ 文件上传成功:', fileName, 'URL:', fileUrl)
             attachments.push({
               type: file.type.startsWith('image/') ? 'image' : 'file',
               url: fileUrl,
               name: fileName
             })
+          } else {
+            console.error('❌ 文件上传失败:', file.name, uploadResponse.status)
           }
         }
       }
+
+      console.log('📎 最终attachments数组:', attachments)
 
       // 使用项目ID作为唯一标识
       const projectKey = `explorer_project_${selectedProject.id || selectedProject.title.replace(/\s+/g, '_')}`
@@ -1101,8 +1157,8 @@ export function EarthContentDetail({
                   </div>
                 )}
 
-                {/* 提交作业按钮 */}
-                <div className="mt-6 pt-6 border-t border-gray-700">
+                {/* 提交作业和查看记录按钮 */}
+                <div className="mt-6 pt-6 border-t border-gray-700 space-y-3">
                   <button
                     onClick={() => openSubmitDialog(selectedProject)}
                     className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-lg text-white font-semibold transition-all flex items-center justify-center gap-2"
@@ -1111,6 +1167,19 @@ export function EarthContentDetail({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     提交作业
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowSubmissionsHistory(true)
+                      fetchSubmissionsHistory()
+                    }}
+                    className="w-full px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-white font-semibold transition-all flex items-center justify-center gap-2 border border-gray-700"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    查看提交记录
                   </button>
                 </div>
               </motion.div>
@@ -1287,6 +1356,225 @@ export function EarthContentDetail({
                     </button>
                   </div>
                 )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 提交记录列表弹窗 */}
+        <AnimatePresence>
+          {showSubmissionsHistory && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowSubmissionsHistory(false)
+                setSelectedSubmission(null)
+              }}
+              className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-gray-900 border border-orange-500/30 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-white">我的提交记录</h3>
+                  <button
+                    onClick={() => {
+                      setShowSubmissionsHistory(false)
+                      setSelectedSubmission(null)
+                    }}
+                    className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* 加载状态 */}
+                {loadingHistory && (
+                  <div className="flex items-center justify-center py-12">
+                    <svg className="animate-spin h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                )}
+
+                {/* 提交记录列表 */}
+                {!loadingHistory && submissionsHistory.length === 0 && (
+                  <div className="text-center py-12 text-gray-400">
+                    <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p>还没有提交记录</p>
+                  </div>
+                )}
+
+                {!loadingHistory && submissionsHistory.length > 0 && (
+                  <div className="space-y-4">
+                    {submissionsHistory.map((submission) => (
+                      <div
+                        key={submission.id}
+                        className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-orange-500/30 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              {/* 状态标签 */}
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                submission.status === 'approved'
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : submission.status === 'rejected'
+                                  ? 'bg-red-500/20 text-red-400'
+                                  : 'bg-yellow-500/20 text-yellow-400'
+                              }`}>
+                                {submission.status === 'approved' ? '已批改' : submission.status === 'rejected' ? '已拒绝' : '待批改'}
+                              </span>
+
+                              {/* 评分 */}
+                              {submission.score !== null && (
+                                <span className="text-lg font-bold text-white">
+                                  {submission.score}/100
+                                </span>
+                              )}
+
+                              {/* 提交时间 */}
+                              <span className="text-sm text-gray-400">
+                                {new Date(submission.created_at).toLocaleString('zh-CN')}
+                              </span>
+                            </div>
+
+                            {/* 提交内容预览 */}
+                            <p className="text-gray-300 text-sm line-clamp-2 mb-2">
+                              {submission.content}
+                            </p>
+
+                            {/* 反馈（如果有） */}
+                            {submission.feedback && (
+                              <div className="mt-2 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                                <p className="text-sm text-gray-300 line-clamp-3">
+                                  <strong className="text-orange-400">反馈：</strong>
+                                  {submission.feedback}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 操作按钮 */}
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => setSelectedSubmission(submission)}
+                            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors text-white"
+                          >
+                            查看详情
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSubmission(submission.id)}
+                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm font-medium transition-colors text-red-400"
+                          >
+                            删除
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 提交详情弹窗 */}
+        <AnimatePresence>
+          {selectedSubmission && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedSubmission(null)}
+              className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-gray-900 border border-orange-500/30 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-white">提交详情</h3>
+                  <button
+                    onClick={() => setSelectedSubmission(null)}
+                    className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* 评分和状态 */}
+                  <div className="flex items-center gap-4 pb-4 border-b border-gray-800">
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-400 mb-1">评分</p>
+                      <p className="text-3xl font-bold text-white">
+                        {selectedSubmission.score !== null ? `${selectedSubmission.score}/100` : '未评分'}
+                      </p>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-400 mb-1">状态</p>
+                      <span className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold ${
+                        selectedSubmission.status === 'approved'
+                          ? 'bg-green-500/20 text-green-400'
+                          : selectedSubmission.status === 'rejected'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {selectedSubmission.status === 'approved' ? '已批改' : selectedSubmission.status === 'rejected' ? '已拒绝' : '待批改'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 提交时间 */}
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">提交时间</p>
+                    <p className="text-white">{new Date(selectedSubmission.created_at).toLocaleString('zh-CN')}</p>
+                  </div>
+
+                  {/* 提交内容 */}
+                  <div>
+                    <p className="text-sm text-gray-400 mb-2">提交内容</p>
+                    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                      <p className="text-gray-300 whitespace-pre-wrap">{selectedSubmission.content}</p>
+                    </div>
+                  </div>
+
+                  {/* 反馈 */}
+                  {selectedSubmission.feedback && (
+                    <div>
+                      <p className="text-sm text-gray-400 mb-2">AI反馈</p>
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                        <p className="text-gray-300 whitespace-pre-wrap">{selectedSubmission.feedback}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 关闭按钮 */}
+                  <button
+                    onClick={() => setSelectedSubmission(null)}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg font-semibold hover:from-orange-600 hover:to-amber-600 transition-all text-white"
+                  >
+                    关闭
+                  </button>
+                </div>
               </motion.div>
             </motion.div>
           )}

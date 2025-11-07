@@ -29,6 +29,13 @@ const EVALUATION_PROMPT = `你是一位经验丰富的PBL项目导师。
   "score": 85
 }
 
+**评估要点**：
+1. 如果学生上传了图片，请仔细观察图片内容
+2. 检查图片是否与项目主题相关
+3. 评估图片展示的实验/观察结果是否合理
+4. 如果图片内容与项目要求不符或完全无关，请在反馈中指出，并给予较低分数
+5. 如果只有文字没有图片，则根据文字描述的质量评分
+
 **重要**：只输出有效的JSON，不要添加任何Markdown代码块标记。`
 
 serve(async (req) => {
@@ -45,7 +52,7 @@ serve(async (req) => {
 
   try {
     // 1. 解析请求 - 与evaluate-submission完全一样的方式
-    const { user_id, content_id, submission_content, submission_type = 'project_deliverable', day_key } = await req.json()
+    const { user_id, content_id, submission_content, submission_type = 'project_deliverable', day_key, attachments = [] } = await req.json()
 
     if (!user_id || !content_id || !submission_content) {
       return new Response(
@@ -110,8 +117,47 @@ serve(async (req) => {
       .replace('{project_info}', projectInfo)
       .replace('{submission_content}', submission_content)
 
-    // 5. 调用OpenAI API - 与evaluate-submission完全一样
+    // 5. 调用OpenAI API - 支持图片识别
     console.log('🤖 调用OpenAI API进行评估...')
+    console.log('📎 附件数量:', attachments.length)
+
+    // 构建消息内容（支持图片）
+    let userMessage: any
+
+    // 检查是否有图片附件
+    const imageAttachments = attachments.filter((att: any) => att.type === 'image')
+
+    if (imageAttachments.length > 0) {
+      // 有图片时，使用多模态格式
+      console.log('🖼️ 检测到图片附件，使用视觉模式')
+      const contentParts = [
+        {
+          type: 'text',
+          text: prompt
+        }
+      ]
+
+      // 添加所有图片
+      for (const img of imageAttachments) {
+        contentParts.push({
+          type: 'image_url',
+          image_url: {
+            url: img.url
+          }
+        })
+      }
+
+      userMessage = {
+        role: 'user',
+        content: contentParts
+      }
+    } else {
+      // 没有图片时，使用纯文本格式
+      userMessage = {
+        role: 'user',
+        content: prompt
+      }
+    }
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -124,12 +170,9 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: '你是一位专业的教育评估专家。请严格按照JSON格式返回评估结果。',
+            content: '你是一位专业的教育评估专家。请严格按照JSON格式返回评估结果。如果学生提交了图片，请仔细观察图片内容，评估是否与项目要求相符。',
           },
-          {
-            role: 'user',
-            content: prompt,
-          },
+          userMessage,
         ],
         temperature: 0.7,
         max_tokens: 1000,
