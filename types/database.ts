@@ -61,80 +61,229 @@ export type Database = {
           },
         ]
       }
+      content_visit_records: {
+        Row: {
+          content_id: string
+          last_visited_at: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          last_visited_at?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          last_visited_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_visit_records_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_collaborators: {
+        Row: {
+          accepted_at: string | null
+          collaborator_id: string
+          course_id: string
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          permission_level: string
+          status: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          collaborator_id: string
+          course_id: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          permission_level?: string
+          status?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          collaborator_id?: string
+          course_id?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          permission_level?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_collaborators_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_collaborators_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "course_systems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_collaborators_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_contents: {
         Row: {
+          ai_review_result: Json | null
           content_type: string
           created_at: string | null
+          created_by_user: string | null
           day_plan: Json | null
           deep_interpretation: string | null
+          difficulty_level: string | null
           documentary_url: string | null
+          duration: string | null
           estimated_duration: number | null
+          explorer_projects: Json | null
+          goals: string | null
           id: string
+          is_ai_reviewed: boolean | null
           is_published: boolean | null
           knowledge_points: Json | null
           life_practice: string | null
+          main_content: string | null
           meditation_guide: string | null
+          module_name: string | null
           original_text: string | null
           post_reflection: Json | null
           pre_watch_guide: string | null
           prerequisites: Json | null
+          project_cover_image: string | null
+          project_icon_url: string | null
+          project_intro: string | null
+          project_tags: Json | null
+          project_visibility: string | null
+          resources: Json | null
+          review_status: string | null
           sequence_number: number
           socratic_questions: Json | null
+          stage_id: string | null
           subtitle: string | null
           system_id: string | null
+          tips: string | null
           title: string
           updated_at: string | null
           week_plan: Json | null
         }
         Insert: {
+          ai_review_result?: Json | null
           content_type: string
           created_at?: string | null
+          created_by_user?: string | null
           day_plan?: Json | null
           deep_interpretation?: string | null
+          difficulty_level?: string | null
           documentary_url?: string | null
+          duration?: string | null
           estimated_duration?: number | null
+          explorer_projects?: Json | null
+          goals?: string | null
           id?: string
+          is_ai_reviewed?: boolean | null
           is_published?: boolean | null
           knowledge_points?: Json | null
           life_practice?: string | null
+          main_content?: string | null
           meditation_guide?: string | null
+          module_name?: string | null
           original_text?: string | null
           post_reflection?: Json | null
           pre_watch_guide?: string | null
           prerequisites?: Json | null
+          project_cover_image?: string | null
+          project_icon_url?: string | null
+          project_intro?: string | null
+          project_tags?: Json | null
+          project_visibility?: string | null
+          resources?: Json | null
+          review_status?: string | null
           sequence_number: number
           socratic_questions?: Json | null
+          stage_id?: string | null
           subtitle?: string | null
           system_id?: string | null
+          tips?: string | null
           title: string
           updated_at?: string | null
           week_plan?: Json | null
         }
         Update: {
+          ai_review_result?: Json | null
           content_type?: string
           created_at?: string | null
+          created_by_user?: string | null
           day_plan?: Json | null
           deep_interpretation?: string | null
+          difficulty_level?: string | null
           documentary_url?: string | null
+          duration?: string | null
           estimated_duration?: number | null
+          explorer_projects?: Json | null
+          goals?: string | null
           id?: string
+          is_ai_reviewed?: boolean | null
           is_published?: boolean | null
           knowledge_points?: Json | null
           life_practice?: string | null
+          main_content?: string | null
           meditation_guide?: string | null
+          module_name?: string | null
           original_text?: string | null
           post_reflection?: Json | null
           pre_watch_guide?: string | null
           prerequisites?: Json | null
+          project_cover_image?: string | null
+          project_icon_url?: string | null
+          project_intro?: string | null
+          project_tags?: Json | null
+          project_visibility?: string | null
+          resources?: Json | null
+          review_status?: string | null
           sequence_number?: number
           socratic_questions?: Json | null
+          stage_id?: string | null
           subtitle?: string | null
           system_id?: string | null
+          tips?: string | null
           title?: string
           updated_at?: string | null
           week_plan?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "course_contents_created_by_user_fkey"
+            columns: ["created_by_user"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_contents_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "course_stages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "course_contents_system_id_fkey"
             columns: ["system_id"]
@@ -144,14 +293,117 @@ export type Database = {
           },
         ]
       }
-      course_systems: {
+      course_discussions: {
+        Row: {
+          content: string
+          course_content_id: string
+          created_at: string | null
+          id: string
+          is_deleted: boolean | null
+          likes_count: number | null
+          parent_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          course_content_id: string
+          created_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          likes_count?: number | null
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          course_content_id?: string
+          created_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          likes_count?: number | null
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_discussions_course_content_id_fkey"
+            columns: ["course_content_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_discussions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "course_discussions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_discussions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_stages: {
         Row: {
           created_at: string | null
+          id: string
+          is_published: boolean | null
+          stage_description: string | null
+          stage_name: string
+          stage_number: number
+          system_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          stage_description?: string | null
+          stage_name: string
+          stage_number: number
+          system_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          stage_description?: string | null
+          stage_name?: string
+          stage_number?: number
+          system_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_stages_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "course_systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_systems: {
+        Row: {
+          allow_collaboration: boolean | null
+          created_at: string | null
+          created_by: string | null
           description: string | null
           display_order: number | null
           guidance_keywords: string[] | null
           id: string
           is_active: boolean | null
+          is_system: boolean | null
+          is_system_course: boolean | null
           structure_config: Json | null
           structure_type: string
           system_key: string
@@ -161,12 +413,16 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          allow_collaboration?: boolean | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           display_order?: number | null
           guidance_keywords?: string[] | null
           id?: string
           is_active?: boolean | null
+          is_system?: boolean | null
+          is_system_course?: boolean | null
           structure_config?: Json | null
           structure_type: string
           system_key: string
@@ -176,12 +432,16 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          allow_collaboration?: boolean | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           display_order?: number | null
           guidance_keywords?: string[] | null
           id?: string
           is_active?: boolean | null
+          is_system?: boolean | null
+          is_system_course?: boolean | null
           structure_config?: Json | null
           structure_type?: string
           system_key?: string
@@ -190,7 +450,83 @@ export type Database = {
           total_units?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "course_systems_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discussion_likes: {
+        Row: {
+          created_at: string | null
+          discussion_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          discussion_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          discussion_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discussion_likes_discussion_id_fkey"
+            columns: ["discussion_id"]
+            isOneToOne: false
+            referencedRelation: "course_discussions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discussion_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discussion_messages: {
+        Row: {
+          content: string
+          created_at: string
+          discussion_id: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          discussion_id: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          discussion_id?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discussion_messages_discussion_id_fkey"
+            columns: ["discussion_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_discussions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       documents: {
         Row: {
@@ -310,6 +646,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_discussions: {
+        Row: {
+          content_id: string
+          created_at: string
+          discussion_type: string
+          id: string
+          knowledge_point_text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          discussion_type: string
+          id?: string
+          knowledge_point_text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          discussion_type?: string
+          id?: string
+          knowledge_point_text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_discussions_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
             referencedColumns: ["id"]
           },
         ]
@@ -536,6 +910,7 @@ export type Database = {
           id: string
           member_ids: string[] | null
           name: string
+          project_id: string | null
           updated_at: string | null
           visible_resource_ids: string[] | null
         }
@@ -549,6 +924,7 @@ export type Database = {
           id?: string
           member_ids?: string[] | null
           name: string
+          project_id?: string | null
           updated_at?: string | null
           visible_resource_ids?: string[] | null
         }
@@ -562,6 +938,7 @@ export type Database = {
           id?: string
           member_ids?: string[] | null
           name?: string
+          project_id?: string | null
           updated_at?: string | null
           visible_resource_ids?: string[] | null
         }
@@ -578,6 +955,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_groups_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
             referencedColumns: ["id"]
           },
         ]
@@ -661,6 +1045,27 @@ export type Database = {
           },
         ]
       }
+      trigger_log: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          message: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+        }
+        Relationships: []
+      }
       user_behavior_stats: {
         Row: {
           avg_submission_time_minutes: number | null
@@ -713,6 +1118,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_behavior_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_content_interactions: {
+        Row: {
+          content_id: string
+          created_at: string | null
+          id: string
+          interaction_type: string
+          item_index: number | null
+          item_type: string | null
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string | null
+          id?: string
+          interaction_type: string
+          item_index?: number | null
+          item_type?: string | null
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string | null
+          id?: string
+          interaction_type?: string
+          item_index?: number | null
+          item_type?: string | null
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_content_interactions_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_content_interactions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -804,6 +1257,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_selected_projects: {
+        Row: {
+          completion_percentage: number | null
+          created_at: string | null
+          id: string
+          last_activity_at: string | null
+          notes: string | null
+          progress: Json | null
+          project_id: string
+          selected_at: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          notes?: string | null
+          progress?: Json | null
+          project_id: string
+          selected_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          notes?: string | null
+          progress?: Json | null
+          project_id?: string
+          selected_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_selected_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_selected_projects_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -968,6 +1478,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      can_delete_course: {
+        Args: { p_course_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      can_edit_course: {
+        Args: { p_course_id: string; p_user_id: string }
+        Returns: boolean
+      }
       can_student_view_resource: {
         Args: { resource_id: string; student_id: string }
         Returns: boolean
@@ -975,6 +1493,10 @@ export type Database = {
       generate_conversation_title: {
         Args: { messages_param: Json }
         Returns: string
+      }
+      grow_consciousness_tree: {
+        Args: { p_growth_instruction: Json; p_user_id: string }
+        Returns: Json
       }
       is_admin_user: { Args: { user_id: string }; Returns: boolean }
       is_content_admin: { Args: never; Returns: boolean }
@@ -1133,3 +1655,31 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+// Additional type exports for convenience
+export type CourseContent = Tables<'course_contents'>
+export type CourseSystem = Tables<'course_systems'>
+export type Profile = Tables<'profiles'>
+export type UserProgress = Tables<'user_progress'>
+export type UserSubmission = Tables<'user_submissions'>
+export type UserSelectedProject = Tables<'user_selected_projects'>
+
+// Custom types for JSON fields
+export interface Resource {
+  type: 'audio' | 'video' | 'document' | 'pdf' | 'link'
+  title: string
+  url: string
+  duration?: string
+  description?: string
+}
+
+export interface ExplorerProject {
+  title: string
+  goal?: string
+  materials?: string[]
+  steps?: string[]
+  expectedOutcome?: string
+  tips?: string[]
+}
+
+export type ProgressType = 'reading' | 'listening' | 'watching' | 'practice'

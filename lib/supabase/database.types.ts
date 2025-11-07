@@ -1663,3 +1663,23 @@ export type Profile = Tables<'profiles'>
 export type UserProgress = Tables<'user_progress'>
 export type UserSubmission = Tables<'user_submissions'>
 export type UserSelectedProject = Tables<'user_selected_projects'>
+
+// Custom types for JSON fields
+export interface Resource {
+  type: 'audio' | 'video' | 'document' | 'pdf' | 'link'
+  title: string
+  url: string
+  duration?: string
+  description?: string
+}
+
+export interface ExplorerProject {
+  title: string
+  goal?: string
+  materials?: string[]
+  steps?: string[]
+  expectedOutcome?: string
+  tips?: string[]
+}
+
+export type ProgressType = 'reading' | 'listening' | 'watching' | 'practice'
