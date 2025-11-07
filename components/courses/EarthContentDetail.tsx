@@ -7,6 +7,7 @@ import type { CourseContent } from '@/lib/supabase/database.types'
 import { Lock, Unlock } from 'lucide-react'
 import { recordInteraction, getEarthProgress, type ItemType } from '@/lib/utils/interaction-tracker'
 import { createClient } from '@/lib/supabase/client'
+import imageCompression from 'browser-image-compression'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -219,12 +220,43 @@ export function EarthContentDetail({
     setShowSubmitDialog(true)
   }
 
-  // 处理文件选择
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files)
-      setUploadedFiles(prev => [...prev, ...filesArray])
+  // 处理文件选择（自动压缩图片）
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+
+    const filesArray = Array.from(e.target.files)
+    const processedFiles: File[] = []
+
+    for (const file of filesArray) {
+      // 如果是图片且大于1MB，自动压缩
+      if (file.type.startsWith('image/') && file.size > 1024 * 1024) {
+        console.log(`📦 压缩图片: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+
+        try {
+          const options = {
+            maxSizeMB: 1,          // 压缩到最大1MB
+            maxWidthOrHeight: 1920, // 最大宽高1920px
+            useWebWorker: true,
+            fileType: file.type as any
+          }
+
+          const compressedFile = await imageCompression(file, options)
+          console.log(`✅ 压缩完成: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`)
+
+          // 保持原文件名
+          const renamedFile = new File([compressedFile], file.name, { type: compressedFile.type })
+          processedFiles.push(renamedFile)
+        } catch (error) {
+          console.error('❌ 图片压缩失败，使用原图:', error)
+          processedFiles.push(file)
+        }
+      } else {
+        // 不是图片或小于1MB，直接使用
+        processedFiles.push(file)
+      }
     }
+
+    setUploadedFiles(prev => [...prev, ...processedFiles])
   }
 
   // 移除已选择的文件

@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// 配置API路由以支持更大的请求体
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+}
+
+// Next.js 15的路由配置
+export const maxDuration = 60 // 最大执行时间60秒
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/submissions/upload
  * 专门用于学生提交作业时上传附件（图片、文档等）
