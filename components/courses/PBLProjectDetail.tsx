@@ -212,39 +212,64 @@ export function PBLProjectDetail({
       setSubmittingDay(currentDayKey)
       setUploading(true)
 
+      console.log('📎 准备上传文件，数量:', uploadedFiles.length)
+
       // 上传文件（如果有）
       const attachments: any[] = []
       if (uploadedFiles.length > 0) {
         for (const file of uploadedFiles) {
+          console.log('📤 上传文件:', file.name, '类型:', file.type)
+
           const formData = new FormData()
           formData.append('file', file)
 
-          const uploadResponse = await fetch('/api/media/upload', {
+          const uploadResponse = await fetch('/api/submissions/upload', {
             method: 'POST',
             body: formData
           })
 
           if (uploadResponse.ok) {
             const { fileUrl, fileName } = await uploadResponse.json()
+            console.log('✅ 文件上传成功:', fileName, 'URL:', fileUrl)
+
             attachments.push({
               type: file.type.startsWith('image/') ? 'image' : 'file',
               url: fileUrl,
               name: fileName
             })
+          } else {
+            console.error('❌ 文件上传失败:', file.name)
+            const errorText = await uploadResponse.text()
+            console.error('错误详情:', errorText)
           }
         }
       }
 
+      console.log('📎 最终attachments数组:', attachments)
+      console.log('📎 attachments数量:', attachments.length)
+
       // 调用边缘函数进行评估
+      console.log('🚀 即将调用边缘函数，参数:', {
+        user_id: userId,
+        content_id: project.id,
+        day_key: currentDayKey,
+        submission_content: submissionContent,
+        submission_type: 'project_deliverable',
+        attachments
+      })
+
       const { data, error: functionError } = await supabase.functions.invoke('evaluate-pbl-task', {
         body: {
           user_id: userId,
           content_id: project.id,
           day_key: currentDayKey,
           submission_content: submissionContent,
-          submission_type: 'project_deliverable'
+          submission_type: 'project_deliverable',
+          attachments
         }
       })
+
+      console.log('📨 边缘函数返回结果:', data)
 
       if (functionError) {
         throw functionError

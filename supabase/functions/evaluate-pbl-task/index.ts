@@ -25,18 +25,26 @@ const EVALUATION_PROMPT = `你是一位经验丰富的PBL项目导师。
 请评估学生的提交，并以JSON格式返回：
 
 {
-  "feedback": "你的反思非常深刻...",
+  "feedback": "【图片内容】我看到图片中是...（详细描述）\\n\\n【评价】你的反思非常深刻...",
   "score": 85
 }
 
 **评估要点**：
-1. 如果学生上传了图片，请仔细观察图片内容
-2. 检查图片是否与项目主题相关
-3. 评估图片展示的实验/观察结果是否合理
-4. 如果图片内容与项目要求不符或完全无关，请在反馈中指出，并给予较低分数
-5. 如果只有文字没有图片，则根据文字描述的质量评分
+1. 【必须】如果学生上传了图片，请在反馈的开头用"【图片内容】"标签详细描述你看到的内容（物品、场景、文字、颜色等）
+2. 检查图片/文字内容是否与项目主题相关
+3. 评估实验/观察结果是否合理和完整
+4. **评分规则（严格执行）**：
+   - 内容与项目主题完全无关：0-10分
+   - 内容相关但质量很差：11-30分
+   - 内容相关且质量一般：31-60分
+   - 内容相关且质量良好：61-85分
+   - 内容相关且质量优秀：86-100分
+5. 如果没有图片，只根据文字描述评分
 
-**重要**：只输出有效的JSON，不要添加任何Markdown代码块标记。`
+**重要**：
+- 必须描述图片内容，证明你真的看到了
+- 与项目无关的内容必须低于10分
+- 只输出有效的JSON，不要添加Markdown代码块标记`
 
 serve(async (req) => {
   // 处理CORS预检请求
@@ -69,7 +77,7 @@ serve(async (req) => {
 
     console.log(`📝 开始评估：user_id=${user_id}, content_id=${content_id}, day_key=${day_key}`)
 
-    // 2. 创建提交记录 - 与evaluate-submission完全一样
+    // 2. 创建提交记录 - 保存附件信息
     const { data: newSubmission, error: insertError } = await supabase
       .from('user_submissions')
       .insert({
@@ -77,6 +85,7 @@ serve(async (req) => {
         course_content_id: content_id,
         submission_type,
         content: submission_content,
+        attachments: attachments.length > 0 ? attachments : null, // 保存图片URL
         status: 'under_review',
       })
       .select()

@@ -1584,6 +1584,42 @@ export function EarthContentDetail({
                     </div>
                   </div>
 
+                  {/* 附件图片 */}
+                  {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
+                    <div>
+                      <p className="text-sm text-gray-400 mb-2">附件（{selectedSubmission.attachments.length}）</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {selectedSubmission.attachments.map((attachment: any, index: number) => (
+                          attachment.type === 'image' && (
+                            <div
+                              key={index}
+                              className="relative group overflow-hidden rounded-lg border border-gray-700 hover:border-orange-500/50 transition-colors"
+                            >
+                              <img
+                                src={attachment.url}
+                                alt={attachment.name || `图片 ${index + 1}`}
+                                className="w-full h-48 object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute bottom-0 left-0 right-0 p-3">
+                                  <p className="text-white text-sm truncate">{attachment.name || `图片 ${index + 1}`}</p>
+                                  <a
+                                    href={attachment.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-orange-400 text-xs hover:text-orange-300 transition-colors"
+                                  >
+                                    查看原图 →
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* 反馈 */}
                   {selectedSubmission.feedback && (
                     <div>
