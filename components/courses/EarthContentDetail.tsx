@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { CourseContent } from '@/lib/supabase/database.types'
 import { Lock, Unlock } from 'lucide-react'
 import { recordInteraction, getEarthProgress, type ItemType } from '@/lib/utils/interaction-tracker'
+import { createClient } from '@/lib/supabase/client'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -57,6 +58,16 @@ export function EarthContentDetail({
   const [contentProgress, setContentProgress] = useState(0) // 当前内容的进度
   const [showMilestone, setShowMilestone] = useState<number | null>(null) // 里程碑动画
   const [selectedProject, setSelectedProject] = useState<any>(null) // 选中的探险家项目
+
+  // 提交相关状态
+  const supabase = createClient()
+  const [userId, setUserId] = useState<string | null>(null)
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false)
+  const [submissionContent, setSubmissionContent] = useState('')
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submissionResult, setSubmissionResult] = useState<any | null>(null)
 
   // 计算阶段进度（使用新的进度系统）
   useEffect(() => {
@@ -124,6 +135,17 @@ export function EarthContentDetail({
     }
   }, [refreshTrigger])
 
+  // 获取用户ID
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserId(user.id)
+      }
+    }
+    fetchUser()
+  }, [])
+
   // 刷新进度
   const refreshProgress = async () => {
     const result = await getEarthProgress(content.id)
@@ -180,6 +202,106 @@ export function EarthContentDetail({
 
     // 打开盖亚对话
     onDiscussWithGaia(question, 'question', index, stage)
+  }
+
+  // 打开提交对话框
+  const openSubmitDialog = (project: any) => {
+    setSelectedProject(project)
+    setSubmissionContent('')
+    setUploadedFiles([])
+    setSubmissionResult(null)
+    setShowSubmitDialog(true)
+  }
+
+  // 处理文件选择
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files)
+      setUploadedFiles(prev => [...prev, ...filesArray])
+    }
+  }
+
+  // 移除已选择的文件
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // 提交任务
+  const handleSubmitTask = async () => {
+    if (!submissionContent.trim()) {
+      alert('请填写提交内容')
+      return
+    }
+
+    if (!userId) {
+      alert('请先登录')
+      return
+    }
+
+    if (!selectedProject) {
+      alert('项目信息错误')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      setUploading(true)
+
+      // 上传文件（如果有）
+      const attachments: any[] = []
+      if (uploadedFiles.length > 0) {
+        for (const file of uploadedFiles) {
+          const formData = new FormData()
+          formData.append('file', file)
+
+          const uploadResponse = await fetch('/api/media/upload', {
+            method: 'POST',
+            body: formData
+          })
+
+          if (uploadResponse.ok) {
+            const { fileUrl, fileName } = await uploadResponse.json()
+            attachments.push({
+              type: file.type.startsWith('image/') ? 'image' : 'file',
+              url: fileUrl,
+              name: fileName
+            })
+          }
+        }
+      }
+
+      // 使用项目ID作为唯一标识
+      const projectKey = `explorer_project_${selectedProject.id || selectedProject.title.replace(/\s+/g, '_')}`
+
+      // 调用边缘函数进行评估
+      const { data, error: functionError } = await supabase.functions.invoke('evaluate-pbl-task', {
+        body: {
+          user_id: userId,
+          content_id: content.id,
+          day_key: projectKey,
+          submission_content: submissionContent,
+          submission_type: 'explorer_project'
+        }
+      })
+
+      if (functionError) {
+        throw functionError
+      }
+
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      // 显示评估结果
+      setSubmissionResult(data)
+
+    } catch (error) {
+      console.error('Failed to submit task:', error)
+      alert('提交失败，请重试')
+    } finally {
+      setSubmitting(false)
+      setUploading(false)
+    }
   }
 
   return (
@@ -965,7 +1087,7 @@ export function EarthContentDetail({
 
                 {/* 提示 */}
                 {selectedProject.tips && selectedProject.tips.length > 0 && (
-                  <div>
+                  <div className="mb-6">
                     <h3 className="text-lg font-semibold text-orange-400 mb-2">💡 温馨提示</h3>
                     <ul className="space-y-2">
                       {selectedProject.tips.map((tip: string, i: number) => (
@@ -975,6 +1097,193 @@ export function EarthContentDetail({
                         </li>
                       ))}
                     </ul>
+                  </div>
+                )}
+
+                {/* 提交作业按钮 */}
+                <div className="mt-6 pt-6 border-t border-gray-700">
+                  <button
+                    onClick={() => openSubmitDialog(selectedProject)}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-lg text-white font-semibold transition-all flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    提交作业
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 提交作业对话框 */}
+        <AnimatePresence>
+          {showSubmitDialog && selectedProject && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-gray-900 border border-orange-500/30 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
+              >
+                <h3 className="text-2xl font-bold mb-4 text-white">提交作业 - {selectedProject.title}</h3>
+
+                {/* 如果没有AI评估结果，显示提交表单 */}
+                {!submissionResult && (
+                  <>
+                    <textarea
+                      value={submissionContent}
+                      onChange={(e) => setSubmissionContent(e.target.value)}
+                      placeholder="请描述你完成的项目内容和收获...&#10;&#10;提示：&#10;- 你做了什么实验或观察？&#10;- 你发现了什么有趣的现象？&#10;- 你学到了什么新知识？"
+                      className="w-full h-48 bg-gray-800 border border-gray-700 rounded-lg p-4 text-white resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 mb-4"
+                    />
+
+                    {/* 文件上传区域 */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-400 mb-2">
+                        上传照片或文件（可选）
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <label className="flex-1 cursor-pointer">
+                          <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 text-center hover:border-orange-500 transition-colors">
+                            <svg className="w-8 h-8 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p className="text-sm text-gray-400">点击选择文件或拖拽到此处</p>
+                            <p className="text-xs text-gray-500 mt-1">支持图片、文档等文件</p>
+                          </div>
+                          <input
+                            type="file"
+                            multiple
+                            onChange={handleFileChange}
+                            className="hidden"
+                            disabled={uploading}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* 已选择的文件列表 */}
+                    {uploadedFiles.length > 0 && (
+                      <div className="mb-4 space-y-2">
+                        <p className="text-sm font-medium text-gray-400">已选择的文件：</p>
+                        {uploadedFiles.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg p-3"
+                          >
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <svg className="w-5 h-5 text-orange-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clipRule="evenodd" />
+                              </svg>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-white truncate">{file.name}</p>
+                                <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeFile(index)}
+                              className="ml-3 text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
+                              disabled={uploading}
+                            >
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 上传进度提示 */}
+                    {uploading && (
+                      <div className="mb-4 flex items-center gap-3 bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                        <svg className="animate-spin h-5 w-5 text-orange-400" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p className="text-sm text-orange-400">正在上传文件和提交作业...</p>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleSubmitTask}
+                        disabled={submitting || !submissionContent.trim() || uploading}
+                        className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg font-semibold hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-white"
+                      >
+                        {uploading ? '上传中...' : submitting ? '提交中...' : '确认提交'}
+                      </button>
+                      <button
+                        onClick={() => setShowSubmitDialog(false)}
+                        disabled={submitting || uploading}
+                        className="px-6 py-3 bg-gray-800 rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:opacity-50 text-white"
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* AI评估结果 */}
+                {submissionResult?.evaluation && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 pb-4 border-b border-gray-800">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-bold text-white">提交成功！</h4>
+                        <p className="text-sm text-gray-400">AI助教已完成批改</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/30 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="font-semibold text-orange-400">评分</h5>
+                        <span className="text-2xl font-bold text-white">
+                          {submissionResult.evaluation.score || '-'}/100
+                        </span>
+                      </div>
+
+                      {submissionResult.evaluation.feedback && (
+                        <div className="mt-4">
+                          <h5 className="font-semibold text-amber-400 mb-2">反馈意见</h5>
+                          <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                            {submissionResult.evaluation.feedback}
+                          </p>
+                        </div>
+                      )}
+
+                      {submissionResult.evaluation.suggestions && (
+                        <div className="mt-4">
+                          <h5 className="font-semibold text-green-400 mb-2">改进建议</h5>
+                          <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                            {submissionResult.evaluation.suggestions}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setShowSubmitDialog(false)
+                        setSubmissionResult(null)
+                        setSelectedProject(null)
+                      }}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg font-semibold hover:from-orange-600 hover:to-amber-600 transition-all text-white"
+                    >
+                      关闭
+                    </button>
                   </div>
                 )}
               </motion.div>
