@@ -388,9 +388,10 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                           )
                         }
 
-                        const isSelected = myProjects.some(
+                        const selectedProject = myProjects.find(
                           mp => mp.course_contents.id === project.id
                         )
+                        const isSelected = !!selectedProject
 
                         const difficultyBorder = project.difficulty_level
                           ? difficultyColors[project.difficulty_level] || 'border-gray-700 hover:border-gray-600'
@@ -412,6 +413,22 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                               <p className="text-gray-400 text-sm mb-4 line-clamp-3 leading-relaxed">
                                 {project.project_intro}
                               </p>
+                            )}
+
+                            {/* 进度显示（如果已选择） */}
+                            {isSelected && selectedProject && (
+                              <div className="mb-4">
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span className="text-gray-500">进度</span>
+                                  <span className="text-gray-400">{selectedProject.completion_percentage}%</span>
+                                </div>
+                                <div className="w-full bg-gray-800 rounded-full h-1.5">
+                                  <div
+                                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all"
+                                    style={{ width: `${selectedProject.completion_percentage}%` }}
+                                  />
+                                </div>
+                              </div>
                             )}
 
                             {/* 操作按钮 */}

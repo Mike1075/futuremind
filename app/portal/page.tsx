@@ -111,6 +111,65 @@ export default function PortalPage() {
       // 计算每个课程的真实进度
       const enrolled: EnrolledCourse[] = await Promise.all(
         validEnrollments.map(async (item: any) => {
+          const courseSystemKey = item.course_systems.system_key
+
+          // PBL课程（伊卡洛斯）使用不同的进度计算方式
+          if (courseSystemKey === 'icarus' || courseSystemKey === 'pbl') {
+            // 获取该课程体系下的所有已发布项目
+            const { data: projects } = await supabase
+              .from('course_contents')
+              .select('id')
+              .eq('system_id', item.course_systems.id)
+              .eq('is_published', true)
+
+            const totalProjects = projects?.length || 0
+
+            if (totalProjects === 0) {
+              return {
+                course_id: item.course_systems.id,
+                course_title: item.course_systems.title,
+                course_system_key: courseSystemKey,
+                assigned_at: item.assigned_at,
+                progress: 0
+              }
+            }
+
+            // 获取用户已选择的项目及其完成百分比
+            const projectIds = projects?.map((p: any) => p.id) || []
+            const { data: selectedProjects } = await supabase
+              .from('user_selected_projects')
+              .select('project_id, completion_percentage')
+              .eq('user_id', userId)
+              .in('project_id', projectIds)
+              .eq('status', 'active')
+
+            if (!selectedProjects || selectedProjects.length === 0) {
+              return {
+                course_id: item.course_systems.id,
+                course_title: item.course_systems.title,
+                course_system_key: courseSystemKey,
+                assigned_at: item.assigned_at,
+                progress: 0
+              }
+            }
+
+            // 计算所有选中项目的平均完成度
+            const totalCompletion = selectedProjects.reduce(
+              (sum: number, proj: any) => sum + (proj.completion_percentage || 0),
+              0
+            )
+            const avgProgress = Math.round(totalCompletion / selectedProjects.length)
+
+            return {
+              course_id: item.course_systems.id,
+              course_title: item.course_systems.title,
+              course_system_key: courseSystemKey,
+              assigned_at: item.assigned_at,
+              progress: avgProgress
+            }
+          }
+
+          // 其他课程（倾听、地球）使用原有的进度计算方式
           // 获取该课程体系下的所有已发布内容ID
           const { data: contents } = await supabase
             .from('course_contents')
@@ -124,7 +183,7 @@ export default function PortalPage() {
             return {
               course_id: item.course_systems.id,
               course_title: item.course_systems.title,
-              course_system_key: item.course_systems.system_key,
+              course_system_key: courseSystemKey,
               assigned_at: item.assigned_at,
               progress: 0
             }
@@ -153,7 +212,7 @@ export default function PortalPage() {
           return {
             course_id: item.course_systems.id,
             course_title: item.course_systems.title,
-            course_system_key: item.course_systems.system_key,
+            course_system_key: courseSystemKey,
             assigned_at: item.assigned_at,
             progress
           }
