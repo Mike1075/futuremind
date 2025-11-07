@@ -280,7 +280,8 @@ export function EarthContentDetail({
           content_id: content.id,
           day_key: projectKey,
           submission_content: submissionContent,
-          submission_type: 'project_deliverable'
+          submission_type: 'project_deliverable',
+          attachments: attachments // 传递附件信息
         }
       })
 
