@@ -262,11 +262,12 @@ export function EarthContentDetail({
       })
 
       if (response.ok) {
-        // 重新加载提交记录列表
-        await fetchSubmissionsHistory()
+        // 立即从本地状态中移除
+        setSubmissionsHistory(prev => prev.filter(s => s.id !== submissionId))
         alert('删除成功')
       } else {
-        alert('删除失败，请重试')
+        const error = await response.json()
+        alert(`删除失败: ${error.error || '请重试'}`)
       }
     } catch (error) {
       console.error('Error deleting submission:', error)
@@ -325,9 +326,29 @@ export function EarthContentDetail({
       }
 
       console.log('📎 最终attachments数组:', attachments)
+      console.log('📎 attachments数量:', attachments.length)
+
+      if (attachments.length > 0) {
+        console.log('✅ 有图片！第一张图片信息:', {
+          type: attachments[0].type,
+          url: attachments[0].url,
+          name: attachments[0].name
+        })
+      } else {
+        console.warn('⚠️ 警告：attachments数组为空！没有图片会被发送给AI！')
+      }
 
       // 使用项目ID作为唯一标识
       const projectKey = `explorer_project_${selectedProject.id || selectedProject.title.replace(/\s+/g, '_')}`
+
+      console.log('🚀 即将调用边缘函数，参数:', {
+        user_id: userId,
+        content_id: content.id,
+        day_key: projectKey,
+        submission_content: submissionContent.substring(0, 50) + '...',
+        submission_type: 'project_deliverable',
+        attachments_count: attachments.length
+      })
 
       // 调用边缘函数进行评估
       const { data, error: functionError } = await supabase.functions.invoke('evaluate-pbl-task', {
@@ -340,6 +361,11 @@ export function EarthContentDetail({
           attachments: attachments // 传递附件信息
         }
       })
+
+      console.log('📨 边缘函数返回结果:', data)
+      if (functionError) {
+        console.error('❌ 边缘函数错误:', functionError)
+      }
 
       if (functionError) {
         throw functionError
