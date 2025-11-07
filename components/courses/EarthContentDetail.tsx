@@ -56,6 +56,7 @@ export function EarthContentDetail({
   const [showUnlockAnimation, setShowUnlockAnimation] = useState(false)
   const [contentProgress, setContentProgress] = useState(0) // 当前内容的进度
   const [showMilestone, setShowMilestone] = useState<number | null>(null) // 里程碑动画
+  const [selectedProject, setSelectedProject] = useState<any>(null) // 选中的探险家项目
 
   // 计算阶段进度（使用新的进度系统）
   useEffect(() => {
@@ -638,17 +639,6 @@ export function EarthContentDetail({
                     {/* 背景装饰 */}
                     <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-2xl" />
 
-                    {/* 难度标签 */}
-                    <div className="absolute top-4 right-4">
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                        project.difficulty === '基础'
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                          : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                      }`}>
-                        {project.difficulty}
-                      </span>
-                    </div>
-
                     {/* 图标 */}
                     <div className="relative w-16 h-16 mb-4">
                       <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-xl rotate-6 group-hover:rotate-12 transition-transform duration-300" />
@@ -707,7 +697,10 @@ export function EarthContentDetail({
                       animate={{ opacity: 1 }}
                       className="pt-4 border-t border-gray-700/50"
                     >
-                      <button className="w-full px-4 py-2 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-orange-300 rounded-lg text-sm font-semibold border border-orange-500/30 hover:border-orange-400/50 transition-all flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => setSelectedProject(project)}
+                        className="w-full px-4 py-2 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-orange-300 rounded-lg text-sm font-semibold border border-orange-500/30 hover:border-orange-400/50 transition-all flex items-center justify-center gap-2"
+                      >
                         <span>查看详细步骤</span>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -880,6 +873,114 @@ export function EarthContentDetail({
             </div>
           </motion.div>
         )}
+
+        {/* 项目详情弹窗 */}
+        <AnimatePresence>
+          {selectedProject && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProject(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-orange-500/30 rounded-2xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              >
+                {/* 关闭按钮 */}
+                <button
+                  onClick={() => setSelectedProject(null)}
+                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-800/80 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors z-10"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                {/* 标题 */}
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">{selectedProject.title}</h2>
+                  <p className="text-gray-400">{selectedProject.subtitle}</p>
+                </div>
+
+                {/* 时长 */}
+                <div className="flex items-center gap-2 mb-6 text-sm text-gray-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{selectedProject.duration}</span>
+                </div>
+
+                {/* 目标 */}
+                {selectedProject.goal && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-orange-400 mb-2">🎯 项目目标</h3>
+                    <p className="text-gray-300 leading-relaxed">{selectedProject.goal}</p>
+                  </div>
+                )}
+
+                {/* 材料 */}
+                {selectedProject.materials && selectedProject.materials.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-orange-400 mb-2">📦 所需材料</h3>
+                    <ul className="space-y-2">
+                      {selectedProject.materials.map((material: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2 text-gray-300">
+                          <span className="text-orange-400 mt-1">•</span>
+                          <span>{material}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* 步骤 */}
+                {selectedProject.steps && selectedProject.steps.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-orange-400 mb-3">📝 实验步骤</h3>
+                    <ol className="space-y-3">
+                      {selectedProject.steps.map((step: string, i: number) => (
+                        <li key={i} className="flex gap-3 text-gray-300">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-sm font-semibold">
+                            {i + 1}
+                          </span>
+                          <span className="flex-1">{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+
+                {/* 预期成果 */}
+                {selectedProject.expectedOutcome && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-orange-400 mb-2">✨ 预期成果</h3>
+                    <p className="text-gray-300 leading-relaxed">{selectedProject.expectedOutcome}</p>
+                  </div>
+                )}
+
+                {/* 提示 */}
+                {selectedProject.tips && selectedProject.tips.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-orange-400 mb-2">💡 温馨提示</h3>
+                    <ul className="space-y-2">
+                      {selectedProject.tips.map((tip: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2 text-gray-300">
+                          <span className="text-yellow-400 mt-1">•</span>
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
