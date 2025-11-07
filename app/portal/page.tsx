@@ -169,7 +169,7 @@ export default function PortalPage() {
             }
           }
 
-          // 地球课程使用阶段进度计算
+          // 地球课程使用基于互动的进度计算
           if (courseSystemKey === 'earth') {
             // 获取所有阶段
             const { data: stages } = await supabase
@@ -189,13 +189,16 @@ export default function PortalPage() {
               }
             }
 
+            // 导入InteractionService
+            const { InteractionService } = await import('@/lib/services/interaction.service')
+
             // 计算每个阶段的平均进度
             const stageProgresses: number[] = []
             for (const stage of stages) {
               // 获取该阶段的所有内容
               const { data: stageContents } = await supabase
                 .from('course_contents')
-                .select('id')
+                .select('id, knowledge_points, socratic_questions, post_reflection')
                 .eq('stage_id', stage.id)
                 .eq('is_published', true)
 
@@ -204,20 +207,31 @@ export default function PortalPage() {
                 continue
               }
 
-              // 获取这些内容的进度记录
-              const contentIds = stageContents.map((c: any) => c.id)
-              const { data: progressRecords } = await supabase
-                .from('user_progress')
-                .select('ref_item_id, progress_value')
-                .eq('user_id', userId)
-                .in('ref_item_id', contentIds)
-                .eq('progress_type', 'reading')
+              // 计算该阶段每个内容的进度
+              const contentProgressPromises = stageContents.map(async (content: any) => {
+                const knowledgePoints = (content.knowledge_points as string[]) || []
+                const socraticQuestions = (content.socratic_questions as any) || {}
+                const postReflection = (content.post_reflection as string[]) || []
 
-              // 计算该阶段的平均进度
-              let stageTotal = 0
-              progressRecords?.forEach((record: any) => {
-                stageTotal += record.progress_value || 0
+                const questionCounts = {
+                  pre: socraticQuestions.pre_watch?.length || 0,
+                  during: socraticQuestions.during_watch?.length || 0,
+                  post: socraticQuestions.post_watch?.length || 0
+                }
+
+                const result = await InteractionService.calculateProgress({
+                  userId,
+                  contentId: content.id,
+                  knowledgePointCount: knowledgePoints.length,
+                  questionCounts,
+                  reflectionCount: postReflection.length
+                })
+
+                return result.progress
               })
+
+              const contentProgresses = await Promise.all(contentProgressPromises)
+              const stageTotal = contentProgresses.reduce((sum, p) => sum + p, 0)
               const stageProgress = Math.round(stageTotal / stageContents.length)
               stageProgresses.push(stageProgress)
             }
