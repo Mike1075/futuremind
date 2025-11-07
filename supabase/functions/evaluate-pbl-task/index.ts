@@ -121,10 +121,10 @@ serve(async (req) => {
     const submission_id = newSubmission.id
     console.log(`✅ 提交记录已创建：submission_id=${submission_id}`)
 
-    // 3. 获取项目信息
+    // 3. 获取项目信息（包括explorer_projects）
     const { data: courseContent } = await supabase
       .from('course_contents')
-      .select('title, project_intro, week_plan')
+      .select('title, project_intro, week_plan, explorer_projects')
       .eq('id', content_id)
       .single()
 
@@ -276,9 +276,37 @@ serve(async (req) => {
 
         // 计算完成百分比
         let completionPercentage = 0
-        if (courseContent?.week_plan) {
-          // 从week_plan计算总任务数（使用activities字段）
-          let totalTasks = 0
+        let totalTasks = 0
+
+        // 检查是否为探索者项目（day_key以explorer_project_开头）
+        const isExplorerProject = day_key.startsWith('explorer_project_')
+
+        if (isExplorerProject && courseContent?.explorer_projects) {
+          // 探索者联盟项目：从explorer_projects计算
+          try {
+            const explorerProjects = Array.isArray(courseContent.explorer_projects)
+              ? courseContent.explorer_projects
+              : JSON.parse(courseContent.explorer_projects)
+
+            // 总任务数 = explorer_projects数组长度
+            totalTasks = explorerProjects.length
+
+            // 计算已完成的探索者项目数（只计算explorer_project_开头的key）
+            const completedTasks = Object.keys(updatedProgress).filter(
+              key => key.startsWith('explorer_project_')
+            ).length
+
+            // 计算百分比
+            if (totalTasks > 0) {
+              completionPercentage = Math.round((completedTasks / totalTasks) * 100)
+            }
+
+            console.log(`✅ 探索者项目进度计算：已完成 ${completedTasks}/${totalTasks} 个项目，百分比=${completionPercentage}%`)
+          } catch (error) {
+            console.error('❌ 解析explorer_projects失败:', error)
+          }
+        } else if (courseContent?.week_plan) {
+          // PBL项目：从week_plan计算总任务数（使用activities字段）
           try {
             const weekPlan = Array.isArray(courseContent.week_plan)
               ? courseContent.week_plan
@@ -299,7 +327,7 @@ serve(async (req) => {
               completionPercentage = Math.round((completedTasks / totalTasks) * 100)
             }
 
-            console.log(`✅ 进度计算：已完成 ${completedTasks}/${totalTasks} 天，百分比=${completionPercentage}%`)
+            console.log(`✅ PBL项目进度计算：已完成 ${completedTasks}/${totalTasks} 天，百分比=${completionPercentage}%`)
           } catch (error) {
             console.error('❌ 解析week_plan失败:', error)
           }
