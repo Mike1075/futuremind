@@ -33,8 +33,8 @@ export async function GET(req: NextRequest) {
     }
 
     // 获取所有阶段
-    const { data: stages, error: stagesError } = await supabase
-      .from('course_stages')
+    const { data: stages, error: stagesError } = await (supabase
+      .from('course_stages') as any)
       .select('id, stage_number')
       .eq('system_id', courseSystemId)
       .eq('is_published', true)
@@ -47,10 +47,10 @@ export async function GET(req: NextRequest) {
     // 计算每个阶段的平均进度
     const stageProgresses: number[] = []
 
-    for (const stage of stages) {
+    for (const stage of stages as any[]) {
       // 获取该阶段的所有内容
-      const { data: stageContents, error: contentsError } = await supabase
-        .from('course_contents')
+      const { data: stageContents, error: contentsError } = await (supabase
+        .from('course_contents') as any)
         .select('id, knowledge_points, socratic_questions, post_reflection')
         .eq('stage_id', stage.id)
         .eq('is_published', true)
