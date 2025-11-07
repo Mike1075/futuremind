@@ -75,6 +75,7 @@ export function EarthContentDetail({
   const [submissionsHistory, setSubmissionsHistory] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null)
+  const [historyProject, setHistoryProject] = useState<any>(null) // 当前查看提交记录的项目
 
   // 计算阶段进度（使用新的进度系统）
   useEffect(() => {
@@ -264,15 +265,22 @@ export function EarthContentDetail({
     setUploadedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
-  // 获取提交记录
-  const fetchSubmissionsHistory = async () => {
-    if (!selectedProject) return
+  // 获取提交记录（根据具体项目过滤）
+  const fetchSubmissionsHistory = async (project: any) => {
+    if (!project) return
 
     setLoadingHistory(true)
     try {
-      const response = await fetch(`/api/submissions?contentId=${content.id}`)
+      // 计算项目的唯一标识（与提交时一致）
+      const projectKey = `explorer_project_${project.id || project.title.replace(/\s+/g, '_')}`
+
+      console.log('📋 获取提交记录，项目key:', projectKey)
+
+      // 使用dayKey参数过滤特定项目的提交
+      const response = await fetch(`/api/submissions?contentId=${content.id}&dayKey=${encodeURIComponent(projectKey)}`)
       if (response.ok) {
         const { submissions } = await response.json()
+        console.log(`✅ 找到 ${submissions?.length || 0} 条提交记录`)
         setSubmissionsHistory(submissions || [])
       } else {
         console.error('Failed to fetch submissions')
@@ -1230,8 +1238,9 @@ export function EarthContentDetail({
 
                   <button
                     onClick={() => {
+                      setHistoryProject(selectedProject)
                       setShowSubmissionsHistory(true)
-                      fetchSubmissionsHistory()
+                      fetchSubmissionsHistory(selectedProject)
                     }}
                     className="w-full px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-white font-semibold transition-all flex items-center justify-center gap-2 border border-gray-700"
                   >
@@ -1441,7 +1450,9 @@ export function EarthContentDetail({
                 className="bg-gray-900 border border-orange-500/30 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-bold text-white">我的提交记录</h3>
+                  <h3 className="text-2xl font-bold text-white">
+                    {historyProject ? `${historyProject.title} - 提交记录` : '我的提交记录'}
+                  </h3>
                   <button
                     onClick={() => {
                       setShowSubmissionsHistory(false)

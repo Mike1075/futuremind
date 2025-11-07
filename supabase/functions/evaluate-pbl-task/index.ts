@@ -90,7 +90,7 @@ serve(async (req) => {
 
     console.log(`📝 开始评估：user_id=${user_id}, content_id=${content_id}, day_key=${day_key}`)
 
-    // 2. 创建提交记录 - 保存附件信息
+    // 2. 创建提交记录 - 保存附件信息和day_key
     const { data: newSubmission, error: insertError } = await supabase
       .from('user_submissions')
       .insert({
@@ -99,6 +99,7 @@ serve(async (req) => {
         submission_type,
         content: submission_content,
         attachments: attachments.length > 0 ? attachments : null, // 保存图片URL
+        day_key: day_key || null, // 保存项目/任务标识
         status: 'under_review',
       })
       .select()

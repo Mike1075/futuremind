@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 /**
- * GET /api/submissions?contentId=xxx
- * 获取用户在某个课程内容下的所有提交记录
+ * GET /api/submissions?contentId=xxx&dayKey=xxx
+ * 获取用户在某个课程内容下的提交记录
+ * dayKey可选，用于过滤特定项目/任务的提交
  */
 export async function GET(req: NextRequest) {
   try {
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const contentId = searchParams.get('contentId')
+    const dayKey = searchParams.get('dayKey')
 
     if (!contentId) {
       return NextResponse.json(
@@ -25,13 +27,20 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // 获取用户的提交记录
-    const { data: submissions, error } = await supabase
+    // 构建查询
+    let query = supabase
       .from('user_submissions')
       .select('*')
       .eq('user_id', user.id)
       .eq('course_content_id', contentId)
-      .order('created_at', { ascending: false })
+
+    // 如果提供了dayKey，按dayKey过滤
+    if (dayKey) {
+      query = query.eq('day_key', dayKey)
+      console.log(`🔍 查询提交记录: contentId=${contentId}, dayKey=${dayKey}`)
+    }
+
+    const { data: submissions, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching submissions:', error)
@@ -40,6 +49,8 @@ export async function GET(req: NextRequest) {
         { status: 500 }
       )
     }
+
+    console.log(`✅ 找到 ${submissions?.length || 0} 条提交记录`)
 
     return NextResponse.json({ submissions })
   } catch (error) {
