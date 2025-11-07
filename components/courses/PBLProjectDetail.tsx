@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-interface WeekDay {
-  day: number
+interface Activity {
+  day?: string | number
   title: string
   description?: string
   tasks?: string[]
@@ -17,7 +17,7 @@ interface WeekPlan {
   week: number
   theme: string
   goals?: string[]
-  days: WeekDay[]
+  activities: Activity[]
 }
 
 interface Project {
@@ -119,7 +119,7 @@ export function PBLProjectDetail({
       // 如果是某周的第1天，检查上周的最后一天
       prevWeek = weekNumber - 1
       const prevWeekPlan = project.week_plan.find(w => w.week === prevWeek)
-      prevDay = prevWeekPlan?.days.length || 0
+      prevDay = prevWeekPlan?.activities.length || 0
     }
 
     const prevDayKey = `week${prevWeek}_day${prevDay}`
@@ -267,7 +267,7 @@ export function PBLProjectDetail({
   }
 
   // 计算总进度
-  const totalDays = project.week_plan.reduce((sum, week) => sum + week.days.length, 0)
+  const totalDays = project.week_plan.reduce((sum, week) => sum + week.activities.length, 0)
   const completedDays = Object.values(userProgress).filter(Boolean).length
   const progressPercentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0
 
@@ -287,15 +287,6 @@ export function PBLProjectDetail({
 
         {/* 项目头部 */}
         <div className="mb-8">
-          {/* 难度标签 */}
-          {project.difficulty_level && (
-            <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium mb-4 bg-gradient-to-r ${
-              DIFFICULTY_COLORS[project.difficulty_level as keyof typeof DIFFICULTY_COLORS] || 'from-gray-500 to-gray-600'
-            } text-white`}>
-              {project.difficulty_level}
-            </span>
-          )}
-
           <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
             {project.title}
           </h1>
@@ -398,7 +389,7 @@ export function PBLProjectDetail({
                         第 {week.week} 周：{week.theme}
                       </h3>
                       <p className="text-sm text-gray-400">
-                        {week.days.length} 天任务
+                        {week.activities.length} 个任务
                       </p>
                     </div>
                   </div>
@@ -432,10 +423,12 @@ export function PBLProjectDetail({
                 {/* 每日任务列表 */}
                 {isWeekExpanded && (
                   <div className="p-4 space-y-3">
-                    {week.days.map((day) => {
-                      const dayKey = `week${week.week}_day${day.day}`
+                    {week.activities.map((activity, index) => {
+                      // 使用activity.day字段或索引+1作为day编号
+                      const dayNumber = activity.day ? (typeof activity.day === 'number' ? activity.day : parseInt(String(activity.day))) : (index + 1)
+                      const dayKey = `week${week.week}_day${dayNumber}`
                       const isCompleted = userProgress[dayKey] === true
-                      const isUnlocked = isDayUnlocked(week.week, day.day)
+                      const isUnlocked = isDayUnlocked(week.week, dayNumber)
                       const isDayExpanded = expandedDays.has(dayKey)
 
                       return (
@@ -468,17 +461,17 @@ export function PBLProjectDetail({
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                   </svg>
                                 ) : (
-                                  day.day
+                                  dayNumber
                                 )}
                               </div>
 
                               <div className="flex-1">
                                 <h4 className={`font-semibold ${isUnlocked ? 'text-white' : 'text-gray-600'}`}>
-                                  Day {day.day}: {day.title}
+                                  Day {dayNumber}: {activity.title}
                                 </h4>
-                                {day.description && isDayExpanded && (
+                                {activity.description && isDayExpanded && (
                                   <p className={`text-sm mt-1 ${isUnlocked ? 'text-gray-400' : 'text-gray-600'}`}>
-                                    {day.description}
+                                    {activity.description}
                                   </p>
                                 )}
                               </div>
@@ -512,11 +505,11 @@ export function PBLProjectDetail({
                           {isDayExpanded && isUnlocked && (
                             <div className="px-4 pb-4 space-y-4 border-t border-gray-800">
                               {/* 任务列表 */}
-                              {day.tasks && day.tasks.length > 0 && (
+                              {activity.tasks && activity.tasks.length > 0 && (
                                 <div>
                                   <h5 className="text-sm font-semibold text-purple-400 mb-2">📝 今日任务：</h5>
                                   <ul className="space-y-2">
-                                    {day.tasks.map((task, idx) => (
+                                    {activity.tasks.map((task, idx) => (
                                       <li key={idx} className="text-sm text-gray-300 flex items-start gap-2 pl-4">
                                         <span className="text-purple-400">•</span>
                                         <span>{task}</span>
@@ -527,11 +520,11 @@ export function PBLProjectDetail({
                               )}
 
                               {/* 交付物 */}
-                              {day.deliverables && day.deliverables.length > 0 && (
+                              {activity.deliverables && activity.deliverables.length > 0 && (
                                 <div>
                                   <h5 className="text-sm font-semibold text-orange-400 mb-2">📦 需要提交：</h5>
                                   <ul className="space-y-1">
-                                    {day.deliverables.map((deliverable, idx) => (
+                                    {activity.deliverables.map((deliverable, idx) => (
                                       <li key={idx} className="text-sm text-gray-300 flex items-start gap-2 pl-4">
                                         <span className="text-orange-400">✓</span>
                                         <span>{deliverable}</span>
@@ -544,7 +537,7 @@ export function PBLProjectDetail({
                               {/* 提交按钮 */}
                               {!isCompleted && isSelected && (
                                 <button
-                                  onClick={() => openSubmitDialog(week.week, day.day)}
+                                  onClick={() => openSubmitDialog(week.week, dayNumber)}
                                   className="w-full mt-3 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                                 >
                                   提交今日任务

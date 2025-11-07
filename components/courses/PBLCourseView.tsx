@@ -402,15 +402,6 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                             className={`group relative bg-gray-900/50 backdrop-blur-sm border-2 ${difficultyBorder} rounded-xl p-6 transition-all duration-300 cursor-pointer hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1`}
                             onClick={() => setSelectedProject(project)}
                           >
-                            {/* 难度标签 */}
-                            {project.difficulty_level && (
-                              <div className="mb-4">
-                                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-gray-800/80 border border-gray-700/50 text-gray-300">
-                                  {project.difficulty_level}
-                                </span>
-                              </div>
-                            )}
-
                             {/* 项目标题 */}
                             <h3 className="text-base font-bold mb-3 line-clamp-2 min-h-[3rem] text-white group-hover:text-blue-400 transition-colors">
                               {project.title}
