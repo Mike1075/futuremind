@@ -1,5 +1,5 @@
 // evaluate-pbl-task 边缘函数
-// 核心功能：PBL项目每日任务批改
+// 基于evaluate-submission，用于PBL项目任务批改
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
@@ -13,31 +13,21 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 // AI评估提示词模板
-const EVALUATION_PROMPT = `你是一位经验丰富的PBL项目导师，擅长评估学生的项目制学习成果。
+const EVALUATION_PROMPT = `你是一位经验丰富的PBL项目导师。
 
 **项目信息**:
 {project_info}
-
-**今日任务目标**:
-{task_goals}
 
 **学生提交内容**:
 {submission_content}
 
 **你的任务**:
-请基于项目目标、今日任务要求和学生的提交内容，进行全面评估，并以**严格的JSON格式**返回评估结果：
+请评估学生的提交，并以JSON格式返回：
 
 {
-  "feedback": "你的提交非常棒！你完成了...",
+  "feedback": "你的反思非常深刻...",
   "score": 85
 }
-
-**评分标准**:
-- 90-100分: 超出预期，展现出深度思考和创新
-- 80-89分: 很好地完成了任务，达到了预期目标
-- 70-79分: 完成了基本要求，但还有提升空间
-- 60-69分: 基本理解任务，但执行不够充分
-- 60分以下: 需要重新理解任务要求
 
 **重要**：只输出有效的JSON，不要添加任何Markdown代码块标记。`
 
@@ -54,12 +44,12 @@ serve(async (req) => {
   }
 
   try {
-    // 1. 解析请求
-    const { user_id, project_id, day_key, submission_content } = await req.json()
+    // 1. 解析请求 - 与evaluate-submission完全一样的方式
+    const { user_id, content_id, submission_content, submission_type = 'pbl_task', day_key } = await req.json()
 
-    if (!user_id || !project_id || !day_key || !submission_content) {
+    if (!user_id || !content_id || !submission_content) {
       return new Response(
-        JSON.stringify({ error: '缺少必要参数：user_id, project_id, day_key, submission_content' }),
+        JSON.stringify({ error: '缺少必要参数：user_id, content_id, submission_content' }),
         {
           status: 400,
           headers: {
@@ -70,15 +60,15 @@ serve(async (req) => {
       )
     }
 
-    console.log(`📝 开始评估PBL任务：user_id=${user_id}, project_id=${project_id}, day_key=${day_key}`)
+    console.log(`📝 开始评估：user_id=${user_id}, content_id=${content_id}, day_key=${day_key}`)
 
-    // 2. 创建提交记录 - 完全按照evaluate-submission的方式
+    // 2. 创建提交记录 - 与evaluate-submission完全一样
     const { data: newSubmission, error: insertError } = await supabase
       .from('user_submissions')
       .insert({
         user_id,
-        course_content_id: project_id,
-        submission_type: 'pbl_task',
+        course_content_id: content_id,
+        submission_type,
         content: submission_content,
         status: 'under_review',
       })
@@ -102,69 +92,25 @@ serve(async (req) => {
     const submission_id = newSubmission.id
     console.log(`✅ 提交记录已创建：submission_id=${submission_id}`)
 
-    // 3. 获取项目详情
-    const { data: project } = await supabase
+    // 3. 获取项目信息
+    const { data: courseContent } = await supabase
       .from('course_contents')
-      .select('id, title, subtitle, project_intro, week_plan, difficulty_level')
-      .eq('id', project_id)
+      .select('title, project_intro, week_plan')
+      .eq('id', content_id)
       .single()
 
-    if (!project) {
-      return new Response(
-        JSON.stringify({ error: '项目不存在' }),
-        {
-          status: 404,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          }
-        }
-      )
-    }
-
-    // 4. 解析day_key，找到对应的任务
-    const dayMatch = day_key.match(/week(\d+)_day(\d+)/)
-    if (!dayMatch) {
-      return new Response(
-        JSON.stringify({ error: 'day_key格式错误' }),
-        {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          }
-        }
-      )
-    }
-
-    const weekNum = parseInt(dayMatch[1])
-    const dayNum = parseInt(dayMatch[2])
-    const weekPlan = project.week_plan?.find((w: any) => w.week === weekNum)
-
-    let dayPlan
-    if (weekPlan?.activities && weekPlan.activities.length === 1) {
-      dayPlan = weekPlan.activities[0]
-    } else if (weekPlan?.activities) {
-      dayPlan = weekPlan.activities[dayNum - 1] || weekPlan.activities[0]
-    }
-
-    // 5. 构建AI提示词
+    // 4. 构建AI提示词
     console.log('🤖 构建AI评估提示词...')
 
-    const projectInfo = `项目名称：${project.title}
-项目简介：${project.project_intro || '无'}
-当前周次：第${weekNum}周 - ${weekPlan?.theme || '未命名主题'}
-当前天数：第${dayNum}天`
-
-    const taskGoals = dayPlan ? `任务标题：${dayPlan.title}
-任务描述：${dayPlan.description || '无'}` : '无具体任务信息'
+    const projectInfo = courseContent
+      ? `项目：${courseContent.title}\n简介：${courseContent.project_intro || '无'}`
+      : '暂无项目信息'
 
     const prompt = EVALUATION_PROMPT
       .replace('{project_info}', projectInfo)
-      .replace('{task_goals}', taskGoals)
       .replace('{submission_content}', submission_content)
 
-    // 6. 调用OpenAI API（与evaluate-submission一样）
+    // 5. 调用OpenAI API - 与evaluate-submission完全一样
     console.log('🤖 调用OpenAI API进行评估...')
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -201,7 +147,7 @@ serve(async (req) => {
 
     console.log('📥 AI返回内容:', aiResultText.substring(0, 200))
 
-    // 7. 解析AI返回的JSON
+    // 6. 解析AI返回的JSON - 与evaluate-submission完全一样
     let aiResult
     try {
       let cleanedText = aiResultText.trim()
@@ -214,13 +160,19 @@ serve(async (req) => {
       aiResult = JSON.parse(cleanedText)
     } catch (parseError) {
       console.error('❌ 解析AI返回的JSON失败:', parseError)
-      aiResult = {
-        feedback: '你的提交已收到！继续保持这样的学习态度。',
-        score: 75
-      }
+      return new Response(
+        JSON.stringify({ error: 'AI返回格式错误', details: aiResultText }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
+      )
     }
 
-    // 8. 更新提交记录
+    // 7. 更新提交记录 - 与evaluate-submission完全一样
     console.log('💾 更新提交记录...')
 
     const { error: updateError } = await supabase
@@ -239,40 +191,35 @@ serve(async (req) => {
       console.log('✅ 提交记录已更新')
     }
 
-    // 9. 更新项目进度
-    console.log('📊 更新项目进度...')
+    // 8. 更新PBL项目进度（如果有day_key）
+    if (day_key) {
+      console.log('📊 更新项目进度...')
 
-    const { data: selection } = await supabase
-      .from('user_selected_projects')
-      .select('id, progress')
-      .eq('user_id', user_id)
-      .eq('project_id', project_id)
-      .eq('status', 'active')
-      .single()
-
-    if (selection) {
-      const updatedProgress = {
-        ...(selection.progress || {}),
-        [day_key]: true
-      }
-
-      const totalDays = project.week_plan?.reduce((sum: number, week: any) => sum + (week.activities?.length || 0), 0) || 0
-      const completedDays = Object.values(updatedProgress).filter(Boolean).length
-      const completionPercentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0
-
-      await supabase
+      const { data: selection } = await supabase
         .from('user_selected_projects')
-        .update({
-          progress: updatedProgress,
-          completion_percentage: completionPercentage,
-          last_activity_at: new Date().toISOString()
-        })
-        .eq('id', selection.id)
+        .select('id, progress')
+        .eq('user_id', user_id)
+        .eq('project_id', content_id)
+        .eq('status', 'active')
+        .single()
 
-      console.log(`✅ 项目进度已更新：${completionPercentage}%`)
+      if (selection) {
+        const updatedProgress = {
+          ...(selection.progress || {}),
+          [day_key]: true
+        }
+
+        await supabase
+          .from('user_selected_projects')
+          .update({
+            progress: updatedProgress,
+            last_activity_at: new Date().toISOString()
+          })
+          .eq('id', selection.id)
+      }
     }
 
-    // 10. 返回评估结果
+    // 9. 返回评估结果 - 与evaluate-submission完全一样
     console.log('✨ 评估完成')
 
     return new Response(
@@ -280,9 +227,9 @@ serve(async (req) => {
         success: true,
         submission_id,
         evaluation: {
+          feedback: aiResult.feedback || '',
           score: aiResult.score || 0,
-          feedback: aiResult.feedback || ''
-        }
+        },
       }),
       {
         status: 200,

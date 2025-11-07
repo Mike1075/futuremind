@@ -239,10 +239,10 @@ export function PBLProjectDetail({
       const { data, error: functionError } = await supabase.functions.invoke('evaluate-pbl-task', {
         body: {
           user_id: userId,
-          project_id: project.id,
+          content_id: project.id,
           day_key: currentDayKey,
           submission_content: submissionContent,
-          attachments
+          submission_type: 'pbl_task'
         }
       })
 
