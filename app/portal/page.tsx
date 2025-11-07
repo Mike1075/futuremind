@@ -169,83 +169,34 @@ export default function PortalPage() {
             }
           }
 
-          // 地球课程使用基于互动的进度计算
+          // 地球课程使用基于互动的进度计算（通过API）
           if (courseSystemKey === 'earth') {
-            // 获取所有阶段
-            const { data: stages } = await supabase
-              .from('course_stages')
-              .select('id, stage_number')
-              .eq('system_id', item.course_systems.id)
-              .eq('is_published', true)
-              .order('stage_number', { ascending: true })
+            try {
+              const response = await fetch(
+                `/api/progress/earth-course-progress?courseSystemId=${item.course_systems.id}&userId=${userId}`
+              )
 
-            if (!stages || stages.length === 0) {
-              return {
-                course_id: item.course_systems.id,
-                course_title: item.course_systems.title,
-                course_system_key: courseSystemKey,
-                assigned_at: item.assigned_at,
-                progress: 0
-              }
-            }
-
-            // 导入InteractionService
-            const { InteractionService } = await import('@/lib/services/interaction.service')
-
-            // 计算每个阶段的平均进度
-            const stageProgresses: number[] = []
-            for (const stage of stages) {
-              // 获取该阶段的所有内容
-              const { data: stageContents } = await supabase
-                .from('course_contents')
-                .select('id, knowledge_points, socratic_questions, post_reflection')
-                .eq('stage_id', stage.id)
-                .eq('is_published', true)
-
-              if (!stageContents || stageContents.length === 0) {
-                stageProgresses.push(0)
-                continue
-              }
-
-              // 计算该阶段每个内容的进度
-              const contentProgressPromises = stageContents.map(async (content: any) => {
-                const knowledgePoints = (content.knowledge_points as string[]) || []
-                const socraticQuestions = (content.socratic_questions as any) || {}
-                const postReflection = (content.post_reflection as string[]) || []
-
-                const questionCounts = {
-                  pre: socraticQuestions.pre_watch?.length || 0,
-                  during: socraticQuestions.during_watch?.length || 0,
-                  post: socraticQuestions.post_watch?.length || 0
+              if (response.ok) {
+                const { progress } = await response.json()
+                return {
+                  course_id: item.course_systems.id,
+                  course_title: item.course_systems.title,
+                  course_system_key: courseSystemKey,
+                  assigned_at: item.assigned_at,
+                  progress: progress || 0
                 }
-
-                const result = await InteractionService.calculateProgress({
-                  userId,
-                  contentId: content.id,
-                  knowledgePointCount: knowledgePoints.length,
-                  questionCounts,
-                  reflectionCount: postReflection.length
-                })
-
-                return result.progress
-              })
-
-              const contentProgresses = await Promise.all(contentProgressPromises)
-              const stageTotal = contentProgresses.reduce((sum, p) => sum + p, 0)
-              const stageProgress = Math.round(stageTotal / stageContents.length)
-              stageProgresses.push(stageProgress)
+              }
+            } catch (error) {
+              console.error('Failed to fetch earth course progress:', error)
             }
 
-            // 计算所有阶段的平均进度作为总进度
-            const totalStageProgress = stageProgresses.reduce((sum, p) => sum + p, 0)
-            const progress = Math.round(totalStageProgress / stages.length)
-
+            // Fallback: 如果API调用失败，返回0
             return {
               course_id: item.course_systems.id,
               course_title: item.course_systems.title,
               course_system_key: courseSystemKey,
               assigned_at: item.assigned_at,
-              progress
+              progress: 0
             }
           }
 
