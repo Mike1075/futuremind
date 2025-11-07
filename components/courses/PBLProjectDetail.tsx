@@ -118,8 +118,8 @@ export function PBLProjectDetail({
     if (prevDay === 0) {
       // 如果是某周的第1天，检查上周的最后一天
       prevWeek = weekNumber - 1
-      const prevWeekPlan = project.week_plan.find(w => w.week === prevWeek)
-      prevDay = prevWeekPlan?.activities.length || 0
+      const prevWeekPlan = project.week_plan?.find(w => w.week === prevWeek)
+      prevDay = prevWeekPlan?.activities?.length || 0
     }
 
     const prevDayKey = `week${prevWeek}_day${prevDay}`
@@ -267,7 +267,7 @@ export function PBLProjectDetail({
   }
 
   // 计算总进度
-  const totalDays = project.week_plan.reduce((sum, week) => sum + week.activities.length, 0)
+  const totalDays = project.week_plan?.reduce((sum, week) => sum + (week.activities?.length || 0), 0) || 0
   const completedDays = Object.values(userProgress).filter(Boolean).length
   const progressPercentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0
 
@@ -367,7 +367,7 @@ export function PBLProjectDetail({
         <div className="space-y-6">
           <h2 className="text-2xl font-bold mb-4">📅 项目计划</h2>
 
-          {project.week_plan.map((week) => {
+          {project.week_plan?.map((week) => {
             const isWeekExpanded = expandedWeeks.has(week.week)
 
             return (
@@ -389,7 +389,7 @@ export function PBLProjectDetail({
                         第 {week.week} 周：{week.theme}
                       </h3>
                       <p className="text-sm text-gray-400">
-                        {week.activities.length} 个任务
+                        {week.activities?.length || 0} 个任务
                       </p>
                     </div>
                   </div>
@@ -421,7 +421,7 @@ export function PBLProjectDetail({
                 )}
 
                 {/* 每日任务列表 */}
-                {isWeekExpanded && (
+                {isWeekExpanded && week.activities && (
                   <div className="p-4 space-y-3">
                     {week.activities.map((activity, index) => {
                       // 使用activity.day字段或索引+1作为day编号
