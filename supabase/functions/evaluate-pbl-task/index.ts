@@ -212,17 +212,17 @@ serve(async (req) => {
         // 计算完成百分比
         let completionPercentage = 0
         if (courseContent?.week_plan) {
-          // 从week_plan计算总任务数
+          // 从week_plan计算总任务数（使用activities字段）
           let totalTasks = 0
           try {
             const weekPlan = Array.isArray(courseContent.week_plan)
               ? courseContent.week_plan
               : JSON.parse(courseContent.week_plan)
 
-            // 遍历week_plan，计算所有任务数
+            // 遍历week_plan，计算所有activities数量
             weekPlan.forEach((week: any) => {
-              if (week.tasks && Array.isArray(week.tasks)) {
-                totalTasks += week.tasks.length
+              if (week.activities && Array.isArray(week.activities)) {
+                totalTasks += week.activities.length
               }
             })
 
@@ -234,7 +234,7 @@ serve(async (req) => {
               completionPercentage = Math.round((completedTasks / totalTasks) * 100)
             }
 
-            console.log(`✅ 进度计算：已完成 ${completedTasks}/${totalTasks} 任务，百分比=${completionPercentage}%`)
+            console.log(`✅ 进度计算：已完成 ${completedTasks}/${totalTasks} 天，百分比=${completionPercentage}%`)
           } catch (error) {
             console.error('❌ 解析week_plan失败:', error)
           }
