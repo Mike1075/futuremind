@@ -61,6 +61,32 @@ export type Database = {
           },
         ]
       }
+      content_visit_records: {
+        Row: {
+          content_id: string
+          last_visited_at: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          last_visited_at?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          last_visited_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_visit_records_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_collaborators: {
         Row: {
           accepted_at: string | null
@@ -151,6 +177,7 @@ export type Database = {
           review_status: string | null
           sequence_number: number
           socratic_questions: Json | null
+          stage_id: string | null
           subtitle: string | null
           system_id: string | null
           tips: string | null
@@ -192,6 +219,7 @@ export type Database = {
           review_status?: string | null
           sequence_number: number
           socratic_questions?: Json | null
+          stage_id?: string | null
           subtitle?: string | null
           system_id?: string | null
           tips?: string | null
@@ -233,6 +261,7 @@ export type Database = {
           review_status?: string | null
           sequence_number?: number
           socratic_questions?: Json | null
+          stage_id?: string | null
           subtitle?: string | null
           system_id?: string | null
           tips?: string | null
@@ -246,6 +275,13 @@ export type Database = {
             columns: ["created_by_user"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_contents_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "course_stages"
             referencedColumns: ["id"]
           },
           {
@@ -311,6 +347,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_stages: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_published: boolean | null
+          stage_description: string | null
+          stage_name: string
+          stage_number: number
+          system_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          stage_description?: string | null
+          stage_name: string
+          stage_number: number
+          system_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          stage_description?: string | null
+          stage_name?: string
+          stage_number?: number
+          system_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_stages_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "course_systems"
             referencedColumns: ["id"]
           },
         ]
@@ -415,6 +492,38 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discussion_messages: {
+        Row: {
+          content: string
+          created_at: string
+          discussion_id: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          discussion_id: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          discussion_id?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discussion_messages_discussion_id_fkey"
+            columns: ["discussion_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_discussions"
             referencedColumns: ["id"]
           },
         ]
@@ -537,6 +646,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_discussions: {
+        Row: {
+          content_id: string
+          created_at: string
+          discussion_type: string
+          id: string
+          knowledge_point_text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          discussion_type: string
+          id?: string
+          knowledge_point_text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          discussion_type?: string
+          id?: string
+          knowledge_point_text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_discussions_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
             referencedColumns: ["id"]
           },
         ]
@@ -898,6 +1045,27 @@ export type Database = {
           },
         ]
       }
+      trigger_log: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          message: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+        }
+        Relationships: []
+      }
       user_behavior_stats: {
         Row: {
           avg_submission_time_minutes: number | null
@@ -950,6 +1118,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_behavior_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_content_interactions: {
+        Row: {
+          content_id: string
+          created_at: string | null
+          id: string
+          interaction_type: string
+          item_index: number | null
+          item_type: string | null
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string | null
+          id?: string
+          interaction_type: string
+          item_index?: number | null
+          item_type?: string | null
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string | null
+          id?: string
+          interaction_type?: string
+          item_index?: number | null
+          item_type?: string | null
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_content_interactions_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "course_contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_content_interactions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1440,38 +1656,10 @@ export const Constants = {
   },
 } as const
 
-// ============================================================================
-// Custom Type Aliases and Interfaces
-// ============================================================================
-
-// Type aliases for convenience
+// Additional type exports for convenience
 export type CourseContent = Tables<'course_contents'>
 export type CourseSystem = Tables<'course_systems'>
-export type UserProgress = Tables<'user_progress'>
 export type Profile = Tables<'profiles'>
+export type UserProgress = Tables<'user_progress'>
+export type UserSubmission = Tables<'user_submissions'>
 export type UserSelectedProject = Tables<'user_selected_projects'>
-export type MediaResource = Tables<'media_resources'>
-export type CourseDiscussion = Tables<'course_discussions'>
-export type DiscussionLike = Tables<'discussion_likes'>
-
-// Custom types for JSON fields
-export interface Resource {
-  type: 'audio' | 'video' | 'pdf' | 'document' | string
-  title: string
-  url: string
-  duration?: string
-  description?: string
-}
-
-// 小探险家项目结构
-export interface ExplorerProject {
-  title: string
-  goal: string
-  materials: string[]
-  steps: string[]
-  expectedOutcome?: string
-  tips?: string[]
-}
-
-// Enum types (string literals)
-export type ProgressType = 'reading' | 'listening' | 'watching' | 'practicing' | 'project'
