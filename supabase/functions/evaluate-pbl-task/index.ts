@@ -209,13 +209,47 @@ serve(async (req) => {
           [day_key]: true
         }
 
+        // 计算完成百分比
+        let completionPercentage = 0
+        if (courseContent?.week_plan) {
+          // 从week_plan计算总任务数
+          let totalTasks = 0
+          try {
+            const weekPlan = Array.isArray(courseContent.week_plan)
+              ? courseContent.week_plan
+              : JSON.parse(courseContent.week_plan)
+
+            // 遍历week_plan，计算所有任务数
+            weekPlan.forEach((week: any) => {
+              if (week.tasks && Array.isArray(week.tasks)) {
+                totalTasks += week.tasks.length
+              }
+            })
+
+            // 计算已完成任务数
+            const completedTasks = Object.keys(updatedProgress).length
+
+            // 计算百分比
+            if (totalTasks > 0) {
+              completionPercentage = Math.round((completedTasks / totalTasks) * 100)
+            }
+
+            console.log(`✅ 进度计算：已完成 ${completedTasks}/${totalTasks} 任务，百分比=${completionPercentage}%`)
+          } catch (error) {
+            console.error('❌ 解析week_plan失败:', error)
+          }
+        }
+
         await supabase
           .from('user_selected_projects')
           .update({
             progress: updatedProgress,
+            completion_percentage: completionPercentage,
             last_activity_at: new Date().toISOString()
           })
           .eq('id', selection.id)
+
+        console.log(`✅ 项目进度已更新：completion_percentage=${completionPercentage}%`)
       }
     }
 
