@@ -47,6 +47,21 @@ export default function EarthCoursePage() {
   const [uploading, setUploading] = useState(false)
   const [earthSystemId, setEarthSystemId] = useState<string | null>(null)
 
+  // 项目编辑状态
+  const [showProjectEditor, setShowProjectEditor] = useState(false)
+  const [editingProjectIndex, setEditingProjectIndex] = useState<number | null>(null)
+  const [projectFormData, setProjectFormData] = useState({
+    id: '',
+    title: '',
+    subtitle: '',
+    duration: '',
+    goal: '',
+    materials: [] as string[],
+    steps: [] as string[],
+    expectedOutcome: '',
+    tips: [] as string[]
+  })
+
   // 表单状态
   const [formData, setFormData] = useState({
     title: '',
@@ -64,9 +79,13 @@ export default function EarthCoursePage() {
     explorer_projects: [] as Array<{
       id: string
       title: string
-      description: string
-      materials?: string[]
+      subtitle?: string
       duration?: string
+      goal?: string
+      materials?: string[]
+      steps?: string[]
+      expectedOutcome?: string
+      tips?: string[]
     }>
   })
 
@@ -367,57 +386,66 @@ export default function EarthCoursePage() {
     }
   }
 
-  const handleAddProject = () => {
-    const title = prompt('🎯 请输入项目标题:')
-    if (!title) return
-
-    const description = prompt('📝 请输入项目描述:')
-    if (!description) return
-
-    const materials = prompt('🧪 请输入所需材料（用逗号分隔）:')
-    const duration = prompt('⏰ 请输入预计时长（例如：30-60分钟）:')
-
-    const newProject = {
-      id: title.replace(/\s+/g, '_'),
-      title,
-      description,
-      materials: materials ? materials.split(',').map(m => m.trim()) : [],
-      duration: duration || '30-60分钟'
+  const openProjectEditor = (index: number | null = null) => {
+    if (index !== null) {
+      // 编辑现有项目
+      const project = formData.explorer_projects[index]
+      setProjectFormData({
+        id: project.id || '',
+        title: project.title || '',
+        subtitle: project.subtitle || '',
+        duration: project.duration || '',
+        goal: project.goal || '',
+        materials: project.materials || [],
+        steps: project.steps || [],
+        expectedOutcome: project.expectedOutcome || '',
+        tips: project.tips || []
+      })
+      setEditingProjectIndex(index)
+    } else {
+      // 新建项目
+      setProjectFormData({
+        id: '',
+        title: '',
+        subtitle: '',
+        duration: '20分钟',
+        goal: '',
+        materials: [],
+        steps: [],
+        expectedOutcome: '',
+        tips: []
+      })
+      setEditingProjectIndex(null)
     }
-
-    setFormData({
-      ...formData,
-      explorer_projects: [...formData.explorer_projects, newProject]
-    })
+    setShowProjectEditor(true)
   }
 
-  const handleEditProject = (index: number) => {
-    const project = formData.explorer_projects[index]
+  const handleSaveProject = () => {
+    // 如果没有ID，生成一个
+    const projectId = projectFormData.id || projectFormData.title.replace(/\s+/g, '_')
 
-    const title = prompt('🎯 请输入项目标题:', project.title)
-    if (!title) return
-
-    const description = prompt('📝 请输入项目描述:', project.description)
-    if (!description) return
-
-    const materials = prompt('🧪 请输入所需材料（用逗号分隔）:', project.materials?.join(', '))
-    const duration = prompt('⏰ 请输入预计时长:', project.duration)
-
-    const updatedProject = {
-      ...project,
-      title,
-      description,
-      materials: materials ? materials.split(',').map(m => m.trim()) : [],
-      duration: duration || '30-60分钟'
+    const newProject = {
+      ...projectFormData,
+      id: projectId
     }
 
-    const newProjects = [...formData.explorer_projects]
-    newProjects[index] = updatedProject
+    if (editingProjectIndex !== null) {
+      // 更新现有项目
+      const newProjects = [...formData.explorer_projects]
+      newProjects[editingProjectIndex] = newProject
+      setFormData({
+        ...formData,
+        explorer_projects: newProjects
+      })
+    } else {
+      // 添加新项目
+      setFormData({
+        ...formData,
+        explorer_projects: [...formData.explorer_projects, newProject]
+      })
+    }
 
-    setFormData({
-      ...formData,
-      explorer_projects: newProjects
-    })
+    setShowProjectEditor(false)
   }
 
   const handleDeleteProject = (index: number) => {
@@ -747,7 +775,7 @@ export default function EarthCoursePage() {
                     </p>
                   </div>
                   <button
-                    onClick={handleAddProject}
+                    onClick={() => openProjectEditor(null)}
                     className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
@@ -768,29 +796,53 @@ export default function EarthCoursePage() {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h4 className="text-white font-medium text-lg mb-2">{project.title}</h4>
-                            <p className="text-gray-400 text-sm mb-3">{project.description}</p>
+                            <div className="mb-2">
+                              <h4 className="text-white font-medium text-lg">{project.title}</h4>
+                              {project.subtitle && (
+                                <p className="text-gray-400 text-sm">{project.subtitle}</p>
+                              )}
+                            </div>
+
+                            {project.goal && (
+                              <p className="text-gray-300 text-sm mb-2">
+                                <span className="text-orange-400">🎯 目标：</span>
+                                {project.goal}
+                              </p>
+                            )}
+
                             {project.materials && project.materials.length > 0 && (
                               <div className="mb-2">
-                                <span className="text-gray-500 text-xs">所需材料：</span>
+                                <span className="text-gray-400 text-xs">📦 所需材料：</span>
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  {project.materials.map((material, i) => (
+                                  {project.materials.slice(0, 5).map((material, i) => (
                                     <span key={i} className="text-xs bg-white/10 text-gray-300 px-2 py-1 rounded">
                                       {material}
                                     </span>
                                   ))}
+                                  {project.materials.length > 5 && (
+                                    <span className="text-xs bg-white/10 text-gray-400 px-2 py-1 rounded">
+                                      +{project.materials.length - 5}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             )}
+
+                            {project.steps && project.steps.length > 0 && (
+                              <p className="text-gray-400 text-xs mb-2">
+                                📝 {project.steps.length} 个实验步骤
+                              </p>
+                            )}
+
                             {project.duration && (
-                              <p className="text-gray-500 text-xs">
+                              <p className="text-gray-400 text-xs">
                                 ⏰ 预计时长：{project.duration}
                               </p>
                             )}
                           </div>
                           <div className="flex items-center gap-2 ml-4">
                             <button
-                              onClick={() => handleEditProject(index)}
+                              onClick={() => openProjectEditor(index)}
                               className="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded transition-all"
                               title="编辑项目"
                             >
@@ -886,6 +938,154 @@ export default function EarthCoursePage() {
           )}
         </div>
       </div>
+
+      {/* 项目编辑模态框 */}
+      {showProjectEditor && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-gray-900 border border-orange-500/30 rounded-2xl max-w-4xl w-full my-8 shadow-2xl">
+            {/* 头部 */}
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <h2 className="text-2xl font-bold text-white">
+                {editingProjectIndex !== null ? '编辑项目' : '新建项目'}
+              </h2>
+              <button
+                onClick={() => setShowProjectEditor(false)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 表单内容 */}
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+              {/* 基本信息 */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-orange-400">基本信息</h3>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">项目标题 *</label>
+                  <input
+                    type="text"
+                    value={projectFormData.title}
+                    onChange={(e) => setProjectFormData({...projectFormData, title: e.target.value})}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                    placeholder="例如：振动猎人"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">副标题</label>
+                  <input
+                    type="text"
+                    value={projectFormData.subtitle}
+                    onChange={(e) => setProjectFormData({...projectFormData, subtitle: e.target.value})}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                    placeholder="例如：亲身验证声音就是振动"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">预计时长</label>
+                  <input
+                    type="text"
+                    value={projectFormData.duration}
+                    onChange={(e) => setProjectFormData({...projectFormData, duration: e.target.value})}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                    placeholder="例如：20分钟"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">项目目标</label>
+                  <textarea
+                    value={projectFormData.goal}
+                    onChange={(e) => setProjectFormData({...projectFormData, goal: e.target.value})}
+                    rows={3}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                    placeholder="例如：通过动手实验，直观感受声音的物理本质"
+                  />
+                </div>
+              </div>
+
+              {/* 所需材料 */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-orange-400">所需材料</h3>
+                <textarea
+                  value={projectFormData.materials.join('\n')}
+                  onChange={(e) => setProjectFormData({
+                    ...projectFormData,
+                    materials: e.target.value.split('\n').filter(m => m.trim())
+                  })}
+                  rows={4}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                  placeholder="每行一个材料，例如：&#10;碗&#10;保鲜膜&#10;盐或米粒&#10;音响或手机"
+                />
+              </div>
+
+              {/* 实验步骤 */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-orange-400">实验步骤</h3>
+                <textarea
+                  value={projectFormData.steps.join('\n')}
+                  onChange={(e) => setProjectFormData({
+                    ...projectFormData,
+                    steps: e.target.value.split('\n').filter(s => s.trim())
+                  })}
+                  rows={6}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                  placeholder="每行一个步骤，例如：&#10;用保鲜膜紧紧封住碗口，做成'鼓面'&#10;在鼓面上撒上盐粒或米粒&#10;将碗靠近音响，播放低音重的音乐&#10;观察盐粒或米粒的'舞蹈'"
+                />
+              </div>
+
+              {/* 预期成果（可选） */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-orange-400">预期成果 <span className="text-sm text-gray-500">(可选)</span></h3>
+                <textarea
+                  value={projectFormData.expectedOutcome}
+                  onChange={(e) => setProjectFormData({...projectFormData, expectedOutcome: e.target.value})}
+                  rows={3}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                  placeholder="描述学生完成项目后应该看到或理解什么"
+                />
+              </div>
+
+              {/* 温馨提示（可选） */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-orange-400">温馨提示 <span className="text-sm text-gray-500">(可选)</span></h3>
+                <textarea
+                  value={projectFormData.tips.join('\n')}
+                  onChange={(e) => setProjectFormData({
+                    ...projectFormData,
+                    tips: e.target.value.split('\n').filter(t => t.trim())
+                  })}
+                  rows={3}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                  placeholder="每行一个提示，例如安全注意事项、实验技巧等"
+                />
+              </div>
+            </div>
+
+            {/* 底部按钮 */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-white/10">
+              <button
+                onClick={() => setShowProjectEditor(false)}
+                className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg font-medium transition-all border border-white/10"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSaveProject}
+                disabled={!projectFormData.title}
+                className="px-6 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-lg font-medium transition-all disabled:cursor-not-allowed"
+              >
+                保存项目
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
