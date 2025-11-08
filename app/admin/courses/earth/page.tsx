@@ -60,7 +60,14 @@ export default function EarthCoursePage() {
       post_watch: [] as string[]
     },
     post_reflection: [] as string[],
-    estimated_duration: 60
+    estimated_duration: 60,
+    explorer_projects: [] as Array<{
+      id: string
+      title: string
+      description: string
+      materials?: string[]
+      duration?: string
+    }>
   })
 
   useEffect(() => {
@@ -82,7 +89,8 @@ export default function EarthCoursePage() {
           post_watch: []
         },
         post_reflection: selectedStage.post_reflection || [],
-        estimated_duration: selectedStage.estimated_duration || 60
+        estimated_duration: selectedStage.estimated_duration || 60,
+        explorer_projects: (selectedStage as any).explorer_projects || []
       })
       loadMediaResources(selectedStage.id)
     }
@@ -173,6 +181,7 @@ export default function EarthCoursePage() {
           socratic_questions: formData.socratic_questions,
           post_reflection: formData.post_reflection,
           estimated_duration: formData.estimated_duration,
+          explorer_projects: formData.explorer_projects,
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedStage.id)
@@ -356,6 +365,69 @@ export default function EarthCoursePage() {
       console.error('修改失败:', error)
       alert('修改失败，请重试')
     }
+  }
+
+  const handleAddProject = () => {
+    const title = prompt('🎯 请输入项目标题:')
+    if (!title) return
+
+    const description = prompt('📝 请输入项目描述:')
+    if (!description) return
+
+    const materials = prompt('🧪 请输入所需材料（用逗号分隔）:')
+    const duration = prompt('⏰ 请输入预计时长（例如：30-60分钟）:')
+
+    const newProject = {
+      id: title.replace(/\s+/g, '_'),
+      title,
+      description,
+      materials: materials ? materials.split(',').map(m => m.trim()) : [],
+      duration: duration || '30-60分钟'
+    }
+
+    setFormData({
+      ...formData,
+      explorer_projects: [...formData.explorer_projects, newProject]
+    })
+  }
+
+  const handleEditProject = (index: number) => {
+    const project = formData.explorer_projects[index]
+
+    const title = prompt('🎯 请输入项目标题:', project.title)
+    if (!title) return
+
+    const description = prompt('📝 请输入项目描述:', project.description)
+    if (!description) return
+
+    const materials = prompt('🧪 请输入所需材料（用逗号分隔）:', project.materials?.join(', '))
+    const duration = prompt('⏰ 请输入预计时长:', project.duration)
+
+    const updatedProject = {
+      ...project,
+      title,
+      description,
+      materials: materials ? materials.split(',').map(m => m.trim()) : [],
+      duration: duration || '30-60分钟'
+    }
+
+    const newProjects = [...formData.explorer_projects]
+    newProjects[index] = updatedProject
+
+    setFormData({
+      ...formData,
+      explorer_projects: newProjects
+    })
+  }
+
+  const handleDeleteProject = (index: number) => {
+    if (!confirm('确定要删除这个项目吗？')) return
+
+    const newProjects = formData.explorer_projects.filter((_, i) => i !== index)
+    setFormData({
+      ...formData,
+      explorer_projects: newProjects
+    })
   }
 
   // 生成星空粒子
@@ -662,6 +734,80 @@ export default function EarthCoursePage() {
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                     placeholder="输入预计时长..."
                   />
+                </div>
+              </div>
+
+              {/* 探索者项目管理模块 */}
+              <div className="mt-12 pt-8 border-t border-white/10">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">🔬 探索者联盟 - 小探险家项目</h3>
+                    <p className="text-gray-400 text-sm mt-1">
+                      设置实践项目，让学生动手探索和实验
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleAddProject}
+                    className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    添加项目
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {formData.explorer_projects.length === 0 ? (
+                    <div className="text-center py-12 bg-white/5 rounded-lg border border-white/10">
+                      <p className="text-gray-400">暂无项目，点击按钮添加</p>
+                    </div>
+                  ) : (
+                    formData.explorer_projects.map((project, index) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="text-white font-medium text-lg mb-2">{project.title}</h4>
+                            <p className="text-gray-400 text-sm mb-3">{project.description}</p>
+                            {project.materials && project.materials.length > 0 && (
+                              <div className="mb-2">
+                                <span className="text-gray-500 text-xs">所需材料：</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {project.materials.map((material, i) => (
+                                    <span key={i} className="text-xs bg-white/10 text-gray-300 px-2 py-1 rounded">
+                                      {material}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {project.duration && (
+                              <p className="text-gray-500 text-xs">
+                                ⏰ 预计时长：{project.duration}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 ml-4">
+                            <button
+                              onClick={() => handleEditProject(index)}
+                              className="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded transition-all"
+                              title="编辑项目"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProject(index)}
+                              className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
+                              title="删除项目"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
