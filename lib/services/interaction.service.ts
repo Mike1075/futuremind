@@ -81,10 +81,12 @@ export class InteractionService {
     knowledgePointCount: number
     questionCounts: { pre: number; during: number; post: number }
     reflectionCount: number
+    explorerProjectCount?: number
+    completedExplorerProjects?: number
   }) {
     const supabase = await createClient()
 
-    const { knowledgePointCount, questionCounts, reflectionCount } = params
+    const { knowledgePointCount, questionCounts, reflectionCount, explorerProjectCount = 0, completedExplorerProjects = 0 } = params
     const totalQuestions = questionCounts.pre + questionCounts.during + questionCounts.post
     const totalItems = knowledgePointCount + totalQuestions + reflectionCount
 
@@ -103,11 +105,10 @@ export class InteractionService {
     const interactionSet = new Set(interactions?.map((i: any) => `${i.interaction_type}_${i.item_index}_${i.item_type}`) || [])
 
     // Level 1: 接触探索（20%）
-    // 1% 页面访问 + 19% 点击触发AI问题（不是滚动，是点击每个知识点/问题/反思）
+    // 1% 页面访问 + 19% 完成学习项目（点击知识点/问题/反思 + 完成探索者项目）
     const hasVisited = interactions?.some((i: any) => i.interaction_type === 'page_visit') || false
 
     // 统计点击触发AI的次数（knowledge_click, question_click, reflection_click）
-    const totalClickableItems = knowledgePointCount + totalQuestions + reflectionCount
     const itemsClicked = new Set(
       interactions?.filter((i: any) =>
         i.interaction_type === 'knowledge_click' ||
@@ -116,7 +117,17 @@ export class InteractionService {
       ).map((i: any) => `${i.item_type}_${i.item_index}`) || []
     ).size
 
-    const level1Progress = (hasVisited ? 1 : 0) + (itemsClicked / totalClickableItems * 19)
+    // 总可完成项目数 = 知识点 + 问题 + 反思 + 探索者项目
+    const totalClickableItems = knowledgePointCount + totalQuestions + reflectionCount + explorerProjectCount
+
+    // 已完成项目数 = 点击的项目 + 完成的探索者项目
+    const itemsCompleted = itemsClicked + completedExplorerProjects
+
+    const level1Progress = totalClickableItems > 0
+      ? (hasVisited ? 1 : 0) + (itemsCompleted / totalClickableItems * 19)
+      : (hasVisited ? 1 : 0)
+
+    console.log(`📊 Level 1 进度计算: 已完成 ${itemsCompleted}/${totalClickableItems} 项 (点击:${itemsClicked}, 探索者项目:${completedExplorerProjects}/${explorerProjectCount})`)
 
     // Level 2: 主动思考（30%）
     const knowledgeClicks = interactions?.filter((i: any) => i.interaction_type === 'knowledge_click').length || 0
@@ -166,9 +177,9 @@ export class InteractionService {
       Math.min(7, crossTopicDiscussions * 1.4) + // 最多5次跨主题
       (reflectionDiscussions / Math.max(reflectionCount, 1) * 3)
 
-    const totalProgress = Math.min(100, Math.round(
+    const totalProgress = Math.min(100, Number((
       level1Progress + level2Progress + level3Progress + level4Progress
-    ))
+    ).toFixed(1)))
 
     // 统计深度讨论信息
     const deepTopics = Array.from(discussionsByTopic.entries())
@@ -186,6 +197,7 @@ export class InteractionService {
       stats: {
         knowledgeClicks: `${knowledgeClicks}/${knowledgePointCount}`,
         questionClicks: `${questionClicks}/${totalQuestions}`,
+        explorerProjects: explorerProjectCount > 0 ? `${completedExplorerProjects}/${explorerProjectCount}` : undefined,
         discussedTopics: `${discussionsByTopic.size}/${totalItems}`,
         deepTopics: `${deepTopics}个深度钻研`,
         totalDepthScore: `${Math.round(totalDepthScore)}分`
