@@ -50,23 +50,27 @@ export async function GET(req: NextRequest) {
       post: socraticQuestions.post_watch?.length || 0
     }
 
-    // 查询用户完成的探索者项目数量
-    let completedExplorerProjects = 0
+    // 查询用户的探索者项目提交记录（包括分数）
+    let explorerProjectScores: Record<string, number> = {}
     if (explorerProjects.length > 0) {
-      // 查询该用户在这个内容下，以explorer_project_开头的day_key的提交记录
+      // 查询该用户在这个内容下，以explorer_project_开头的day_key的所有提交记录
       const { data: submissions } = await supabase
         .from('user_submissions')
-        .select('day_key')
+        .select('day_key, score')
         .eq('user_id', user.id)
         .eq('course_content_id', contentId)
         .like('day_key', 'explorer_project_%')
         .eq('status', 'approved')
 
-      // 使用Set去重（防止同一个项目多次提交）
-      const uniqueProjects = new Set(submissions?.map((s: any) => s.day_key) || [])
-      completedExplorerProjects = uniqueProjects.size
+      // 对每个项目，找出最高分
+      if (submissions && submissions.length > 0) {
+        submissions.forEach((sub: any) => {
+          const currentScore = explorerProjectScores[sub.day_key] || 0
+          explorerProjectScores[sub.day_key] = Math.max(currentScore, sub.score || 0)
+        })
+      }
 
-      console.log(`📊 探索者项目进度: ${completedExplorerProjects}/${explorerProjects.length}`)
+      console.log('📊 探索者项目最高分:', explorerProjectScores)
     }
 
     // 计算进度
@@ -77,7 +81,7 @@ export async function GET(req: NextRequest) {
       questionCounts,
       reflectionCount: postReflection.length,
       explorerProjectCount: explorerProjects.length,
-      completedExplorerProjects
+      explorerProjectScores // 传入每个项目的最高分
     })
 
     return NextResponse.json(result)

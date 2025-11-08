@@ -82,11 +82,11 @@ export class InteractionService {
     questionCounts: { pre: number; during: number; post: number }
     reflectionCount: number
     explorerProjectCount?: number
-    completedExplorerProjects?: number
+    explorerProjectScores?: Record<string, number> // 每个项目的最高分
   }) {
     const supabase = await createClient()
 
-    const { knowledgePointCount, questionCounts, reflectionCount, explorerProjectCount = 0, completedExplorerProjects = 0 } = params
+    const { knowledgePointCount, questionCounts, reflectionCount, explorerProjectCount = 0, explorerProjectScores = {} } = params
     const totalQuestions = questionCounts.pre + questionCounts.during + questionCounts.post
     const totalItems = knowledgePointCount + totalQuestions + reflectionCount
 
@@ -104,8 +104,8 @@ export class InteractionService {
 
     const interactionSet = new Set(interactions?.map((i: any) => `${i.interaction_type}_${i.item_index}_${i.item_type}`) || [])
 
-    // Level 1: 接触探索（20%）
-    // 1% 页面访问 + 19% 完成学习项目（点击知识点/问题/反思 + 完成探索者项目）
+    // Level 1: 接触探索（20%）- 只计算知识点/问题/反思，不含探索者项目
+    // 1% 页面访问 + 19% 点击学习项目（知识点/问题/反思）
     const hasVisited = interactions?.some((i: any) => i.interaction_type === 'page_visit') || false
 
     // 统计点击触发AI的次数（knowledge_click, question_click, reflection_click）
@@ -117,17 +117,12 @@ export class InteractionService {
       ).map((i: any) => `${i.item_type}_${i.item_index}`) || []
     ).size
 
-    // 总可完成项目数 = 知识点 + 问题 + 反思 + 探索者项目
-    const totalClickableItems = knowledgePointCount + totalQuestions + reflectionCount + explorerProjectCount
-
-    // 已完成项目数 = 点击的项目 + 完成的探索者项目
-    const itemsCompleted = itemsClicked + completedExplorerProjects
+    // 总可点击项目数 = 知识点 + 问题 + 反思（探索者项目单独计算）
+    const totalClickableItems = knowledgePointCount + totalQuestions + reflectionCount
 
     const level1Progress = totalClickableItems > 0
-      ? (hasVisited ? 1 : 0) + (itemsCompleted / totalClickableItems * 19)
+      ? (hasVisited ? 1 : 0) + (itemsClicked / totalClickableItems * 19)
       : (hasVisited ? 1 : 0)
-
-    console.log(`📊 Level 1 进度计算: 已完成 ${itemsCompleted}/${totalClickableItems} 项 (点击:${itemsClicked}, 探索者项目:${completedExplorerProjects}/${explorerProjectCount})`)
 
     // Level 2: 主动思考（30%）
     const knowledgeClicks = interactions?.filter((i: any) => i.interaction_type === 'knowledge_click').length || 0
@@ -177,9 +172,47 @@ export class InteractionService {
       Math.min(7, crossTopicDiscussions * 1.4) + // 最多5次跨主题
       (reflectionDiscussions / Math.max(reflectionCount, 1) * 3)
 
-    const totalProgress = Math.min(100, Number((
-      level1Progress + level2Progress + level3Progress + level4Progress
-    ).toFixed(1)))
+    // 计算探索者项目进度（独立30%）
+    let explorerProgress = 0
+    let explorerStats = {
+      totalProjects: explorerProjectCount,
+      submittedProjects: 0,
+      totalScore: 0,
+      averageScore: 0
+    }
+
+    if (explorerProjectCount > 0) {
+      const projectWeight = 30 / explorerProjectCount // 每个项目的权重（总共30%）
+      let totalScore = 0
+      let submittedCount = 0
+
+      // 遍历每个项目的最高分
+      Object.values(explorerProjectScores).forEach((score: number) => {
+        if (score > 0) {
+          submittedCount++
+          totalScore += score
+          // 每个项目贡献：(分数/100) × 项目权重
+          explorerProgress += (score / 100) * projectWeight
+        }
+      })
+
+      explorerStats = {
+        totalProjects: explorerProjectCount,
+        submittedProjects: submittedCount,
+        totalScore,
+        averageScore: submittedCount > 0 ? Math.round(totalScore / submittedCount) : 0
+      }
+
+      console.log(`📊 探索者项目进度: ${submittedCount}/${explorerProjectCount}个项目, 平均分${explorerStats.averageScore}, 贡献进度${explorerProgress.toFixed(1)}%`)
+    }
+
+    // 知识点和问题部分占70%
+    const knowledgeProgress = (level1Progress + level2Progress + level3Progress + level4Progress) * 0.7
+
+    // 总进度 = 知识点问题进度(70%) + 探索者项目进度(30%)
+    const totalProgress = Math.min(100, Number((knowledgeProgress + explorerProgress).toFixed(1)))
+
+    console.log(`📊 进度组成: 知识点等${knowledgeProgress.toFixed(1)}% + 探索者项目${explorerProgress.toFixed(1)}% = 总计${totalProgress}%`)
 
     // 统计深度讨论信息
     const deepTopics = Array.from(discussionsByTopic.entries())
@@ -189,15 +222,19 @@ export class InteractionService {
     return {
       progress: totalProgress,
       breakdown: {
-        level1: Math.round(level1Progress),
-        level2: Math.round(level2Progress),
-        level3: Math.round(level3Progress),
-        level4: Math.round(level4Progress)
+        knowledge: Number(knowledgeProgress.toFixed(1)), // 知识点问题部分（70%）
+        explorer: Number(explorerProgress.toFixed(1)), // 探索者项目部分（30%）
+        level1: Math.round(level1Progress * 0.7), // 显示实际贡献
+        level2: Math.round(level2Progress * 0.7),
+        level3: Math.round(level3Progress * 0.7),
+        level4: Math.round(level4Progress * 0.7)
       },
       stats: {
         knowledgeClicks: `${knowledgeClicks}/${knowledgePointCount}`,
         questionClicks: `${questionClicks}/${totalQuestions}`,
-        explorerProjects: explorerProjectCount > 0 ? `${completedExplorerProjects}/${explorerProjectCount}` : undefined,
+        explorerProjects: explorerProjectCount > 0
+          ? `${explorerStats.submittedProjects}/${explorerStats.totalProjects} (平均${explorerStats.averageScore}分)`
+          : undefined,
         discussedTopics: `${discussionsByTopic.size}/${totalItems}`,
         deepTopics: `${deepTopics}个深度钻研`,
         totalDepthScore: `${Math.round(totalDepthScore)}分`
