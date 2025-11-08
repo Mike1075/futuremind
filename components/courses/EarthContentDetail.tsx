@@ -77,43 +77,45 @@ export function EarthContentDetail({
   const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null)
   const [historyProject, setHistoryProject] = useState<any>(null) // 当前查看提交记录的项目
 
+  // 刷新阶段进度（独立函数，可被多处调用）
+  const fetchStageProgress = async () => {
+    if (!stageContentIds || stageContentIds.length === 0) return
+
+    try {
+      // 批量查询每个内容的进度
+      const progressPromises = stageContentIds.map(id => getEarthProgress(id))
+      const progressResults = await Promise.all(progressPromises)
+
+      // 过滤掉null结果，计算平均进度
+      const validResults = progressResults.filter(r => r !== null)
+      if (validResults.length === 0) {
+        setStageProgress(0)
+        return
+      }
+
+      const totalProgress = validResults.reduce((sum, r) => sum + (r?.progress || 0), 0)
+      const avgProgress = totalProgress / validResults.length
+      // 保留1位小数
+      setStageProgress(Number(avgProgress.toFixed(1)))
+
+      // 检查是否达到解锁条件（60%）
+      const wasUnlocked = isUnlocked
+      const shouldUnlock = avgProgress >= 60
+
+      if (!wasUnlocked && shouldUnlock) {
+        // 触发解锁动画
+        setShowUnlockAnimation(true)
+        setTimeout(() => setShowUnlockAnimation(false), 2000)
+      }
+
+      setIsUnlocked(shouldUnlock)
+    } catch (error) {
+      console.error('Failed to fetch stage progress:', error)
+    }
+  }
+
   // 计算阶段进度（使用新的进度系统）
   useEffect(() => {
-    const fetchStageProgress = async () => {
-      if (!stageContentIds || stageContentIds.length === 0) return
-
-      try {
-        // 批量查询每个内容的进度
-        const progressPromises = stageContentIds.map(id => getEarthProgress(id))
-        const progressResults = await Promise.all(progressPromises)
-
-        // 过滤掉null结果，计算平均进度
-        const validResults = progressResults.filter(r => r !== null)
-        if (validResults.length === 0) {
-          setStageProgress(0)
-          return
-        }
-
-        const totalProgress = validResults.reduce((sum, r) => sum + (r?.progress || 0), 0)
-        const avgProgress = totalProgress / validResults.length
-        setStageProgress(Math.round(avgProgress))
-
-        // 检查是否达到解锁条件（80%）
-        const wasUnlocked = isUnlocked
-        const shouldUnlock = avgProgress >= 80
-
-        if (!wasUnlocked && shouldUnlock) {
-          // 触发解锁动画
-          setShowUnlockAnimation(true)
-          setTimeout(() => setShowUnlockAnimation(false), 2000)
-        }
-
-        setIsUnlocked(shouldUnlock)
-      } catch (error) {
-        console.error('Failed to fetch stage progress:', error)
-      }
-    }
-
     fetchStageProgress()
   }, [stageContentIds, isUnlocked])
 
@@ -1091,7 +1093,7 @@ export function EarthContentDetail({
                       <div className="flex items-center gap-3 opacity-50">
                         <div className="flex-1">
                           <div className="text-xs text-gray-500">
-                            {stageProgress >= 80 ? '即将解锁...' : `完成${Math.ceil(80 - stageProgress)}%后解锁`}
+                            {stageProgress >= 60 ? '即将解锁...' : `完成${Math.ceil(60 - stageProgress)}%后解锁`}
                           </div>
                           <div className="text-sm font-medium text-gray-400">
                             {nextStage.stage_name}
@@ -1417,6 +1419,8 @@ export function EarthContentDetail({
                         setShowSubmitDialog(false)
                         setSubmissionResult(null)
                         setSelectedProject(null)
+                        // 刷新进度条
+                        fetchStageProgress()
                       }}
                       className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg font-semibold hover:from-orange-600 hover:to-amber-600 transition-all text-white"
                     >
