@@ -357,7 +357,7 @@ serve(async (req) => {
 
             console.log(`📊 用户在模块${moduleNumber}选择了 ${userModuleProjects?.length || 0} 个项目`)
 
-            // 4. 计算每个项目的完成度，取最高值
+            // 4. 计算每个项目的完成度（考虑得分权重），取最高值
             let maxProjectCompletion = 0
 
             if (userModuleProjects && userModuleProjects.length > 0) {
@@ -377,16 +377,26 @@ serve(async (req) => {
                   }
                 })
 
-                // 计算该项目已完成的天数（仅计算该项目的progress）
+                if (projTotalDays === 0) continue
+
+                // 计算该项目的实际完成度（考虑得分权重）
                 const projPrefix = `project_${projSeq}_`
-                const projCompletedDays = Object.keys(projProgress).filter(
-                  key => key.startsWith(projPrefix) && (projProgress[key] || 0) > 0
-                ).length
+                let totalWeightedProgress = 0
 
-                // 项目完成度
-                const projCompletion = projTotalDays > 0 ? (projCompletedDays / projTotalDays) : 0
+                for (const [key, score] of Object.entries(projProgress)) {
+                  if (key.startsWith(projPrefix) && typeof score === 'number' && score > 0) {
+                    // 每天的基础进度 = 1 / 总天数
+                    const baseProgress = 1 / projTotalDays
+                    // 实际进度 = 基础进度 × (得分/100)
+                    const actualProgress = baseProgress * (score / 100)
+                    totalWeightedProgress += actualProgress
+                  }
+                }
 
-                console.log(`📊 项目${projSeq}: ${projCompletedDays}/${projTotalDays} = ${(projCompletion * 100).toFixed(1)}%`)
+                // 项目完成度（0-1）
+                const projCompletion = totalWeightedProgress
+
+                console.log(`📊 项目${projSeq}: 总天数=${projTotalDays}, 加权进度=${(projCompletion * 100).toFixed(2)}%`)
 
                 // 取最大值
                 if (projCompletion > maxProjectCompletion) {

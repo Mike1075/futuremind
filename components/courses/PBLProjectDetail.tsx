@@ -375,16 +375,29 @@ export function PBLProjectDetail({
     }
   }
 
-  // 计算当前项目的进度（仅用于项目详情页显示）
+  // 计算当前项目的进度（考虑得分权重）
   const totalDays = project.week_plan?.reduce((sum, week) => sum + (week.activities?.length || 0), 0) || 0
 
-  // 只统计当前项目的已完成天数
+  // 只统计当前项目的加权进度
   const currentProjectPrefix = `project_${project.sequence_number}_`
-  const completedDays = Object.keys(userProgress).filter(key =>
-    key.startsWith(currentProjectPrefix) && (userProgress[key] || 0) > 0
-  ).length
+  let totalWeightedProgress = 0
+  let completedDays = 0
 
-  const progressPercentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0
+  if (totalDays > 0) {
+    for (const [key, score] of Object.entries(userProgress)) {
+      if (key.startsWith(currentProjectPrefix) && typeof score === 'number' && score > 0) {
+        // 每天的基础进度 = 1 / 总天数
+        const baseProgress = 1 / totalDays
+        // 实际进度 = 基础进度 × (得分/100)
+        const actualProgress = baseProgress * (score / 100)
+        totalWeightedProgress += actualProgress
+        completedDays++
+      }
+    }
+  }
+
+  // 转换为百分比（0-100）
+  const progressPercentage = Math.round(totalWeightedProgress * 100)
 
   return (
     <div className="min-h-screen bg-black text-white">
