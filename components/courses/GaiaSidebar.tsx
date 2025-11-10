@@ -178,21 +178,27 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
       const isFirstUserMessage = !discussionId && messages.length === 1 && messages[0].role === 'assistant'
 
       // 调用新的Gaia Chat API
+      const requestBody = {
+        message: textToSend,
+        contentId: initialContext.contentId,
+        knowledgePointText: initialContext.text,
+        discussionType: initialContext.type,
+        // 如果是首次消息，传递AI的启发性问题
+        firstAssistantMessage: isFirstUserMessage ? messages[0].content : undefined
+      }
+
+      console.log('📤 [GaiaSidebar] 发送请求到 /api/n8n/gaia-chat:', requestBody)
+
       const response = await fetch('/api/n8n/gaia-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: textToSend,
-          contentId: initialContext.contentId,
-          knowledgePointText: initialContext.text,
-          discussionType: initialContext.type,
-          // 如果是首次消息，传递AI的启发性问题
-          firstAssistantMessage: isFirstUserMessage ? messages[0].content : undefined
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (response.ok) {
         const data = await response.json()
+
+        console.log('📥 [GaiaSidebar] 收到API响应:', data)
 
         // 保存discussion ID
         if (data.discussionId) {
@@ -207,6 +213,7 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
         }
         setMessages(prev => [...prev, assistantMessage])
       } else {
+        console.error('❌ [GaiaSidebar] API请求失败:', response.status, response.statusText)
         throw new Error('Failed to get response')
       }
     } catch (error) {
