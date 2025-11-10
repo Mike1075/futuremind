@@ -12,14 +12,14 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server'
  * - discussionType: 讨论类型 ('knowledge_point' | 'question' | 'reflection')
  */
 
-// 课程system_key到project_id和class_id的映射
-const COURSE_MAPPING: Record<string, { project_id: string; class_id: string }> = {
-  'pbl': { project_id: 'p001', class_id: 'c001' },           // 伊卡洛斯计划
-  'icarus': { project_id: 'p001', class_id: 'c001' },        // 伊卡洛斯计划（别名）
-  'listening': { project_id: 'p002', class_id: 'c002' },     // 观音之旅
-  'carlo': { project_id: 'p003', class_id: 'c003' },         // 卡罗洛韦里
-  'rovelli': { project_id: 'p003', class_id: 'c003' },       // 卡罗洛韦里（别名）
-  'earth': { project_id: 'p004', class_id: 'c004' },         // 欢迎来到地球
+// 课程system_key到project_id的映射
+const COURSE_MAPPING: Record<string, string> = {
+  'pbl': 'p001',           // 伊卡洛斯计划
+  'icarus': 'p001',        // 伊卡洛斯计划（别名）
+  'listening': 'p002',     // 观音之旅
+  'carlo': 'p003',         // 卡罗洛韦里
+  'rovelli': 'p003',       // 卡罗洛韦里（别名）
+  'earth': 'p004',         // 欢迎来到地球
 }
 export async function POST(req: NextRequest) {
   try {
@@ -45,26 +45,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // 1. 查询课程信息，获取system_key
+    // 1. 查询课程信息，获取system_id
     const { data: courseContent } = await supabase
       .from('course_contents')
-      .select('system_id, course_systems(system_key)')
+      .select('system_id')
       .eq('id', contentId)
       .single()
 
     let systemKey = 'earth' // 默认值
-    if (courseContent && (courseContent as any).course_systems) {
-      systemKey = (courseContent as any).course_systems.system_key || 'earth'
+
+    if ((courseContent as any)?.system_id) {
+      // 2. 根据system_id查询system_key
+      const { data: courseSystem } = await supabase
+        .from('course_systems')
+        .select('system_key')
+        .eq('id', (courseContent as any).system_id)
+        .single()
+
+      if ((courseSystem as any)?.system_key) {
+        systemKey = (courseSystem as any).system_key
+      }
     }
 
-    console.log(`📚 课程隔离: contentId=${contentId}, system_key=${systemKey}`)
+    console.log(`📚 课程隔离: contentId=${contentId}, system_id=${(courseContent as any)?.system_id}, system_key=${systemKey}`)
 
-    // 获取课程对应的project_id和class_id
-    const courseMapping = COURSE_MAPPING[systemKey] || COURSE_MAPPING['earth']
-    const projectId = courseMapping.project_id
-    const classId = courseMapping.class_id
+    // 获取课程对应的project_id
+    const projectId = COURSE_MAPPING[systemKey] || COURSE_MAPPING['earth']
 
-    console.log(`🔑 课程映射: ${systemKey} -> project_id=${projectId}, class_id=${classId}`)
+    console.log(`🔑 课程映射: ${systemKey} -> project_id=${projectId}`)
 
     // 2. 查找或创建讨论主题
     let discussionId: string
@@ -160,14 +168,13 @@ export async function POST(req: NextRequest) {
       chatInput: message,
       session_id: discussionId,
       user_id: userId,
-      class_id: classId,           // 课程ID
       project_id: projectId,        // 项目ID（知识库标识）
       organization_id: organizationId,  // 组织ID
       system_prompt: socraticPrompt,
       conversation_history: conversationHistory
     }
 
-    console.log(`📤 发送给N8N: class_id=${classId}, project_id=${projectId}, organization_id=${organizationId}`)
+    console.log(`📤 发送给N8N: project_id=${projectId}, organization_id=${organizationId}`)
 
     const res = await fetch(N8N_CHAT_WEBHOOK, {
       method: 'POST',
