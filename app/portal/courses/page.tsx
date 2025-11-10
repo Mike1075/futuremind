@@ -149,6 +149,15 @@ export default function CoursesPage() {
   const enrolledCourseIds = enrolledCourses.map(c => c.course_id)
   const availableCourses = allCourses.filter(c => !enrolledCourseIds.includes(c.id))
 
+  // Filter out deleted courses (courses that no longer exist in allCourses)
+  const validEnrolledCourses = enrolledCourses.filter(course =>
+    allCourses.some(c => c.id === course.course_id)
+  )
+
+  const handleCourseClick = (systemKey: string) => {
+    router.push(`/courses/${systemKey}`)
+  }
+
   return (
     <div className="min-h-screen bg-black">
       {/* Header */}
@@ -174,12 +183,12 @@ export default function CoursesPage() {
         <section className="mb-12">
           <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
             <CheckCircle className="w-6 h-6 text-green-400 mr-2" />
-            已选课程 ({enrolledCourses.length})
+            已选课程 ({validEnrolledCourses.length})
           </h2>
 
-          {enrolledCourses.length > 0 ? (
+          {validEnrolledCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {enrolledCourses.map((course) => {
+              {validEnrolledCourses.map((course) => {
                 const fullCourse = allCourses.find(c => c.id === course.course_id)
                 if (!fullCourse) return null
 
@@ -191,7 +200,8 @@ export default function CoursesPage() {
                     key={course.course_id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`relative bg-gradient-to-br ${gradient} backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-green-400/50 transition-all`}
+                    onClick={() => handleCourseClick(fullCourse.system_key)}
+                    className={`relative bg-gradient-to-br ${gradient} backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-green-400/50 transition-all cursor-pointer hover:scale-105`}
                   >
                     <div className="absolute top-4 right-4">
                       <CheckCircle className="w-6 h-6 text-green-400" />
