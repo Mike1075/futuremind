@@ -72,6 +72,13 @@ export function PBLProjectDetail({
   const [submissionResult, setSubmissionResult] = useState<any | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
 
+  // 提交记录相关状态
+  const [showSubmissionsHistory, setShowSubmissionsHistory] = useState(false)
+  const [submissionsHistory, setSubmissionsHistory] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null)
+  const [historyDayKey, setHistoryDayKey] = useState<string | null>(null)
+
   // 获取用户ID
   useEffect(() => {
     const fetchUser = async () => {
@@ -226,6 +233,50 @@ export function PBLProjectDetail({
   // 移除已选择的文件
   const removeFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // 获取提交记录（根据具体day_key过滤）
+  const fetchSubmissionsHistory = async (dayKey: string) => {
+    setLoadingHistory(true)
+    try {
+      console.log('📋 获取提交记录，dayKey:', dayKey)
+
+      const response = await fetch(`/api/submissions?contentId=${project.id}&dayKey=${encodeURIComponent(dayKey)}`)
+      if (response.ok) {
+        const { submissions } = await response.json()
+        console.log(`✅ 找到 ${submissions?.length || 0} 条提交记录`)
+        setSubmissionsHistory(submissions || [])
+      } else {
+        console.error('Failed to fetch submissions')
+      }
+    } catch (error) {
+      console.error('Error fetching submissions:', error)
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  // 删除提交记录
+  const handleDeleteSubmission = async (submissionId: string) => {
+    if (!confirm('确定要删除这条提交记录吗？')) return
+
+    try {
+      const response = await fetch(`/api/submissions?id=${submissionId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // 立即从本地状态中移除
+        setSubmissionsHistory(prev => prev.filter(s => s.id !== submissionId))
+        alert('删除成功')
+      } else {
+        const error = await response.json()
+        alert(`删除失败: ${error.error || '请重试'}`)
+      }
+    } catch (error) {
+      console.error('Error deleting submission:', error)
+      alert('删除失败，请重试')
+    }
   }
 
   // 提交任务
@@ -591,14 +642,28 @@ export function PBLProjectDetail({
                                 </div>
                               )}
 
-                              {/* 提交按钮 */}
-                              {!isCompleted && isSelected && (
-                                <button
-                                  onClick={() => openSubmitDialog(week.week, dayNumber)}
-                                  className="w-full mt-3 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-                                >
-                                  提交今日任务
-                                </button>
+                              {/* 提交和查看记录按钮 */}
+                              {isSelected && (
+                                <div className="flex gap-2 mt-3">
+                                  {!isCompleted && (
+                                    <button
+                                      onClick={() => openSubmitDialog(week.week, dayNumber)}
+                                      className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                                    >
+                                      提交今日任务
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      setHistoryDayKey(dayKey)
+                                      setShowSubmissionsHistory(true)
+                                      fetchSubmissionsHistory(dayKey)
+                                    }}
+                                    className={`${isCompleted ? 'flex-1' : 'flex-shrink-0'} px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm font-medium transition-colors`}
+                                  >
+                                    查看提交记录
+                                  </button>
+                                </div>
                               )}
                             </div>
                           )}
@@ -776,6 +841,247 @@ export function PBLProjectDetail({
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 提交记录列表弹窗 */}
+      {showSubmissionsHistory && (
+        <div
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => {
+            setShowSubmissionsHistory(false)
+            setSelectedSubmission(null)
+          }}
+        >
+          <div
+            className="bg-gray-900 border border-gray-800 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-white">
+                {historyDayKey ? `${historyDayKey} - 提交记录` : '我的提交记录'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowSubmissionsHistory(false)
+                  setSelectedSubmission(null)
+                }}
+                className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 加载状态 */}
+            {loadingHistory && (
+              <div className="flex items-center justify-center py-12">
+                <svg className="animate-spin h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            )}
+
+            {/* 提交记录列表 */}
+            {!loadingHistory && submissionsHistory.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p>还没有提交记录</p>
+              </div>
+            )}
+
+            {!loadingHistory && submissionsHistory.length > 0 && (
+              <div className="space-y-4">
+                {submissionsHistory.map((submission) => (
+                  <div
+                    key={submission.id}
+                    className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-blue-500/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          {/* 状态标签 */}
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            submission.status === 'approved'
+                              ? 'bg-green-500/20 text-green-400'
+                              : submission.status === 'rejected'
+                              ? 'bg-red-500/20 text-red-400'
+                              : 'bg-yellow-500/20 text-yellow-400'
+                          }`}>
+                            {submission.status === 'approved' ? '已批改' : submission.status === 'rejected' ? '已拒绝' : '待批改'}
+                          </span>
+
+                          {/* 评分 */}
+                          {submission.score !== null && (
+                            <span className="text-lg font-bold text-white">
+                              {submission.score}/100
+                            </span>
+                          )}
+
+                          {/* 提交时间 */}
+                          <span className="text-sm text-gray-400">
+                            {new Date(submission.created_at).toLocaleString('zh-CN')}
+                          </span>
+                        </div>
+
+                        {/* 提交内容预览 */}
+                        <p className="text-gray-300 text-sm line-clamp-2 mb-2">
+                          {submission.content}
+                        </p>
+
+                        {/* 反馈（如果有） */}
+                        {submission.feedback && (
+                          <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                            <p className="text-sm text-gray-300 line-clamp-3">
+                              <strong className="text-blue-400">反馈：</strong>
+                              {submission.feedback}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 操作按钮 */}
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => setSelectedSubmission(submission)}
+                        className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors text-white"
+                      >
+                        查看详情
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSubmission(submission.id)}
+                        className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm font-medium transition-colors text-red-400"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 提交详情弹窗 */}
+      {selectedSubmission && (
+        <div
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+          onClick={() => setSelectedSubmission(null)}
+        >
+          <div
+            className="bg-gray-900 border border-blue-500/30 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-white">提交详情</h3>
+              <button
+                onClick={() => setSelectedSubmission(null)}
+                className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* 评分和状态 */}
+              <div className="flex items-center gap-4 pb-4 border-b border-gray-800">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-400 mb-1">评分</p>
+                  <p className="text-3xl font-bold text-white">
+                    {selectedSubmission.score !== null ? `${selectedSubmission.score}/100` : '未评分'}
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-400 mb-1">状态</p>
+                  <span className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold ${
+                    selectedSubmission.status === 'approved'
+                      ? 'bg-green-500/20 text-green-400'
+                      : selectedSubmission.status === 'rejected'
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-yellow-500/20 text-yellow-400'
+                  }`}>
+                    {selectedSubmission.status === 'approved' ? '已批改' : selectedSubmission.status === 'rejected' ? '已拒绝' : '待批改'}
+                  </span>
+                </div>
+              </div>
+
+              {/* 提交时间 */}
+              <div>
+                <p className="text-sm text-gray-400 mb-1">提交时间</p>
+                <p className="text-white">{new Date(selectedSubmission.created_at).toLocaleString('zh-CN')}</p>
+              </div>
+
+              {/* 提交内容 */}
+              <div>
+                <p className="text-sm text-gray-400 mb-2">提交内容</p>
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                  <p className="text-gray-300 whitespace-pre-wrap">{selectedSubmission.content}</p>
+                </div>
+              </div>
+
+              {/* 附件图片 */}
+              {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-400 mb-2">附件（{selectedSubmission.attachments.length}）</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {selectedSubmission.attachments.map((attachment: any, index: number) => (
+                      attachment.type === 'image' && (
+                        <div
+                          key={index}
+                          className="relative group overflow-hidden rounded-lg border border-gray-700 hover:border-blue-500/50 transition-colors"
+                        >
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name || `图片 ${index + 1}`}
+                            className="w-full h-48 object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute bottom-0 left-0 right-0 p-3">
+                              <p className="text-white text-sm truncate">{attachment.name || `图片 ${index + 1}`}</p>
+                              <a
+                                href={attachment.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 text-xs hover:text-blue-300 transition-colors"
+                              >
+                                查看原图 →
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 反馈 */}
+              {selectedSubmission.feedback && (
+                <div>
+                  <p className="text-sm text-gray-400 mb-2">AI反馈</p>
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                    <p className="text-gray-300 whitespace-pre-wrap">{selectedSubmission.feedback}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* 关闭按钮 */}
+              <button
+                onClick={() => setSelectedSubmission(null)}
+                className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-semibold hover:opacity-90 transition-all text-white"
+              >
+                关闭
+              </button>
+            </div>
           </div>
         </div>
       )}
