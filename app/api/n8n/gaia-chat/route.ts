@@ -250,11 +250,18 @@ export async function POST(req: NextRequest) {
         content: reply
       })
 
-    // 返回盖亚的回复
+    // 返回盖亚的回复（包含调试信息）
     return NextResponse.json({
       reply,
       discussionId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      debug: {
+        contentId,
+        systemId: (courseContent as any)?.system_id,
+        systemKey,
+        projectId,
+        organizationId
+      }
     })
   } catch (error) {
     console.error('[Gaia Chat] Internal error:', error)

@@ -200,6 +200,16 @@ export function GaiaSidebar({ isOpen, onClose, initialContext }: GaiaSidebarProp
 
         console.log('📥 [GaiaSidebar] 收到API响应:', data)
 
+        if (data.debug) {
+          console.log('🐛 [DEBUG] 课程隔离信息:', {
+            contentId: data.debug.contentId,
+            systemId: data.debug.systemId,
+            systemKey: data.debug.systemKey,
+            projectId: data.debug.projectId,
+            '期望projectId': 'p004 (欢迎来到地球)'
+          })
+        }
+
         // 保存discussion ID
         if (data.discussionId) {
           setDiscussionId(data.discussionId)
