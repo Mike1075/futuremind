@@ -122,10 +122,10 @@ serve(async (req) => {
     const submission_id = newSubmission.id
     console.log(`✅ 提交记录已创建：submission_id=${submission_id}`)
 
-    // 3. 获取项目信息（包括explorer_projects）
+    // 3. 获取项目信息（包括sequence_number用于模块判断）
     const { data: courseContent } = await supabase
       .from('course_contents')
-      .select('title, project_intro, week_plan, explorer_projects')
+      .select('title, project_intro, week_plan, explorer_projects, sequence_number')
       .eq('id', content_id)
       .single()
 
@@ -263,74 +263,144 @@ serve(async (req) => {
 
       const { data: selection } = await supabase
         .from('user_selected_projects')
-        .select('id, progress')
+        .select('id, progress, project_id')
         .eq('user_id', user_id)
         .eq('project_id', content_id)
         .eq('status', 'active')
         .single()
 
       if (selection) {
+        // 查询该 day_key 的所有提交记录，找到最高分
+        const { data: submissions } = await supabase
+          .from('user_submissions')
+          .select('score')
+          .eq('user_id', user_id)
+          .eq('course_content_id', content_id)
+          .eq('day_key', day_key)
+          .not('score', 'is', null)
+          .order('score', { ascending: false })
+          .limit(1)
+
+        const highestScore = submissions && submissions.length > 0 ? submissions[0].score : aiResult.score || 0
+
+        console.log(`📊 ${day_key} 的最高分: ${highestScore}`)
+
+        // 更新 progress，存储最高分而非布尔值
         const updatedProgress = {
           ...(selection.progress || {}),
-          [day_key]: true
+          [day_key]: highestScore
         }
 
-        // 计算完成百分比
+        // ===== 新的模块化进度计算逻辑 =====
         let completionPercentage = 0
-        let totalTasks = 0
 
-        // 检查是否为探索者项目（day_key以explorer_project_开头）
+        // 检查是否为探索者项目
         const isExplorerProject = day_key.startsWith('explorer_project_')
 
         if (isExplorerProject && courseContent?.explorer_projects) {
-          // 探索者联盟项目：从explorer_projects计算
+          // 探索者联盟项目：保持原逻辑
           try {
             const explorerProjects = Array.isArray(courseContent.explorer_projects)
               ? courseContent.explorer_projects
               : JSON.parse(courseContent.explorer_projects)
 
-            // 总任务数 = explorer_projects数组长度
-            totalTasks = explorerProjects.length
-
-            // 计算已完成的探索者项目数（只计算explorer_project_开头的key）
+            const totalTasks = explorerProjects.length
             const completedTasks = Object.keys(updatedProgress).filter(
-              key => key.startsWith('explorer_project_')
+              key => key.startsWith('explorer_project_') && (updatedProgress[key] || 0) > 0
             ).length
 
-            // 计算百分比
             if (totalTasks > 0) {
               completionPercentage = Math.round((completedTasks / totalTasks) * 100)
             }
 
-            console.log(`✅ 探索者项目进度计算：已完成 ${completedTasks}/${totalTasks} 个项目，百分比=${completionPercentage}%`)
+            console.log(`✅ 探索者项目进度：${completedTasks}/${totalTasks} = ${completionPercentage}%`)
           } catch (error) {
             console.error('❌ 解析explorer_projects失败:', error)
           }
-        } else if (courseContent?.week_plan) {
-          // PBL项目：从week_plan计算总任务数（使用activities字段）
+        } else if (courseContent?.week_plan && courseContent?.sequence_number) {
+          // === PBL项目：模块化进度计算 ===
           try {
-            const weekPlan = Array.isArray(courseContent.week_plan)
-              ? courseContent.week_plan
-              : JSON.parse(courseContent.week_plan)
+            const projectSeq = courseContent.sequence_number
+            console.log(`📊 项目序号: ${projectSeq}`)
 
-            // 遍历week_plan，计算所有activities数量
-            weekPlan.forEach((week: any) => {
-              if (week.activities && Array.isArray(week.activities)) {
-                totalTasks += week.activities.length
+            // 1. 判断项目属于哪个模块
+            let moduleNumber = 0
+            if (projectSeq >= 1 && projectSeq <= 4) moduleNumber = 1
+            else if (projectSeq >= 5 && projectSeq <= 8) moduleNumber = 2
+            else if (projectSeq >= 9 && projectSeq <= 12) moduleNumber = 3
+
+            console.log(`📊 所属模块: ${moduleNumber}`)
+
+            // 2. 查询用户在该模块的所有项目
+            const moduleProjectIds: string[] = []
+            const { data: allProjects } = await supabase
+              .from('course_contents')
+              .select('id, sequence_number')
+              .gte('sequence_number', (moduleNumber - 1) * 4 + 1)
+              .lte('sequence_number', moduleNumber * 4)
+
+            if (allProjects) {
+              for (const proj of allProjects) {
+                moduleProjectIds.push(proj.id)
               }
-            })
-
-            // 计算已完成任务数
-            const completedTasks = Object.keys(updatedProgress).length
-
-            // 计算百分比
-            if (totalTasks > 0) {
-              completionPercentage = Math.round((completedTasks / totalTasks) * 100)
             }
 
-            console.log(`✅ PBL项目进度计算：已完成 ${completedTasks}/${totalTasks} 天，百分比=${completionPercentage}%`)
+            console.log(`📊 模块${moduleNumber}的项目IDs:`, moduleProjectIds)
+
+            // 3. 查询用户选择的该模块内的所有项目
+            const { data: userModuleProjects } = await supabase
+              .from('user_selected_projects')
+              .select('project_id, progress, course_contents(sequence_number, week_plan)')
+              .eq('user_id', user_id)
+              .in('project_id', moduleProjectIds)
+              .in('status', ['active', 'paused', 'completed'])
+
+            console.log(`📊 用户在模块${moduleNumber}选择了 ${userModuleProjects?.length || 0} 个项目`)
+
+            // 4. 计算每个项目的完成度，取最高值
+            let maxProjectCompletion = 0
+
+            if (userModuleProjects && userModuleProjects.length > 0) {
+              for (const userProj of userModuleProjects) {
+                const projSeq = (userProj as any).course_contents?.sequence_number
+                const projWeekPlan = (userProj as any).course_contents?.week_plan
+                const projProgress = userProj.progress || {}
+
+                if (!projWeekPlan) continue
+
+                // 计算该项目的总天数
+                let projTotalDays = 0
+                const weekPlan = Array.isArray(projWeekPlan) ? projWeekPlan : JSON.parse(projWeekPlan)
+                weekPlan.forEach((week: any) => {
+                  if (week.activities && Array.isArray(week.activities)) {
+                    projTotalDays += week.activities.length
+                  }
+                })
+
+                // 计算该项目已完成的天数（仅计算该项目的progress）
+                const projPrefix = `project_${projSeq}_`
+                const projCompletedDays = Object.keys(projProgress).filter(
+                  key => key.startsWith(projPrefix) && (projProgress[key] || 0) > 0
+                ).length
+
+                // 项目完成度
+                const projCompletion = projTotalDays > 0 ? (projCompletedDays / projTotalDays) : 0
+
+                console.log(`📊 项目${projSeq}: ${projCompletedDays}/${projTotalDays} = ${(projCompletion * 100).toFixed(1)}%`)
+
+                // 取最大值
+                if (projCompletion > maxProjectCompletion) {
+                  maxProjectCompletion = projCompletion
+                }
+              }
+            }
+
+            // 5. 总进度 = 该模块最高项目完成度 * 33.3%
+            completionPercentage = Math.round(maxProjectCompletion * 33.3)
+
+            console.log(`✅ 模块${moduleNumber}进度: ${(maxProjectCompletion * 100).toFixed(1)}% * 33.3% = ${completionPercentage}%`)
           } catch (error) {
-            console.error('❌ 解析week_plan失败:', error)
+            console.error('❌ 模块化进度计算失败:', error)
           }
         }
 

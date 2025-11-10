@@ -31,10 +31,11 @@ interface Project {
   week_plan: WeekPlan[]
   estimated_duration: number | null
   project_visibility: string
+  sequence_number: number
 }
 
 interface UserProgress {
-  [key: string]: boolean // 'week1_day1': true
+  [key: string]: number // 'project_1_week1_day1': 85 (存储最高分)
 }
 
 interface PBLProjectDetailProps {
@@ -130,8 +131,8 @@ export function PBLProjectDetail({
       prevDay = prevWeekPlan?.activities?.length || 0
     }
 
-    const prevDayKey = `week${prevWeek}_day${prevDay}`
-    return userProgress[prevDayKey] === true
+    const prevDayKey = `project_${project.sequence_number}_week${prevWeek}_day${prevDay}`
+    return (userProgress[prevDayKey] || 0) > 0  // 有得分就算完成
   }
 
   // 处理选择/取消项目
@@ -183,7 +184,7 @@ export function PBLProjectDetail({
 
   // 打开提交对话框
   const openSubmitDialog = (weekNumber: number, dayNumber: number) => {
-    const dayKey = `week${weekNumber}_day${dayNumber}`
+    const dayKey = `project_${project.sequence_number}_week${weekNumber}_day${dayNumber}`
     setCurrentDayKey(dayKey)
     setSubmissionContent('')
     setUploadedFiles([])
@@ -374,9 +375,15 @@ export function PBLProjectDetail({
     }
   }
 
-  // 计算总进度
+  // 计算当前项目的进度（仅用于项目详情页显示）
   const totalDays = project.week_plan?.reduce((sum, week) => sum + (week.activities?.length || 0), 0) || 0
-  const completedDays = Object.values(userProgress).filter(Boolean).length
+
+  // 只统计当前项目的已完成天数
+  const currentProjectPrefix = `project_${project.sequence_number}_`
+  const completedDays = Object.keys(userProgress).filter(key =>
+    key.startsWith(currentProjectPrefix) && (userProgress[key] || 0) > 0
+  ).length
+
   const progressPercentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0
 
   return (
@@ -534,8 +541,8 @@ export function PBLProjectDetail({
                     {week.activities.map((activity, index) => {
                       // 使用activity.day字段或索引+1作为day编号
                       const dayNumber = activity.day ? (typeof activity.day === 'number' ? activity.day : parseInt(String(activity.day))) : (index + 1)
-                      const dayKey = `week${week.week}_day${dayNumber}`
-                      const isCompleted = userProgress[dayKey] === true
+                      const dayKey = `project_${project.sequence_number}_week${week.week}_day${dayNumber}`
+                      const isCompleted = (userProgress[dayKey] || 0) > 0  // 有得分就算完成
                       const isUnlocked = isDayUnlocked(week.week, dayNumber)
                       const isDayExpanded = expandedDays.has(dayKey)
 

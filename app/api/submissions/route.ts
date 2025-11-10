@@ -86,10 +86,10 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    // 验证这个提交记录属于当前用户
+    // 验证这个提交记录属于当前用户，并获取day_key和content_id
     const { data: submission } = await supabase
       .from('user_submissions')
-      .select('user_id')
+      .select('user_id, day_key, course_content_id')
       .eq('id', submissionId)
       .single()
 
@@ -100,18 +100,73 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
+    const dayKey = (submission as any).day_key
+    const contentId = (submission as any).course_content_id
+
+    console.log(`🗑️ 删除提交记录: id=${submissionId}, day_key=${dayKey}`)
+
     // 删除提交记录
-    const { error } = await supabase
+    const { error: deleteError } = await supabase
       .from('user_submissions')
       .delete()
       .eq('id', submissionId)
 
-    if (error) {
-      console.error('Error deleting submission:', error)
+    if (deleteError) {
+      console.error('Error deleting submission:', deleteError)
       return NextResponse.json(
         { error: 'Failed to delete submission' },
         { status: 500 }
       )
+    }
+
+    // 如果有day_key，重新计算该任务的最高分并更新progress
+    if (dayKey && contentId) {
+      console.log(`🔄 重新计算 ${dayKey} 的最高分...`)
+
+      // 查询该day_key的剩余提交记录，找到最高分
+      const { data: remainingSubmissions } = await supabase
+        .from('user_submissions')
+        .select('score')
+        .eq('user_id', user.id)
+        .eq('course_content_id', contentId)
+        .eq('day_key', dayKey)
+        .not('score', 'is', null)
+        .order('score', { ascending: false })
+        .limit(1)
+
+      const newHighestScore = remainingSubmissions && remainingSubmissions.length > 0
+        ? remainingSubmissions[0].score
+        : 0  // 如果没有剩余提交，设为0
+
+      console.log(`📊 ${dayKey} 新的最高分: ${newHighestScore}`)
+
+      // 更新user_selected_projects的progress
+      const { data: selection } = await supabase
+        .from('user_selected_projects')
+        .select('id, progress')
+        .eq('user_id', user.id)
+        .eq('project_id', contentId)
+        .in('status', ['active', 'paused', 'completed'])
+        .single()
+
+      if (selection) {
+        const updatedProgress = {
+          ...(selection.progress || {}),
+          [dayKey]: newHighestScore
+        }
+
+        // 如果最高分是0，从progress中移除该key
+        if (newHighestScore === 0) {
+          delete updatedProgress[dayKey]
+        }
+
+        await supabase
+          .from('user_selected_projects')
+          .update({ progress: updatedProgress })
+          .eq('id', selection.id)
+
+        console.log(`✅ 已更新progress`)
+      }
     }
 
     return NextResponse.json({ success: true })
