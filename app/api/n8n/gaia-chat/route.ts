@@ -11,6 +11,16 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server'
  * - knowledgePointText: 知识点或问题文本
  * - discussionType: 讨论类型 ('knowledge_point' | 'question' | 'reflection')
  */
+
+// 课程system_key到project_id和class_id的映射
+const COURSE_MAPPING: Record<string, { project_id: string; class_id: string }> = {
+  'pbl': { project_id: 'p001', class_id: 'c001' },           // 伊卡洛斯计划
+  'icarus': { project_id: 'p001', class_id: 'c001' },        // 伊卡洛斯计划（别名）
+  'listening': { project_id: 'p002', class_id: 'c002' },     // 观音之旅
+  'carlo': { project_id: 'p003', class_id: 'c003' },         // 卡罗洛韦里
+  'rovelli': { project_id: 'p003', class_id: 'c003' },       // 卡罗洛韦里（别名）
+  'earth': { project_id: 'p004', class_id: 'c004' },         // 欢迎来到地球
+}
 export async function POST(req: NextRequest) {
   try {
     const N8N_CHAT_WEBHOOK = process.env.N8N_CHAT_WEBHOOK_URL
@@ -35,7 +45,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // 1. 查找或创建讨论主题
+    // 1. 查询课程信息，获取system_key
+    const { data: courseContent } = await supabase
+      .from('course_contents')
+      .select('system_id, course_systems(system_key)')
+      .eq('id', contentId)
+      .single()
+
+    let systemKey = 'earth' // 默认值
+    if (courseContent && (courseContent as any).course_systems) {
+      systemKey = (courseContent as any).course_systems.system_key || 'earth'
+    }
+
+    console.log(`📚 课程隔离: contentId=${contentId}, system_key=${systemKey}`)
+
+    // 获取课程对应的project_id和class_id
+    const courseMapping = COURSE_MAPPING[systemKey] || COURSE_MAPPING['earth']
+    const projectId = courseMapping.project_id
+    const classId = courseMapping.class_id
+
+    console.log(`🔑 课程映射: ${systemKey} -> project_id=${projectId}, class_id=${classId}`)
+
+    // 2. 查找或创建讨论主题
     let discussionId: string
     const { data: existingDiscussion } = await (supabase as any)
       .from('knowledge_discussions')
@@ -110,7 +141,16 @@ export async function POST(req: NextRequest) {
 
 请根据对话历史和学生的新消息，提出引导性的问题。`
 
-    // 5. 构建发送给N8N的消息
+    // 5. 获取组织ID（从用户profile或环境变量）
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('organization_id')
+      .eq('user_id', userId)
+      .single()
+
+    const organizationId = (userProfile as any)?.organization_id || process.env.DEFAULT_ORGANIZATION_ID || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
+
+    // 6. 构建发送给N8N的消息
     const conversationHistory = historyMessages?.map((m: any) => ({
       role: m.role,
       content: m.content
@@ -120,11 +160,14 @@ export async function POST(req: NextRequest) {
       chatInput: message,
       session_id: discussionId,
       user_id: userId,
-      project_id: 'gaia_learning',
-      organization_id: '',
+      class_id: classId,           // 课程ID
+      project_id: projectId,        // 项目ID（知识库标识）
+      organization_id: organizationId,  // 组织ID
       system_prompt: socraticPrompt,
       conversation_history: conversationHistory
     }
+
+    console.log(`📤 发送给N8N: class_id=${classId}, project_id=${projectId}, organization_id=${organizationId}`)
 
     const res = await fetch(N8N_CHAT_WEBHOOK, {
       method: 'POST',
