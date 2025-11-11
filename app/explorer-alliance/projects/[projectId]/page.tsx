@@ -8,9 +8,10 @@ import { FloatingChatBot } from '@/components/aip/FloatingChatBot'
 import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { PendingRequestsPanel } from '@/components/aip/PendingRequestsPanel'
 import { FileUploadModal } from '@/components/aip/FileUploadModal'
+import { InviteModal } from '@/components/aip/InviteModal'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { Settings } from 'lucide-react'
+import { Settings, UserPlus, Upload } from 'lucide-react'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params)
@@ -18,6 +19,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const { tasks, loading: tasksLoading, reload: reloadTasks } = useProjectTasks(projectId)
   const [showCreateTask, setShowCreateTask] = useState(false)
   const [showFileUpload, setShowFileUpload] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'documents' | 'members'>('overview')
   const [isManager, setIsManager] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
@@ -306,25 +308,33 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         {activeTab === 'documents' && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">项目文档</h2>
-              <button
-                onClick={() => setShowFileUpload(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity duration-200"
-              >
-                + 上传文档
-              </button>
+              <div>
+                <h2 className="text-2xl font-bold">项目文档</h2>
+                <p className="text-sm text-gray-400 mt-1">共 {documentsCount} 份文档</p>
+              </div>
+              {isManager && (
+                <button
+                  onClick={() => setShowFileUpload(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20"
+                >
+                  <Upload className="w-5 h-5" />
+                  上传文档
+                </button>
+              )}
             </div>
 
             {documentsCount === 0 ? (
-              <div className="text-center text-gray-400 py-12">
-                <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p className="mb-4">此项目暂无文档</p>
+              <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-12 text-center">
+                <div className="bg-blue-500/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Upload className="w-10 h-10 text-blue-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">开始分享文档</h3>
+                <p className="text-gray-400 mb-6">上传项目相关文档，让团队成员快速了解项目进展</p>
                 <button
                   onClick={() => setShowFileUpload(true)}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20 mx-auto"
                 >
+                  <Upload className="w-5 h-5" />
                   上传第一份文档
                 </button>
               </div>
@@ -339,10 +349,27 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
         {activeTab === 'members' && (
           <div>
-            <h2 className="text-2xl font-bold mb-6">团队成员</h2>
+            {/* Enhanced Header with Invite Button */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold">团队成员</h2>
+                <p className="text-sm text-gray-400 mt-1">共 {project.members?.length || 0} 位成员</p>
+              </div>
+              {isManager && (
+                <button
+                  onClick={() => setShowInvite(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-emerald-500/20"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  邀请成员
+                </button>
+              )}
+            </div>
+
+            {/* Members Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {project.members?.map((member) => (
-                <div key={member.user_id} className="bg-black/30 border border-white/10 rounded-xl p-4">
+                <div key={member.user_id} className="bg-black/30 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
                       {member.user?.full_name?.[0] || member.user?.email?.[0] || 'U'}
@@ -398,6 +425,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             setShowCreateTask(false)
             reloadTasks()
           }}
+        />
+      )}
+
+      {/* Invite Modal */}
+      {showInvite && (
+        <InviteModal
+          onClose={() => setShowInvite(false)}
         />
       )}
     </div>
