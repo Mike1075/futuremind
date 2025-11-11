@@ -148,15 +148,8 @@ export async function DELETE(
       // 不抛出错误，继续删除其他记录
     }
 
-    // 删除用户选课记录（如果存在user_course_selections表）
-    const { error: selectionsError } = await supabase
-      .from('user_course_selections')
-      .delete()
-      .eq('course_system_id', courseId)
-
-    if (selectionsError) {
-      console.log('用户选课记录删除（可能不存在该表）:', selectionsError)
-    }
+    // 注意：user_course_selections表在当前数据库架构中不存在
+    // 学员的课程关联通过student_course_assignments表管理，已在上面删除
 
     // 6. 最后删除课程系统本身
     const { error: systemError } = await supabase
