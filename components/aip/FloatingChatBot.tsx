@@ -31,7 +31,7 @@ export function FloatingChatBot({
   const [selectedProjects, setSelectedProjects] = useState<string[]>([])
   const [userProjects, setUserProjects] = useState<Project[]>([])
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
-  const [showProjectPanel, setShowProjectPanel] = useState(false)
+  const [showProjectPanel, setShowProjectPanel] = useState(true) // 默认显示项目面板
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // 自动滚动到底部
@@ -186,6 +186,14 @@ export function FloatingChatBot({
     )
   }
 
+  const toggleAllProjects = () => {
+    if (selectedProjects.length === userProjects.length && userProjects.length > 0) {
+      setSelectedProjects([])
+    } else {
+      setSelectedProjects(userProjects.map(p => p.id))
+    }
+  }
+
   if (!isOpen) {
     return (
       <div className="fixed bottom-12 right-12 z-40">
@@ -254,37 +262,87 @@ export function FloatingChatBot({
         <div className="flex-1 flex overflow-hidden">
           {/* Project Selector Panel */}
           {showProjectPanel && showProjectSelector && (
-            <div className="w-64 border-r border-zinc-800 p-4 overflow-y-auto">
-              <h4 className="text-sm font-semibold text-white mb-3">选择项目</h4>
-              {isLoadingProjects ? (
-                <div className="flex items-center gap-2 text-zinc-500 text-sm py-4">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  加载中...
+            <div className="w-72 border-r border-zinc-800 flex flex-col">
+              {/* Panel Header */}
+              <div className="p-4 border-b border-zinc-800">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-white">我的项目</h4>
+                  <button
+                    onClick={() => setShowProjectPanel(false)}
+                    className="p-1 hover:bg-zinc-800 rounded transition-colors"
+                    title="隐藏项目面板"
+                  >
+                    <X className="h-4 w-4 text-zinc-500" />
+                  </button>
                 </div>
-              ) : userProjects.length === 0 ? (
-                <p className="text-sm text-zinc-500">暂无可选项目</p>
-              ) : (
-                <div className="space-y-2">
-                  {userProjects.map(project => (
-                    <label
-                      key={project.id}
-                      className="flex items-start gap-2 p-2 hover:bg-zinc-800/50 rounded-lg cursor-pointer group"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedProjects.includes(project.id)}
-                        onChange={() => toggleProject(project.id)}
-                        className="mt-0.5 w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-600"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-300 group-hover:text-white transition-colors line-clamp-2">
-                          {project.name}
-                        </p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
+
+                {/* Select All Toggle */}
+                {userProjects.length > 0 && (
+                  <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-600"
+                      checked={selectedProjects.length === userProjects.length && userProjects.length > 0}
+                      onChange={toggleAllProjects}
+                    />
+                    <span className="group-hover:text-zinc-300 transition-colors">
+                      全选 ({selectedProjects.length}/{userProjects.length})
+                    </span>
+                  </label>
+                )}
+              </div>
+
+              {/* Projects List */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {isLoadingProjects ? (
+                  <div className="flex items-center gap-2 text-zinc-500 text-sm py-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    加载中...
+                  </div>
+                ) : userProjects.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FolderOpen className="h-12 w-12 text-zinc-700 mx-auto mb-3" />
+                    <p className="text-sm text-zinc-500">暂无可选项目</p>
+                    <p className="text-xs text-zinc-600 mt-1">
+                      {organization ? '该组织下暂无项目' : '您还未加入任何项目'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {userProjects.map(project => (
+                      <label
+                        key={project.id}
+                        className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer group transition-colors ${
+                          selectedProjects.includes(project.id)
+                            ? 'bg-blue-500/10 border border-blue-500/30'
+                            : 'hover:bg-zinc-800/50 border border-transparent'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedProjects.includes(project.id)}
+                          onChange={() => toggleProject(project.id)}
+                          className="mt-0.5 w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-600 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm transition-colors line-clamp-2 ${
+                            selectedProjects.includes(project.id)
+                              ? 'text-blue-300 font-medium'
+                              : 'text-zinc-300 group-hover:text-white'
+                          }`}>
+                            {project.name}
+                          </p>
+                          {project.description && (
+                            <p className="text-xs text-zinc-500 mt-1 line-clamp-1">
+                              {project.description}
+                            </p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
