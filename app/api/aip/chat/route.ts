@@ -33,10 +33,20 @@ export async function POST(request: NextRequest) {
     // N8N webhook URL - 使用生产环境
     const webhookUrl = 'https://n8n.aifunbox.com/webhook/fd6b2fff-af4c-4013-8fb6-ada231750a5a'
 
+    // 处理project_id：如果是数组，转换为JSON字符串；如果为空，使用空字符串
+    let projectIdValue = ''
+    if (project_id) {
+      if (Array.isArray(project_id)) {
+        projectIdValue = project_id.length > 0 ? JSON.stringify(project_id) : ''
+      } else {
+        projectIdValue = String(project_id)
+      }
+    }
+
     const n8nPayload = {
       chatInput,
       user_id: user.id,
-      project_id: project_id || [],
+      project_id: projectIdValue,
       organization_id: organization_id || ''
     }
 
