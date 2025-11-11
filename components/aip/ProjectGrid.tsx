@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import {
   Folder,
   Lock,
@@ -8,10 +7,7 @@ import {
   Star,
   Trash2,
   Edit3,
-  Eye,
-  EyeOff,
   UserPlus,
-  MoreVertical,
   CheckCircle2,
   Clock,
   Pause,
@@ -44,7 +40,6 @@ export function ProjectGrid({
   showEditControls = true,
   showApplyButton = false,
 }: ProjectGridProps) {
-  const [activeMenu, setActiveMenu] = useState<string | null>(null)
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -84,7 +79,7 @@ export function ProjectGrid({
   }
 
   const canEdit = (projectId: string) => {
-    return userProjectPermissions[projectId] === 'manager'
+    return userProjectPermissions[projectId] === 'owner' || userProjectPermissions[projectId] === 'manager'
   }
 
   return (
@@ -113,51 +108,67 @@ export function ProjectGrid({
                 </div>
               </div>
 
-              {/* 操作菜单 */}
+              {/* 快捷操作图标 */}
               {showEditControls && isManager && (
-                <div className="relative flex-shrink-0">
+                <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* 可见性切换 */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      setActiveMenu(activeMenu === project.id ? null : project.id)
+                      onTogglePublic?.(project.id, !project.is_public)
                     }}
-                    className="p-1 hover:bg-zinc-800 rounded transition-colors"
+                    className="p-1.5 hover:bg-zinc-800 rounded transition-colors"
+                    title={project.is_public ? '设为私有' : '设为公开'}
                   >
-                    <MoreVertical className="h-4 w-4 text-zinc-500" />
+                    {project.is_public ? (
+                      <Globe className="h-4 w-4 text-zinc-400 hover:text-white" />
+                    ) : (
+                      <Lock className="h-4 w-4 text-zinc-400 hover:text-white" />
+                    )}
                   </button>
 
-                  {activeMenu === project.id && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setActiveMenu(null)}
-                      />
-                      <div className="absolute right-0 top-8 z-20 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl min-w-[160px] py-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onEditDescription?.(project.id, project.name, project.description || '')
-                            setActiveMenu(null)
-                          }}
-                          className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-700 flex items-center gap-2"
-                        >
-                          <Edit3 className="h-3.5 w-3.5" />
-                          编辑描述
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onDeleteProject?.(project.id, project.name)
-                            setActiveMenu(null)
-                          }}
-                          className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-zinc-700 flex items-center gap-2"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          删除项目
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  {/* 招募切换 */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onToggleRecruiting?.(project.id, !project.is_recruiting)
+                    }}
+                    className="p-1.5 hover:bg-zinc-800 rounded transition-colors"
+                    title={project.is_recruiting ? '停止招募' : '开启招募'}
+                  >
+                    <Star
+                      className={`h-4 w-4 transition-colors ${
+                        project.is_recruiting
+                          ? 'text-yellow-500 hover:text-yellow-400'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                      fill={project.is_recruiting ? 'currentColor' : 'none'}
+                    />
+                  </button>
+
+                  {/* 编辑描述 */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEditDescription?.(project.id, project.name, project.description || '')
+                    }}
+                    className="p-1.5 hover:bg-zinc-800 rounded transition-colors"
+                    title="编辑描述"
+                  >
+                    <Edit3 className="h-4 w-4 text-zinc-400 hover:text-white" />
+                  </button>
+
+                  {/* 删除项目 */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDeleteProject?.(project.id, project.name)
+                    }}
+                    className="p-1.5 hover:bg-zinc-800 rounded transition-colors"
+                    title="删除项目"
+                  >
+                    <Trash2 className="h-4 w-4 text-zinc-400 hover:text-red-400" />
+                  </button>
                 </div>
               )}
             </div>
@@ -186,66 +197,16 @@ export function ProjectGrid({
 
             {/* 底部操作栏 */}
             <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
-              {/* 可见性 */}
-              <div className="flex items-center gap-3">
-                {showEditControls && isManager ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onTogglePublic?.(project.id, !project.is_public)
-                    }}
-                    className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-                  >
-                    {project.is_public ? (
-                      <>
-                        <Globe className="h-3.5 w-3.5" />
-                        <span>公开</span>
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="h-3.5 w-3.5" />
-                        <span>私有</span>
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-1.5 text-xs text-zinc-600">
-                    {project.is_public ? (
-                      <>
-                        <Globe className="h-3.5 w-3.5" />
-                        <span>公开</span>
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="h-3.5 w-3.5" />
-                        <span>私有</span>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* 招募开关 */}
-                {showEditControls && isManager && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onToggleRecruiting?.(project.id, !project.is_recruiting)
-                    }}
-                    className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-                  >
-                    {project.is_recruiting ? (
-                      <>
-                        <Star className="h-3.5 w-3.5" fill="currentColor" />
-                        <span>停止招募</span>
-                      </>
-                    ) : (
-                      <>
-                        <Star className="h-3.5 w-3.5" />
-                        <span>开启招募</span>
-                      </>
-                    )}
-                  </button>
-                )}
+              {/* 状态指示器 */}
+              <div className="flex items-center gap-2 text-xs text-zinc-600">
+                <div className="flex items-center gap-1">
+                  {project.is_public ? (
+                    <Globe className="h-3.5 w-3.5" />
+                  ) : (
+                    <Lock className="h-3.5 w-3.5" />
+                  )}
+                  <span>{project.is_public ? '公开' : '私有'}</span>
+                </div>
               </div>
 
               {/* 申请加入按钮 */}
@@ -263,7 +224,7 @@ export function ProjectGrid({
               )}
 
               {/* 查看详情按钮 */}
-              {onProjectClick && (
+              {onProjectClick && !showApplyButton && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
