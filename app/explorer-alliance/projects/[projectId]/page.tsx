@@ -1,18 +1,59 @@
 'use client'
 
-import { use } from 'react'
+import { use, useState, useEffect } from 'react'
 import { useProject, useProjectTasks } from '@/lib/aip/hooks'
 import { TaskList } from '@/components/aip/TaskList'
 import { CreateTaskModal } from '@/components/aip/CreateTaskModal'
-import { useState } from 'react'
+import { FloatingChatBot } from '@/components/aip/FloatingChatBot'
+import { NotificationBadge } from '@/components/aip/NotificationBadge'
+import { PendingRequestsPanel } from '@/components/aip/PendingRequestsPanel'
+import { FileUploadModal } from '@/components/aip/FileUploadModal'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { Settings } from 'lucide-react'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params)
   const { project, loading: projectLoading } = useProject(projectId)
   const { tasks, loading: tasksLoading, reload: reloadTasks } = useProjectTasks(projectId)
   const [showCreateTask, setShowCreateTask] = useState(false)
+  const [showFileUpload, setShowFileUpload] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'documents' | 'members'>('overview')
+  const [isManager, setIsManager] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [documentsCount, setDocumentsCount] = useState(0)
+
+  useEffect(() => {
+    const checkUserRole = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) return
+      setUserId(user.id)
+
+      const { data: membership } = await supabase
+        .from('project_members')
+        .select('role_in_project')
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
+        .single()
+
+      setIsManager(membership?.role_in_project === 'manager' || membership?.role_in_project === 'owner')
+    }
+
+    const loadDocumentsCount = async () => {
+      const supabase = createClient()
+      const { count } = await supabase
+        .from('project_documents')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+
+      setDocumentsCount(count || 0)
+    }
+
+    checkUserRole()
+    loadDocumentsCount()
+  }, [projectId])
 
   if (projectLoading) {
     return (
@@ -52,13 +93,29 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       {/* Header */}
       <div className="border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-6 py-6">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
-            <Link href="/explorer-alliance" className="hover:text-white transition-colors">
-              探索者联盟
-            </Link>
-            <span>/</span>
-            <span className="text-white">{project.name}</span>
+          <div className="flex items-center justify-between mb-4">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <Link href="/explorer-alliance" className="hover:text-white transition-colors">
+                探索者联盟
+              </Link>
+              <span>/</span>
+              <span className="text-white">{project.name}</span>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              {isManager && (
+                <Link
+                  href={`/explorer-alliance/projects/${projectId}/settings`}
+                  className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
+                  title="项目设置"
+                >
+                  <Settings className="h-5 w-5" />
+                </Link>
+              )}
+              <NotificationBadge />
+            </div>
           </div>
 
           {/* Project Header */}
@@ -180,26 +237,61 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         )}
 
         {activeTab === 'tasks' && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">任务列表</h2>
-              <button
-                onClick={() => setShowCreateTask(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity duration-200"
-              >
-                + 创建任务
-              </button>
+          <div className="space-y-6">
+            {/* Pending Requests Panel - Only for Managers */}
+            {isManager && (
+              <PendingRequestsPanel
+                projectId={projectId}
+                type="project"
+              />
+            )}
+
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">任务列表</h2>
+                <button
+                  onClick={() => setShowCreateTask(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity duration-200"
+                >
+                  + 创建任务
+                </button>
+              </div>
+              <TaskList tasks={tasks} loading={tasksLoading} projectId={projectId} onUpdate={reloadTasks} />
             </div>
-            <TaskList tasks={tasks} loading={tasksLoading} projectId={projectId} onUpdate={reloadTasks} />
           </div>
         )}
 
         {activeTab === 'documents' && (
-          <div className="text-center text-gray-400 py-12">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p>文档功能开发中...</p>
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">项目文档</h2>
+              <button
+                onClick={() => setShowFileUpload(true)}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity duration-200"
+              >
+                + 上传文档
+              </button>
+            </div>
+
+            {documentsCount === 0 ? (
+              <div className="text-center text-gray-400 py-12">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="mb-4">此项目暂无文档</p>
+                <button
+                  onClick={() => setShowFileUpload(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  上传第一份文档
+                </button>
+              </div>
+            ) : (
+              <div className="bg-black/30 border border-white/10 rounded-xl p-6">
+                <p className="text-center text-zinc-400">共 {documentsCount} 份文档</p>
+                <p className="text-center text-zinc-500 text-sm mt-2">点击"上传文档"按钮查看和管理文档</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -227,6 +319,33 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           </div>
         )}
       </div>
+
+      {/* FloatingChatBot */}
+      <FloatingChatBot
+        currentProject={project}
+        showProjectSelector={false}
+      />
+
+      {/* File Upload Modal */}
+      {showFileUpload && (
+        <FileUploadModal
+          projectId={projectId}
+          onClose={() => setShowFileUpload(false)}
+          onSuccess={() => {
+            // 重新加载文档数量
+            const loadDocumentsCount = async () => {
+              const supabase = createClient()
+              const { count } = await supabase
+                .from('project_documents')
+                .select('*', { count: 'exact', head: true })
+                .eq('project_id', projectId)
+
+              setDocumentsCount(count || 0)
+            }
+            loadDocumentsCount()
+          }}
+        />
+      )}
 
       {/* Create Task Modal */}
       {showCreateTask && (
