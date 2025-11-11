@@ -256,6 +256,13 @@ export default function OrganizationDashboardPage() {
     try {
       const supabase = createClient()
 
+      // 获取申请人信息
+      const { data: applicantProfile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', userId)
+        .single()
+
       // 使用新的project_join_requests表
       const { error } = await supabase
         .from('project_join_requests')
@@ -273,6 +280,35 @@ export default function OrganizationDashboardPage() {
           return
         }
         throw error
+      }
+
+      // 获取项目的所有管理员（owner和manager）
+      const { data: managers } = await supabase
+        .from('project_members')
+        .select('user_id')
+        .eq('project_id', projectId)
+        .in('role_in_project', ['owner', 'manager'])
+
+      // 为每个管理员创建通知
+      if (managers && managers.length > 0) {
+        const notifications = managers.map(manager => ({
+          user_id: manager.user_id,
+          type: 'join_request',
+          title: '新的加入申请',
+          message: `${applicantProfile?.full_name || applicantProfile?.email || '用户'} 申请加入项目"${projectName}"${message.trim() ? `\n理由：${message.trim()}` : ''}`,
+          metadata: {
+            request_type: 'project',
+            project_id: projectId,
+            project_name: projectName,
+            applicant_id: userId,
+            applicant_name: applicantProfile?.full_name,
+            applicant_email: applicantProfile?.email
+          }
+        }))
+
+        await supabase
+          .from('notifications')
+          .insert(notifications)
       }
 
       alert('申请已提交，等待项目管理员审核')
