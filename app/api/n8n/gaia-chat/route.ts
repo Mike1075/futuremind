@@ -149,14 +149,10 @@ export async function POST(req: NextRequest) {
 
 请根据对话历史和学生的新消息，提出引导性的问题。`
 
-    // 5. 获取组织ID（从用户profile或环境变量）
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('organization_id')
-      .eq('user_id', userId)
-      .single()
-
-    const organizationId = (userProfile as any)?.organization_id || process.env.DEFAULT_ORGANIZATION_ID || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
+    // 5. 获取组织ID
+    // 注意：盖亚对话用于课程学习，使用默认的全局组织ID
+    // 如需要用户特定组织，可从 user_organizations 表查询
+    const organizationId = process.env.DEFAULT_ORGANIZATION_ID || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
 
     // 6. 构建发送给N8N的消息
     const conversationHistory = historyMessages?.map((m: any) => ({
