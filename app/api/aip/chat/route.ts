@@ -61,7 +61,20 @@ export async function POST(request: NextRequest) {
         statusText: n8nResponse.statusText,
         body: errorText
       })
-      throw new Error(`N8N webhook failed: ${n8nResponse.status} ${n8nResponse.statusText} - ${errorText}`)
+
+      // 特殊处理404错误 - webhook未注册
+      if (n8nResponse.status === 404) {
+        let errorMessage = 'N8N webhook未注册或已过期'
+        try {
+          const errorData = JSON.parse(errorText)
+          if (errorData.hint) {
+            errorMessage += `\n提示: ${errorData.hint}`
+          }
+        } catch {}
+        throw new Error(`N8N webhook 404错误: ${errorMessage}`)
+      }
+
+      throw new Error(`N8N webhook失败 (${n8nResponse.status}): ${errorText}`)
     }
 
     const responseText = await n8nResponse.text()

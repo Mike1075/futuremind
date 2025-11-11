@@ -94,14 +94,15 @@ export async function POST() {
     const fixes = []
 
     // 1. 查找或创建社区组织
-    let { data: communityOrg } = await supabase
+    let { data: communityOrg, error: communityError } = await supabase
       .from('organizations')
       .select('id')
       .eq('settings->is_global', true)
       .single()
 
     if (!communityOrg) {
-      const { data: newCommunity } = await supabase
+      console.log('[Debug Orgs] 创建社区组织...')
+      const { data: newCommunity, error: createError } = await supabase
         .from('organizations')
         .insert({
           name: '社区项目',
@@ -111,12 +112,23 @@ export async function POST() {
         .select('id')
         .single()
 
+      if (createError) {
+        console.error('[Debug Orgs] 创建社区组织失败:', createError)
+        throw new Error(`创建社区组织失败: ${createError.message}`)
+      }
+
       communityOrg = newCommunity
       fixes.push('创建了社区组织')
     }
 
+    if (!communityOrg) {
+      throw new Error('无法获取或创建社区组织')
+    }
+
+    console.log('[Debug Orgs] 社区组织ID:', communityOrg.id)
+
     // 2. 查找或创建个人组织
-    let { data: personalOrg } = await supabase
+    let { data: personalOrg, error: personalError } = await supabase
       .from('organizations')
       .select('id')
       .eq('settings->is_personal', true)
@@ -124,7 +136,8 @@ export async function POST() {
       .single()
 
     if (!personalOrg) {
-      const { data: newPersonal } = await supabase
+      console.log('[Debug Orgs] 创建个人组织...')
+      const { data: newPersonal, error: createError } = await supabase
         .from('organizations')
         .insert({
           name: '我的项目',
@@ -134,37 +147,58 @@ export async function POST() {
         .select('id')
         .single()
 
+      if (createError) {
+        console.error('[Debug Orgs] 创建个人组织失败:', createError)
+        throw new Error(`创建个人组织失败: ${createError.message}`)
+      }
+
       personalOrg = newPersonal
       fixes.push('创建了个人组织')
     }
 
+    if (!personalOrg) {
+      throw new Error('无法获取或创建个人组织')
+    }
+
+    console.log('[Debug Orgs] 个人组织ID:', personalOrg.id)
+
     // 3. 删除旧的关系（清理脏数据）
-    await supabase
+    const orgIds = [communityOrg.id, personalOrg.id]
+    console.log('[Debug Orgs] 清理旧关系，组织IDs:', orgIds)
+
+    const { error: deleteError } = await supabase
       .from('user_organizations')
       .delete()
       .eq('user_id', user.id)
-      .in('organization_id', [communityOrg!.id, personalOrg!.id])
+      .in('organization_id', orgIds)
 
-    fixes.push('清理了旧的组织关系')
+    if (deleteError) {
+      console.error('[Debug Orgs] 删除旧关系失败:', deleteError)
+      // 不阻断流程，可能是没有旧数据
+    } else {
+      fixes.push('清理了旧的组织关系')
+    }
 
     // 4. 重新插入正确的关系
+    console.log('[Debug Orgs] 创建新的组织关系...')
     const { error: insertError } = await supabase
       .from('user_organizations')
       .insert([
         {
           user_id: user.id,
-          organization_id: communityOrg!.id,
+          organization_id: communityOrg.id,
           role_in_org: 'member'
         },
         {
           user_id: user.id,
-          organization_id: personalOrg!.id,
+          organization_id: personalOrg.id,
           role_in_org: 'owner'
         }
       ])
 
     if (insertError) {
-      throw insertError
+      console.error('[Debug Orgs] 插入新关系失败:', insertError)
+      throw new Error(`插入组织关系失败: ${insertError.message}`)
     }
 
     fixes.push('重新创建了组织关系')
