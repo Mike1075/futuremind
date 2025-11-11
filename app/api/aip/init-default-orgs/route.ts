@@ -70,19 +70,43 @@ export async function POST() {
       .single()
 
     if (existingPersonalOrg) {
-      // 用户已有个人组织，只需确保加入了社区
+      // 用户已有个人组织，确保加入了社区和个人组织
+      const personalOrgId = existingPersonalOrg.id
+
+      // 检查是否已加入个人组织
+      const { data: personalMembership } = await supabase
+        .from('user_organizations')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('organization_id', personalOrgId)
+        .single()
+
+      const membershipInserts = []
+
       if (needsToJoinCommunity) {
+        membershipInserts.push({
+          user_id: user.id,
+          organization_id: communityOrgId,
+          role_in_org: 'member'
+        })
+      }
+
+      if (!personalMembership) {
+        membershipInserts.push({
+          user_id: user.id,
+          organization_id: personalOrgId,
+          role_in_org: 'owner'
+        })
+      }
+
+      if (membershipInserts.length > 0) {
         await supabase
           .from('user_organizations')
-          .insert({
-            user_id: user.id,
-            organization_id: communityOrgId,
-            role_in_org: 'member'
-          })
+          .insert(membershipInserts)
       }
 
       return NextResponse.json({
-        message: '已确保用户加入社区组织',
+        message: '已确保用户加入所有组织',
         alreadyInitialized: true
       })
     }
