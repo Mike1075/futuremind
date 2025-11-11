@@ -206,15 +206,19 @@ export function InviteModal({ onClose }: InviteModalProps) {
     try {
       const supabase = createClient()
 
-      // 1. 通过安全的RPC函数获取被邀请者的用户ID（如果已注册）
-      const { data: inviteeId, error: inviteeQueryError } = await supabase
-        .rpc('get_user_id_by_email', { p_email: email.trim() })
+      // 1. 查找被邀请者的用户ID（如果已注册）
+      const { data: inviteeProfile, error: inviteeQueryError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email.trim())
+        .maybeSingle()
 
       if (inviteeQueryError) {
         console.error('查询被邀请者信息失败:', inviteeQueryError)
         throw new Error(`查询被邀请者信息失败：${inviteeQueryError.message}`)
       }
 
+      const inviteeId = inviteeProfile?.id || null
       console.log('被邀请者ID:', inviteeId)
 
       // 2. 创建邀请记录
