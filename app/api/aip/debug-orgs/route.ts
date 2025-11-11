@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 /**
@@ -13,6 +13,8 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const adminSupabase = createAdminClient()
 
     // 1. 获取用户信息
     const { data: profile } = await supabase
@@ -94,11 +96,13 @@ export async function POST() {
 
     console.log('[Debug Orgs] 开始修复用户组织，用户ID:', user.id)
 
+    // 使用 Admin Client 绕过 RLS
+    const adminSupabase = createAdminClient()
     const fixes = []
 
     // 1. 查找社区组织（通过名称，避免JSON查询问题）
     console.log('[Debug Orgs] 查找社区组织...')
-    let { data: communityOrgs, error: communityQueryError } = await supabase
+    let { data: communityOrgs, error: communityQueryError } = await adminSupabase
       .from('organizations')
       .select('id, name')
       .eq('name', '社区项目')
@@ -115,9 +119,9 @@ export async function POST() {
       communityOrgId = communityOrgs[0].id
       console.log('[Debug Orgs] 找到已存在的社区组织:', communityOrgId)
     } else {
-      // 创建社区组织
+      // 创建社区组织（使用 Admin Client 绕过 RLS）
       console.log('[Debug Orgs] 创建新的社区组织...')
-      const { data: newCommunity, error: createError } = await supabase
+      const { data: newCommunity, error: createError } = await adminSupabase
         .from('organizations')
         .insert({
           name: '社区项目',
@@ -139,7 +143,7 @@ export async function POST() {
 
     // 2. 查找个人组织（通过用户ID，名称为"我的项目"）
     console.log('[Debug Orgs] 查找个人组织...')
-    let { data: personalOrgs, error: personalQueryError } = await supabase
+    let { data: personalOrgs, error: personalQueryError } = await adminSupabase
       .from('organizations')
       .select('id, name, description')
       .eq('name', '我的项目')
@@ -174,9 +178,9 @@ export async function POST() {
     }
 
     if (!personalOrgId) {
-      // 创建个人组织
+      // 创建个人组织（使用 Admin Client 绕过 RLS）
       console.log('[Debug Orgs] 创建新的个人组织...')
-      const { data: newPersonal, error: createError } = await supabase
+      const { data: newPersonal, error: createError } = await adminSupabase
         .from('organizations')
         .insert({
           name: '我的项目',
@@ -214,9 +218,9 @@ export async function POST() {
       console.log('[Debug Orgs] 旧关系清理成功')
     }
 
-    // 4. 重新插入正确的关系
+    // 4. 重新插入正确的关系（使用 Admin Client 绕过 RLS）
     console.log('[Debug Orgs] 创建新的组织关系...')
-    const { error: insertError } = await supabase
+    const { error: insertError } = await adminSupabase
       .from('user_organizations')
       .insert([
         {

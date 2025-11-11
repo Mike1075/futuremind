@@ -146,7 +146,8 @@ export async function POST() {
       }
 
       if (membershipInserts.length > 0) {
-        const { error: insertError } = await supabase
+        // 使用 Admin Client 绕过 RLS（因为用户还不是组织成员，无法通过 RLS 检查）
+        const { error: insertError } = await adminSupabase
           .from('user_organizations')
           .insert(membershipInserts)
 
@@ -193,7 +194,7 @@ export async function POST() {
     personalOrgId = personalOrg.id
     console.log('[Init Orgs] 个人组织创建成功:', personalOrgId)
 
-    // 4. 将用户加入两个组织
+    // 4. 将用户加入两个组织（使用 Admin Client 绕过 RLS）
     console.log('[Init Orgs] 创建组织关系...')
     const membershipInserts = [
       {
@@ -208,7 +209,7 @@ export async function POST() {
       }
     ]
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await adminSupabase
       .from('user_organizations')
       .insert(membershipInserts)
 
