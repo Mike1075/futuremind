@@ -100,8 +100,8 @@ export async function POST(request: NextRequest) {
       throw new Error('N8N返回的不是有效的JSON格式')
     }
 
-    // 提取AI响应
-    const aiResponse = n8nData.response || n8nData.output || n8nData.text || n8nData.message
+    // 提取AI响应 - 尝试多个可能的字段名
+    const aiResponse = n8nData.ai_content || n8nData.response || n8nData.output || n8nData.text || n8nData.message
     console.log('[AIP Chat] AI响应内容:', aiResponse?.substring(0, 200))
 
     // 保存聊天记录到数据库
