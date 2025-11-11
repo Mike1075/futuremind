@@ -8,6 +8,9 @@ import { useOrganizationProjects, useProjectTasks } from '@/lib/aip/hooks'
 import { ChatBot } from '@/components/aip/ChatBot'
 import { ProjectGrid } from '@/components/aip/ProjectGrid'
 import { CompactTaskList } from '@/components/aip/CompactTaskList'
+import { CreateProjectModal } from '@/components/aip/CreateProjectModal'
+import { EditDescriptionModal } from '@/components/aip/EditDescriptionModal'
+import { InviteModal } from '@/components/aip/InviteModal'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project, Task } from '@/lib/aip/types'
 
@@ -23,6 +26,12 @@ export default function OrganizationDashboardPage() {
   const [userTasks, setUserTasks] = useState<Task[]>([])
   const [userProjectPermissions, setUserProjectPermissions] = useState<Record<string, 'manager' | 'member' | 'none'>>({})
   const [userId, setUserId] = useState<string | null>(null)
+
+  // Modal states
+  const [showCreateProject, setShowCreateProject] = useState(false)
+  const [showEditDescription, setShowEditDescription] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
+  const [editingProject, setEditingProject] = useState<{ id: string; name: string; description: string } | null>(null)
 
   const { projects, loading: projectsLoading, reload: reloadProjects } = useOrganizationProjects(organizationId)
 
@@ -158,20 +167,26 @@ export default function OrganizationDashboardPage() {
     }
   }
 
-  const handleEditDescription = async (projectId: string, projectName: string, currentDescription: string) => {
-    const newDescription = prompt(`编辑项目"${projectName}"的描述:`, currentDescription)
-    if (newDescription === null) return
+  const handleEditDescription = (projectId: string, projectName: string, currentDescription: string) => {
+    setEditingProject({ id: projectId, name: projectName, description: currentDescription })
+    setShowEditDescription(true)
+  }
+
+  const handleEditDescriptionConfirm = async (newDescription: string) => {
+    if (!editingProject) return
 
     try {
       const supabase = createClient()
       const { error } = await supabase
         .from('projects')
         .update({ description: newDescription })
-        .eq('id', projectId)
+        .eq('id', editingProject.id)
 
       if (error) throw error
 
       alert('项目描述已更新')
+      setShowEditDescription(false)
+      setEditingProject(null)
       reloadProjects()
     } catch (err) {
       console.error('更新描述失败:', err)
@@ -329,12 +344,14 @@ export default function OrganizationDashboardPage() {
                 </h2>
                 <div className="flex items-center gap-3">
                   <button
+                    onClick={() => setShowCreateProject(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium"
                   >
                     <Plus className="w-4 h-4" />
                     创建项目
                   </button>
                   <button
+                    onClick={() => setShowInvite(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
                   >
                     <UserPlus className="w-4 h-4" />
@@ -402,6 +419,37 @@ export default function OrganizationDashboardPage() {
 
       {/* 聊天机器人 */}
       <ChatBot />
+
+      {/* Modals */}
+      {showCreateProject && (
+        <CreateProjectModal
+          organizationId={organizationId}
+          onClose={() => setShowCreateProject(false)}
+          onSuccess={() => {
+            setShowCreateProject(false)
+            reloadProjects()
+          }}
+        />
+      )}
+
+      {showEditDescription && editingProject && (
+        <EditDescriptionModal
+          isOpen={showEditDescription}
+          onClose={() => {
+            setShowEditDescription(false)
+            setEditingProject(null)
+          }}
+          onConfirm={handleEditDescriptionConfirm}
+          projectName={editingProject.name}
+          currentDescription={editingProject.description}
+        />
+      )}
+
+      {showInvite && (
+        <InviteModal
+          onClose={() => setShowInvite(false)}
+        />
+      )}
     </div>
   )
 }
