@@ -287,7 +287,7 @@ serve(async (req) => {
 
         // 更新 progress，存储最高分而非布尔值
         const updatedProgress = {
-          ...(selection.progress || {}),
+          ...((selection.progress as Record<string, number>) || {}),
           [day_key]: highestScore
         }
 
