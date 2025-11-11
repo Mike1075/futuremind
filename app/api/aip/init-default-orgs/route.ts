@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 /**
@@ -19,12 +19,15 @@ export async function POST() {
 
     console.log('[Init Orgs] 开始初始化用户组织，用户ID:', user.id)
 
+    // 使用 Admin Client 绕过 RLS，用于创建系统组织
+    const adminSupabase = createAdminClient()
+
     // 1. 查找或创建全局"社区项目"组织（通过名称查询，避免JSON查询问题）
     let communityOrgId: string
     let needsToJoinCommunity = false
 
     console.log('[Init Orgs] 查找社区组织...')
-    let { data: communityOrgs, error: communityQueryError } = await supabase
+    let { data: communityOrgs, error: communityQueryError } = await adminSupabase
       .from('organizations')
       .select('id, name')
       .eq('name', '社区项目')
@@ -50,9 +53,9 @@ export async function POST() {
       needsToJoinCommunity = !existingMembership
       console.log('[Init Orgs] 需要加入社区:', needsToJoinCommunity)
     } else {
-      // 创建全局社区组织
+      // 创建全局社区组织（使用 Admin Client 绕过 RLS）
       console.log('[Init Orgs] 创建社区组织...')
-      const { data: newCommunityOrg, error: createCommunityError } = await supabase
+      const { data: newCommunityOrg, error: createCommunityError } = await adminSupabase
         .from('organizations')
         .insert({
           name: '社区项目',
@@ -77,7 +80,7 @@ export async function POST() {
 
     // 2. 查找个人组织（通过名称+描述，然后验证owner身份）
     console.log('[Init Orgs] 查找个人组织...')
-    let { data: personalOrgs, error: personalQueryError } = await supabase
+    let { data: personalOrgs, error: personalQueryError } = await adminSupabase
       .from('organizations')
       .select('id, name, description')
       .eq('name', '我的项目')
@@ -167,9 +170,9 @@ export async function POST() {
       })
     }
 
-    // 3. 创建"我的项目"个人组织
+    // 3. 创建"我的项目"个人组织（使用 Admin Client 绕过 RLS）
     console.log('[Init Orgs] 创建新的个人组织...')
-    const { data: personalOrg, error: createPersonalError } = await supabase
+    const { data: personalOrg, error: createPersonalError } = await adminSupabase
       .from('organizations')
       .insert({
         name: '我的项目',
