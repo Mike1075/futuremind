@@ -13,21 +13,31 @@ export async function POST() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
+      console.error('[Init Orgs] 未授权访问')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 1. 查找或创建全局"社区项目"组织（所有用户都应该加入）
+    console.log('[Init Orgs] 开始初始化用户组织，用户ID:', user.id)
+
+    // 1. 查找或创建全局"社区项目"组织（通过名称查询，避免JSON查询问题）
     let communityOrgId: string
     let needsToJoinCommunity = false
 
-    const { data: communityOrg } = await supabase
+    console.log('[Init Orgs] 查找社区组织...')
+    let { data: communityOrgs, error: communityQueryError } = await supabase
       .from('organizations')
-      .select('id')
-      .eq('settings->is_global', true)
-      .single()
+      .select('id, name')
+      .eq('name', '社区项目')
+      .limit(1)
 
-    if (communityOrg) {
-      communityOrgId = communityOrg.id
+    if (communityQueryError) {
+      console.error('[Init Orgs] 查找社区组织失败:', communityQueryError)
+      throw new Error(`查找社区组织失败: ${communityQueryError.message}`)
+    }
+
+    if (communityOrgs && communityOrgs.length > 0) {
+      communityOrgId = communityOrgs[0].id
+      console.log('[Init Orgs] 找到社区组织:', communityOrgId)
 
       // 检查用户是否已经是社区成员
       const { data: existingMembership } = await supabase
@@ -38,8 +48,10 @@ export async function POST() {
         .single()
 
       needsToJoinCommunity = !existingMembership
+      console.log('[Init Orgs] 需要加入社区:', needsToJoinCommunity)
     } else {
       // 创建全局社区组织
+      console.log('[Init Orgs] 创建社区组织...')
       const { data: newCommunityOrg, error: createCommunityError } = await supabase
         .from('organizations')
         .insert({
@@ -54,24 +66,53 @@ export async function POST() {
         .single()
 
       if (createCommunityError || !newCommunityOrg) {
-        throw new Error('创建社区组织失败')
+        console.error('[Init Orgs] 创建社区组织失败:', createCommunityError)
+        throw new Error(`创建社区组织失败: ${createCommunityError?.message || '未知错误'}`)
       }
 
       communityOrgId = newCommunityOrg.id
       needsToJoinCommunity = true
+      console.log('[Init Orgs] 社区组织创建成功:', communityOrgId)
     }
 
-    // 2. 检查用户是否已有个人组织
-    const { data: existingPersonalOrg } = await supabase
+    // 2. 查找个人组织（通过名称+描述，然后验证owner身份）
+    console.log('[Init Orgs] 查找个人组织...')
+    let { data: personalOrgs, error: personalQueryError } = await supabase
       .from('organizations')
-      .select('id')
-      .eq('settings->is_personal', true)
-      .eq('settings->user_id', user.id)
-      .single()
+      .select('id, name, description')
+      .eq('name', '我的项目')
+      .like('description', '%我参与和发起%')
+      .limit(10)
 
-    if (existingPersonalOrg) {
-      // 用户已有个人组织，确保加入了社区和个人组织
-      const personalOrgId = existingPersonalOrg.id
+    if (personalQueryError) {
+      console.error('[Init Orgs] 查找个人组织失败:', personalQueryError)
+      throw new Error(`查找个人组织失败: ${personalQueryError.message}`)
+    }
+
+    let personalOrgId: string | null = null
+
+    if (personalOrgs && personalOrgs.length > 0) {
+      // 检查哪个是当前用户的个人组织（通过owner关系验证）
+      for (const org of personalOrgs) {
+        const { data: membership } = await supabase
+          .from('user_organizations')
+          .select('id')
+          .eq('organization_id', org.id)
+          .eq('user_id', user.id)
+          .eq('role_in_org', 'owner')
+          .single()
+
+        if (membership) {
+          personalOrgId = org.id
+          console.log('[Init Orgs] 找到用户的个人组织:', personalOrgId)
+          break
+        }
+      }
+    }
+
+    if (personalOrgId) {
+      // 用户已有个人组织，确保加入了两个组织
+      console.log('[Init Orgs] 用户已有个人组织，检查加入状态...')
 
       // 检查是否已加入个人组织
       const { data: personalMembership } = await supabase
@@ -84,6 +125,7 @@ export async function POST() {
       const membershipInserts = []
 
       if (needsToJoinCommunity) {
+        console.log('[Init Orgs] 添加社区组织关系')
         membershipInserts.push({
           user_id: user.id,
           organization_id: communityOrgId,
@@ -92,6 +134,7 @@ export async function POST() {
       }
 
       if (!personalMembership) {
+        console.log('[Init Orgs] 添加个人组织关系')
         membershipInserts.push({
           user_id: user.id,
           organization_id: personalOrgId,
@@ -100,18 +143,32 @@ export async function POST() {
       }
 
       if (membershipInserts.length > 0) {
-        await supabase
+        const { error: insertError } = await supabase
           .from('user_organizations')
           .insert(membershipInserts)
+
+        if (insertError) {
+          console.error('[Init Orgs] 插入组织关系失败:', insertError)
+          throw new Error(`插入组织关系失败: ${insertError.message}`)
+        }
+
+        console.log('[Init Orgs] ✅ 已补充缺失的组织关系')
+      } else {
+        console.log('[Init Orgs] ✅ 用户已加入所有组织')
       }
 
       return NextResponse.json({
         message: '已确保用户加入所有组织',
-        alreadyInitialized: true
+        alreadyInitialized: true,
+        organizations: {
+          community: communityOrgId,
+          personal: personalOrgId
+        }
       })
     }
 
     // 3. 创建"我的项目"个人组织
+    console.log('[Init Orgs] 创建新的个人组织...')
     const { data: personalOrg, error: createPersonalError } = await supabase
       .from('organizations')
       .insert({
@@ -126,30 +183,38 @@ export async function POST() {
       .single()
 
     if (createPersonalError || !personalOrg) {
-      throw new Error('创建个人组织失败')
+      console.error('[Init Orgs] 创建个人组织失败:', createPersonalError)
+      throw new Error(`创建个人组织失败: ${createPersonalError?.message || '未知错误'}`)
     }
 
-    const personalOrgId = personalOrg.id
+    personalOrgId = personalOrg.id
+    console.log('[Init Orgs] 个人组织创建成功:', personalOrgId)
 
     // 4. 将用户加入两个组织
+    console.log('[Init Orgs] 创建组织关系...')
+    const membershipInserts = [
+      {
+        user_id: user.id,
+        organization_id: communityOrgId,
+        role_in_org: 'member'
+      },
+      {
+        user_id: user.id,
+        organization_id: personalOrgId,
+        role_in_org: 'owner'
+      }
+    ]
+
     const { error: insertError } = await supabase
       .from('user_organizations')
-      .insert([
-        {
-          user_id: user.id,
-          organization_id: communityOrgId,
-          role_in_org: 'member'
-        },
-        {
-          user_id: user.id,
-          organization_id: personalOrgId,
-          role_in_org: 'owner'
-        }
-      ])
+      .insert(membershipInserts)
 
     if (insertError) {
-      throw new Error('加入组织失败: ' + insertError.message)
+      console.error('[Init Orgs] 加入组织失败:', insertError)
+      throw new Error(`加入组织失败: ${insertError.message}`)
     }
+
+    console.log('[Init Orgs] ✅ 默认组织初始化完成')
 
     return NextResponse.json({
       success: true,
@@ -160,9 +225,15 @@ export async function POST() {
       }
     })
   } catch (error: any) {
-    console.error('Init default orgs error:', error)
+    console.error('[Init Orgs] ❌ 初始化失败:', error)
+    console.error('[Init Orgs] 错误堆栈:', error.stack)
+
     return NextResponse.json(
-      { error: '初始化默认组织失败', details: error.message },
+      {
+        error: '初始化默认组织失败',
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     )
   }

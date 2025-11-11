@@ -30,8 +30,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing chatInput' }, { status: 400 })
     }
 
-    // N8N webhook URL - 使用测试端点
-    const webhookUrl = 'https://n8n.aifunbox.com/webhook-test/fd6b2fff-af4c-4013-8fb6-ada231750a5a'
+    // N8N webhook URL - 使用生产环境
+    const webhookUrl = 'https://n8n.aifunbox.com/webhook/fd6b2fff-af4c-4013-8fb6-ada231750a5a'
 
     const n8nPayload = {
       chatInput,
