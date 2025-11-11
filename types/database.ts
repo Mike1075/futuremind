@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_history: {
+        Row: {
+          agent_type: string
+          ai_content: string | null
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          project_id: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          agent_type: string
+          ai_content?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          agent_type?: string
+          ai_content?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consciousness_level_history: {
         Row: {
           activity_score: number | null
@@ -460,6 +504,39 @@ export type Database = {
           },
         ]
       }
+      daily_processing_queue: {
+        Row: {
+          batch_date: string
+          created_at: string
+          id: number
+          organization_id: string | null
+          project_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          batch_date: string
+          created_at?: string
+          id?: number
+          organization_id?: string | null
+          project_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          batch_date?: string
+          created_at?: string
+          id?: number
+          organization_id?: string | null
+          project_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       discussion_likes: {
         Row: {
           created_at: string | null
@@ -530,24 +607,57 @@ export type Database = {
       }
       documents: {
         Row: {
-          content: string | null
+          content: string
+          created_at: string | null
           embedding: string | null
-          id: number
+          id: string
           metadata: Json | null
+          organization_id: string | null
+          project_id: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          content?: string | null
+          content: string
+          created_at?: string | null
           embedding?: string | null
-          id?: number
+          id?: string
           metadata?: Json | null
+          organization_id?: string | null
+          project_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          content?: string | null
+          content?: string
+          created_at?: string | null
           embedding?: string | null
-          id?: number
+          id?: string
           metadata?: Json | null
+          organization_id?: string | null
+          project_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gaia_context_variables: {
         Row: {
@@ -650,6 +760,57 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          invitation_type: string
+          invitee_email: string
+          invitee_id: string | null
+          inviter_id: string
+          message: string | null
+          responded_at: string | null
+          response_message: string | null
+          status: string | null
+          target_id: string
+          target_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          invitation_type: string
+          invitee_email: string
+          invitee_id?: string | null
+          inviter_id: string
+          message?: string | null
+          responded_at?: string | null
+          response_message?: string | null
+          status?: string | null
+          target_id: string
+          target_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          invitation_type?: string
+          invitee_email?: string
+          invitee_id?: string | null
+          inviter_id?: string
+          message?: string | null
+          responded_at?: string | null
+          response_message?: string | null
+          status?: string | null
+          target_id?: string
+          target_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       knowledge_discussions: {
         Row: {
           content_id: string
@@ -747,6 +908,110 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      organization_join_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          organization_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          organization_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          organization_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_join_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       pbl_project_enrollments: {
         Row: {
           created_at: string | null
@@ -801,9 +1066,11 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          is_ai_assist_enabled: boolean | null
           level_updated_at: string | null
           percentile_rank: number | null
           role: string | null
+          settings: Json | null
           updated_at: string | null
         }
         Insert: {
@@ -815,9 +1082,11 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          is_ai_assist_enabled?: boolean | null
           level_updated_at?: string | null
           percentile_rank?: number | null
           role?: string | null
+          settings?: Json | null
           updated_at?: string | null
         }
         Update: {
@@ -829,30 +1098,134 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          is_ai_assist_enabled?: boolean | null
           level_updated_at?: string | null
           percentile_rank?: number | null
           role?: string | null
+          settings?: Json | null
           updated_at?: string | null
         }
         Relationships: []
       }
-      prompt_optimization_rules: {
+      project_join_requests: {
         Row: {
-          rule_id: number
-          rules_text: string
+          created_at: string | null
+          id: string
+          message: string | null
+          project_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          project_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          project_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_join_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_members: {
+        Row: {
+          joined_at: string | null
+          project_id: string
+          role_in_project: string | null
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string | null
+          project_id: string
+          role_in_project?: string | null
+          user_id: string
+        }
+        Update: {
+          joined_at?: string | null
+          project_id?: string
+          role_in_project?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          description: string | null
+          id: string
+          is_public: boolean | null
+          is_recruiting: boolean | null
+          name: string
+          organization_id: string
+          settings: Json | null
+          status: string | null
           updated_at: string | null
         }
         Insert: {
-          rule_id?: number
-          rules_text: string
+          created_at?: string | null
+          creator_id: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          is_recruiting?: boolean | null
+          name: string
+          organization_id: string
+          settings?: Json | null
+          status?: string | null
           updated_at?: string | null
         }
         Update: {
-          rule_id?: number
-          rules_text?: string
+          created_at?: string | null
+          creator_id?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          is_recruiting?: boolean | null
+          name?: string
+          organization_id?: string
+          settings?: Json | null
+          status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_course_assignments: {
         Row: {
@@ -1012,6 +1385,68 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          actual_hours: number | null
+          assignee_id: string | null
+          created_at: string | null
+          created_by_ai: boolean | null
+          created_by_id: string
+          description: string | null
+          due_date: string | null
+          estimated_hours: number | null
+          id: string
+          metadata: Json | null
+          priority: string | null
+          project_id: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_hours?: number | null
+          assignee_id?: string | null
+          created_at?: string | null
+          created_by_ai?: boolean | null
+          created_by_id: string
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          project_id: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_hours?: number | null
+          assignee_id?: string | null
+          created_at?: string | null
+          created_by_ai?: boolean | null
+          created_by_id?: string
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          project_id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -1208,6 +1643,44 @@ export type Database = {
           },
         ]
       }
+      user_organizations: {
+        Row: {
+          created_at: string
+          id: string
+          joined_at: string
+          organization_id: string
+          role_in_org: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          organization_id: string
+          role_in_org?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          organization_id?: string
+          role_in_org?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_organizations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_progress: {
         Row: {
           completed_tasks: string[] | null
@@ -1328,6 +1801,7 @@ export type Database = {
           content: string
           course_content_id: string | null
           created_at: string | null
+          day_key: string | null
           feedback: string | null
           id: string
           reviewed_at: string | null
@@ -1345,6 +1819,7 @@ export type Database = {
           content: string
           course_content_id?: string | null
           created_at?: string | null
+          day_key?: string | null
           feedback?: string | null
           id?: string
           reviewed_at?: string | null
@@ -1362,6 +1837,7 @@ export type Database = {
           content?: string
           course_content_id?: string | null
           created_at?: string | null
+          day_key?: string | null
           feedback?: string | null
           id?: string
           reviewed_at?: string | null
@@ -1399,130 +1875,10 @@ export type Database = {
       }
     }
     Views: {
-      admin_group_statistics: {
-        Row: {
-          active_last_week: number | null
-          active_students: number | null
-          avg_composite_score: number | null
-          avg_consciousness_level: number | null
-          avg_online_minutes_per_day: number | null
-          group_id: string | null
-          group_name: string | null
-          group_type: string | null
-          level_1_count: number | null
-          level_2_count: number | null
-          level_3_count: number | null
-          level_4_count: number | null
-          level_5_count: number | null
-          level_6_count: number | null
-          level_7_count: number | null
-          total_online_minutes: number | null
-          total_students: number | null
-        }
-        Relationships: []
-      }
-      conversation_summary: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          is_active: boolean | null
-          last_message: string | null
-          message_count: number | null
-          title: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          last_message?: never
-          message_count?: number | null
-          title?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          last_message?: never
-          message_count?: number | null
-          title?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gaia_conversations_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
-      auto_create_course_groups: { Args: never; Returns: undefined }
-      calculate_all_student_levels: {
-        Args: never
-        Returns: {
-          activity_score: number
-          composite_score: number
-          consciousness_level: number
-          dialogue_depth_score: number
-          domain_depth_score: number
-          percentile_rank: number
-          quality_score: number
-          user_id: string
-        }[]
-      }
-      can_delete_course: {
-        Args: { p_course_id: string; p_user_id: string }
-        Returns: boolean
-      }
-      can_edit_course: {
-        Args: { p_course_id: string; p_user_id: string }
-        Returns: boolean
-      }
-      can_student_view_resource: {
-        Args: { resource_id: string; student_id: string }
-        Returns: boolean
-      }
-      generate_conversation_title: {
-        Args: { messages_param: Json }
-        Returns: string
-      }
-      grow_consciousness_tree: {
-        Args: { p_growth_instruction: Json; p_user_id: string }
-        Returns: Json
-      }
-      is_admin_user: { Args: { user_id: string }; Returns: boolean }
-      is_content_admin: { Args: never; Returns: boolean }
-      is_content_editor: { Args: never; Returns: boolean }
-      is_content_viewer: { Args: never; Returns: boolean }
-      match_documents: {
-        Args: { filter?: Json; match_count?: number; query_embedding: string }
-        Returns: {
-          content: string
-          id: number
-          metadata: Json
-          similarity: number
-        }[]
-      }
-      teacher_manages_course: {
-        Args: { course_id: string; teacher_id: string }
-        Returns: boolean
-      }
-      teacher_manages_student: {
-        Args: { student_id: string; teacher_id: string }
-        Returns: boolean
-      }
-      update_exploration_and_tree_view: {
-        Args: { p_growth_scores_json: Json; p_user_id: string }
-        Returns: Json
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
@@ -1533,33 +1889,27 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1567,24 +1917,20 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -1592,24 +1938,20 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -1617,69 +1959,14 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const
-
-// Additional type exports for convenience
-export type CourseContent = Tables<'course_contents'>
-export type CourseSystem = Tables<'course_systems'>
-export type Profile = Tables<'profiles'>
-export type UserProgress = Tables<'user_progress'>
-export type UserSubmission = Tables<'user_submissions'>
-export type UserSelectedProject = Tables<'user_selected_projects'>
-
-// Custom types for JSON fields
-export interface Resource {
-  type: 'audio' | 'video' | 'document' | 'pdf' | 'link'
-  title: string
-  url: string
-  duration?: string
-  description?: string
-}
-
-export interface ExplorerProject {
-  title: string
-  goal?: string
-  materials?: string[]
-  steps?: string[]
-  expectedOutcome?: string
-  tips?: string[]
-}
-
-export type ProgressType = 'reading' | 'listening' | 'watching' | 'practice'
