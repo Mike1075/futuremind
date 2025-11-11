@@ -5,12 +5,14 @@ import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Home, ArrowLeft, Plus, UserPlus, Folder } from 'lucide-react'
 import { useOrganizationProjects, useProjectTasks } from '@/lib/aip/hooks'
-import { ChatBot } from '@/components/aip/ChatBot'
+import { FloatingChatBot } from '@/components/aip/FloatingChatBot'
 import { ProjectGrid } from '@/components/aip/ProjectGrid'
 import { CompactTaskList } from '@/components/aip/CompactTaskList'
 import { CreateProjectModal } from '@/components/aip/CreateProjectModal'
 import { EditDescriptionModal } from '@/components/aip/EditDescriptionModal'
 import { InviteModal } from '@/components/aip/InviteModal'
+import { PendingRequestsPanel } from '@/components/aip/PendingRequestsPanel'
+import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project, Task } from '@/lib/aip/types'
 
@@ -26,6 +28,7 @@ export default function OrganizationDashboardPage() {
   const [userTasks, setUserTasks] = useState<Task[]>([])
   const [userProjectPermissions, setUserProjectPermissions] = useState<Record<string, 'manager' | 'member' | 'none'>>({})
   const [userId, setUserId] = useState<string | null>(null)
+  const [isOrgAdmin, setIsOrgAdmin] = useState(false)
 
   // Modal states
   const [showCreateProject, setShowCreateProject] = useState(false)
@@ -94,6 +97,16 @@ export default function OrganizationDashboardPage() {
         permissions[m.project_id] = m.role_in_project as 'manager' | 'member'
       })
       setUserProjectPermissions(permissions)
+
+      // 检查是否是组织管理员
+      const { data: orgMembership } = await supabase
+        .from('user_organizations')
+        .select('role_in_org')
+        .eq('user_id', user.id)
+        .eq('organization_id', organizationId)
+        .single()
+
+      setIsOrgAdmin(orgMembership?.role_in_org === 'admin' || orgMembership?.role_in_org === 'owner')
     } catch (err) {
       console.error('加载用户数据失败:', err)
     }
@@ -234,28 +247,35 @@ export default function OrganizationDashboardPage() {
       return
     }
 
-    if (!confirm(`确定要申请加入项目"${projectName}"吗？`)) return
+    const message = prompt(`申请加入项目"${projectName}"\n\n请输入申请理由（可选）：`)
+    if (message === null) return // 用户取消
 
     try {
       const supabase = createClient()
 
-      // Create a notification for project managers
+      // 使用新的project_join_requests表
       const { error } = await supabase
-        .from('notifications')
+        .from('project_join_requests')
         .insert({
+          project_id: projectId,
           user_id: userId,
-          type: 'project_join_request',
-          title: '新的项目加入申请',
-          message: `有用户申请加入项目"${projectName}"`,
-          metadata: { project_id: projectId }
+          message: message.trim() || null,
+          status: 'pending'
         })
 
-      if (error) throw error
+      if (error) {
+        // 处理重复申请错误
+        if (error.code === '23505') {
+          alert('您已经申请过此项目，请等待审核结果')
+          return
+        }
+        throw error
+      }
 
       alert('申请已提交，等待项目管理员审核')
     } catch (err) {
       console.error('提交申请失败:', err)
-      alert('提交申请失败')
+      alert('提交申请失败，请重试')
     }
   }
 
@@ -309,13 +329,16 @@ export default function OrganizationDashboardPage() {
                 <p className="text-gray-400 mt-1">{organization.description || '暂无描述'}</p>
               </div>
             </div>
-            <button
-              onClick={() => router.push('/')}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
-            >
-              <Home className="w-5 h-5" />
-              返回首页
-            </button>
+            <div className="flex items-center gap-3">
+              <NotificationBadge />
+              <button
+                onClick={() => router.push('/')}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
+              >
+                <Home className="w-5 h-5" />
+                返回首页
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -333,6 +356,14 @@ export default function OrganizationDashboardPage() {
 
           {/* Right Columns: Project Sections */}
           <div className="lg:col-span-3 space-y-8">
+            {/* Pending Requests Panel - Only for Organization Admins */}
+            {isOrgAdmin && (
+              <PendingRequestsPanel
+                organizationId={organizationId}
+                type="organization"
+              />
+            )}
+
             {/* My Projects Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -418,7 +449,10 @@ export default function OrganizationDashboardPage() {
       </div>
 
       {/* 聊天机器人 */}
-      <ChatBot />
+      <FloatingChatBot
+        organization={organization}
+        showProjectSelector={true}
+      />
 
       {/* Modals */}
       {showCreateProject && (
