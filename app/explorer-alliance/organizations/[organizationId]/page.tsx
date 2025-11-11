@@ -400,7 +400,10 @@ export default function OrganizationDashboardPage() {
                 <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
                   <Folder className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
                   <p className="text-zinc-400 mb-4">你还没有参与任何项目</p>
-                  <button className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
+                  <button
+                    onClick={() => setShowCreateProject(true)}
+                    className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                  >
                     创建第一个项目
                   </button>
                 </div>
