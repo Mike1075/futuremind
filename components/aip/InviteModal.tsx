@@ -206,44 +206,87 @@ export function InviteModal({ onClose }: InviteModalProps) {
     try {
       const supabase = createClient()
 
-      // 1. 创建邀请记录
-      const { error: inviteError } = await supabase
+      // 1. 通过安全的RPC函数获取被邀请者的用户ID（如果已注册）
+      const { data: inviteeId, error: inviteeQueryError } = await supabase
+        .rpc('get_user_id_by_email', { p_email: email.trim() })
+
+      if (inviteeQueryError) {
+        console.error('查询被邀请者信息失败:', inviteeQueryError)
+        throw new Error(`查询被邀请者信息失败：${inviteeQueryError.message}`)
+      }
+
+      console.log('被邀请者ID:', inviteeId)
+
+      // 2. 创建邀请记录
+      const { data: invitationData, error: inviteError } = await supabase
         .from('invitations')
         .insert({
           inviter_id: userId,
           invitee_email: email.trim(),
+          invitee_id: inviteeId || null,
           invitation_type: invitationType,
           target_id: selectedTarget,
           target_name: targetName,
           message: message.trim() || null,
           status: 'pending'
         })
-
-      if (inviteError) throw inviteError
-
-      // 2. 查找被邀请者的用户ID（如果已注册）
-      const { data: inviteeProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email.trim())
+        .select()
         .single()
 
-      // 3. 如果被邀请者已注册，创建通知
-      if (inviteeProfile) {
-        await supabase
+      if (inviteError) {
+        console.error('创建邀请记录失败:', inviteError)
+        throw new Error(`创建邀请失败：${inviteError.message}`)
+      }
+
+      console.log('邀请记录已创建:', invitationData)
+
+      // 3. 创建发送者的通知记录（失败不阻断流程）
+      const { error: notifySenderError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          type: 'invitation_sent',
+          title: '邀请已发送',
+          message: `您已向 ${email.trim()} 发送加入${invitationType === 'organization' ? '组织' : '项目'}"${targetName}"的邀请`,
+          metadata: {
+            invitation_id: invitationData.id,
+            invitation_type: invitationType,
+            target_id: selectedTarget,
+            target_name: targetName
+          }
+        })
+
+      if (notifySenderError) {
+        console.warn('创建发送者通知失败:', notifySenderError)
+      } else {
+        console.log('发送者通知已创建')
+      }
+
+      // 4. 如果被邀请者已注册，创建接收者的通知记录（失败不阻断流程）
+      if (inviteeId) {
+        const { error: notifyReceiverError } = await supabase
           .from('notifications')
           .insert({
-            user_id: inviteeProfile.id,
-            type: 'invitation',
-            title: '新邀请',
+            user_id: inviteeId,
+            type: 'invitation_received',
+            title: '收到邀请',
             message: `您收到了加入${invitationType === 'organization' ? '组织' : '项目'}"${targetName}"的邀请`,
             metadata: {
+              invitation_id: invitationData.id,
               invitation_type: invitationType,
               target_id: selectedTarget,
               target_name: targetName,
               inviter_id: userId
             }
           })
+
+        if (notifyReceiverError) {
+          console.warn('创建接收者通知失败:', notifyReceiverError)
+        } else {
+          console.log('接收者通知已创建')
+        }
+      } else {
+        console.log('被邀请者未注册，跳过通知创建')
       }
 
       setIsSuccess(true)

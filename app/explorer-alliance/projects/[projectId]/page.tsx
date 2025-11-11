@@ -11,7 +11,7 @@ import { FileUploadModal } from '@/components/aip/FileUploadModal'
 import { InviteModal } from '@/components/aip/InviteModal'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { Settings, UserPlus, Upload } from 'lucide-react'
+import { Settings, UserPlus, Upload, ArrowLeft } from 'lucide-react'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params)
@@ -96,13 +96,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       <div className="border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-4">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Link href="/explorer-alliance" className="hover:text-white transition-colors">
-                探索者联盟
+            {/* Breadcrumb with Back Button */}
+            <div className="flex items-center gap-3">
+              <Link
+                href="/explorer-alliance"
+                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
+                title="返回探索者联盟"
+              >
+                <ArrowLeft className="h-5 w-5" />
               </Link>
-              <span>/</span>
-              <span className="text-white">{project.name}</span>
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <Link href="/explorer-alliance" className="hover:text-white transition-colors">
+                  探索者联盟
+                </Link>
+                <span>/</span>
+                <span className="text-white">{project.name}</span>
+              </div>
             </div>
 
             {/* Actions */}
