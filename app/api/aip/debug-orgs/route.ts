@@ -88,20 +88,35 @@ export async function POST() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
+      console.error('[Debug Orgs] 未授权访问')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    console.log('[Debug Orgs] 开始修复用户组织，用户ID:', user.id)
+
     const fixes = []
 
-    // 1. 查找或创建社区组织
-    let { data: communityOrg, error: communityError } = await supabase
+    // 1. 查找社区组织（通过名称，避免JSON查询问题）
+    console.log('[Debug Orgs] 查找社区组织...')
+    let { data: communityOrgs, error: communityQueryError } = await supabase
       .from('organizations')
-      .select('id')
-      .eq('settings->is_global', true)
-      .single()
+      .select('id, name')
+      .eq('name', '社区项目')
+      .limit(1)
 
-    if (!communityOrg) {
-      console.log('[Debug Orgs] 创建社区组织...')
+    if (communityQueryError) {
+      console.error('[Debug Orgs] 查找社区组织失败:', communityQueryError)
+      throw new Error(`查找社区组织失败: ${communityQueryError.message}`)
+    }
+
+    let communityOrgId: string
+
+    if (communityOrgs && communityOrgs.length > 0) {
+      communityOrgId = communityOrgs[0].id
+      console.log('[Debug Orgs] 找到已存在的社区组织:', communityOrgId)
+    } else {
+      // 创建社区组织
+      console.log('[Debug Orgs] 创建新的社区组织...')
       const { data: newCommunity, error: createError } = await supabase
         .from('organizations')
         .insert({
@@ -112,31 +127,55 @@ export async function POST() {
         .select('id')
         .single()
 
-      if (createError) {
+      if (createError || !newCommunity) {
         console.error('[Debug Orgs] 创建社区组织失败:', createError)
-        throw new Error(`创建社区组织失败: ${createError.message}`)
+        throw new Error(`创建社区组织失败: ${createError?.message || '未知错误'}`)
       }
 
-      communityOrg = newCommunity
+      communityOrgId = newCommunity.id
       fixes.push('创建了社区组织')
+      console.log('[Debug Orgs] 社区组织创建成功:', communityOrgId)
     }
 
-    if (!communityOrg) {
-      throw new Error('无法获取或创建社区组织')
-    }
-
-    console.log('[Debug Orgs] 社区组织ID:', communityOrg.id)
-
-    // 2. 查找或创建个人组织
-    let { data: personalOrg, error: personalError } = await supabase
+    // 2. 查找个人组织（通过用户ID，名称为"我的项目"）
+    console.log('[Debug Orgs] 查找个人组织...')
+    let { data: personalOrgs, error: personalQueryError } = await supabase
       .from('organizations')
-      .select('id')
-      .eq('settings->is_personal', true)
-      .eq('settings->user_id', user.id)
-      .single()
+      .select('id, name, description')
+      .eq('name', '我的项目')
+      .like('description', '%我参与和发起%')
+      .limit(10) // 可能有多个用户都有"我的项目"
 
-    if (!personalOrg) {
-      console.log('[Debug Orgs] 创建个人组织...')
+    if (personalQueryError) {
+      console.error('[Debug Orgs] 查找个人组织失败:', personalQueryError)
+      throw new Error(`查找个人组织失败: ${personalQueryError.message}`)
+    }
+
+    // 检查这些组织中哪个属于当前用户
+    let personalOrgId: string | null = null
+
+    if (personalOrgs && personalOrgs.length > 0) {
+      // 检查用户是否已经是某个"我的项目"组织的owner
+      for (const org of personalOrgs) {
+        const { data: membership } = await supabase
+          .from('user_organizations')
+          .select('id')
+          .eq('organization_id', org.id)
+          .eq('user_id', user.id)
+          .eq('role_in_org', 'owner')
+          .single()
+
+        if (membership) {
+          personalOrgId = org.id
+          console.log('[Debug Orgs] 找到用户的个人组织:', personalOrgId)
+          break
+        }
+      }
+    }
+
+    if (!personalOrgId) {
+      // 创建个人组织
+      console.log('[Debug Orgs] 创建新的个人组织...')
       const { data: newPersonal, error: createError } = await supabase
         .from('organizations')
         .insert({
@@ -147,23 +186,18 @@ export async function POST() {
         .select('id')
         .single()
 
-      if (createError) {
+      if (createError || !newPersonal) {
         console.error('[Debug Orgs] 创建个人组织失败:', createError)
-        throw new Error(`创建个人组织失败: ${createError.message}`)
+        throw new Error(`创建个人组织失败: ${createError?.message || '未知错误'}`)
       }
 
-      personalOrg = newPersonal
+      personalOrgId = newPersonal.id
       fixes.push('创建了个人组织')
+      console.log('[Debug Orgs] 个人组织创建成功:', personalOrgId)
     }
-
-    if (!personalOrg) {
-      throw new Error('无法获取或创建个人组织')
-    }
-
-    console.log('[Debug Orgs] 个人组织ID:', personalOrg.id)
 
     // 3. 删除旧的关系（清理脏数据）
-    const orgIds = [communityOrg.id, personalOrg.id]
+    const orgIds = [communityOrgId, personalOrgId]
     console.log('[Debug Orgs] 清理旧关系，组织IDs:', orgIds)
 
     const { error: deleteError } = await supabase
@@ -177,6 +211,7 @@ export async function POST() {
       // 不阻断流程，可能是没有旧数据
     } else {
       fixes.push('清理了旧的组织关系')
+      console.log('[Debug Orgs] 旧关系清理成功')
     }
 
     // 4. 重新插入正确的关系
@@ -186,12 +221,12 @@ export async function POST() {
       .insert([
         {
           user_id: user.id,
-          organization_id: communityOrg.id,
+          organization_id: communityOrgId,
           role_in_org: 'member'
         },
         {
           user_id: user.id,
-          organization_id: personalOrg.id,
+          organization_id: personalOrgId,
           role_in_org: 'owner'
         }
       ])
@@ -202,6 +237,7 @@ export async function POST() {
     }
 
     fixes.push('重新创建了组织关系')
+    console.log('[Debug Orgs] 组织关系创建成功')
 
     // 5. 验证修复结果
     const { data: verifyOrgs } = await supabase
@@ -209,16 +245,30 @@ export async function POST() {
       .select('*, organization:organizations(*)')
       .eq('user_id', user.id)
 
+    console.log('[Debug Orgs] ✅ 修复完成，共执行操作:', fixes.length)
+    console.log('[Debug Orgs] 验证结果:', verifyOrgs?.length || 0, '个组织关系')
+
     return NextResponse.json({
       success: true,
-      message: '组织关系已修复',
+      message: '组织数据已成功修复',
       fixes,
-      organizations: verifyOrgs
+      organizations: verifyOrgs,
+      summary: {
+        communityOrgId,
+        personalOrgId,
+        totalOrganizations: verifyOrgs?.length || 0
+      }
     })
   } catch (error: any) {
-    console.error('Fix orgs error:', error)
+    console.error('[Debug Orgs] ❌ 修复失败:', error)
+    console.error('[Debug Orgs] 错误堆栈:', error.stack)
+
     return NextResponse.json(
-      { error: 'Failed to fix organizations', details: error.message },
+      {
+        error: 'Failed to fix organizations',
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     )
   }
