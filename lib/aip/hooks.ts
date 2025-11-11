@@ -35,20 +35,32 @@ export function useOrganizations() {
     setLoading(true)
 
     // 始终调用init-default-orgs确保用户加入了全局社区组织
+    console.log('[客户端] 开始调用 init-default-orgs API...')
     try {
-      await fetch('/api/aip/init-default-orgs', {
+      const initResponse = await fetch('/api/aip/init-default-orgs', {
         method: 'POST'
       })
+
+      const initData = await initResponse.json()
+      console.log('[客户端] init-default-orgs 响应:', initResponse.status, initData)
+
+      if (!initResponse.ok) {
+        console.error('[客户端] init-default-orgs 失败:', initData)
+      }
     } catch (initError) {
-      console.error('初始化默认组织失败:', initError)
+      console.error('[客户端] 初始化默认组织失败:', initError)
     }
 
     // 获取组织列表
+    console.log('[客户端] 开始获取组织列表...')
     const result = await getMyOrganizations()
+    console.log('[客户端] 组织列表结果:', result)
+
     if (result.error) {
       setError(result.error)
     } else {
       setOrganizations(result.data || [])
+      console.log('[客户端] 设置组织列表，数量:', result.data?.length || 0)
     }
 
     setLoading(false)
