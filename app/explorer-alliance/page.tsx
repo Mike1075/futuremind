@@ -8,6 +8,7 @@ import { useOrganizations } from '@/lib/aip/hooks'
 import { OrganizationList } from '@/components/aip/OrganizationList'
 import { ChatBot } from '@/components/aip/ChatBot'
 import { CreateOrganizationModal } from '@/components/aip/CreateOrganizationModal'
+import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ExplorerAlliancePage() {
@@ -92,13 +93,16 @@ export default function ExplorerAlliancePage() {
               </h1>
               <p className="text-gray-400 mt-2">AI驱动的智能项目协作平台</p>
             </div>
-            <button
-              onClick={() => router.push('/')}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
-            >
-              <Home className="w-5 h-5" />
-              返回首页
-            </button>
+            <div className="flex items-center gap-3">
+              <NotificationBadge />
+              <button
+                onClick={() => router.push('/')}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
+              >
+                <Home className="w-5 h-5" />
+                返回首页
+              </button>
+            </div>
           </div>
         </div>
       </div>

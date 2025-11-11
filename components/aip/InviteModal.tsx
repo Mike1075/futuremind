@@ -205,6 +205,8 @@ export function InviteModal({ onClose }: InviteModalProps) {
     setIsLoading(true)
     try {
       const supabase = createClient()
+
+      // 1. 创建邀请记录
       const { error: inviteError } = await supabase
         .from('invitations')
         .insert({
@@ -218,6 +220,31 @@ export function InviteModal({ onClose }: InviteModalProps) {
         })
 
       if (inviteError) throw inviteError
+
+      // 2. 查找被邀请者的用户ID（如果已注册）
+      const { data: inviteeProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email.trim())
+        .single()
+
+      // 3. 如果被邀请者已注册，创建通知
+      if (inviteeProfile) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: inviteeProfile.id,
+            type: 'invitation',
+            title: '新邀请',
+            message: `您收到了加入${invitationType === 'organization' ? '组织' : '项目'}"${targetName}"的邀请`,
+            metadata: {
+              invitation_type: invitationType,
+              target_id: selectedTarget,
+              target_name: targetName,
+              inviter_id: userId
+            }
+          })
+      }
 
       setIsSuccess(true)
       setTimeout(() => onClose(), 2000)
