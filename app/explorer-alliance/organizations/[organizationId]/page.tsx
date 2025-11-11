@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Home, ArrowLeft, Plus, UserPlus, Folder } from 'lucide-react'
+import { Home, ArrowLeft, Plus, UserPlus, Folder, CheckCircle2, Briefcase } from 'lucide-react'
 import { useOrganizationProjects, useProjectTasks } from '@/lib/aip/hooks'
 import { FloatingChatBot } from '@/components/aip/FloatingChatBot'
 import { ProjectGrid } from '@/components/aip/ProjectGrid'
@@ -356,6 +356,51 @@ export default function OrganizationDashboardPage() {
 
           {/* Right Columns: Project Sections */}
           <div className="lg:col-span-3 space-y-8">
+            {/* Welcome Section with Statistics */}
+            <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-6 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    欢迎回来 👋
+                  </h2>
+                  <p className="text-zinc-400">
+                    继续你的探索之旅，与团队一起创造精彩
+                  </p>
+                </div>
+              </div>
+
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Tasks Card */}
+                <div className="bg-gradient-to-br from-blue-600/10 to-blue-500/5 border border-blue-500/20 rounded-lg p-4 hover:border-blue-500/40 transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-blue-400 font-medium mb-1">我的任务</p>
+                      <p className="text-3xl font-bold text-white">{userTasks.length}</p>
+                      <p className="text-xs text-zinc-500 mt-1">待完成的任务</p>
+                    </div>
+                    <div className="bg-blue-500/10 p-3 rounded-lg">
+                      <CheckCircle2 className="w-8 h-8 text-blue-400" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Projects Card */}
+                <div className="bg-gradient-to-br from-emerald-600/10 to-emerald-500/5 border border-emerald-500/20 rounded-lg p-4 hover:border-emerald-500/40 transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-emerald-400 font-medium mb-1">参与项目</p>
+                      <p className="text-3xl font-bold text-white">{myProjects.length}</p>
+                      <p className="text-xs text-zinc-500 mt-1">正在进行的项目</p>
+                    </div>
+                    <div className="bg-emerald-500/10 p-3 rounded-lg">
+                      <Briefcase className="w-8 h-8 text-emerald-400" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Pending Requests Panel - Only for Organization Admins */}
             {isOrgAdmin && (
               <PendingRequestsPanel
