@@ -212,23 +212,65 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             </div>
 
             <div className="space-y-6">
+              {/* Progress Card */}
+              <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6">
+                <h3 className="text-lg font-semibold mb-4">项目进度</h3>
+                <div className="space-y-4">
+                  {/* Percentage */}
+                  <div className="text-center">
+                    <div className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                      {tasks.length > 0
+                        ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100)
+                        : 0}%
+                    </div>
+                    <div className="text-sm text-gray-400 mt-1">完成度</div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-zinc-800 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500 rounded-full"
+                      style={{
+                        width: `${tasks.length > 0
+                          ? (tasks.filter(t => t.status === 'completed').length / tasks.length) * 100
+                          : 0}%`
+                      }}
+                    ></div>
+                  </div>
+
+                  {/* Task Breakdown */}
+                  <div className="grid grid-cols-3 gap-2 text-center pt-2">
+                    <div className="bg-zinc-900/50 rounded-lg p-2">
+                      <div className="text-xl font-bold text-purple-400">{tasks.length}</div>
+                      <div className="text-xs text-gray-500">总计</div>
+                    </div>
+                    <div className="bg-zinc-900/50 rounded-lg p-2">
+                      <div className="text-xl font-bold text-green-400">
+                        {tasks.filter(t => t.status === 'completed').length}
+                      </div>
+                      <div className="text-xs text-gray-500">已完成</div>
+                    </div>
+                    <div className="bg-zinc-900/50 rounded-lg p-2">
+                      <div className="text-xl font-bold text-blue-400">
+                        {tasks.filter(t => t.status === 'in_progress').length}
+                      </div>
+                      <div className="text-xs text-gray-500">进行中</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Quick Stats */}
               <div className="bg-black/30 border border-white/10 rounded-xl p-6">
-                <h3 className="text-lg font-semibold mb-4">统计</h3>
+                <h3 className="text-lg font-semibold mb-4">团队统计</h3>
                 <div className="space-y-4">
-                  <div>
-                    <div className="text-2xl font-bold text-purple-400">{tasks.length}</div>
-                    <div className="text-sm text-gray-400">总任务数</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-green-400">
-                      {tasks.filter(t => t.status === 'completed').length}
-                    </div>
-                    <div className="text-sm text-gray-400">已完成</div>
-                  </div>
                   <div>
                     <div className="text-2xl font-bold text-blue-400">{project.members?.length || 0}</div>
                     <div className="text-sm text-gray-400">团队成员</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-amber-400">{documentsCount}</div>
+                    <div className="text-sm text-gray-400">项目文档</div>
                   </div>
                 </div>
               </div>
