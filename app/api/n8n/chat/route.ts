@@ -17,12 +17,22 @@ export async function POST(req: NextRequest) {
     const { chatInput, session_id, user_id, project_id, organization_id } = await req.json()
     if (!chatInput) return NextResponse.json({ error: 'CHAT_INPUT_REQUIRED' }, { status: 400 })
 
+    // 处理project_id：如果是数组，转换为JSON字符串
+    let projectIdValue = ''
+    if (project_id) {
+      if (Array.isArray(project_id)) {
+        projectIdValue = JSON.stringify(project_id)
+      } else {
+        projectIdValue = String(project_id)
+      }
+    }
+
     // 发送给 N8N 的 payload，包含完整的对话隔离字段
     const payload: Record<string, string> = {
       chatInput,
       session_id: session_id || crypto.randomUUID(),
       user_id: user_id || userId || 'guest',
-      project_id: project_id || '',
+      project_id: projectIdValue,
       organization_id: organization_id || '',
     }
     const res = await fetch(N8N_CHAT_WEBHOOK, {
