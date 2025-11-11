@@ -96,10 +96,9 @@ export async function DELETE(
         .delete()
         .in('content_id', contentIds)
 
-      // 删除课程内容的讨论区消息（如果有discussions表）
-      // 这里假设有一个discussions表用于课程讨论
+      // 删除课程内容的讨论区消息
       await supabase
-        .from('discussions')
+        .from('course_discussions')
         .delete()
         .in('content_id', contentIds)
         .throwOnError()
