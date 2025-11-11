@@ -37,7 +37,29 @@ export function useOrganizations() {
     if (result.error) {
       setError(result.error)
     } else {
-      setOrganizations(result.data || [])
+      const orgs = result.data || []
+
+      // 如果没有组织，自动初始化默认组织
+      if (orgs.length === 0) {
+        try {
+          const initResponse = await fetch('/api/aip/init-default-orgs', {
+            method: 'POST'
+          })
+          const initData = await initResponse.json()
+
+          if (initData.success || initData.alreadyInitialized) {
+            // 重新获取组织列表
+            const retryResult = await getMyOrganizations()
+            if (!retryResult.error) {
+              setOrganizations(retryResult.data || [])
+            }
+          }
+        } catch (initError) {
+          console.error('初始化默认组织失败:', initError)
+        }
+      } else {
+        setOrganizations(orgs)
+      }
     }
     setLoading(false)
   }

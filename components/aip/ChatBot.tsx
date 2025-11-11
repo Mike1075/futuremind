@@ -39,8 +39,8 @@ export function ChatBot() {
     setLoading(true)
 
     try {
-      // 获取当前组织ID（使用第一个组织）
-      const currentOrgId = organizations[0]?.organization_id || ''
+      // 获取当前组织ID（使用第一个组织，如果没有则使用默认值）
+      const currentOrgId = organizations[0]?.organization_id || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
 
       const response = await fetch('/api/aip/chat', {
         method: 'POST',
@@ -52,7 +52,10 @@ export function ChatBot() {
         })
       })
 
-      if (!response.ok) throw new Error('发送失败')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.details || errorData.error || '发送失败')
+      }
 
       const data = await response.json()
 
@@ -63,11 +66,11 @@ export function ChatBot() {
       }
 
       setMessages(prev => [...prev, assistantMessage])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat error:', error)
       const errorMessage: Message = {
         role: 'assistant',
-        content: '抱歉，发生了错误，请稍后重试',
+        content: `抱歉，发生了错误：${error.message || '请稍后重试'}`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
