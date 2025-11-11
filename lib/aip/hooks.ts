@@ -33,34 +33,24 @@ export function useOrganizations() {
 
   const loadOrganizations = async () => {
     setLoading(true)
+
+    // 始终调用init-default-orgs确保用户加入了全局社区组织
+    try {
+      await fetch('/api/aip/init-default-orgs', {
+        method: 'POST'
+      })
+    } catch (initError) {
+      console.error('初始化默认组织失败:', initError)
+    }
+
+    // 获取组织列表
     const result = await getMyOrganizations()
     if (result.error) {
       setError(result.error)
     } else {
-      const orgs = result.data || []
-
-      // 如果没有组织，自动初始化默认组织
-      if (orgs.length === 0) {
-        try {
-          const initResponse = await fetch('/api/aip/init-default-orgs', {
-            method: 'POST'
-          })
-          const initData = await initResponse.json()
-
-          if (initData.success || initData.alreadyInitialized) {
-            // 重新获取组织列表
-            const retryResult = await getMyOrganizations()
-            if (!retryResult.error) {
-              setOrganizations(retryResult.data || [])
-            }
-          }
-        } catch (initError) {
-          console.error('初始化默认组织失败:', initError)
-        }
-      } else {
-        setOrganizations(orgs)
-      }
+      setOrganizations(result.data || [])
     }
+
     setLoading(false)
   }
 

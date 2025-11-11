@@ -16,22 +16,9 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 1. 检查用户是否已有组织
-    const { data: existingOrgs } = await supabase
-      .from('user_organizations')
-      .select('id')
-      .eq('user_id', user.id)
-      .limit(1)
-
-    if (existingOrgs && existingOrgs.length > 0) {
-      return NextResponse.json({
-        message: '用户已有组织，无需初始化',
-        alreadyInitialized: true
-      })
-    }
-
-    // 2. 查找或创建"社区项目"组织
+    // 1. 查找或创建全局"社区项目"组织（所有用户都应该加入）
     let communityOrgId: string
+    let needsToJoinCommunity = false
 
     const { data: communityOrg } = await supabase
       .from('organizations')
@@ -41,6 +28,16 @@ export async function POST() {
 
     if (communityOrg) {
       communityOrgId = communityOrg.id
+
+      // 检查用户是否已经是社区成员
+      const { data: existingMembership } = await supabase
+        .from('user_organizations')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('organization_id', communityOrgId)
+        .single()
+
+      needsToJoinCommunity = !existingMembership
     } else {
       // 创建全局社区组织
       const { data: newCommunityOrg, error: createCommunityError } = await supabase
@@ -61,6 +58,33 @@ export async function POST() {
       }
 
       communityOrgId = newCommunityOrg.id
+      needsToJoinCommunity = true
+    }
+
+    // 2. 检查用户是否已有个人组织
+    const { data: existingPersonalOrg } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('settings->is_personal', true)
+      .eq('settings->user_id', user.id)
+      .single()
+
+    if (existingPersonalOrg) {
+      // 用户已有个人组织，只需确保加入了社区
+      if (needsToJoinCommunity) {
+        await supabase
+          .from('user_organizations')
+          .insert({
+            user_id: user.id,
+            organization_id: communityOrgId,
+            role_in_org: 'member'
+          })
+      }
+
+      return NextResponse.json({
+        message: '已确保用户加入社区组织',
+        alreadyInitialized: true
+      })
     }
 
     // 3. 创建"我的项目"个人组织

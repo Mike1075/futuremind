@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Building2 } from 'lucide-react'
+import { Plus, Building2, Home } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useOrganizations } from '@/lib/aip/hooks'
 import { OrganizationList } from '@/components/aip/OrganizationList'
 import { ChatBot } from '@/components/aip/ChatBot'
@@ -10,6 +11,7 @@ import { CreateOrganizationModal } from '@/components/aip/CreateOrganizationModa
 import { createClient } from '@/lib/supabase/client'
 
 export default function ExplorerAlliancePage() {
+  const router = useRouter()
   const { organizations, loading: orgsLoading, reload: reloadOrganizations } = useOrganizations()
   const [showCreateOrganization, setShowCreateOrganization] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -83,10 +85,21 @@ export default function ExplorerAlliancePage() {
       {/* Header */}
       <div className="relative border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-20">
         <div className="container mx-auto px-6 py-4">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            探索者联盟 - AIP项目管理系统
-          </h1>
-          <p className="text-gray-400 mt-2">AI驱动的智能项目协作平台</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                探索者联盟 - AIP项目管理系统
+              </h1>
+              <p className="text-gray-400 mt-2">AI驱动的智能项目协作平台</p>
+            </div>
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
+            >
+              <Home className="w-5 h-5" />
+              返回首页
+            </button>
+          </div>
         </div>
       </div>
 
@@ -141,7 +154,7 @@ export default function ExplorerAlliancePage() {
           <OrganizationList
             organizations={organizations}
             onSelect={(orgId) => {
-              // TODO: 导航到组织详情页面（暂时还没创建）
+              router.push(`/explorer-alliance/organizations/${orgId}`)
             }}
           />
         )}
