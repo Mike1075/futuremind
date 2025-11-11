@@ -138,17 +138,39 @@ export default function ExplorerAlliancePage() {
               还没有加入任何组织
             </h3>
             <p className="text-gray-400 mb-8 max-w-md mx-auto">
-              {isAdmin ? '创建你的第一个组织，开始管理项目' : '等待管理员邀请你加入组织'}
+              系统应该自动为您创建"社区项目"和"我的项目"两个默认组织
             </p>
-            {isAdmin && (
+            <div className="flex flex-col items-center gap-4">
               <button
-                onClick={() => setShowCreateOrganization(true)}
-                className="flex items-center gap-2 mx-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/aip/debug-orgs', { method: 'POST' })
+                    const data = await response.json()
+                    if (data.success) {
+                      alert('组织数据已修复！正在刷新...')
+                      reloadOrganizations()
+                    } else {
+                      alert('修复失败：' + (data.error || '未知错误'))
+                    }
+                  } catch (error) {
+                    alert('修复失败，请联系管理员')
+                    console.error(error)
+                  }
+                }}
+                className="flex items-center gap-2 px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
               >
-                <Plus className="w-4 h-4" />
-                创建第一个组织
+                🔧 修复组织数据
               </button>
-            )}
+              {isAdmin && (
+                <button
+                  onClick={() => setShowCreateOrganization(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  或者创建新组织
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <OrganizationList
