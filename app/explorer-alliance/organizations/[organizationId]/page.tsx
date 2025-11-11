@@ -26,7 +26,7 @@ export default function OrganizationDashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [isMounted, setIsMounted] = useState(false)
   const [userTasks, setUserTasks] = useState<Task[]>([])
-  const [userProjectPermissions, setUserProjectPermissions] = useState<Record<string, 'manager' | 'member' | 'none'>>({})
+  const [userProjectPermissions, setUserProjectPermissions] = useState<Record<string, 'owner' | 'manager' | 'member' | 'none'>>({})
   const [userId, setUserId] = useState<string | null>(null)
   const [isOrgAdmin, setIsOrgAdmin] = useState(false)
 
@@ -92,9 +92,9 @@ export default function OrganizationDashboardPage() {
         .select('project_id, role_in_project')
         .eq('user_id', user.id)
 
-      const permissions: Record<string, 'manager' | 'member' | 'none'> = {}
+      const permissions: Record<string, 'owner' | 'manager' | 'member' | 'none'> = {}
       memberships?.forEach(m => {
-        permissions[m.project_id] = m.role_in_project as 'manager' | 'member'
+        permissions[m.project_id] = m.role_in_project as 'owner' | 'manager' | 'member'
       })
       setUserProjectPermissions(permissions)
 
@@ -153,7 +153,7 @@ export default function OrganizationDashboardPage() {
   }
 
   // Split projects into user's projects and other projects
-  const myProjects = projects.filter(p => userProjectPermissions[p.id] === 'manager' || userProjectPermissions[p.id] === 'member')
+  const myProjects = projects.filter(p => userProjectPermissions[p.id] === 'owner' || userProjectPermissions[p.id] === 'manager' || userProjectPermissions[p.id] === 'member')
   const otherProjects = projects.filter(p => !userProjectPermissions[p.id] || userProjectPermissions[p.id] === 'none')
 
   const handleProjectClick = (project: Project) => {

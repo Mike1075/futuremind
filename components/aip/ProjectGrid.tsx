@@ -27,7 +27,7 @@ interface ProjectGridProps {
   onTogglePublic?: (projectId: string, isPublic: boolean) => void
   onToggleRecruiting?: (projectId: string, isRecruiting: boolean) => void
   onApplyToJoin?: (projectId: string, projectName: string) => void
-  userProjectPermissions?: Record<string, 'manager' | 'member' | 'none'>
+  userProjectPermissions?: Record<string, 'owner' | 'manager' | 'member' | 'none'>
   showEditControls?: boolean  // 是否显示编辑控制（删除、编辑等）
   showApplyButton?: boolean   // 是否显示申请加入按钮
 }
