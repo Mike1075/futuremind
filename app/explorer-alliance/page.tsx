@@ -2,21 +2,16 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus } from 'lucide-react'
-import { useOrganizations, useOrganizationProjects } from '@/lib/aip/hooks'
+import { Plus, Building2 } from 'lucide-react'
+import { useOrganizations } from '@/lib/aip/hooks'
 import { OrganizationList } from '@/components/aip/OrganizationList'
-import { ProjectList } from '@/components/aip/ProjectList'
 import { ChatBot } from '@/components/aip/ChatBot'
-import { CreateProjectModal } from '@/components/aip/CreateProjectModal'
 import { CreateOrganizationModal } from '@/components/aip/CreateOrganizationModal'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ExplorerAlliancePage() {
   const { organizations, loading: orgsLoading, reload: reloadOrganizations } = useOrganizations()
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
-  const [showCreateProject, setShowCreateProject] = useState(false)
   const [showCreateOrganization, setShowCreateOrganization] = useState(false)
-  const { projects, loading: projectsLoading, reload: reloadProjects } = useOrganizationProjects(selectedOrgId)
   const [isMounted, setIsMounted] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
@@ -47,12 +42,6 @@ export default function ExplorerAlliancePage() {
     }
   }
 
-  // 自动选择第一个组织
-  if (!selectedOrgId && organizations.length > 0) {
-    setSelectedOrgId(organizations[0].organization_id)
-  }
-
-  const selectedOrg = organizations.find(o => o.organization_id === selectedOrgId)
 
   // 生成固定的星空粒子配置
   const particles = useMemo(() => {
@@ -68,17 +57,16 @@ export default function ExplorerAlliancePage() {
   }, [isMounted])
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden">
-      {/* 星空背景 - 与首页保持一致 */}
-      <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-gray-900 via-purple-900 to-black">
+    <div className="min-h-screen text-white relative overflow-hidden bg-black">
+      {/* 星空背景 - 纯黑色背景 + 白色星星闪烁 */}
+      <div className="absolute inset-0 overflow-hidden">
         {isMounted && particles.map((particle) => (
           <motion.div
             key={particle.id}
-            className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30"
+            className="absolute w-0.5 h-0.5 bg-white rounded-full"
             animate={{
-              x: [0, particle.x],
-              y: [0, particle.y],
-              opacity: [0.3, 0.8, 0.3],
+              opacity: [0.2, 1, 0.2],
+              scale: [1, 1.5, 1],
             }}
             transition={{
               duration: particle.duration,
@@ -102,84 +90,65 @@ export default function ExplorerAlliancePage() {
         </div>
       </div>
 
-      <div className="relative container mx-auto px-6 py-8 z-10">
+      <div className="relative container mx-auto px-6 py-12 z-10 max-w-7xl">
+        {/* 页面标题 */}
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-white mb-4">
+            我的组织
+          </h1>
+          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            管理你所属的组织，选择组织进入对应的工作台
+          </p>
+        </div>
+
+        {/* 创建组织按钮 - 仅管理员可见 */}
+        {isAdmin && organizations.length > 0 && (
+          <div className="flex justify-center mb-8">
+            <button
+              onClick={() => setShowCreateOrganization(true)}
+              className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <Plus className="w-5 h-5" />
+              创建新组织
+            </button>
+          </div>
+        )}
+
         {orgsLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : organizations.length === 0 ? (
+          <div className="text-center py-16">
+            <Building2 className="h-20 w-20 text-gray-600 mx-auto mb-6" />
+            <h3 className="text-2xl font-semibold text-white mb-4">
+              还没有加入任何组织
+            </h3>
+            <p className="text-gray-400 mb-8 max-w-md mx-auto">
+              {isAdmin ? '创建你的第一个组织，开始管理项目' : '等待管理员邀请你加入组织'}
+            </p>
+            {isAdmin && (
+              <button
+                onClick={() => setShowCreateOrganization(true)}
+                className="flex items-center gap-2 mx-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                创建第一个组织
+              </button>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* 左侧：组织列表 */}
-            <div className="lg:col-span-1 space-y-4">
-              <OrganizationList
-                organizations={organizations}
-                selectedId={selectedOrgId}
-                onSelect={setSelectedOrgId}
-              />
-
-              {/* 管理员创建组织按钮 */}
-              {isAdmin && (
-                <button
-                  onClick={() => setShowCreateOrganization(true)}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-lg text-purple-300 hover:bg-gradient-to-r hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-200 flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  创建新组织
-                </button>
-              )}
-            </div>
-
-            {/* 右侧：项目列表 */}
-            <div className="lg:col-span-3">
-              {selectedOrgId && selectedOrg ? (
-                <div>
-                  {/* 组织信息和操作栏 */}
-                  <div className="mb-6 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold">{selectedOrg.organization?.name}</h2>
-                      {selectedOrg.organization?.description && (
-                        <p className="text-gray-400 mt-1">{selectedOrg.organization.description}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => setShowCreateProject(true)}
-                      className="px-6 py-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity duration-200"
-                    >
-                      + 创建项目
-                    </button>
-                  </div>
-
-                  {/* 项目列表 */}
-                  <ProjectList
-                    projects={projects}
-                    loading={projectsLoading}
-                    organizationId={selectedOrgId}
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-64 bg-black/30 rounded-xl border border-white/10">
-                  <p className="text-gray-400">请选择一个组织查看项目</p>
-                </div>
-              )}
-            </div>
-          </div>
+          <OrganizationList
+            organizations={organizations}
+            onSelect={(orgId) => {
+              // TODO: 导航到组织详情页面（暂时还没创建）
+            }}
+          />
         )}
       </div>
 
       {/* 聊天机器人 */}
       <ChatBot />
-
-      {/* 创建项目弹窗 */}
-      {showCreateProject && selectedOrgId && (
-        <CreateProjectModal
-          organizationId={selectedOrgId}
-          onClose={() => setShowCreateProject(false)}
-          onSuccess={() => {
-            setShowCreateProject(false)
-            reloadProjects()
-          }}
-        />
-      )}
 
       {/* 创建组织弹窗（仅管理员） */}
       {showCreateOrganization && isAdmin && (
