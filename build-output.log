@@ -1,0 +1,23 @@
+
+> futuremind-new@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.2
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 12.2s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./app/courses/[system_key]/[content_id]/page.tsx:10:15
+Type error: Module '"@/lib/supabase/database.types"' has no exported member 'Resource'.
+
+[0m [90m  8 |[39m [36mimport[39m { [33mPBLProjectDetail[39m } [36mfrom[39m [32m'@/components/courses/PBLProjectDetail'[39m
+ [90m  9 |[39m [36mimport[39m { [33mEarthContentWrapper[39m } [36mfrom[39m [32m'./EarthContentWrapper'[39m
+[31m[1m>[22m[39m[90m 10 |[39m [36mimport[39m type { [33mResource[39m } [36mfrom[39m [32m'@/lib/supabase/database.types'[39m
+ [90m    |[39m               [31m[1m^[22m[39m
+ [90m 11 |[39m
+ [90m 12 |[39m [90m// 强制动态渲染，确保课程完成状态实时更新[39m
+ [90m 13 |[39m [36mexport[39m [36mconst[39m dynamic [33m=[39m [32m'force-dynamic'[39m[0m
+Next.js build worker exited with code: 1 and signal: null

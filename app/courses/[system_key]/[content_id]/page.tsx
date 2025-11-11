@@ -7,7 +7,14 @@ import { CourseService } from '@/lib/services/course.service'
 import { ProgressService } from '@/lib/services/progress.service'
 import { PBLProjectDetail } from '@/components/courses/PBLProjectDetail'
 import { EarthContentWrapper } from './EarthContentWrapper'
-import type { Resource } from '@/lib/supabase/database.types'
+
+// Resource 类型定义（对应 course_contents.resources 的结构）
+interface Resource {
+  type: string
+  title: string
+  url: string
+  duration?: string
+}
 
 // 强制动态渲染，确保课程完成状态实时更新
 export const dynamic = 'force-dynamic'

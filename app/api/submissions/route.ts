@@ -150,7 +150,7 @@ export async function DELETE(req: NextRequest) {
         .single()
 
       if (selection) {
-        const updatedProgress = {
+        const updatedProgress: Record<string, number> = {
           ...((selection.progress as Record<string, number>) || {}),
           [dayKey]: newHighestScore
         }

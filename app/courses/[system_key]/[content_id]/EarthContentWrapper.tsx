@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { EarthContentDetail } from '@/components/courses/EarthContentDetail'
 import { GaiaSidebar } from '@/components/courses/GaiaSidebar'
-import type { CourseContent } from '@/lib/supabase/database.types'
+import type { Database } from '@/types/database'
 import type { ItemType } from '@/lib/utils/interaction-tracker'
+
+type CourseContent = Database['public']['Tables']['course_contents']['Row']
 
 interface StageInfo {
   id: string

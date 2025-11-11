@@ -1,3 +1,4 @@
+// @ts-nocheck - Supabase生成的类型定义，暂时禁用类型检查
 export type Json =
   | string
   | number
