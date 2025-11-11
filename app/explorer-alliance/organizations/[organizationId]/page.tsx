@@ -185,25 +185,28 @@ export default function OrganizationDashboardPage() {
     setShowEditDescription(true)
   }
 
-  const handleEditDescriptionConfirm = async (newDescription: string) => {
+  const handleEditDescriptionConfirm = async (newName: string, newDescription: string) => {
     if (!editingProject) return
 
     try {
       const supabase = createClient()
       const { error } = await supabase
         .from('projects')
-        .update({ description: newDescription })
+        .update({
+          name: newName,
+          description: newDescription
+        })
         .eq('id', editingProject.id)
 
       if (error) throw error
 
-      alert('项目描述已更新')
+      alert('项目信息已更新')
       setShowEditDescription(false)
       setEditingProject(null)
       reloadProjects()
     } catch (err) {
-      console.error('更新描述失败:', err)
-      alert('更新描述失败')
+      console.error('更新项目信息失败:', err)
+      alert('更新项目信息失败')
     }
   }
 

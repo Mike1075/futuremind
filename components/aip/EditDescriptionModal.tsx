@@ -6,7 +6,7 @@ import { X, Save } from 'lucide-react'
 interface EditDescriptionModalProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm: (description: string) => void
+  onConfirm: (name: string, description: string) => void
   projectName: string
   currentDescription: string
   loading?: boolean
@@ -20,18 +20,25 @@ export function EditDescriptionModal({
   currentDescription,
   loading = false
 }: EditDescriptionModalProps) {
+  const [name, setName] = useState(projectName)
   const [description, setDescription] = useState(currentDescription)
 
   useEffect(() => {
+    setName(projectName)
     setDescription(currentDescription)
-  }, [currentDescription])
+  }, [projectName, currentDescription])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onConfirm(description.trim())
+    if (!name.trim()) {
+      alert('项目名称不能为空')
+      return
+    }
+    onConfirm(name.trim(), description.trim())
   }
 
   const handleClose = () => {
+    setName(projectName) // 重置为原值
     setDescription(currentDescription) // 重置为原值
     onClose()
   }
@@ -43,7 +50,7 @@ export function EditDescriptionModal({
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">编辑项目描述</h2>
+          <h2 className="text-xl font-semibold text-white">编辑项目信息</h2>
           <button
             onClick={handleClose}
             disabled={loading}
@@ -53,14 +60,23 @@ export function EditDescriptionModal({
           </button>
         </div>
 
-        {/* Project Name Display */}
-        <div className="mb-4 p-3 bg-zinc-800/50 border border-zinc-800 rounded-lg">
-          <p className="text-sm text-zinc-400">
-            项目：<span className="font-medium text-white ml-2">{projectName}</span>
-          </p>
-        </div>
-
         <form onSubmit={handleSubmit}>
+          {/* Project Name Input */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-zinc-300 mb-2">
+              项目名称
+            </label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              placeholder="请输入项目名称..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={loading}
+              autoFocus
+            />
+          </div>
+
           {/* Description Textarea */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-zinc-300 mb-2">
@@ -73,7 +89,6 @@ export function EditDescriptionModal({
               onChange={(e) => setDescription(e.target.value)}
               disabled={loading}
               rows={4}
-              autoFocus
             />
           </div>
 
