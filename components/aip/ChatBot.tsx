@@ -42,6 +42,11 @@ export function ChatBot() {
       // 获取当前组织ID（使用第一个组织，如果没有则使用默认值）
       const currentOrgId = organizations[0]?.organization_id || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
 
+      console.log('[ChatBot] 发送消息到API:', {
+        chatInput: input.trim(),
+        organization_id: currentOrgId
+      })
+
       const response = await fetch('/api/aip/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,25 +57,49 @@ export function ChatBot() {
         })
       })
 
+      console.log('[ChatBot] API响应状态:', response.status, response.statusText)
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.details || errorData.error || '发送失败')
+        const errorText = await response.text()
+        console.error('[ChatBot] API返回错误:', errorText)
+
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: errorText }
+        }
+
+        throw new Error(errorData.details || errorData.error || `服务器错误 (${response.status})`)
       }
 
       const data = await response.json()
+      console.log('[ChatBot] API返回数据:', data)
+
+      const aiResponse = data.response || data.output || data.message
+
+      if (!aiResponse) {
+        console.warn('[ChatBot] API未返回有效的响应内容:', data)
+      }
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: data.response || '抱歉，我没有理解您的问题',
+        content: aiResponse || '抱歉，我没有理解您的问题',
         timestamp: new Date()
       }
 
       setMessages(prev => [...prev, assistantMessage])
+      console.log('[ChatBot] 消息添加成功')
     } catch (error: any) {
-      console.error('Chat error:', error)
+      console.error('[ChatBot] ❌ 发送消息失败:', error)
+      console.error('[ChatBot] 错误详情:', {
+        message: error.message,
+        stack: error.stack
+      })
+
       const errorMessage: Message = {
         role: 'assistant',
-        content: `抱歉，发生了错误：${error.message || '请稍后重试'}`,
+        content: `❌ 抱歉，发生了错误：\n\n${error.message || '未知错误'}\n\n请检查：\n1. 网络连接是否正常\n2. N8N服务是否可用\n3. 查看浏览器控制台获取详细日志`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
