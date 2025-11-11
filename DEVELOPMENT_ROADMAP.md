@@ -1182,21 +1182,91 @@ supabase gen types typescript --project-id lvjezsnwesyblnlkkirz > types/database
 
 ---
 
-### 任务3.4：探索者联盟页面
-**优先级**: 🟢 标准
-**预计时间**: 1天
-**状态**: 📋 计划中
+### 任务3.4: AIP项目管理系统 (替换探索者联盟)
+**优先级**: 🔴 高优先级
+**预计时间**: 5-7天
+**状态**: ⚠️ 迁移中
+**详细文档**: `/docs/AIP_MIGRATION_PLAN.md`
 
-#### 文件路径
-`/app/explorer-alliance/page.tsx`
+#### 项目概述
+将独立的AIP (AI-Powered Project Management) 系统完整迁移到FutureMind网站，替换原有的"探索者联盟"页面。AIP是一个具有3层AI架构的项目管理系统，支持组织、项目、任务管理，以及AI辅助的文档知识库和聊天功能。
 
-#### 功能需求
-1. 3×4项目矩阵展示
-2. 项目卡片（标题、描述、难度、参与人数）
-3. 筛选功能（模块、难度）
-4. 项目详情页
-5. 加入项目按钮
-6. 用户自建项目入口
+#### 源项目信息
+- **源代码位置**: `D:\CursorWork\FutureMindInstitute\readme\N8NAIP\shareplatform n8n`
+- **数据库Schema**: `D:\CursorWork\FutureMindInstitute\readme\N8NAIP\aip_table_schema.json`
+- **技术栈**: React 18 + TypeScript + Vite
+- **AI架构**: Organization AI + Project AI + Member AI
+
+#### 主要文件路径
+```
+app/explorer-alliance/page.tsx           # 主页面
+app/explorer-alliance/organizations/[orgId]/page.tsx
+app/explorer-alliance/organizations/[orgId]/projects/[projectId]/page.tsx
+components/aip/                          # AIP组件
+lib/aip/                                # AIP工具函数
+```
+
+#### 核心功能需求
+
+##### 1. 默认组织系统
+- **社区项目**: 展示所有公开项目,用户可申请加入
+- **我的项目**: 用户参与和发起的所有项目
+- **权限控制**:
+  - 普通用户只能看到这2个默认组织
+  - 管理员(teacher/principal)可以创建新组织
+
+##### 2. 项目管理功能
+- 项目创建、编辑、删除(CRUD)
+- 项目可见性控制(公开/私有)
+- 项目招募状态
+- 项目成员管理
+- 项目加入请求审批
+
+##### 3. 任务管理功能
+- 任务创建、分配、更新
+- AI自动生成任务
+- 任务状态跟踪(pending/in_progress/completed)
+- 任务优先级管理
+- 预估工时vs实际工时
+
+##### 4. 文档知识库
+- 文档上传和管理
+- 基于pgvector的向量搜索
+- 文档嵌入(embeddings)自动生成
+- 项目相关文档智能推荐
+
+##### 5. n8n AI聊天集成
+- **位置**: 右下角浮动聊天机器人
+- **Webhook**: `https://n8n.aifunbox.com/webhook-test/fd6b2fff-af4c-4013-8fb6-ada231750a5a`
+- **请求格式**: `{chatInput, user_id, project_id[], organization_id}`
+- **功能**: 3层AI架构(组织AI/项目AI/成员AI)
+- **上下文**: 基于向量搜索的文档知识库
+
+##### 6. 邀请和通知系统
+- 项目邀请(邮件通知)
+- 加入请求管理
+- 实时通知推送
+- 通知已读状态管理
+
+#### 数据库迁移要点
+- ✅ 不创建public.users表,使用auth.users
+- ✅ 所有user_id外键指向auth.users(id)
+- ✅ 启用pgvector扩展用于文档向量搜索
+- ✅ 13个核心表: organizations, user_organizations, projects, project_members, tasks, documents, chat_history, notifications, invitations等
+- ✅ 完整的RLS策略保障数据安全
+- ✅ 触发器自动为新用户创建默认组织
+
+#### UI适配要求
+- 黑色主题背景(#000000)
+- 蓝紫粉渐变色按钮和强调元素
+- 卡片hover效果(紫色边框+阴影)
+- 与FutureMind整体风格统一
+- 响应式设计支持移动端
+
+#### 不迁移内容
+- ❌ 原AIP的登录系统(使用现有Supabase Auth)
+- ❌ 原AIP的UI配色方案
+- ❌ 伊卡洛斯项目和小探险家项目保留在课程系统中
 
 ---
 

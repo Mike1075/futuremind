@@ -75,7 +75,7 @@ export default function Home() {
     if (!isLoggedIn) {
       setShowAuthModal(true)
     } else {
-      window.location.href = '/pbl'
+      window.location.href = '/explorer-alliance'
     }
   }
 

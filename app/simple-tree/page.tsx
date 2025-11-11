@@ -99,7 +99,7 @@ export default function SimpleTreePage() {
             {/* 右侧：快捷入口与登出 */}
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => router.push('/pbl')}
+                onClick={() => router.push('/explorer-alliance')}
                 className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
               >
                 <span className="font-medium">探索者联盟</span>
