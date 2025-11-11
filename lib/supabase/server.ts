@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
-import { Database } from '../supabase'
+import { Database } from '@/types/database'
 
 // 这个函数只能在服务器端使用
 export async function createServerSupabase() {
