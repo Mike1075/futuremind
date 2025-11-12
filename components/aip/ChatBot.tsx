@@ -61,17 +61,32 @@ export function ChatBot() {
         projectIdValue = selectedProjects.length === 1 ? selectedProjects[0] : selectedProjects
       }
 
-      // 获取organization_id：优先使用选中项目的组织ID
-      let currentOrgId: string
+      // 获取organization_id：从选中的项目中提取
+      let currentOrgId: string = ''
       if (selectedProjects.length > 0) {
         // 如果选择了项目，使用第一个项目的organization_id
         const firstProjectId = Array.isArray(projectIdValue) ? projectIdValue[0] : projectIdValue
         const firstProject = projects.find(p => p.id === firstProjectId)
-        currentOrgId = firstProject?.organization_id || organizations[0]?.organization_id || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
-      } else {
-        // 如果没有选择项目，使用用户的第一个组织ID
-        currentOrgId = organizations[0]?.organization_id || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
+        if (firstProject?.organization_id) {
+          currentOrgId = firstProject.organization_id
+        }
       }
+
+      // 如果没有从项目中获取到，使用用户的第一个组织ID
+      if (!currentOrgId && organizations && organizations.length > 0) {
+        currentOrgId = organizations[0].organization_id
+      }
+
+      // 最终兜底：使用默认组织ID
+      if (!currentOrgId) {
+        currentOrgId = 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
+      }
+
+      console.log('[ChatBot] 组织ID获取:', {
+        从项目获取: selectedProjects.length > 0 ? projects.find(p => p.id === (Array.isArray(projectIdValue) ? projectIdValue[0] : projectIdValue))?.organization_id : null,
+        从用户组织获取: organizations?.[0]?.organization_id,
+        最终使用: currentOrgId
+      })
 
       console.log('[ChatBot] 发送消息到API:', {
         chatInput: input.trim(),

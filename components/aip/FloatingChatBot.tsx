@@ -125,14 +125,33 @@ export function FloatingChatBot({
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('未登录')
 
+      // 构建project_id参数
+      const projectIdValue = selectedProjects.length === 1 ? selectedProjects[0] : selectedProjects
+
+      // 获取organization_id：从选中的项目或组织参数中获取
+      let organizationId = organization?.id || ''
+
+      // 如果没有组织参数但选择了项目，从项目中提取organization_id
+      if (!organizationId && selectedProjects.length > 0) {
+        const firstSelectedProject = userProjects.find(p => p.id === selectedProjects[0])
+        organizationId = firstSelectedProject?.organization_id || ''
+      }
+
+      console.log('[FloatingChatBot] 发送参数:', {
+        chatInput: userMessage.content,
+        project_id: projectIdValue,
+        organization_id: organizationId,
+        selectedProjectsCount: selectedProjects.length
+      })
+
       // 调用N8N ChatBot API
       const response = await fetch('/api/aip/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chatInput: userMessage.content,
-          project_id: selectedProjects,
-          organization_id: organization?.id || ''
+          project_id: projectIdValue,
+          organization_id: organizationId
         })
       })
 

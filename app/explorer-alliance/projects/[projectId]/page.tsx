@@ -449,6 +449,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       {/* FloatingChatBot */}
       <FloatingChatBot
         currentProject={project}
+        organization={project.organization_id ? {
+          id: project.organization_id,
+          name: project.organization?.name || '未知组织',
+          description: project.organization?.description || null,
+          settings: {},
+          created_at: '',
+          updated_at: ''
+        } : undefined}
         showProjectSelector={true}
       />
 
