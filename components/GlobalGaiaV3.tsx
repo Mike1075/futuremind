@@ -92,63 +92,69 @@ export function GlobalGaiaV3() {
 
   // 监听滚动到历史讨论的请求
   useEffect(() => {
-    const handleScrollToDiscussion = async (event: CustomEvent) => {
+    const handleScrollToDiscussion = (event: Event) => {
+      const customEvent = event as CustomEvent
       console.log('[GlobalGaia] 📜 收到滚动到讨论事件')
-      const { conversationId, messageIndex, totalMessages } = event.detail
+      const { conversationId, messageIndex, totalMessages } = customEvent.detail
       console.log('  - conversationId:', conversationId)
       console.log('  - messageIndex:', messageIndex)
       console.log('  - totalMessages:', totalMessages)
 
       setIsOpen(true)
 
-      try {
-        // 加载指定对话的所有消息
-        const response = await fetch('/api/gaia/conversation-detail', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversationId })
-        })
+      // 异步加载对话
+      const loadConversation = async () => {
+        try {
+          // 加载指定对话的所有消息
+          const response = await fetch('/api/gaia/conversation-detail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversationId })
+          })
 
-        if (response.ok) {
-          const data = await response.json()
-          setMessages(data.messages || [])
-          setCurrentConversationId(conversationId)
+          if (response.ok) {
+            const data = await response.json()
+            setMessages(data.messages || [])
+            setCurrentConversationId(conversationId)
 
-          // 设置高亮的消息
-          setHighlightedMessageIndex(messageIndex)
+            // 设置高亮的消息
+            setHighlightedMessageIndex(messageIndex)
 
-          // 设置折叠点：如果messageIndex之后超过10条消息，则折叠
-          const remainingMessages = totalMessages - messageIndex - 1
-          if (remainingMessages > 10) {
-            console.log('[GlobalGaia] 📦 设置折叠点:', messageIndex + 10)
-            setCollapsedAfterIndex(messageIndex + 10)
-            setShowCollapsed(false)
-          } else {
-            setCollapsedAfterIndex(null)
-          }
-
-          // 等待DOM更新后滚动到指定消息
-          setTimeout(() => {
-            const targetRef = messageRefs.current[messageIndex]
-            if (targetRef) {
-              console.log('[GlobalGaia] ✅ 滚动到消息', messageIndex)
-              targetRef.scrollIntoView({ behavior: 'smooth', block: 'center' })
-
-              // 3秒后移除高亮
-              setTimeout(() => {
-                setHighlightedMessageIndex(null)
-              }, 3000)
+            // 设置折叠点：如果messageIndex之后超过10条消息，则折叠
+            const remainingMessages = totalMessages - messageIndex - 1
+            if (remainingMessages > 10) {
+              console.log('[GlobalGaia] 📦 设置折叠点:', messageIndex + 10)
+              setCollapsedAfterIndex(messageIndex + 10)
+              setShowCollapsed(false)
+            } else {
+              setCollapsedAfterIndex(null)
             }
-          }, 100)
+
+            // 等待DOM更新后滚动到指定消息
+            setTimeout(() => {
+              const targetRef = messageRefs.current[messageIndex]
+              if (targetRef) {
+                console.log('[GlobalGaia] ✅ 滚动到消息', messageIndex)
+                targetRef.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+                // 3秒后移除高亮
+                setTimeout(() => {
+                  setHighlightedMessageIndex(null)
+                }, 3000)
+              }
+            }, 100)
+          }
+        } catch (error) {
+          console.error('[GlobalGaia] ❌ 加载对话失败:', error)
         }
-      } catch (error) {
-        console.error('[GlobalGaia] ❌ 加载对话失败:', error)
       }
+
+      loadConversation()
     }
 
-    window.addEventListener('scrollToDiscussion', handleScrollToDiscussion as EventListener)
+    window.addEventListener('scrollToDiscussion', handleScrollToDiscussion)
     return () => {
-      window.removeEventListener('scrollToDiscussion', handleScrollToDiscussion as EventListener)
+      window.removeEventListener('scrollToDiscussion', handleScrollToDiscussion)
     }
   }, [])
 
