@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Check, Send, MessageSquare, X } from 'lucide-react'
+import { Check, Send, MessageSquare, X, Trash2 } from 'lucide-react'
 import { useOrganizations } from '@/lib/aip/hooks'
 import { useUserProjects } from '@/lib/aip/useUserProjects'
 
@@ -148,6 +148,20 @@ export function ChatBot() {
     }
   }
 
+  // 删除单个消息
+  const handleDeleteMessage = (index: number) => {
+    setMessages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // 清空对话
+  const handleClearConversation = () => {
+    setMessages([{
+      role: 'assistant',
+      content: '您好！我是AIP AI助手\n\n我可以帮您管理项目、分配任务、搜索文档等。您可以选择特定项目进行更精准的查询。',
+      timestamp: new Date()
+    }])
+  }
+
   // 切换项目选择
   const toggleProject = (projectId: string) => {
     setSelectedProjects(prev =>
@@ -204,9 +218,18 @@ export function ChatBot() {
             {/* Main Chat Window */}
             <div className="bg-zinc-900 border border-white/20 rounded-xl shadow-2xl w-full max-w-[960px] h-[600px] flex flex-col">
               {/* Header */}
-              <div className="p-4 border-b border-white/10 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20">
-                <h3 className="text-lg font-semibold text-white">AIP AI 助手</h3>
-                <p className="text-sm text-gray-400 mt-1">智能项目管理助手</p>
+              <div className="p-4 border-b border-white/10 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">AIP AI 助手</h3>
+                  <p className="text-sm text-gray-400 mt-1">智能项目管理助手</p>
+                </div>
+                <button
+                  onClick={handleClearConversation}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors group"
+                  title="清空聊天记录"
+                >
+                  <Trash2 className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+                </button>
               </div>
 
               {/* Messages */}
@@ -214,8 +237,30 @@ export function ChatBot() {
                 {messages.map((msg, index) => (
                   <div
                     key={index}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`group flex items-start gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
+                    {msg.role === 'user' && index > 0 && (
+                      <div className="relative">
+                        <button
+                          onDoubleClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            handleDeleteMessage(index)
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/20 peer cursor-pointer"
+                          title="双击删除此消息"
+                        >
+                          <X className="h-3 w-3 text-red-500 hover:text-red-400" />
+                        </button>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 peer-hover:opacity-100 transition-opacity duration-0 pointer-events-none z-10">
+                          双击删除
+                        </div>
+                      </div>
+                    )}
                     <div
                       className={`max-w-[80%] p-3 rounded-lg ${
                         msg.role === 'user'
@@ -228,6 +273,28 @@ export function ChatBot() {
                         {msg.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
+                    {msg.role === 'assistant' && index > 0 && (
+                      <div className="relative">
+                        <button
+                          onDoubleClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            handleDeleteMessage(index)
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/20 peer cursor-pointer"
+                          title="双击删除此消息"
+                        >
+                          <X className="h-3 w-3 text-red-500 hover:text-red-400" />
+                        </button>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 peer-hover:opacity-100 transition-opacity duration-0 pointer-events-none z-10">
+                          双击删除
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
 
