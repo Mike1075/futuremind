@@ -51,7 +51,7 @@ export function useUnreadCount() {
         .from('project_members')
         .select('project_id')
         .eq('user_id', user.id)
-        .eq('role_in_project', 'manager')
+        .in('role_in_project', ['owner', 'manager'])
 
       if (managedProjects && managedProjects.length > 0) {
         const projectIds = managedProjects.map(p => p.project_id)
