@@ -6,7 +6,7 @@ import SubmissionButton from './SubmissionButton'
 import { CourseService } from '@/lib/services/course.service'
 import { ProgressService } from '@/lib/services/progress.service'
 import { PBLProjectDetail } from '@/components/courses/PBLProjectDetail'
-import { EarthContentWrapper } from './EarthContentWrapper'
+import { EarthContentWrapperV2 } from './EarthContentWrapperV2'
 
 // Resource 类型定义（对应 course_contents.resources 的结构）
 interface Resource {
@@ -160,7 +160,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     }
 
     return (
-      <EarthContentWrapper
+      <EarthContentWrapperV2
         content={content}
         systemKey={systemKey}
         isCompleted={isCompleted}
