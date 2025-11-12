@@ -234,6 +234,24 @@ export async function createProject(
         role_in_project: 'owner',
       })
 
+    // 为新项目创建默认智慧库文档（避免N8N RAG查询报错）
+    try {
+      await supabase
+        .from('documents')
+        .insert({
+          project_id: data.id,
+          user_id: user.id,
+          organization_id: data.organization_id,
+          title: '项目智慧库',
+          content: '',
+          metadata: { type: 'project_knowledge_base' }
+        })
+      console.log('[createProject] 已为项目创建默认智慧库文档')
+    } catch (docError) {
+      // 文档创建失败不影响项目创建
+      console.error('[createProject] 创建默认文档失败:', docError)
+    }
+
     return { data }
   } catch (error: any) {
     return { error: error.message }
