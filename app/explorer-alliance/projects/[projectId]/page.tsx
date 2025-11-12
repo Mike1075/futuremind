@@ -46,7 +46,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     const loadDocumentsCount = async () => {
       const supabase = createClient()
       const { count } = await supabase
-        .from('project_documents')
+        .from('documents')
         .select('*', { count: 'exact', head: true })
         .eq('project_id', projectId)
 

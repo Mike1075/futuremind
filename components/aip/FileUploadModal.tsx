@@ -21,14 +21,13 @@ interface UploadFile {
 
 interface ProjectDocument {
   id: string
-  project_id: string
-  user_id: string
-  title: string
-  filename: string
-  file_path: string
-  file_size: number
-  file_type: string
-  created_at: string
+  project_id: string | null
+  user_id: string | null
+  organization_id: string | null
+  title: string | null
+  content: string
+  metadata: any
+  created_at: string | null
 }
 
 export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadModalProps) {
@@ -66,8 +65,8 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       setLoading(true)
       const supabase = createClient()
 
-      const { data, error } = await supabase
-        .from('project_documents')
+      const { data, error} = await supabase
+        .from('documents')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })
@@ -215,6 +214,12 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
   }
 
   const handleDeleteDocument = async (doc: ProjectDocument) => {
+    // 防止删除项目智慧库
+    if (doc.title === '项目智慧库') {
+      alert('项目智慧库不能被删除')
+      return
+    }
+
     // 权限检查：项目经理或文档创建者可以删除
     const canDelete = isManager || doc.user_id === userId
 
@@ -230,16 +235,9 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
     try {
       const supabase = createClient()
 
-      // 从Storage删除文件
-      const { error: storageError } = await supabase.storage
-        .from('project-documents')
-        .remove([doc.file_path])
-
-      if (storageError) throw storageError
-
       // 从数据库删除记录
       const { error: dbError } = await supabase
-        .from('project_documents')
+        .from('documents')
         .delete()
         .eq('id', doc.id)
 
@@ -253,21 +251,15 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
     }
   }
 
+  // 下载文本文档（documents表仅存储文本内容）
   const handleDownloadDocument = async (doc: ProjectDocument) => {
     try {
-      const supabase = createClient()
-
-      const { data, error } = await supabase.storage
-        .from('project-documents')
-        .download(doc.file_path)
-
-      if (error) throw error
-
-      // 创建下载链接
-      const url = URL.createObjectURL(data)
+      // 创建一个文本文件并下载
+      const blob = new Blob([doc.content], { type: 'text/plain;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = doc.filename
+      a.download = `${doc.title}.txt`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -339,44 +331,44 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
               </div>
             ) : (
               <div className="space-y-2 max-h-40 overflow-y-auto">
-                {existingDocuments.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
-                  >
-                    <span className="text-lg">{getFileIcon(doc.file_type)}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white truncate">{doc.title}</p>
-                      <div className="flex items-center gap-2 text-xs text-zinc-500">
-                        <span>{doc.filename}</span>
-                        <span>•</span>
-                        <span>{(doc.file_size / 1024 / 1024).toFixed(2)} MB</span>
-                        <span>•</span>
-                        <span>{new Date(doc.created_at).toLocaleDateString('zh-CN')}</span>
+                {existingDocuments.map((doc) => {
+                  const isKnowledgeBase = doc.title === '项目智慧库'
+                  const contentLength = doc.content?.length || 0
+                  return (
+                    <div
+                      key={doc.id}
+                      className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
+                    >
+                      <span className="text-lg">{isKnowledgeBase ? '📚' : '📄'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-white truncate">{doc.title}</p>
+                        <div className="flex items-center gap-2 text-xs text-zinc-500">
+                          <span>{contentLength} 字符</span>
+                          <span>•</span>
+                          <span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString('zh-CN') : '未知日期'}</span>
+                          {isKnowledgeBase && (
+                            <>
+                              <span>•</span>
+                              <span className="text-blue-400">系统默认</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {!isKnowledgeBase && (isManager || doc.user_id === userId) && (
+                          <button
+                            onClick={() => handleDeleteDocument(doc)}
+                            className="p-1 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300"
+                            title="删除"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleDownloadDocument(doc)}
-                        className="p-1 hover:bg-zinc-700 rounded text-blue-400 hover:text-blue-300"
-                        title="下载"
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
-
-                      {(isManager || doc.user_id === userId) && (
-                        <button
-                          onClick={() => handleDeleteDocument(doc)}
-                          className="p-1 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300"
-                          title="删除"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
