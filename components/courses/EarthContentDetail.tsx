@@ -8,6 +8,7 @@ import { Lock, Unlock } from 'lucide-react'
 import { recordInteraction, getEarthProgress, type ItemType } from '@/lib/utils/interaction-tracker'
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
+import { KnowledgeSectionV2 } from '@/components/courses/tabs/KnowledgeSectionV2'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -461,77 +462,14 @@ export function EarthContentDetail({
           )}
         </div>
 
-        {/* 知识点 - 创意卡片网格 */}
+        {/* 知识点 - 使用统一的KnowledgeSectionV2组件 */}
         {knowledgePoints.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-2xl shadow-lg shadow-green-500/20">
-                💡
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">核心知识点</h2>
-                <p className="text-sm text-gray-400">点击卡片与盖亚深入探讨</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {knowledgePoints.map((point, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  onMouseEnter={() => setHoveredCard(`knowledge-${index}`)}
-                  onMouseLeave={() => setHoveredCard(null)}
-                  onClick={() => handleKnowledgePointClick(point, index)}
-                  className="relative group cursor-pointer"
-                >
-                  {/* 背景渐变效果 */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-emerald-500/10 to-teal-500/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                  <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 rounded-2xl p-6 hover:border-green-500/50 transition-all duration-300 group-hover:scale-[1.02] overflow-hidden">
-                    {/* 编号标签 */}
-                    <div className="absolute top-4 right-4 w-10 h-10 rounded-lg bg-gradient-to-br from-green-400/20 to-emerald-500/20 border border-green-500/30 flex items-center justify-center">
-                      <span className="text-green-400 font-bold text-lg">{index + 1}</span>
-                    </div>
-
-                    {/* 内容 */}
-                    <div className="pr-14">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                        <span className="text-xs text-green-400 uppercase font-semibold tracking-wider">Knowledge</span>
-                      </div>
-                      <p className="text-gray-100 leading-relaxed mb-4">{point}</p>
-                    </div>
-
-                    {/* 探讨按钮 */}
-                    <motion.button
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{
-                        opacity: hoveredCard === `knowledge-${index}` ? 1 : 0,
-                        x: hoveredCard === `knowledge-${index}` ? 0 : -10
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleKnowledgePointClick(point, index)
-                      }}
-                      className="w-full px-4 py-2.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all flex items-center justify-center gap-2"
-                    >
-                      <span className="text-lg">💬</span>
-                      <span>与盖亚深入探讨</span>
-                    </motion.button>
-
-                    {/* 装饰性元素 */}
-                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-br from-green-400/5 to-transparent rounded-full blur-2xl group-hover:opacity-100 opacity-0 transition-opacity duration-500" />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+          <div className="mb-12">
+            <KnowledgeSectionV2
+              knowledgePoints={knowledgePoints}
+              contentId={content.id}
+            />
+          </div>
         )}
 
         {/* 苏格拉底式问题 - 创意时间轴布局 */}
