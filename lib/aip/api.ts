@@ -226,13 +226,20 @@ export async function createProject(
     if (error) throw error
 
     // 自动将创建者添加为项目成员
-    await supabase
+    const { error: memberError } = await supabase
       .from('project_members')
       .insert({
         project_id: data.id,
         user_id: user.id,
         role_in_project: 'owner',
       })
+
+    if (memberError) {
+      console.error('[createProject] 添加项目成员失败:', memberError)
+      // 如果添加成员失败，删除刚创建的项目以保持数据一致性
+      await supabase.from('projects').delete().eq('id', data.id)
+      throw new Error('创建项目失败：无法添加项目成员')
+    }
 
     // 为新项目创建默认智慧库文档（与对标网站一致）
     // 注意：content保持空字符串，embedding为NULL，这是正常的

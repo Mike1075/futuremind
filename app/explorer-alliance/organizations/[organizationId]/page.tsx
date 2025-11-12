@@ -549,6 +549,7 @@ export default function OrganizationDashboardPage() {
           onSuccess={() => {
             setShowCreateProject(false)
             reloadProjects()
+            loadUserData()  // 重新加载用户权限，确保新项目显示在"我的项目"中
           }}
         />
       )}
