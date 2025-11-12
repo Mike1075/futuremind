@@ -23,8 +23,12 @@ export function GlobalGaiaV3() {
   const [isLoading, setIsLoading] = useState(false)
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messageRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const [isFromKnowledgePoint, setIsFromKnowledgePoint] = useState(false)
+  const [highlightedMessageIndex, setHighlightedMessageIndex] = useState<number | null>(null)
+  const [collapsedAfterIndex, setCollapsedAfterIndex] = useState<number | null>(null)
+  const [showCollapsed, setShowCollapsed] = useState(false)
 
   console.log('[GlobalGaia] 当前状态:', {
     isOpen,
@@ -83,6 +87,68 @@ export function GlobalGaiaV3() {
     return () => {
       console.log('[GlobalGaia] 🧹 清理事件监听器')
       window.removeEventListener('openGaiaWithQuestion', handleOpenWithQuestion as EventListener)
+    }
+  }, [])
+
+  // 监听滚动到历史讨论的请求
+  useEffect(() => {
+    const handleScrollToDiscussion = async (event: CustomEvent) => {
+      console.log('[GlobalGaia] 📜 收到滚动到讨论事件')
+      const { conversationId, messageIndex, totalMessages } = event.detail
+      console.log('  - conversationId:', conversationId)
+      console.log('  - messageIndex:', messageIndex)
+      console.log('  - totalMessages:', totalMessages)
+
+      setIsOpen(true)
+
+      try {
+        // 加载指定对话的所有消息
+        const response = await fetch('/api/gaia/conversation-detail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversationId })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setMessages(data.messages || [])
+          setCurrentConversationId(conversationId)
+
+          // 设置高亮的消息
+          setHighlightedMessageIndex(messageIndex)
+
+          // 设置折叠点：如果messageIndex之后超过10条消息，则折叠
+          const remainingMessages = totalMessages - messageIndex - 1
+          if (remainingMessages > 10) {
+            console.log('[GlobalGaia] 📦 设置折叠点:', messageIndex + 10)
+            setCollapsedAfterIndex(messageIndex + 10)
+            setShowCollapsed(false)
+          } else {
+            setCollapsedAfterIndex(null)
+          }
+
+          // 等待DOM更新后滚动到指定消息
+          setTimeout(() => {
+            const targetRef = messageRefs.current[messageIndex]
+            if (targetRef) {
+              console.log('[GlobalGaia] ✅ 滚动到消息', messageIndex)
+              targetRef.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+              // 3秒后移除高亮
+              setTimeout(() => {
+                setHighlightedMessageIndex(null)
+              }, 3000)
+            }
+          }, 100)
+        }
+      } catch (error) {
+        console.error('[GlobalGaia] ❌ 加载对话失败:', error)
+      }
+    }
+
+    window.addEventListener('scrollToDiscussion', handleScrollToDiscussion as EventListener)
+    return () => {
+      window.removeEventListener('scrollToDiscussion', handleScrollToDiscussion as EventListener)
     }
   }, [])
 
@@ -326,28 +392,61 @@ export function GlobalGaiaV3() {
           {/* 消息列表 */}
             <>
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-black">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-[85%] ${
-                      message.role === 'user'
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                        : 'bg-gray-800 text-gray-100 border border-gray-700'
-                    } rounded-2xl px-4 py-3 shadow-sm`}>
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                      <p className={`text-xs mt-2 ${
-                        message.role === 'user' ? 'text-purple-100' : 'text-gray-500'
+                {messages.map((message, index) => {
+                  // 检查是否应该显示这条消息（折叠机制）
+                  if (collapsedAfterIndex !== null && !showCollapsed) {
+                    if (index > collapsedAfterIndex && index < messages.length - 1) {
+                      // 这条消息被折叠了，跳过
+                      return null
+                    }
+                  }
+
+                  // 检查是否是高亮消息
+                  const isHighlighted = highlightedMessageIndex === index
+
+                  return (
+                    <div
+                      key={index}
+                      ref={(el) => (messageRefs.current[index] = el)}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`max-w-[85%] ${
+                        message.role === 'user'
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                          : 'bg-gray-800 text-gray-100 border border-gray-700'
+                      } rounded-2xl px-4 py-3 shadow-sm transition-all duration-300 ${
+                        isHighlighted
+                          ? 'ring-4 ring-yellow-400 ring-opacity-75 scale-105 animate-pulse'
+                          : ''
                       }`}>
-                        {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                        <p className={`text-xs mt-2 ${
+                          message.role === 'user' ? 'text-purple-100' : 'text-gray-500'
+                        }`}>
+                          {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
                     </div>
+                  )
+                })}
+
+                {/* 折叠按钮 */}
+                {collapsedAfterIndex !== null && !showCollapsed && (
+                  <div className="flex justify-center py-4">
+                    <button
+                      onClick={() => setShowCollapsed(true)}
+                      className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full text-sm border border-gray-700 transition-colors flex items-center gap-2"
+                    >
+                      <span>展开更多聊天记录</span>
+                      <span className="text-xs text-gray-500">
+                        ({messages.length - collapsedAfterIndex - 2} 条)
+                      </span>
+                    </button>
                   </div>
-                ))}
+                )}
 
                 {isLoading && (
                   <div className="flex justify-start">

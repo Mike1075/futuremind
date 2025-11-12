@@ -65,22 +65,60 @@ export function KnowledgeSectionV2({
     }
   }
 
-  // 点击问题，打开全局盖亚
-  const handleClickQuestion = (question: string) => {
+  // 点击问题，打开全局盖亚（先检查是否已讨论过）
+  const handleClickQuestion = async (question: string) => {
     console.log('[KnowledgeSection] 点击"与盖亚深入探讨"按钮')
     console.log('[KnowledgeSection] 问题内容:', question)
-    console.log('[KnowledgeSection] window对象存在:', typeof window !== 'undefined')
 
-    // 触发全局盖亚打开事件
-    if (typeof window !== 'undefined') {
+    if (typeof window === 'undefined') {
+      console.error('[KnowledgeSection] ❌ window对象不存在')
+      return
+    }
+
+    try {
+      // 先检查这个问题是否已经讨论过
+      console.log('[KnowledgeSection] 🔍 检查问题是否已讨论...')
+      const response = await fetch('/api/gaia/check-discussed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[KnowledgeSection] 检查结果:', data)
+
+        if (data.discussed) {
+          // 问题已讨论过，触发跳转到历史记录的事件
+          console.log('[KnowledgeSection] ✅ 问题已讨论过，触发跳转事件')
+
+          const shouldContinue = window.confirm(
+            '💡 这个话题我们之前聊过哦！\n\n要不要回顾一下之前的讨论，继续深入探讨呢？'
+          )
+
+          if (shouldContinue) {
+            window.dispatchEvent(new CustomEvent('scrollToDiscussion', {
+              detail: {
+                conversationId: data.conversationId,
+                messageIndex: data.messageIndex,
+                totalMessages: data.messageCount
+              }
+            }))
+          }
+          return
+        }
+      }
+
+      // 问题未讨论过，正常触发新问题事件
+      console.log('[KnowledgeSection] ❌ 问题未讨论过，触发新问题事件')
       const event = new CustomEvent('openGaiaWithQuestion', { detail: { question } })
-      console.log('[KnowledgeSection] 创建CustomEvent:', event)
-      console.log('[KnowledgeSection] Event detail:', event.detail)
-
       window.dispatchEvent(event)
       console.log('[KnowledgeSection] ✅ 事件已派发')
-    } else {
-      console.error('[KnowledgeSection] ❌ window对象不存在，无法派发事件')
+    } catch (error) {
+      console.error('[KnowledgeSection] 检查失败，fallback到正常流程:', error)
+      // 出错时 fallback 到正常流程
+      const event = new CustomEvent('openGaiaWithQuestion', { detail: { question } })
+      window.dispatchEvent(event)
     }
   }
 
