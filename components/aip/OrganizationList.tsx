@@ -22,16 +22,40 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
     setLoadingProjects(true)
     try {
       const projectsData: Record<string, Project[]> = {}
+      const supabase = (await import('@/lib/supabase/client')).createClient()
 
-      // 并发加载所有组织的项目
+      // 获取当前用户
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setLoadingProjects(false)
+        return
+      }
+
+      // 并发加载所有组织的项目（只加载用户参与的项目）
       await Promise.all(
         organizations.map(async (org) => {
-          const result = await getOrganizationProjects(org.organization_id)
-          if (!result.error && result.data) {
-            projectsData[org.organization_id] = result.data
-          } else {
+          // 获取用户在该组织下参与的项目
+          const { data: memberships } = await supabase
+            .from('project_members')
+            .select('project_id')
+            .eq('user_id', user.id)
+
+          const projectIds = memberships?.map(m => m.project_id) || []
+
+          if (projectIds.length === 0) {
             projectsData[org.organization_id] = []
+            return
           }
+
+          // 获取这些项目的详细信息（且属于该组织）
+          const { data: projects } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('organization_id', org.organization_id)
+            .in('id', projectIds)
+            .order('created_at', { ascending: false })
+
+          projectsData[org.organization_id] = (projects as any[]) || []
         })
       )
 
