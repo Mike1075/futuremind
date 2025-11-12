@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { GlobalGaiaWrapper } from "@/components/GlobalGaiaWrapper";
 
 export const metadata: Metadata = {
   title: "未来心灵学院 | Future Mind Institute",
@@ -15,6 +16,7 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body className="antialiased bg-black min-h-screen font-sans">
         {children}
+        <GlobalGaiaWrapper />
       </body>
     </html>
   );
