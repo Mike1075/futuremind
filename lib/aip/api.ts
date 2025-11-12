@@ -379,6 +379,28 @@ export async function requestToJoinProject(
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('未登录')
 
+    // 1. 获取项目信息
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('name, creator_id')
+      .eq('id', projectId)
+      .single()
+
+    if (projectError) throw projectError
+    if (!project) throw new Error('项目不存在')
+
+    // 2. 获取申请者的用户信息
+    const { data: applicantProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError) throw profileError
+
+    const applicantName = applicantProfile?.full_name || applicantProfile?.email || '未知用户'
+
+    // 3. 创建加入申请记录
     const { data, error } = await supabase
       .from('project_join_requests')
       .insert({
@@ -390,6 +412,53 @@ export async function requestToJoinProject(
       .single()
 
     if (error) throw error
+
+    // 4. 获取项目的所有管理者（创建者和manager角色）
+    const { data: managers, error: managersError } = await supabase
+      .from('project_members')
+      .select('user_id')
+      .eq('project_id', projectId)
+      .in('role_in_project', ['owner', 'manager'])
+
+    if (managersError) {
+      console.error('获取项目管理者失败:', managersError)
+    }
+
+    // 将创建者也加入通知列表（以防没有project_members记录）
+    const managerIds = new Set(managers?.map(m => m.user_id) || [])
+    if (project.creator_id) {
+      managerIds.add(project.creator_id)
+    }
+
+    // 5. 为所有管理者创建通知（失败不阻断主流程）
+    if (managerIds.size > 0) {
+      const notifications = Array.from(managerIds).map(managerId => ({
+        user_id: managerId,
+        type: 'project_join_request' as const,
+        title: '新的项目加入申请',
+        message: `${applicantName} 申请加入项目"${project.name}"`,
+        metadata: {
+          project_id: projectId,
+          project_name: project.name,
+          applicant_id: user.id,
+          applicant_name: applicantName,
+          request_id: data.id,
+          request_message: message
+        }
+      }))
+
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert(notifications)
+
+      if (notificationError) {
+        console.error('创建通知失败:', notificationError)
+        // 不抛出错误，避免影响主要流程
+      } else {
+        console.log(`已为 ${managerIds.size} 位管理者创建通知`)
+      }
+    }
+
     return { data }
   } catch (error: any) {
     return { error: error.message }

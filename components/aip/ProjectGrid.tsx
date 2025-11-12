@@ -11,7 +11,8 @@ import {
   CheckCircle2,
   Clock,
   Pause,
-  AlertCircle
+  AlertCircle,
+  User
 } from 'lucide-react'
 import type { Project } from '@/lib/aip/types'
 
@@ -174,9 +175,17 @@ export function ProjectGrid({
             </div>
 
             {/* 项目描述 */}
-            <p className="text-sm text-zinc-400 line-clamp-2 mb-4 min-h-[2.5rem]">
+            <p className="text-sm text-zinc-400 line-clamp-2 mb-3 min-h-[2.5rem]">
               {project.description || '暂无描述'}
             </p>
+
+            {/* 创建者信息 */}
+            {project.creator && (
+              <div className="flex items-center gap-2 mb-3 text-xs text-zinc-500">
+                <User className="h-3.5 w-3.5" />
+                <span>创建者: {project.creator.full_name || project.creator.email || '未知'}</span>
+              </div>
+            )}
 
             {/* 状态标签和属性 */}
             <div className="flex items-center gap-2 mb-4">
