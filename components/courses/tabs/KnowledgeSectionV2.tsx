@@ -13,6 +13,10 @@ export function KnowledgeSectionV2({
   knowledgePoints,
   contentId
 }: KnowledgeSectionV2Props) {
+  console.log('[KnowledgeSection] 组件初始化')
+  console.log('[KnowledgeSection] contentId:', contentId)
+  console.log('[KnowledgeSection] knowledgePoints数量:', knowledgePoints.length)
+
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
   const [questions, setQuestions] = useState<Record<number, string>>({})
@@ -63,9 +67,20 @@ export function KnowledgeSectionV2({
 
   // 点击问题，打开全局盖亚
   const handleClickQuestion = (question: string) => {
+    console.log('[KnowledgeSection] 点击"与盖亚深入探讨"按钮')
+    console.log('[KnowledgeSection] 问题内容:', question)
+    console.log('[KnowledgeSection] window对象存在:', typeof window !== 'undefined')
+
     // 触发全局盖亚打开事件
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('openGaiaWithQuestion', { detail: { question } }))
+      const event = new CustomEvent('openGaiaWithQuestion', { detail: { question } })
+      console.log('[KnowledgeSection] 创建CustomEvent:', event)
+      console.log('[KnowledgeSection] Event detail:', event.detail)
+
+      window.dispatchEvent(event)
+      console.log('[KnowledgeSection] ✅ 事件已派发')
+    } else {
+      console.error('[KnowledgeSection] ❌ window对象不存在，无法派发事件')
     }
   }
 
@@ -146,7 +161,10 @@ export function KnowledgeSectionV2({
                   </div>
 
                   <button
-                    onClick={() => handleClickQuestion(question)}
+                    onClick={() => {
+                      console.log('[KnowledgeSection] 按钮被点击，index:', index)
+                      handleClickQuestion(question)
+                    }}
                     className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
                   >
                     <MessageSquare className="w-4 h-4" />

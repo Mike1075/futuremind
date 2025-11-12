@@ -15,6 +15,8 @@ interface Message {
 }
 
 export function GlobalGaiaV3() {
+  console.log('[GlobalGaia] 🚀 组件初始化/重新渲染')
+
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -24,20 +26,51 @@ export function GlobalGaiaV3() {
 
   const [isFromKnowledgePoint, setIsFromKnowledgePoint] = useState(false)
 
+  console.log('[GlobalGaia] 当前状态:', {
+    isOpen,
+    messagesCount: messages.length,
+    hasInput: !!input,
+    isLoading,
+    currentConversationId,
+    isFromKnowledgePoint
+  })
+
   // 监听来自知识点的打开请求
   useEffect(() => {
+    console.log('[GlobalGaia] 🎯 useEffect执行：注册事件监听器')
+    console.log('[GlobalGaia] window对象:', typeof window !== 'undefined' ? '存在' : '不存在')
+
     const handleOpenWithQuestion = (event: CustomEvent) => {
+      console.log('[GlobalGaia] 🔔 收到事件 openGaiaWithQuestion')
+      console.log('[GlobalGaia] Event对象:', event)
+      console.log('[GlobalGaia] Event detail:', event.detail)
+
       const { question } = event.detail
+      console.log('[GlobalGaia] 提取的问题:', question)
+
+      console.log('[GlobalGaia] 设置状态:')
+      console.log('  - isFromKnowledgePoint: true')
+      console.log('  - isOpen: true')
+      console.log('  - input:', question)
+      console.log('  - messages: []')
+      console.log('  - currentConversationId: null')
+
       setIsFromKnowledgePoint(true)
       setIsOpen(true)
       setInput(question)
       // 清空当前会话，开始新对话
       setMessages([])
       setCurrentConversationId(null)
+
+      console.log('[GlobalGaia] ✅ 状态设置完成')
     }
 
+    console.log('[GlobalGaia] 添加事件监听器...')
     window.addEventListener('openGaiaWithQuestion', handleOpenWithQuestion as EventListener)
+    console.log('[GlobalGaia] ✅ 事件监听器已注册')
+
     return () => {
+      console.log('[GlobalGaia] 🧹 清理事件监听器')
       window.removeEventListener('openGaiaWithQuestion', handleOpenWithQuestion as EventListener)
     }
   }, [])
@@ -53,7 +86,15 @@ export function GlobalGaiaV3() {
 
   // 打开盖亚时，显示欢迎消息（新会话）- 但不包括从知识点触发的情况
   useEffect(() => {
+    console.log('[GlobalGaia] 💬 欢迎消息useEffect触发')
+    console.log('[GlobalGaia] 状态检查:')
+    console.log('  - isOpen:', isOpen)
+    console.log('  - messages.length:', messages.length)
+    console.log('  - currentConversationId:', currentConversationId)
+    console.log('  - isFromKnowledgePoint:', isFromKnowledgePoint)
+
     if (isOpen && messages.length === 0 && !currentConversationId && !isFromKnowledgePoint) {
+      console.log('[GlobalGaia] ✅ 显示欢迎消息')
       const welcomeMessage: Message = {
         role: 'assistant',
         content: `🌟 你好！我是盖亚（Gaia），你的AI学习伙伴。
@@ -68,8 +109,10 @@ export function GlobalGaiaV3() {
         timestamp: new Date().toISOString()
       }
       setMessages([welcomeMessage])
+    } else {
+      console.log('[GlobalGaia] ⏭️ 跳过欢迎消息（条件不满足）')
     }
-  }, [isOpen, isFromKnowledgePoint])
+  }, [isOpen, isFromKnowledgePoint, messages.length, currentConversationId])
 
   // 当用户开始输入或发送消息后，重置知识点标记
   useEffect(() => {
