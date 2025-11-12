@@ -14,27 +14,21 @@ interface Message {
   }
 }
 
-interface Conversation {
-  id: string
-  title: string
-  updated_at: string
-  message_count: number
-}
-
 export function GlobalGaiaV3() {
   const [isOpen, setIsOpen] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
-  const [conversations, setConversations] = useState<Conversation[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const [isFromKnowledgePoint, setIsFromKnowledgePoint] = useState(false)
 
   // 监听来自知识点的打开请求
   useEffect(() => {
     const handleOpenWithQuestion = (event: CustomEvent) => {
       const { question } = event.detail
+      setIsFromKnowledgePoint(true)
       setIsOpen(true)
       setInput(question)
       // 清空当前会话，开始新对话
@@ -57,9 +51,9 @@ export function GlobalGaiaV3() {
     scrollToBottom()
   }, [messages])
 
-  // 打开盖亚时，显示欢迎消息（新会话）
+  // 打开盖亚时，显示欢迎消息（新会话）- 但不包括从知识点触发的情况
   useEffect(() => {
-    if (isOpen && messages.length === 0 && !currentConversationId) {
+    if (isOpen && messages.length === 0 && !currentConversationId && !isFromKnowledgePoint) {
       const welcomeMessage: Message = {
         role: 'assistant',
         content: `🌟 你好！我是盖亚（Gaia），你的AI学习伙伴。
@@ -75,38 +69,34 @@ export function GlobalGaiaV3() {
       }
       setMessages([welcomeMessage])
     }
-  }, [isOpen])
+  }, [isOpen, isFromKnowledgePoint])
 
-  // 加载聊天记录列表
-  const loadConversationHistory = async () => {
-    try {
-      const response = await fetch('/api/gaia/conversations')
-      if (response.ok) {
-        const data = await response.json()
-        setConversations(data.conversations || [])
-      }
-    } catch (error) {
-      console.error('Failed to load conversations:', error)
+  // 当用户开始输入或发送消息后，重置知识点标记
+  useEffect(() => {
+    if (messages.length > 0 && isFromKnowledgePoint) {
+      setIsFromKnowledgePoint(false)
     }
-  }
+  }, [messages, isFromKnowledgePoint])
 
-  // 打开特定历史对话
-  const openConversation = async (conversationId: string) => {
+  // 加载所有历史消息（合并所有对话）
+  const loadAllHistoryMessages = async () => {
     try {
-      const response = await fetch('/api/gaia/conversation-detail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId })
-      })
-
+      const response = await fetch('/api/gaia/all-messages')
       if (response.ok) {
         const data = await response.json()
-        setMessages(data.messages || [])
-        setCurrentConversationId(conversationId)
-        setShowHistory(false)
+        if (data.messages && data.messages.length > 0) {
+          // 设置所有历史消息
+          setMessages(data.messages)
+          // 清空当前对话ID，因为显示的是所有对话的合并视图
+          setCurrentConversationId(null)
+        } else {
+          // 没有历史记录
+          alert('暂无历史记录')
+        }
       }
     } catch (error) {
-      console.error('Failed to load conversation:', error)
+      console.error('Failed to load history:', error)
+      alert('加载历史记录失败')
     }
   }
 
@@ -204,14 +194,11 @@ export function GlobalGaiaV3() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* 聊天记录按钮 */}
+              {/* 聊天记录按钮 - 加载所有历史消息 */}
               <button
-                onClick={() => {
-                  setShowHistory(!showHistory)
-                  if (!showHistory) loadConversationHistory()
-                }}
+                onClick={loadAllHistoryMessages}
                 className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                title="聊天记录"
+                title="加载历史记录"
               >
                 <History className="w-5 h-5 text-gray-400" />
               </button>
@@ -226,37 +213,7 @@ export function GlobalGaiaV3() {
             </div>
           </div>
 
-          {/* 聊天记录面板 */}
-          {showHistory && (
-            <div className="absolute top-16 left-0 right-0 bottom-0 bg-gray-900 z-10 overflow-y-auto">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">聊天记录</h3>
-                {conversations.length === 0 ? (
-                  <div className="text-center text-gray-500 py-8">
-                    还没有聊天记录
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {conversations.map((conv) => (
-                      <button
-                        key={conv.id}
-                        onClick={() => openConversation(conv.id)}
-                        className="w-full text-left p-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        <div className="font-medium text-white mb-1">{conv.title}</div>
-                        <div className="text-xs text-gray-400">
-                          {new Date(conv.updated_at).toLocaleString('zh-CN')} · {conv.message_count} 条消息
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* 消息列表 */}
-          {!showHistory && (
             <>
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-black">
                 {messages.map((message, index) => (
@@ -320,7 +277,6 @@ export function GlobalGaiaV3() {
                 <p className="text-xs text-gray-500 mt-2">按 Enter 发送，Shift + Enter 换行</p>
               </div>
             </>
-          )}
         </div>
       )}
     </>
