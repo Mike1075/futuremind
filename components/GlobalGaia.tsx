@@ -186,27 +186,25 @@ export function GlobalGaia({ initialQuestion, onInitialQuestionSent }: GlobalGai
 
   return (
     <>
-      {/* 浮动按钮 */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
-        aria-label="打开盖亚对话"
-      >
-        {/* 外圈光晕 */}
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-xl opacity-60 group-hover:opacity-80 transition-opacity animate-pulse"></div>
+      {/* 浮动按钮 - 仅在对话框关闭时显示 */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
+          aria-label="打开盖亚对话"
+        >
+          {/* 外圈光晕 */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-xl opacity-60 group-hover:opacity-80 transition-opacity animate-pulse"></div>
 
-        {/* 图标 */}
-        <div className="relative z-10">
-          {isOpen ? (
-            <X className="w-8 h-8 text-white" />
-          ) : (
+          {/* 图标 */}
+          <div className="relative z-10">
             <MessageCircle className="w-8 h-8 text-white" />
-          )}
-        </div>
+          </div>
 
-        {/* 状态指示器 */}
-        <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-4 border-white animate-pulse"></div>
-      </button>
+          {/* 状态指示器 */}
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-4 border-white animate-pulse"></div>
+        </button>
+      )}
 
       {/* 侧边栏对话界面 */}
       {isOpen && (
