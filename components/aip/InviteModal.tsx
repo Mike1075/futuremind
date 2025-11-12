@@ -27,7 +27,7 @@ export function InviteModal({ onClose }: InviteModalProps) {
   const [isLoadingTargets, setIsLoadingTargets] = useState(false)
 
   // 邀请谁：方式 + 源组织 + 成员
-  const [inviteMethod, setInviteMethod] = useState<'member' | 'email'>('email')
+  const [inviteMethod, setInviteMethod] = useState<'member' | 'email'>('member')
   const [sourceOrganizations, setSourceOrganizations] = useState<Organization[]>([])
   const [selectedSourceOrg, setSelectedSourceOrg] = useState('')
   const [isLoadingSourceOrgs, setIsLoadingSourceOrgs] = useState(false)
@@ -57,12 +57,12 @@ export function InviteModal({ onClose }: InviteModalProps) {
         const managedOrgs = userOrgs?.map(uo => uo.organization).filter(Boolean) || []
         setTargetOrganizations(managedOrgs as Organization[])
 
-        // 获取用户管理的项目
+        // 获取用户管理的项目（owner和manager都可以邀请人）
         const { data: projectMembers } = await supabase
           .from('project_members')
           .select('*, project:projects(*)')
           .eq('user_id', user.id)
-          .eq('role_in_project', 'manager')
+          .in('role_in_project', ['owner', 'manager'])
 
         const managedProjects = projectMembers?.map(pm => pm.project).filter(Boolean) || []
         setProjects(managedProjects as Project[])
@@ -350,6 +350,17 @@ export function InviteModal({ onClose }: InviteModalProps) {
             <div className="flex gap-2 mb-3">
               <button
                 type="button"
+                onClick={() => setInviteMethod('member')}
+                className={`flex-1 p-2 rounded-lg border text-sm transition-colors ${
+                  inviteMethod === 'member'
+                    ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+                }`}
+              >
+                从组织选择成员
+              </button>
+              <button
+                type="button"
                 onClick={() => setInviteMethod('email')}
                 className={`flex-1 p-2 rounded-lg border text-sm transition-colors ${
                   inviteMethod === 'email'
@@ -359,35 +370,9 @@ export function InviteModal({ onClose }: InviteModalProps) {
               >
                 填写邮箱
               </button>
-              <button
-                type="button"
-                onClick={() => setInviteMethod('member')}
-                className={`flex-1 p-2 rounded-lg border text-sm transition-colors ${
-                  inviteMethod === 'member'
-                    ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
-                }`}
-              >
-                从组织选择
-              </button>
             </div>
 
-            {inviteMethod === 'email' ? (
-              <div>
-                <label htmlFor="email" className="block text-xs font-medium text-zinc-400 mb-1">
-                  邮箱地址
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="输入被邀请者的邮箱"
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                  disabled={isLoading}
-                />
-              </div>
-            ) : (
+            {inviteMethod === 'member' ? (
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-zinc-400 mb-1">选择组织</label>
@@ -396,7 +381,7 @@ export function InviteModal({ onClose }: InviteModalProps) {
                       <Loader2 className="h-4 w-4 animate-spin" /> 加载中...
                     </div>
                   ) : sourceOrganizations.length === 0 ? (
-                    <div className="text-zinc-500 text-sm">暂无可选组织</div>
+                    <div className="text-zinc-500 text-sm">你尚未加入任何组织，无法从组织成员中选择。</div>
                   ) : (
                     <select
                       value={selectedSourceOrg}
@@ -417,7 +402,9 @@ export function InviteModal({ onClose }: InviteModalProps) {
                       <Loader2 className="h-4 w-4 animate-spin" /> 正在加载成员...
                     </div>
                   ) : orgMembers.length === 0 ? (
-                    <div className="text-zinc-500 text-sm">暂无可邀请成员</div>
+                    <div className="text-zinc-500 text-sm">
+                      {selectedSourceOrg ? '该组织暂无其他成员可邀请' : '请先选择组织'}
+                    </div>
                   ) : (
                     <select
                       value={selectedMemberId}
@@ -436,6 +423,21 @@ export function InviteModal({ onClose }: InviteModalProps) {
                     </select>
                   )}
                 </div>
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="email" className="block text-xs font-medium text-zinc-400 mb-1">
+                  邮箱地址
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="输入被邀请者的邮箱"
+                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  disabled={isLoading}
+                />
               </div>
             )}
           </section>
