@@ -59,10 +59,10 @@ export function EarthContentWrapperV2({
     recordVisit()
   }, [content.id])
 
-  // 打开全局盖亚并传递初始问题
-  const handleOpenGaiaWithQuestion = (question: string) => {
-    // 触发全局盖亚打开的事件
-    window.dispatchEvent(new CustomEvent('openGaiaWithQuestion', { detail: { question } }))
+  // 旧的handler - 保持兼容性，但不实际使用
+  const handleDiscussWithGaia = () => {
+    // 不再使用独立的盖亚侧边栏，所有对话统一到全局盖亚
+    // 这个函数保留只是为了满足接口要求
   }
 
   return (
@@ -72,7 +72,7 @@ export function EarthContentWrapperV2({
       isCompleted={isCompleted}
       prevContent={prevContent}
       nextContent={nextContent}
-      onOpenGaiaWithQuestion={handleOpenGaiaWithQuestion}
+      onDiscussWithGaia={handleDiscussWithGaia}
       currentStage={currentStage}
       stageContentIds={stageContentIds}
       prevStage={prevStage}

@@ -7,13 +7,11 @@ import { createClient } from '@/lib/supabase/client'
 interface KnowledgeSectionV2Props {
   knowledgePoints: string[]
   contentId: string
-  onOpenGaiaWithQuestion: (question: string) => void
 }
 
 export function KnowledgeSectionV2({
   knowledgePoints,
-  contentId,
-  onOpenGaiaWithQuestion
+  contentId
 }: KnowledgeSectionV2Props) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
@@ -65,7 +63,10 @@ export function KnowledgeSectionV2({
 
   // 点击问题，打开全局盖亚
   const handleClickQuestion = (question: string) => {
-    onOpenGaiaWithQuestion(question)
+    // 触发全局盖亚打开事件
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openGaiaWithQuestion', { detail: { question } }))
+    }
   }
 
   if (knowledgePoints.length === 0) {
