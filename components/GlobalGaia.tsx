@@ -200,15 +200,12 @@ export function GlobalGaia({ initialQuestion, onInitialQuestionSent }: GlobalGai
           <div className="relative z-10">
             <MessageCircle className="w-8 h-8 text-white" />
           </div>
-
-          {/* 状态指示器 */}
-          <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-4 border-white animate-pulse"></div>
         </button>
       )}
 
       {/* 侧边栏对话界面 */}
       {isOpen && (
-        <div className="fixed inset-y-0 right-0 w-full md:w-[440px] bg-gray-900 shadow-2xl z-40 flex flex-col border-l border-gray-800">
+        <div className="fixed inset-y-0 right-0 w-full md:w-[440px] bg-gray-900 shadow-2xl z-50 flex flex-col border-l border-gray-800">
           {/* 头部 */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
             <div className="flex items-center gap-3">
