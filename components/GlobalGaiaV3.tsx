@@ -48,19 +48,30 @@ export function GlobalGaiaV3() {
       const { question } = event.detail
       console.log('[GlobalGaia] 提取的问题:', question)
 
-      console.log('[GlobalGaia] 设置状态:')
-      console.log('  - isFromKnowledgePoint: true')
-      console.log('  - isOpen: true')
-      console.log('  - input:', question)
-      console.log('  - messages: []')
-      console.log('  - currentConversationId: null')
+      console.log('[GlobalGaia] 新的处理逻辑:')
+      console.log('  - 保留历史记录（不清空messages）')
+      console.log('  - 将问题作为assistant消息添加到对话')
+      console.log('  - 不预填输入框')
+      console.log('  - 打开盖亚对话框')
 
       setIsFromKnowledgePoint(true)
       setIsOpen(true)
-      setInput(question)
-      // 清空当前会话，开始新对话
-      setMessages([])
-      setCurrentConversationId(null)
+
+      // 将知识点问题作为盖亚的消息添加到对话中
+      const knowledgePointMessage: Message = {
+        role: 'assistant',
+        content: question,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          source: 'knowledge_point' // 标记这是知识点问题
+        }
+      }
+
+      setMessages(prev => {
+        console.log('[GlobalGaia] 当前消息数:', prev.length)
+        console.log('[GlobalGaia] 添加知识点问题到对话')
+        return [...prev, knowledgePointMessage]
+      })
 
       console.log('[GlobalGaia] ✅ 状态设置完成')
     }
@@ -147,12 +158,7 @@ export function GlobalGaiaV3() {
     }
   }, [isOpen, isFromKnowledgePoint])
 
-  // 当用户开始输入或发送消息后，重置知识点标记
-  useEffect(() => {
-    if (messages.length > 0 && isFromKnowledgePoint) {
-      setIsFromKnowledgePoint(false)
-    }
-  }, [messages, isFromKnowledgePoint])
+  // 当用户发送消息后，重置知识点标记（在handleSend中处理）
 
   // 加载所有历史消息（合并所有对话）
   const loadAllHistoryMessages = async () => {
@@ -186,6 +192,13 @@ export function GlobalGaiaV3() {
     console.log('[GlobalGaia] 当前消息数:', messages.length)
     console.log('[GlobalGaia] conversationId:', currentConversationId)
 
+    // 检查最后一条消息是否是知识点问题
+    const lastMessage = messages[messages.length - 1]
+    const isReplyingToKnowledgePoint = lastMessage?.metadata?.source === 'knowledge_point'
+
+    console.log('[GlobalGaia] 最后一条消息:', lastMessage)
+    console.log('[GlobalGaia] 是否回复知识点问题:', isReplyingToKnowledgePoint)
+
     const userMessage: Message = {
       role: 'user',
       content: messageText,
@@ -197,10 +210,15 @@ export function GlobalGaiaV3() {
     setIsLoading(true)
 
     try {
-      // 如果是第一次发送消息（当前只有欢迎语或空），将当前所有消息发送给API
-      const shouldSendCurrentMessages = messages.length <= 1
+      // 需要发送当前所有消息的情况：
+      // 1. 第一次发送消息（包含欢迎语）
+      // 2. 回复知识点问题（包含知识点问题+用户回答）
+      const shouldSendCurrentMessages = messages.length <= 1 || isReplyingToKnowledgePoint
 
       console.log('[GlobalGaia] shouldSendCurrentMessages:', shouldSendCurrentMessages)
+      if (isReplyingToKnowledgePoint) {
+        console.log('[GlobalGaia] 💡 检测到回复知识点问题，将问题和回答一起发送')
+      }
 
       const response = await fetch('/api/gaia/chat', {
         method: 'POST',
@@ -208,7 +226,7 @@ export function GlobalGaiaV3() {
         body: JSON.stringify({
           message: messageText,
           conversationId: currentConversationId,
-          // 发送当前的所有消息（包括欢迎语），让API保存
+          // 发送当前的所有消息（包括欢迎语或知识点问题），让API保存
           currentMessages: shouldSendCurrentMessages ? messages : undefined
         })
       })
@@ -240,6 +258,11 @@ export function GlobalGaiaV3() {
       setMessages(prev => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
+      // 重置知识点标记
+      if (isFromKnowledgePoint) {
+        console.log('[GlobalGaia] 🔄 重置知识点标记')
+        setIsFromKnowledgePoint(false)
+      }
     }
   }
 
