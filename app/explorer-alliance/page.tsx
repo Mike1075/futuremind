@@ -9,12 +9,14 @@ import { OrganizationList } from '@/components/aip/OrganizationList'
 import { ChatBot } from '@/components/aip/ChatBot'
 import { CreateOrganizationModal } from '@/components/aip/CreateOrganizationModal'
 import { NotificationBadge } from '@/components/aip/NotificationBadge'
+import { InteractionLog } from '@/components/aip/InteractionLog'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ExplorerAlliancePage() {
   const router = useRouter()
   const { organizations, loading: orgsLoading, reload: reloadOrganizations } = useOrganizations()
   const [showCreateOrganization, setShowCreateOrganization] = useState(false)
+  const [showInteractionLog, setShowInteractionLog] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
@@ -94,7 +96,7 @@ export default function ExplorerAlliancePage() {
               <p className="text-gray-400 mt-2">AI驱动的智能项目协作平台</p>
             </div>
             <div className="flex items-center gap-3">
-              <NotificationBadge />
+              <NotificationBadge onClick={() => setShowInteractionLog(true)} />
               <button
                 onClick={() => router.push('/')}
                 className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
@@ -196,6 +198,16 @@ export default function ExplorerAlliancePage() {
           onSuccess={() => {
             setShowCreateOrganization(false)
             reloadOrganizations()
+          }}
+        />
+      )}
+
+      {/* 消息盒子 */}
+      {showInteractionLog && (
+        <InteractionLog
+          onClose={() => setShowInteractionLog(false)}
+          onUnreadCountChange={() => {
+            // 可以在这里添加刷新未读计数的逻辑
           }}
         />
       )}

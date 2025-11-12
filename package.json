@@ -21,6 +21,7 @@
     "@supabase/supabase-js": "^2.56.0",
     "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.542.0",
     "next": "15.5.2",
