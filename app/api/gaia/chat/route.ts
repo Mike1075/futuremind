@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { message, conversationId } = await req.json()
+    const { message, conversationId, currentMessages } = await req.json()
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
@@ -84,11 +84,25 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. 获取历史消息
-    const conversationHistory = (conversation.messages as any[] || []) as Array<{
+    // 如果前端传了currentMessages（包含欢迎语等），使用前端的消息
+    // 否则使用数据库的历史消息
+    let conversationHistory: Array<{
       role: string
       content: string
       timestamp: string
-    }>
+    }> = []
+
+    if (currentMessages && Array.isArray(currentMessages) && currentMessages.length > 0) {
+      console.log('[Gaia Chat] 使用前端传来的消息历史（包含欢迎语）:', currentMessages.length, '条')
+      conversationHistory = currentMessages
+    } else {
+      console.log('[Gaia Chat] 使用数据库的消息历史')
+      conversationHistory = (conversation.messages as any[] || []) as Array<{
+        role: string
+        content: string
+        timestamp: string
+      }>
+    }
 
     // 3. 添加用户消息
     const userMessage = {

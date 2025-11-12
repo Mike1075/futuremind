@@ -84,20 +84,33 @@ export function GlobalGaiaV3() {
     scrollToBottom()
   }, [messages])
 
-  // 打开盖亚时，显示欢迎消息（新会话）- 但不包括从知识点触发的情况
+  // 打开盖亚时，加载最近10条消息或显示欢迎语
   useEffect(() => {
-    console.log('[GlobalGaia] 💬 欢迎消息useEffect触发')
+    console.log('[GlobalGaia] 💬 打开盖亚useEffect触发')
     console.log('[GlobalGaia] 状态检查:')
     console.log('  - isOpen:', isOpen)
     console.log('  - messages.length:', messages.length)
     console.log('  - currentConversationId:', currentConversationId)
     console.log('  - isFromKnowledgePoint:', isFromKnowledgePoint)
 
-    if (isOpen && messages.length === 0 && !currentConversationId && !isFromKnowledgePoint) {
-      console.log('[GlobalGaia] ✅ 显示欢迎消息')
-      const welcomeMessage: Message = {
-        role: 'assistant',
-        content: `🌟 你好！我是盖亚（Gaia），你的AI学习伙伴。
+    if (isOpen && messages.length === 0 && !isFromKnowledgePoint) {
+      console.log('[GlobalGaia] 📥 加载最近的聊天记录...')
+
+      // 加载最近的10条消息
+      fetch('/api/gaia/recent-messages')
+        .then(res => res.json())
+        .then(data => {
+          console.log('[GlobalGaia] 收到历史消息:', data)
+
+          if (data.messages && data.messages.length > 0) {
+            console.log('[GlobalGaia] ✅ 显示历史消息:', data.messages.length, '条')
+            setMessages(data.messages)
+            setCurrentConversationId(data.conversationId)
+          } else {
+            console.log('[GlobalGaia] ✅ 没有历史记录，显示欢迎消息')
+            const welcomeMessage: Message = {
+              role: 'assistant',
+              content: `🌟 你好！我是盖亚（Gaia），你的AI学习伙伴。
 
 我可以帮助你：
 ✨ 探索课程知识
@@ -106,13 +119,33 @@ export function GlobalGaiaV3() {
 🤝 陪伴你的学习之旅
 
 有什么想要探讨的吗？`,
-        timestamp: new Date().toISOString()
-      }
-      setMessages([welcomeMessage])
+              timestamp: new Date().toISOString()
+            }
+            setMessages([welcomeMessage])
+          }
+        })
+        .catch(error => {
+          console.error('[GlobalGaia] ❌ 加载历史消息失败:', error)
+          // 失败时显示欢迎消息
+          const welcomeMessage: Message = {
+            role: 'assistant',
+            content: `🌟 你好！我是盖亚（Gaia），你的AI学习伙伴。
+
+我可以帮助你：
+✨ 探索课程知识
+🧠 深入理解概念
+💡 激发新的思考
+🤝 陪伴你的学习之旅
+
+有什么想要探讨的吗？`,
+            timestamp: new Date().toISOString()
+          }
+          setMessages([welcomeMessage])
+        })
     } else {
-      console.log('[GlobalGaia] ⏭️ 跳过欢迎消息（条件不满足）')
+      console.log('[GlobalGaia] ⏭️ 跳过加载历史（条件不满足）')
     }
-  }, [isOpen, isFromKnowledgePoint, messages.length, currentConversationId])
+  }, [isOpen, isFromKnowledgePoint])
 
   // 当用户开始输入或发送消息后，重置知识点标记
   useEffect(() => {
@@ -149,6 +182,10 @@ export function GlobalGaiaV3() {
     const messageText = input.trim()
     if (!messageText || isLoading) return
 
+    console.log('[GlobalGaia] 📤 发送消息:', messageText)
+    console.log('[GlobalGaia] 当前消息数:', messages.length)
+    console.log('[GlobalGaia] conversationId:', currentConversationId)
+
     const userMessage: Message = {
       role: 'user',
       content: messageText,
@@ -160,12 +197,19 @@ export function GlobalGaiaV3() {
     setIsLoading(true)
 
     try {
+      // 如果是第一次发送消息（当前只有欢迎语或空），将当前所有消息发送给API
+      const shouldSendCurrentMessages = messages.length <= 1
+
+      console.log('[GlobalGaia] shouldSendCurrentMessages:', shouldSendCurrentMessages)
+
       const response = await fetch('/api/gaia/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText,
-          conversationId: currentConversationId
+          conversationId: currentConversationId,
+          // 发送当前的所有消息（包括欢迎语），让API保存
+          currentMessages: shouldSendCurrentMessages ? messages : undefined
         })
       })
 
