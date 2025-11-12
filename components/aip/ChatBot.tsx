@@ -58,9 +58,15 @@ export function ChatBot() {
       // 获取当前组织ID（使用第一个组织，如果没有则使用默认值）
       const currentOrgId = organizations[0]?.organization_id || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
 
+      // 处理project_id：单个项目传字符串，多个项目传数组
+      let projectIdValue: string | string[] | undefined = undefined
+      if (selectedProjects.length > 0) {
+        projectIdValue = selectedProjects.length === 1 ? selectedProjects[0] : selectedProjects
+      }
+
       console.log('[ChatBot] 发送消息到API:', {
         chatInput: input.trim(),
-        project_id: selectedProjects,
+        project_id: projectIdValue,
         organization_id: currentOrgId
       })
 
@@ -69,7 +75,7 @@ export function ChatBot() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chatInput: input.trim(),
-          project_id: selectedProjects,  // 传递选中的项目ID数组
+          project_id: projectIdValue,  // 单个项目传字符串，多个传数组
           organization_id: currentOrgId
         })
       })
