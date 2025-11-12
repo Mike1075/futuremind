@@ -41,7 +41,12 @@ export async function POST(req: NextRequest) {
     }
 
     // 获取消息数组
-    const allMessages = conversation.messages || []
+    const allMessages = (conversation.messages as any[] || []) as Array<{
+      role: string
+      content: string
+      timestamp: string
+      metadata?: any
+    }>
     const totalMessages = allMessages.length
 
     // 计算分页

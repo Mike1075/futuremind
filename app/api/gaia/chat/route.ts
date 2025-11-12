@@ -84,7 +84,11 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. 获取历史消息
-    const conversationHistory = conversation.messages || []
+    const conversationHistory = (conversation.messages as any[] || []) as Array<{
+      role: string
+      content: string
+      timestamp: string
+    }>
 
     // 3. 添加用户消息
     const userMessage = {
