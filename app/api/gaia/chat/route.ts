@@ -194,9 +194,22 @@ export async function POST(req: NextRequest) {
     const finalMessages = [...updatedMessages, assistantMessage]
 
     // 8. 更新数据库
+    // 如果是新对话且有了第一条消息，生成标题
+    let title = conversation.title
+    if (isNewConversation && finalMessages.length >= 2) {
+      // 使用用户的第一句话作为标题（最多30字）
+      const firstUserMessage = finalMessages.find(m => m.role === 'user')
+      if (firstUserMessage) {
+        title = firstUserMessage.content.length > 30
+          ? firstUserMessage.content.substring(0, 30) + '...'
+          : firstUserMessage.content
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('gaia_conversations')
       .update({
+        title,
         messages: finalMessages,
         message_count: finalMessages.length,
         updated_at: new Date().toISOString()
