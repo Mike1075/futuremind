@@ -26,47 +26,41 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
 
       // 获取当前用户
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setLoadingProjects(false)
-        return
+
+      // 1. 获取用户参与的所有项目ID（如果已登录）
+      let userProjectIds: string[] = []
+      if (user) {
+        const { data: memberships } = await supabase
+          .from('project_members')
+          .select('project_id')
+          .eq('user_id', user.id)
+
+        userProjectIds = memberships?.map(m => m.project_id) || []
       }
 
-      // 并发加载所有组织的项目（用户创建的或参与的项目）
+      // 2. 并发加载所有组织的项目（公开项目 + 用户参与的项目）
       await Promise.all(
         organizations.map(async (org) => {
-          // 1. 获取用户创建的项目
-          const { data: createdProjects } = await supabase
+          let query = supabase
             .from('projects')
             .select('*')
             .eq('organization_id', org.organization_id)
-            .eq('creator_id', user.id)
 
-          // 2. 获取用户参与的项目（通过project_members）
-          const { data: memberships } = await supabase
-            .from('project_members')
-            .select('project_id')
-            .eq('user_id', user.id)
-
-          const memberProjectIds = memberships?.map(m => m.project_id) || []
-
-          let memberProjects: any[] = []
-          if (memberProjectIds.length > 0) {
-            const { data } = await supabase
-              .from('projects')
-              .select('*')
-              .eq('organization_id', org.organization_id)
-              .in('id', memberProjectIds)
-              .neq('creator_id', user.id) // 排除已经通过creator查询的项目
-
-            memberProjects = data || []
+          // 应用对标网站的查询逻辑：公开项目 OR 用户参与的项目
+          if (!user) {
+            // 未登录：只显示公开项目
+            query = query.eq('is_public', true)
+          } else if (userProjectIds.length > 0) {
+            // 已登录且有参与项目：公开项目 OR 用户参与的项目
+            query = query.or(`is_public.eq.true,id.in.(${userProjectIds.join(',')})`)
+          } else {
+            // 已登录但没参与项目：只显示公开项目
+            query = query.eq('is_public', true)
           }
 
-          // 3. 合并并去重
-          const allProjects = [...(createdProjects || []), ...memberProjects]
-          // 按创建时间倒序排列
-          allProjects.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          const { data: projects } = await query.order('created_at', { ascending: false })
 
-          projectsData[org.organization_id] = allProjects
+          projectsData[org.organization_id] = (projects as any) || []
         })
       )
 
