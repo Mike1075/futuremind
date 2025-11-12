@@ -527,6 +527,82 @@ export async function getProjectJoinRequests(
   }
 }
 
+export async function reviewProjectJoinRequest(
+  requestId: string,
+  status: 'approved' | 'rejected'
+): Promise<ApiResponse<void>> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('未登录')
+
+    // 1. 获取申请信息
+    const { data: request, error: requestError } = await supabase
+      .from('project_join_requests')
+      .select('*, project:projects(name)')
+      .eq('id', requestId)
+      .single()
+
+    if (requestError) throw requestError
+    if (!request) throw new Error('申请不存在')
+
+    // 2. 更新申请状态
+    const { error: updateError } = await supabase
+      .from('project_join_requests')
+      .update({
+        status,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id
+      })
+      .eq('id', requestId)
+
+    if (updateError) throw updateError
+
+    // 3. 如果批准，将用户添加到项目成员
+    if (status === 'approved') {
+      const { error: memberError } = await supabase
+        .from('project_members')
+        .insert({
+          project_id: request.project_id,
+          user_id: request.user_id,
+          role_in_project: 'member'
+        })
+
+      if (memberError) {
+        // 如果用户已经是成员，忽略错误
+        if (!memberError.message?.includes('duplicate')) {
+          console.error('添加项目成员失败:', memberError)
+        }
+      }
+    }
+
+    // 4. 给申请者发送通知
+    const projectName = (request.project as any)?.name || '未知项目'
+    const { error: notificationError } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: request.user_id,
+        type: status === 'approved' ? 'project_join_approved' : 'project_join_rejected',
+        title: status === 'approved' ? '项目申请已批准' : '项目申请已拒绝',
+        message: status === 'approved'
+          ? `您的加入项目"${projectName}"的申请已被批准`
+          : `您的加入项目"${projectName}"的申请已被拒绝`,
+        metadata: {
+          project_id: request.project_id,
+          project_name: projectName,
+          request_id: requestId
+        }
+      })
+
+    if (notificationError) {
+      console.error('创建通知失败:', notificationError)
+    }
+
+    return { message: status === 'approved' ? '申请已批准' : '申请已拒绝' }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
 // ============ 文档相关 API ============
 
 export async function getProjectDocuments(

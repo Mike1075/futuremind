@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Send, Inbox, Mail, Trash2, Eraser, Eye, MessageSquare, Check as CheckIcon, XIcon } from 'lucide-react'
+import { X, Send, Inbox, Mail, Trash2, Eraser, Eye, MessageSquare, Check as CheckIcon, XIcon, Users, FolderOpen } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { InvitationCard } from './InvitationCard'
+import { reviewProjectJoinRequest } from '@/lib/aip/api'
 
 interface InteractionLogProps {
   onClose: () => void
@@ -11,6 +12,7 @@ interface InteractionLogProps {
 }
 
 type TabType = 'all' | 'received' | 'sent' | 'notifications'
+type InteractionType = 'notification' | 'project_request'
 
 interface Notification {
   id: string
@@ -22,26 +24,71 @@ interface Notification {
   created_at: string
 }
 
+interface ProjectJoinRequest {
+  id: string
+  project_id: string
+  user_id: string
+  message?: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  reviewed_at?: string
+  user?: {
+    id: string
+    full_name?: string
+    email?: string
+  }
+  project?: {
+    name: string
+  }
+}
+
+interface UnifiedInteraction {
+  id: string
+  interactionType: InteractionType
+  title: string
+  message: string
+  status: 'pending' | 'approved' | 'rejected' | 'read' | 'unread'
+  created_at: string
+  metadata?: any
+  applicantName?: string
+  applicantEmail?: string
+  requestMessage?: string
+  originalRequest?: any
+}
+
 export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogProps) {
   const [activeTab, setActiveTab] = useState<TabType>('all')
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [interactions, setInteractions] = useState<UnifiedInteraction[]>([])
   const [loading, setLoading] = useState(true)
+  const [processing, setProcessing] = useState<string | null>(null)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    loadNotifications()
+    loadInteractions()
 
     // 实时订阅通知更新
     const supabase = createClient()
     const channel = supabase
-      .channel('notifications-updates')
+      .channel('inbox-updates')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'notifications'
       }, () => {
-        loadNotifications()
-        onUnreadCountChange?.()
+        setTimeout(() => {
+          loadInteractions()
+          onUnreadCountChange?.()
+        }, 500)
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'project_join_requests'
+      }, () => {
+        setTimeout(() => {
+          loadInteractions()
+          onUnreadCountChange?.()
+        }, 500)
       })
       .subscribe()
 
@@ -50,25 +97,110 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     }
   }, [])
 
-  const loadNotifications = async () => {
+  const loadInteractions = async () => {
     setLoading(true)
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data, error } = await supabase
+      const allInteractions: UnifiedInteraction[] = []
+
+      // 1. 加载notifications
+      const { data: notifications, error: notifError } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setNotifications(data || [])
+      if (!notifError && notifications) {
+        notifications.forEach((notif: Notification) => {
+          allInteractions.push({
+            id: notif.id,
+            interactionType: 'notification',
+            title: notif.title,
+            message: notif.message,
+            status: notif.is_read ? 'read' : 'unread',
+            created_at: notif.created_at,
+            metadata: notif.metadata,
+            originalRequest: notif
+          })
+        })
+      }
+
+      // 2. 加载用户管理的项目的加入申请
+      const { data: projectMembers } = await supabase
+        .from('project_members')
+        .select('project_id')
+        .eq('user_id', user.id)
+        .in('role_in_project', ['owner', 'manager'])
+
+      const managedProjectIds = projectMembers?.map(pm => pm.project_id) || []
+
+      if (managedProjectIds.length > 0) {
+        const { data: projectRequests, error: reqError } = await supabase
+          .from('project_join_requests')
+          .select(`
+            *,
+            user:user_id(id, full_name, email),
+            project:project_id(name)
+          `)
+          .in('project_id', managedProjectIds)
+          .order('created_at', { ascending: false })
+
+        if (!reqError && projectRequests) {
+          projectRequests.forEach((req: any) => {
+            const applicantName = req.user?.full_name || req.user?.email || '未知用户'
+            const projectName = req.project?.name || '未知项目'
+
+            allInteractions.push({
+              id: req.id,
+              interactionType: 'project_request',
+              title: '加入项目申请',
+              message: `${applicantName} 申请加入项目"${projectName}"`,
+              status: req.status,
+              created_at: req.created_at,
+              metadata: {
+                project_id: req.project_id,
+                project_name: projectName,
+                applicant_id: req.user_id,
+                applicant_name: applicantName
+              },
+              applicantName,
+              applicantEmail: req.user?.email || '',
+              requestMessage: req.message,
+              originalRequest: req
+            })
+          })
+        }
+      }
+
+      // 按时间倒序排列
+      allInteractions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      setInteractions(allInteractions)
     } catch (error) {
-      console.error('加载通知失败:', error)
+      console.error('加载交互记录失败:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleRequest = async (requestId: string, action: 'approve' | 'reject') => {
+    setProcessing(requestId)
+    try {
+      const result = await reviewProjectJoinRequest(requestId, action === 'approve' ? 'approved' : 'rejected')
+
+      if (result.error) {
+        throw new Error(result.error)
+      }
+
+      alert(action === 'approve' ? '申请已批准' : '申请已拒绝')
+      await loadInteractions()
+    } catch (error: any) {
+      console.error('处理申请失败:', error)
+      alert(`操作失败：${error.message || '请重试'}`)
+    } finally {
+      setProcessing(null)
     }
   }
 
@@ -82,8 +214,8 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
 
       if (error) throw error
 
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+      setInteractions(prev =>
+        prev.map(i => i.id === notificationId ? { ...i, status: 'read' as const } : i)
       )
       onUnreadCountChange?.()
     } catch (error) {
@@ -91,18 +223,25 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     }
   }
 
-  const handleDelete = async (notificationId: string) => {
+  const handleDelete = async (interactionId: string) => {
     try {
+      const interaction = interactions.find(i => i.id === interactionId)
+      if (!interaction) return
+
       const supabase = createClient()
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId)
 
-      if (error) throw error
+      // 只能删除通知类型的记录
+      if (interaction.interactionType === 'notification') {
+        const { error } = await supabase
+          .from('notifications')
+          .delete()
+          .eq('id', interactionId)
 
-      setNotifications(prev => prev.filter(n => n.id !== notificationId))
-      onUnreadCountChange?.()
+        if (error) throw error
+
+        setInteractions(prev => prev.filter(i => i.id !== interactionId))
+        onUnreadCountChange?.()
+      }
     } catch (error) {
       console.error('删除通知失败:', error)
     }
@@ -111,36 +250,40 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
   const handleClearCompleted = async () => {
     try {
       const supabase = createClient()
-      const readIds = notifications.filter(n => n.is_read).map(n => n.id)
+      const readNotificationIds = interactions
+        .filter(i => i.interactionType === 'notification' && i.status === 'read')
+        .map(i => i.id)
 
-      if (readIds.length === 0) return
+      if (readNotificationIds.length === 0) return
 
       const { error } = await supabase
         .from('notifications')
         .delete()
-        .in('id', readIds)
+        .in('id', readNotificationIds)
 
       if (error) throw error
 
-      setNotifications(prev => prev.filter(n => !n.is_read))
+      setInteractions(prev => prev.filter(i =>
+        !(i.interactionType === 'notification' && i.status === 'read')
+      ))
       onUnreadCountChange?.()
     } catch (error) {
       console.error('清空已读失败:', error)
     }
   }
 
-  const toggleExpanded = async (notificationId: string) => {
+  const toggleExpanded = async (interactionId: string) => {
     const newExpanded = new Set(expandedItems)
-    const notification = notifications.find(n => n.id === notificationId)
+    const interaction = interactions.find(i => i.id === interactionId)
 
-    if (newExpanded.has(notificationId)) {
-      newExpanded.delete(notificationId)
+    if (newExpanded.has(interactionId)) {
+      newExpanded.delete(interactionId)
     } else {
-      newExpanded.add(notificationId)
+      newExpanded.add(interactionId)
 
       // 展开未读通知时自动标记为已读
-      if (notification && !notification.is_read) {
-        await handleMarkAsRead(notificationId)
+      if (interaction && interaction.interactionType === 'notification' && interaction.status === 'unread') {
+        await handleMarkAsRead(interactionId)
       }
     }
 
@@ -166,27 +309,72 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     }
   }
 
-  const getStatusBadge = (notification: Notification) => {
-    if (!notification.is_read) {
+  const getStatusBadge = (interaction: UnifiedInteraction) => {
+    // 项目申请的状态显示
+    if (interaction.interactionType === 'project_request') {
+      if (interaction.status === 'pending') {
+        return <span className="px-2 py-1 bg-yellow-500/10 text-yellow-500 text-xs rounded-full border border-yellow-500/20">待处理</span>
+      }
+      if (interaction.status === 'approved') {
+        return <span className="px-2 py-1 bg-green-500/10 text-green-500 text-xs rounded-full border border-green-500/20">已批准</span>
+      }
+      if (interaction.status === 'rejected') {
+        return <span className="px-2 py-1 bg-red-500/10 text-red-500 text-xs rounded-full border border-red-500/20">已拒绝</span>
+      }
+    }
+
+    // 通知的状态显示
+    if (interaction.status === 'unread') {
       return <span className="px-2 py-1 bg-orange-500/10 text-orange-500 text-xs rounded-full border border-orange-500/20">未读</span>
     }
     return <span className="px-2 py-1 bg-zinc-700 text-zinc-400 text-xs rounded-full">已读</span>
   }
 
-  const filteredNotifications = notifications.filter(n => {
+  const filteredInteractions = interactions.filter(interaction => {
     if (activeTab === 'all') return true
-    if (activeTab === 'notifications') return true
-    // 根据type判断是received还是sent
+
     if (activeTab === 'received') {
-      return n.type?.includes('request') || n.type === 'invitation_received'
+      // 接收的: 项目申请 + invitation_received通知
+      if (interaction.interactionType === 'project_request') return true
+      if (interaction.interactionType === 'notification') {
+        const notif = interaction.originalRequest as Notification
+        return notif.type?.includes('request') || notif.type === 'invitation_received'
+      }
     }
+
     if (activeTab === 'sent') {
-      return n.type === 'invitation_sent'
+      // 发送的: invitation_sent通知
+      if (interaction.interactionType === 'notification') {
+        const notif = interaction.originalRequest as Notification
+        return notif.type === 'invitation_sent'
+      }
+      return false
     }
+
+    if (activeTab === 'notifications') {
+      // 通知类型才显示
+      return interaction.interactionType === 'notification'
+    }
+
     return true
   })
 
-  const readCount = notifications.filter(n => n.is_read).length
+  const readCount = interactions.filter(i => i.interactionType === 'notification' && i.status === 'read').length
+  const receivedCount = interactions.filter(i => {
+    if (i.interactionType === 'project_request') return true
+    if (i.interactionType === 'notification') {
+      const notif = i.originalRequest as Notification
+      return notif.type?.includes('request') || notif.type === 'invitation_received'
+    }
+    return false
+  }).length
+  const sentCount = interactions.filter(i => {
+    if (i.interactionType === 'notification') {
+      const notif = i.originalRequest as Notification
+      return notif.type === 'invitation_sent'
+    }
+    return false
+  }).length
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
@@ -238,7 +426,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                 : 'border-transparent text-zinc-400 hover:text-white'
             }`}
           >
-            全部 ({notifications.length})
+            全部 ({interactions.length})
           </button>
           <button
             onClick={() => setActiveTab('received')}
@@ -248,7 +436,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                 : 'border-transparent text-zinc-400 hover:text-white'
             }`}
           >
-            接收的 ({notifications.filter(n => n.type?.includes('request') || n.type === 'invitation_received').length})
+            接收的 ({receivedCount})
           </button>
           <button
             onClick={() => setActiveTab('sent')}
@@ -258,7 +446,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                 : 'border-transparent text-zinc-400 hover:text-white'
             }`}
           >
-            发送的 ({notifications.filter(n => n.type === 'invitation_sent').length})
+            发送的 ({sentCount})
           </button>
           <button
             onClick={() => setActiveTab('notifications')}
@@ -268,7 +456,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                 : 'border-transparent text-zinc-400 hover:text-white'
             }`}
           >
-            通知 ({notifications.length})
+            通知 ({interactions.filter(i => i.interactionType === 'notification').length})
           </button>
         </div>
 
@@ -278,7 +466,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
             </div>
-          ) : filteredNotifications.length === 0 ? (
+          ) : filteredInteractions.length === 0 ? (
             <div className="text-center py-12">
               <Inbox className="h-12 w-12 text-zinc-700 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-white mb-2">
@@ -293,14 +481,14 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredNotifications.map((notification) => {
-                const isExpanded = expandedItems.has(notification.id)
+              {filteredInteractions.map((interaction) => {
+                const isExpanded = expandedItems.has(interaction.id)
 
                 return (
                   <div
-                    key={notification.id}
+                    key={interaction.id}
                     className={`border rounded-lg transition-all duration-200 ${
-                      !notification.is_read
+                      interaction.status === 'unread' || interaction.status === 'pending'
                         ? 'border-orange-500/30 bg-orange-500/5'
                         : 'border-zinc-800 bg-zinc-800/50 hover:bg-zinc-800'
                     }`}
@@ -308,11 +496,13 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                     {/* 通知头部 */}
                     <div
                       className="p-3 cursor-pointer flex items-center justify-between group"
-                      onClick={() => toggleExpanded(notification.id)}
+                      onClick={() => toggleExpanded(interaction.id)}
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="flex-shrink-0">
-                          {notification.type === 'invitation_sent' ? (
+                          {interaction.interactionType === 'project_request' ? (
+                            <Users className="h-5 w-5 text-purple-500" />
+                          ) : (interaction.originalRequest as Notification)?.type === 'invitation_sent' ? (
                             <Send className="h-5 w-5 text-blue-500" />
                           ) : (
                             <Inbox className="h-5 w-5 text-green-500" />
@@ -321,36 +511,38 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
 
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-medium text-white truncate">
-                            {notification.title}
+                            {interaction.title}
                           </h3>
                           <p className="text-xs text-zinc-400 truncate">
-                            {notification.message}
+                            {interaction.message}
                           </p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {getStatusBadge(notification)}
+                        {getStatusBadge(interaction)}
 
-                        {/* 未读标识 */}
-                        {!notification.is_read && (
+                        {/* 未读/待处理标识 */}
+                        {(interaction.status === 'unread' || interaction.status === 'pending') && (
                           <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                         )}
 
-                        {/* 删除按钮 */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDelete(notification.id)
-                          }}
-                          className="p-1 hover:bg-red-500/10 rounded transition-colors opacity-0 group-hover:opacity-100"
-                          title="删除通知"
-                        >
-                          <Trash2 className="h-4 w-4 text-zinc-400 hover:text-red-500" />
-                        </button>
+                        {/* 删除按钮 (只对通知显示) */}
+                        {interaction.interactionType === 'notification' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDelete(interaction.id)
+                            }}
+                            className="p-1 hover:bg-red-500/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                            title="删除通知"
+                          >
+                            <Trash2 className="h-4 w-4 text-zinc-400 hover:text-red-500" />
+                          </button>
+                        )}
 
                         <span className="text-xs text-zinc-500">
-                          {formatDate(notification.created_at)}
+                          {formatDate(interaction.created_at)}
                         </span>
                         <div className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
                           <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -365,37 +557,101 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                       <div className="px-3 pb-3 border-t border-zinc-800">
                         <div className="pt-3 space-y-3">
                           <p className="text-sm text-zinc-300">
-                            {notification.message}
+                            {interaction.message}
                           </p>
 
-                          {notification.metadata && (
-                            <div className="bg-zinc-900/50 rounded-md p-3 text-xs text-zinc-400 space-y-1">
-                              {notification.metadata.project_name && (
-                                <div>项目: {notification.metadata.project_name}</div>
+                          {/* 项目申请的详细信息 */}
+                          {interaction.interactionType === 'project_request' && (
+                            <div className="space-y-3">
+                              <div className="bg-zinc-900/50 rounded-md p-3 text-xs text-zinc-400 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-3 w-3" />
+                                  <span>申请人: {interaction.applicantName}</span>
+                                </div>
+                                {interaction.applicantEmail && (
+                                  <div className="flex items-center gap-2">
+                                    <Mail className="h-3 w-3" />
+                                    <span>邮箱: {interaction.applicantEmail}</span>
+                                  </div>
+                                )}
+                                {interaction.metadata?.project_name && (
+                                  <div className="flex items-center gap-2">
+                                    <FolderOpen className="h-3 w-3" />
+                                    <span>项目: {interaction.metadata.project_name}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {interaction.requestMessage && (
+                                <div className="bg-zinc-900/50 rounded-md p-3">
+                                  <p className="text-xs text-zinc-500 mb-1">申请留言:</p>
+                                  <p className="text-sm text-zinc-300">{interaction.requestMessage}</p>
+                                </div>
                               )}
-                              {notification.metadata.organization_name && (
-                                <div>组织: {notification.metadata.organization_name}</div>
-                              )}
-                              {notification.metadata.applicant_name && (
-                                <div>申请人: {notification.metadata.applicant_name}</div>
+
+                              {/* 批准/拒绝按钮 (仅待处理状态) */}
+                              {interaction.status === 'pending' && (
+                                <div className="flex items-center gap-2 pt-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleRequest(interaction.id, 'approve')
+                                    }}
+                                    disabled={processing === interaction.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 text-green-500 rounded-md hover:bg-green-500/20 transition-colors text-sm border border-green-500/20 disabled:opacity-50"
+                                  >
+                                    <CheckIcon className="h-3 w-3" />
+                                    {processing === interaction.id ? '处理中...' : '批准'}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleRequest(interaction.id, 'reject')
+                                    }}
+                                    disabled={processing === interaction.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 text-red-500 rounded-md hover:bg-red-500/20 transition-colors text-sm border border-red-500/20 disabled:opacity-50"
+                                  >
+                                    <XIcon className="h-3 w-3" />
+                                    {processing === interaction.id ? '处理中...' : '拒绝'}
+                                  </button>
+                                </div>
                               )}
                             </div>
                           )}
 
-                          {/* 标记为已读按钮 */}
-                          {!notification.is_read && (
-                            <div className="flex items-center gap-2 pt-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMarkAsRead(notification.id)
-                                }}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/10 text-blue-500 rounded-md hover:bg-blue-500/20 transition-colors text-sm border border-blue-500/20"
-                              >
-                                <Eye className="h-3 w-3" />
-                                标记为已读
-                              </button>
-                            </div>
+                          {/* 通知的详细信息 */}
+                          {interaction.interactionType === 'notification' && (
+                            <>
+                              {interaction.metadata && (
+                                <div className="bg-zinc-900/50 rounded-md p-3 text-xs text-zinc-400 space-y-1">
+                                  {interaction.metadata.project_name && (
+                                    <div>项目: {interaction.metadata.project_name}</div>
+                                  )}
+                                  {interaction.metadata.organization_name && (
+                                    <div>组织: {interaction.metadata.organization_name}</div>
+                                  )}
+                                  {interaction.metadata.applicant_name && (
+                                    <div>申请人: {interaction.metadata.applicant_name}</div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* 标记为已读按钮 */}
+                              {interaction.status === 'unread' && (
+                                <div className="flex items-center gap-2 pt-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleMarkAsRead(interaction.id)
+                                    }}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/10 text-blue-500 rounded-md hover:bg-blue-500/20 transition-colors text-sm border border-blue-500/20"
+                                  >
+                                    <Eye className="h-3 w-3" />
+                                    标记为已读
+                                  </button>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
