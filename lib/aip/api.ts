@@ -236,6 +236,15 @@ export async function createProject(
 
     // 为新项目创建默认智慧库文档（避免N8N RAG查询报错）
     try {
+      const defaultContent = `这是项目的智慧库文档，用于存储项目的知识和资料。
+
+项目成员可以在这里：
+- 记录项目相关的知识点
+- 分享学习资料和文档
+- 积累项目经验和最佳实践
+
+您可以随时编辑和更新这个文档，让它成为项目团队的知识中心。`
+
       await supabase
         .from('documents')
         .insert({
@@ -243,10 +252,10 @@ export async function createProject(
           user_id: user.id,
           organization_id: data.organization_id,
           title: '项目智慧库',
-          content: '',
+          content: defaultContent,
           metadata: { type: 'project_knowledge_base' }
         })
-      console.log('[createProject] 已为项目创建默认智慧库文档')
+      console.log('[createProject] 已为项目创建默认智慧库文档（含初始内容）')
     } catch (docError) {
       // 文档创建失败不影响项目创建
       console.error('[createProject] 创建默认文档失败:', docError)
