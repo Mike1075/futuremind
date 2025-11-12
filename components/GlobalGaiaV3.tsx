@@ -413,7 +413,7 @@ export function GlobalGaiaV3() {
                   return (
                     <div
                       key={index}
-                      ref={(el) => (messageRefs.current[index] = el)}
+                      ref={(el) => { messageRefs.current[index] = el }}
                       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div className={`max-w-[85%] ${
