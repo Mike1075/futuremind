@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, Loader2, History, Plus } from 'lucide-react'
+import { MessageCircle, X, Send, Loader2, History } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface Message {
@@ -110,13 +110,6 @@ export function GlobalGaiaV3() {
     }
   }
 
-  // 开始新对话
-  const startNewConversation = () => {
-    setMessages([])
-    setCurrentConversationId(null)
-    setShowHistory(false)
-    setInput('')
-  }
 
   // 发送消息
   const handleSend = async () => {
@@ -221,15 +214,6 @@ export function GlobalGaiaV3() {
                 title="聊天记录"
               >
                 <History className="w-5 h-5 text-gray-400" />
-              </button>
-
-              {/* 新对话按钮 */}
-              <button
-                onClick={startNewConversation}
-                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                title="新对话"
-              >
-                <Plus className="w-5 h-5 text-gray-400" />
               </button>
 
               {/* 关闭按钮 */}
