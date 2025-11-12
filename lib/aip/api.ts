@@ -100,6 +100,48 @@ export async function getOrganizationProjects(
   organizationId: string
 ): Promise<ApiResponse<Project[]>> {
   try {
+    // 1. 先查询组织信息，判断是否是"我的项目"
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', organizationId)
+      .single()
+
+    // 2. 如果是"我的项目"，查询用户参与的所有项目
+    if (org?.name === '我的项目') {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        return { data: [] }
+      }
+
+      // 获取用户参与的所有项目ID
+      const { data: memberships } = await supabase
+        .from('project_members')
+        .select('project_id')
+        .eq('user_id', user.id)
+
+      const projectIds = memberships?.map(m => m.project_id) || []
+
+      if (projectIds.length === 0) {
+        return { data: [] }
+      }
+
+      // 查询这些项目的详情
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          creator:creator_id(id, full_name, avatar_url),
+          organization:organizations(id, name)
+        `)
+        .in('id', projectIds)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return { data: data || [] }
+    }
+
+    // 3. 普通组织：按organization_id查询
     const { data, error } = await supabase
       .from('projects')
       .select(`

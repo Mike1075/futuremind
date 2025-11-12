@@ -49,8 +49,28 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
 
       await Promise.all(
         organizations.map(async (org) => {
-          console.log(`[组织项目] 处理组织: ${org.organization?.name} (${org.organization_id})`)
+          const orgName = org.organization?.name || ''
+          console.log(`[组织项目] 处理组织: ${orgName} (${org.organization_id})`)
 
+          // 特殊处理"我的项目"组织：显示用户参与的所有项目（跨组织）
+          if (orgName === '我的项目' && user && userProjectIds.length > 0) {
+            console.log(`[组织项目] 特殊处理"我的项目"，查询用户参与的所有项目`)
+            const { data: projects, error: projectError } = await supabase
+              .from('projects')
+              .select('*')
+              .in('id', userProjectIds)
+              .order('created_at', { ascending: false })
+
+            if (projectError) {
+              console.error(`[组织项目] 查询"我的项目"失败:`, projectError)
+            }
+
+            console.log(`[组织项目] "我的项目"查询到 ${projects?.length || 0} 个项目:`, projects?.map(p => ({ id: p.id, name: p.name })))
+            projectsData[org.organization_id] = (projects as any) || []
+            return
+          }
+
+          // 普通组织：按organization_id查询
           let query = supabase
             .from('projects')
             .select('*')
@@ -75,10 +95,10 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
           const { data: projects, error: projectError } = await query.order('created_at', { ascending: false })
 
           if (projectError) {
-            console.error(`[组织项目] 查询组织 ${org.organization?.name} 的项目失败:`, projectError)
+            console.error(`[组织项目] 查询组织 ${orgName} 的项目失败:`, projectError)
           }
 
-          console.log(`[组织项目] 组织 ${org.organization?.name} 查询到 ${projects?.length || 0} 个项目:`, projects?.map(p => ({ id: p.id, name: p.name, is_public: p.is_public })))
+          console.log(`[组织项目] 组织 ${orgName} 查询到 ${projects?.length || 0} 个项目:`, projects?.map(p => ({ id: p.id, name: p.name, is_public: p.is_public })))
 
           projectsData[org.organization_id] = (projects as any) || []
         })
