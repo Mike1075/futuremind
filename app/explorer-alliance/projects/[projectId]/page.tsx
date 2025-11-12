@@ -24,6 +24,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const [isManager, setIsManager] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [documentsCount, setDocumentsCount] = useState(0)
+  const [documents, setDocuments] = useState<any[]>([])
+  const [documentsLoading, setDocumentsLoading] = useState(false)
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -43,18 +45,29 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       setIsManager(membership?.role_in_project === 'manager' || membership?.role_in_project === 'owner')
     }
 
-    const loadDocumentsCount = async () => {
+    const loadDocuments = async () => {
       const supabase = createClient()
-      const { count } = await supabase
-        .from('documents')
-        .select('*', { count: 'exact', head: true })
-        .eq('project_id', projectId)
+      setDocumentsLoading(true)
+      try {
+        const { data, count, error } = await supabase
+          .from('documents')
+          .select('*', { count: 'exact' })
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false })
 
-      setDocumentsCount(count || 0)
+        if (error) throw error
+
+        setDocuments(data || [])
+        setDocumentsCount(count || 0)
+      } catch (error) {
+        console.error('加载文档失败:', error)
+      } finally {
+        setDocumentsLoading(false)
+      }
     }
 
     checkUserRole()
-    loadDocumentsCount()
+    loadDocuments()
   }, [projectId])
 
   if (projectLoading) {
@@ -332,7 +345,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               )}
             </div>
 
-            {documentsCount === 0 ? (
+            {documentsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span className="ml-3 text-gray-400">加载文档中...</span>
+              </div>
+            ) : documentsCount === 0 ? (
               <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-12 text-center">
                 <div className="bg-blue-500/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Upload className="w-10 h-10 text-blue-400" />
@@ -348,9 +366,39 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 </button>
               </div>
             ) : (
-              <div className="bg-black/30 border border-white/10 rounded-xl p-6">
-                <p className="text-center text-zinc-400">共 {documentsCount} 份文档</p>
-                <p className="text-center text-zinc-500 text-sm mt-2">点击"上传文档"按钮查看和管理文档</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {documents.map((doc) => {
+                  const isKnowledgeBase = doc.title === '项目智慧库'
+                  const contentLength = doc.content?.length || 0
+                  return (
+                    <div
+                      key={doc.id}
+                      className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-6 hover:border-zinc-600/50 transition-all duration-200"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl">{isKnowledgeBase ? '📚' : '📄'}</span>
+                          <div>
+                            <h3 className="font-semibold text-white">{doc.title}</h3>
+                            {isKnowledgeBase && (
+                              <span className="text-xs text-blue-400">系统默认</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500">内容:</span>
+                          <span>{contentLength} 字符</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500">创建时间:</span>
+                          <span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString('zh-CN') : '未知'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -401,7 +449,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       {/* FloatingChatBot */}
       <FloatingChatBot
         currentProject={project}
-        showProjectSelector={false}
+        showProjectSelector={true}
       />
 
       {/* File Upload Modal */}
