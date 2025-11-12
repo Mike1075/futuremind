@@ -31,31 +31,42 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
         return
       }
 
-      // 并发加载所有组织的项目（只加载用户参与的项目）
+      // 并发加载所有组织的项目（用户创建的或参与的项目）
       await Promise.all(
         organizations.map(async (org) => {
-          // 获取用户在该组织下参与的项目
+          // 1. 获取用户创建的项目
+          const { data: createdProjects } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('organization_id', org.organization_id)
+            .eq('creator_id', user.id)
+
+          // 2. 获取用户参与的项目（通过project_members）
           const { data: memberships } = await supabase
             .from('project_members')
             .select('project_id')
             .eq('user_id', user.id)
 
-          const projectIds = memberships?.map(m => m.project_id) || []
+          const memberProjectIds = memberships?.map(m => m.project_id) || []
 
-          if (projectIds.length === 0) {
-            projectsData[org.organization_id] = []
-            return
+          let memberProjects: any[] = []
+          if (memberProjectIds.length > 0) {
+            const { data } = await supabase
+              .from('projects')
+              .select('*')
+              .eq('organization_id', org.organization_id)
+              .in('id', memberProjectIds)
+              .neq('creator_id', user.id) // 排除已经通过creator查询的项目
+
+            memberProjects = data || []
           }
 
-          // 获取这些项目的详细信息（且属于该组织）
-          const { data: projects } = await supabase
-            .from('projects')
-            .select('*')
-            .eq('organization_id', org.organization_id)
-            .in('id', projectIds)
-            .order('created_at', { ascending: false })
+          // 3. 合并并去重
+          const allProjects = [...(createdProjects || []), ...memberProjects]
+          // 按创建时间倒序排列
+          allProjects.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-          projectsData[org.organization_id] = (projects as any[]) || []
+          projectsData[org.organization_id] = allProjects
         })
       )
 
