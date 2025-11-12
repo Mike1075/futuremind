@@ -80,13 +80,59 @@ export async function createOrganization(
     if (error) throw error
 
     // 自动将创建者添加为owner
-    await supabase
+    const { error: memberError } = await supabase
       .from('user_organizations')
       .insert({
         user_id: user.id,
         organization_id: data.id,
         role_in_org: 'owner',
       })
+
+    if (memberError) {
+      console.error('[createOrganization] 添加组织成员失败:', memberError)
+      // 删除刚创建的组织
+      await supabase.from('organizations').delete().eq('id', data.id)
+      throw new Error('创建组织失败：无法添加组织成员')
+    }
+
+    // 为新组织创建组织智慧库文档（与对标网站一致）
+    try {
+      const knowledgeBaseContent = `# ${data.name} 组织智慧库
+
+## 组织简介
+${data.description || '这是一个新创建的组织，暂无详细描述。'}
+
+## 使用指南
+这是您组织的智慧库，您可以在这里添加组织的重要信息、规范和指导文档。
+所有组织成员都可以访问这些内容，帮助大家更好地了解组织和协作。
+
+## 常见问题
+1. 如何邀请新成员加入组织？
+   - 在组织页面，点击"邀请成员"按钮发送邀请。
+
+2. 如何创建新项目？
+   - 在组织工作台页面，点击"创建项目"按钮。
+
+3. 如何管理组织成员权限？
+   - 组织管理员可以在成员列表中修改成员角色。`
+
+      await supabase
+        .from('documents')
+        .insert({
+          project_id: null,  // 组织级别文档，不属于特定项目
+          user_id: user.id,
+          organization_id: data.id,
+          title: '组织智慧库',
+          content: knowledgeBaseContent,
+          metadata: { type: 'organization_knowledge_base' },
+          embedding: null
+        })
+
+      console.log('[createOrganization] 已为组织创建智慧库文档')
+    } catch (docError) {
+      console.error('[createOrganization] 创建组织智慧库失败:', docError)
+      // 不影响组织创建，仅记录日志
+    }
 
     return { data }
   } catch (error: any) {
