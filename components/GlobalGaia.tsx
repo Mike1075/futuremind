@@ -210,30 +210,30 @@ export function GlobalGaia({ initialQuestion, onInitialQuestionSent }: GlobalGai
 
       {/* 侧边栏对话界面 */}
       {isOpen && (
-        <div className="fixed inset-y-0 right-0 w-full md:w-[440px] bg-white dark:bg-gray-900 shadow-2xl z-40 flex flex-col border-l border-gray-200 dark:border-gray-800">
+        <div className="fixed inset-y-0 right-0 w-full md:w-[440px] bg-gray-900 shadow-2xl z-40 flex flex-col border-l border-gray-800">
           {/* 头部 */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xl">
                 🌌
               </div>
               <div>
-                <h2 className="font-semibold text-gray-900 dark:text-white">盖亚 Gaia</h2>
-                <p className="text-xs text-gray-600 dark:text-gray-400">你的AI学习伙伴</p>
+                <h2 className="font-semibold text-white">盖亚 Gaia</h2>
+                <p className="text-xs text-gray-400">你的AI学习伙伴</p>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
             >
-              <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
 
           {/* 消息列表 */}
           <div
             ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-gray-50 dark:bg-gray-950"
+            className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-black"
           >
             {/* 加载更多按钮 */}
             {hasMoreHistory && (
@@ -241,7 +241,7 @@ export function GlobalGaia({ initialQuestion, onInitialQuestionSent }: GlobalGai
                 <button
                   onClick={() => loadHistory(true)}
                   disabled={isLoadingHistory}
-                  className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-full transition-colors flex items-center gap-2 disabled:opacity-50"
+                  className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full transition-colors flex items-center gap-2 disabled:opacity-50"
                 >
                   {isLoadingHistory ? (
                     <>
@@ -266,11 +266,11 @@ export function GlobalGaia({ initialQuestion, onInitialQuestionSent }: GlobalGai
                 <div className={`max-w-[85%] ${
                   message.role === 'user'
                     ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700'
+                    : 'bg-gray-800 text-gray-100 border border-gray-700'
                 } rounded-2xl px-4 py-3 shadow-sm`}>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                   <p className={`text-xs mt-2 ${
-                    message.role === 'user' ? 'text-purple-100' : 'text-gray-500 dark:text-gray-500'
+                    message.role === 'user' ? 'text-purple-100' : 'text-gray-500'
                   }`}>
                     {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
                       hour: '2-digit',
@@ -283,7 +283,7 @@ export function GlobalGaia({ initialQuestion, onInitialQuestionSent }: GlobalGai
 
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3">
+                <div className="bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3">
                   <div className="flex gap-2">
                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -297,7 +297,7 @@ export function GlobalGaia({ initialQuestion, onInitialQuestionSent }: GlobalGai
           </div>
 
           {/* 输入框 */}
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+          <div className="px-6 py-4 border-t border-gray-800 bg-gray-900">
             <div className="flex gap-2">
               <textarea
                 value={input}
@@ -306,7 +306,7 @@ export function GlobalGaia({ initialQuestion, onInitialQuestionSent }: GlobalGai
                 placeholder="输入你的问题..."
                 rows={3}
                 disabled={isLoading}
-                className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none disabled:opacity-50"
               />
               <button
                 onClick={handleSend}
@@ -316,7 +316,7 @@ export function GlobalGaia({ initialQuestion, onInitialQuestionSent }: GlobalGai
                 <Send className="w-5 h-5 text-white" />
               </button>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">按 Enter 发送，Shift + Enter 换行</p>
+            <p className="text-xs text-gray-500 mt-2">按 Enter 发送，Shift + Enter 换行</p>
           </div>
         </div>
       )}
