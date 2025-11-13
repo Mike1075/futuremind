@@ -140,8 +140,6 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
           : f
       ))
 
-      const supabase = createClient()
-
       // 模拟进度
       const progressInterval = setInterval(() => {
         setUploadFiles(prev => prev.map(f =>
@@ -151,70 +149,39 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
         ))
       }, 300)
 
-      // 上传文件到Supabase Storage
-      // 生成安全的文件名（URL encode处理中文）
-      const fileExtension = uploadFile.file.name.split('.').pop() || 'bin'
-      const safeFileName = `${Date.now()}-${encodeURIComponent(uploadFile.file.name)}`
-      const filePath = `${projectId}/${safeFileName}`
+      // 直接上传二进制文件到N8N webhook（匹配参考实现）
+      // N8N webhook期望 multipart/form-data 格式的二进制文件
+      const formData = new FormData()
+      formData.append('file', uploadFile.file)  // 二进制文件
+      formData.append('project_id', projectId)
+      formData.append('user_id', userId)
+      formData.append('title', uploadFile.title)
 
-      const { error: uploadError } = await supabase.storage
-        .from('project-documents')
-        .upload(filePath, uploadFile.file)
-
-      clearInterval(progressInterval)
-
-      if (uploadError) throw uploadError
-
-      // 获取文件的下载URL
-      const { data: urlData } = supabase.storage
-        .from('project-documents')
-        .getPublicUrl(filePath)
-
-      const fileUrl = urlData?.publicUrl
-
-      // 调用N8N webhook进行向量化处理
-      console.log('[FileUpload] 调用N8N webhook进行文档处理:', {
+      console.log('[FileUpload] 上传二进制文件到N8N webhook:', {
+        filename: uploadFile.file.name,
+        size: uploadFile.file.size,
+        type: uploadFile.file.type,
         project_id: projectId,
-        file_url: fileUrl,
+        user_id: userId,
         title: uploadFile.title
       })
 
       const n8nResponse = await fetch('https://n8n.aifunbox.com/webhook/upload-document', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project_id: projectId,
-          user_id: userId,
-          file_url: fileUrl,
-          title: uploadFile.title,
-          filename: uploadFile.file.name,
-          file_type: uploadFile.file.type,
-          file_size: uploadFile.file.size
-        })
+        // 不设置 Content-Type header，让浏览器自动设置为 multipart/form-data
+        body: formData
       })
+
+      clearInterval(progressInterval)
 
       if (!n8nResponse.ok) {
         const errorText = await n8nResponse.text()
-        console.error('[FileUpload] N8N处理失败:', errorText)
-        // N8N失败不阻断流程，但记录错误
-      } else {
-        console.log('[FileUpload] N8N处理成功')
+        console.error('[FileUpload] N8N处理失败:', n8nResponse.status, errorText)
+        throw new Error(`N8N处理失败: ${n8nResponse.status} ${errorText}`)
       }
 
-      // 保存文档元数据到project_documents表
-      const { error: dbError } = await supabase
-        .from('project_documents')
-        .insert({
-          project_id: projectId,
-          user_id: userId,
-          title: uploadFile.title,
-          filename: uploadFile.file.name,
-          file_path: filePath,
-          file_size: uploadFile.file.size,
-          file_type: uploadFile.file.type
-        })
-
-      if (dbError) throw dbError
+      const responseData = await n8nResponse.json()
+      console.log('[FileUpload] N8N处理成功:', responseData)
 
       setUploadFiles(prev => prev.map(f =>
         f.id === uploadFile.id
@@ -222,7 +189,7 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
           : f
       ))
 
-      // 重新加载文档列表
+      // 重新加载文档列表（N8N会自动保存到documents表）
       loadDocuments()
     } catch (error) {
       setUploadFiles(prev => prev.map(f =>
