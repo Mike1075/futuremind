@@ -11,6 +11,7 @@ interface Submission {
   consciousness_growth_points: number | null
   submitted_at: string | null
   reviewed_at: string | null
+  is_public: boolean
 }
 
 interface SubmissionHistoryProps {
@@ -29,6 +30,7 @@ export default function SubmissionHistory({
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -40,7 +42,7 @@ export default function SubmissionHistory({
     try {
       const { data, error } = await supabase
         .from('user_submissions')
-        .select('id, content, feedback, score, consciousness_growth_points, submitted_at, reviewed_at')
+        .select('id, content, feedback, score, consciousness_growth_points, submitted_at, reviewed_at, is_public')
         .eq('user_id', userId)
         .eq('course_content_id', contentId)
         .order('submitted_at', { ascending: false })
@@ -52,6 +54,38 @@ export default function SubmissionHistory({
       console.error('加载提交历史失败:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleToggleVisibility = async (submissionId: string, currentIsPublic: boolean) => {
+    setTogglingId(submissionId)
+    try {
+      const response = await fetch('/api/submissions/toggle-visibility', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          submissionId,
+          isPublic: !currentIsPublic
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('切换失败')
+      }
+
+      // 更新本地状态
+      setSubmissions(prev => prev.map(s =>
+        s.id === submissionId
+          ? { ...s, is_public: !currentIsPublic }
+          : s
+      ))
+    } catch (err) {
+      console.error('切换作业可见性失败:', err)
+      alert('操作失败，请重试')
+    } finally {
+      setTogglingId(null)
     }
   }
 
@@ -220,13 +254,47 @@ export default function SubmissionHistory({
                         </div>
                       </div>
 
-                      {/* 评估时间和删除按钮 */}
+                      {/* 评估时间和操作按钮 */}
                       <div className="flex items-center justify-between">
-                        {submission.reviewed_at && (
-                          <p className="text-sm text-gray-500">
-                            评估时间: {formatDate(submission.reviewed_at)}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-4">
+                          {submission.reviewed_at && (
+                            <p className="text-sm text-gray-500">
+                              评估时间: {formatDate(submission.reviewed_at)}
+                            </p>
+                          )}
+
+                          {/* 公开/私密切换开关 */}
+                          {submission.score && submission.score >= 80 && (
+                            <div className="flex items-center gap-3 bg-gray-900/50 border border-gray-700 rounded-lg px-4 py-2">
+                              <div className="flex items-center gap-2">
+                                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-sm text-gray-300">作业可见性</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
+                                disabled={togglingId === submission.id}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                  submission.is_public ? 'bg-blue-600' : 'bg-gray-600'
+                                }`}
+                              >
+                                <span
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                    submission.is_public ? 'translate-x-6' : 'translate-x-1'
+                                  }`}
+                                />
+                              </button>
+                              <span className={`text-xs font-medium ${
+                                submission.is_public ? 'text-blue-400' : 'text-gray-400'
+                              }`}>
+                                {togglingId === submission.id ? '切换中...' : (submission.is_public ? '公开' : '私密')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
 
                         {/* 删除按钮 */}
                         {confirmDeleteId === submission.id ? (
