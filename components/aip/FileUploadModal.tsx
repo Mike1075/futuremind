@@ -159,8 +159,12 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
 
       // 验证FormData内容
       console.log('[FileUpload] FormData检查:')
-      for (let [key, value] of formData.entries()) {
-        console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size}bytes)` : value)
+      for (const [key, value] of formData.entries()) {
+        if (value && typeof value === 'object' && 'name' in value && 'size' in value) {
+          console.log(`  ${key}: File(${(value as File).name}, ${(value as File).size}bytes)`)
+        } else {
+          console.log(`  ${key}:`, value)
+        }
       }
 
       // 显示给用户：正在上传的关键信息
