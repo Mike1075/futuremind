@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Upload, Trash2, FileText, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react'
+import { Upload, Trash2, FileText, ArrowLeft } from 'lucide-react'
 
 interface Document {
   id: string
@@ -15,6 +15,7 @@ interface Document {
     file_size: number
     file_type: string
     uploaded_at: string
+    status?: string // 处理状态：processing, completed, error
   }
   created_at: string
 }
@@ -25,7 +26,6 @@ export default function GaiaKnowledgeBasePage() {
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -62,7 +62,6 @@ export default function GaiaKnowledgeBasePage() {
       }
     } catch (error) {
       console.error('加载文档列表失败:', error)
-      showMessage('error', '加载文档列表失败')
     } finally {
       setLoading(false)
     }
@@ -84,7 +83,12 @@ export default function GaiaKnowledgeBasePage() {
     e.preventDefault()
 
     if (!selectedFile || !title.trim()) {
-      showMessage('error', '请选择文件并输入标题')
+      alert('⚠️ 请选择文件并输入标题')
+      return
+    }
+
+    // 确认上传
+    if (!confirm(`确认上传文档「${title.trim()}」到盖亚知识库吗？\n\n文件：${selectedFile.name}\n大小：${formatFileSize(selectedFile.size)}\n\n上传后将自动进行向量化处理。`)) {
       return
     }
 
@@ -102,7 +106,7 @@ export default function GaiaKnowledgeBasePage() {
       const data = await response.json()
 
       if (response.ok) {
-        showMessage('success', `上传成功！项目ID: ${data.project_id}`)
+        alert(`✅ 上传成功！\n\n项目ID: ${data.project_id}\n标题: ${title.trim()}\n\n${data.message || '文档正在后台处理向量化，请稍后刷新查看。'}`)
         setSelectedFile(null)
         setTitle('')
         // 重置文件输入
@@ -112,18 +116,18 @@ export default function GaiaKnowledgeBasePage() {
         // 重新加载列表
         await loadDocuments()
       } else {
-        showMessage('error', data.error || '上传失败')
+        alert(`❌ 上传失败\n\n${data.error || '未知错误'}\n\n请检查文件格式和网络连接后重试。`)
       }
     } catch (error: any) {
       console.error('上传失败:', error)
-      showMessage('error', error.message || '上传失败')
+      alert(`❌ 上传失败\n\n${error.message || '网络错误'}\n\n请检查网络连接后重试。`)
     } finally {
       setUploading(false)
     }
   }
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`确定要删除文档"${title}"吗？此操作不可撤销。`)) {
+    if (!confirm(`⚠️ 确定要删除文档「${title}」吗？\n\n此操作不可撤销，删除后盖亚将无法再使用这份知识。`)) {
       return
     }
 
@@ -133,21 +137,16 @@ export default function GaiaKnowledgeBasePage() {
       })
 
       if (response.ok) {
-        showMessage('success', '删除成功')
+        alert(`✅ 删除成功\n\n文档「${title}」已从盖亚知识库中移除。`)
         await loadDocuments()
       } else {
         const data = await response.json()
-        showMessage('error', data.error || '删除失败')
+        alert(`❌ 删除失败\n\n${data.error || '未知错误'}`)
       }
     } catch (error) {
       console.error('删除失败:', error)
-      showMessage('error', '删除失败')
+      alert('❌ 删除失败\n\n网络错误，请稍后重试。')
     }
-  }
-
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text })
-    setTimeout(() => setMessage(null), 5000)
   }
 
   const formatFileSize = (bytes: number) => {
@@ -195,24 +194,6 @@ export default function GaiaKnowledgeBasePage() {
             上传文档到盖亚AI向量数据库，用于增强盖亚的知识能力
           </p>
         </div>
-
-        {/* 消息提示 */}
-        {message && (
-          <div
-            className={`mb-6 p-4 rounded-lg flex items-center border ${
-              message.type === 'success'
-                ? 'bg-green-500/10 text-green-300 border-green-500/30'
-                : 'bg-red-500/10 text-red-300 border-red-500/30'
-            }`}
-          >
-            {message.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 mr-3" />
-            ) : (
-              <AlertCircle className="w-5 h-5 mr-3" />
-            )}
-            <span>{message.text}</span>
-          </div>
-        )}
 
         {/* 上传表单 */}
         <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-6 mb-8">
@@ -329,7 +310,14 @@ export default function GaiaKnowledgeBasePage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-white">{doc.title}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium text-white">{doc.title}</div>
+                          {doc.metadata?.status === 'processing' && (
+                            <span className="px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-300 rounded border border-yellow-500/30">
+                              处理中
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {doc.metadata?.filename || '-'}

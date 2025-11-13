@@ -91,40 +91,7 @@ export async function POST(request: Request) {
       nextProjectId = `p${String(lastNumber + 1).padStart(3, '0')}`
     }
 
-    // 上传到N8N webhook
-    const n8nFormData = new FormData()
-    n8nFormData.append('file', file)
-    n8nFormData.append('project_id', nextProjectId)
-    n8nFormData.append('title', title)
-
-    const webhookUrl = 'https://n8n.aifunbox.com/webhook/fca634ab-8e03-4a6f-99f3-c7dc46e772ae'
-
-    console.log('[盖亚知识库] 准备上传到N8N:', {
-      url: webhookUrl,
-      project_id: nextProjectId,
-      title: title,
-      filename: file.name
-    })
-
-    const webhookResponse = await fetch(webhookUrl, {
-      method: 'POST',
-      body: n8nFormData,
-    })
-
-    if (!webhookResponse.ok) {
-      const errorBody = await webhookResponse.text()
-      console.error('[盖亚知识库] N8N webhook失败:', {
-        status: webhookResponse.status,
-        statusText: webhookResponse.statusText,
-        body: errorBody
-      })
-      throw new Error(`N8N webhook失败 (${webhookResponse.status}): ${webhookResponse.statusText}. Response: ${errorBody.substring(0, 200)}`)
-    }
-
-    const webhookResult = await webhookResponse.text()
-    console.log('[盖亚知识库] N8N响应:', webhookResult)
-
-    // 记录到数据库
+    // 先记录到数据库（标记为processing状态）
     const { data: newDoc, error: insertError } = await supabase
       .from('documents')
       .insert({
@@ -138,17 +105,49 @@ export async function POST(request: Request) {
           file_size: file.size,
           file_type: file.type,
           uploaded_at: new Date().toISOString(),
+          status: 'processing' // 标记为处理中
         },
       })
       .select()
       .single()
 
-    if (insertError) throw insertError
+    if (insertError) {
+      console.error('[盖亚知识库] 数据库插入失败:', insertError)
+      throw insertError
+    }
 
+    console.log('[盖亚知识库] 已保存到数据库，document_id:', newDoc.id)
+
+    // 异步上传到N8N（不等待结果，让N8N在后台处理）
+    const webhookUrl = 'https://n8n.aifunbox.com/webhook/fca634ab-8e03-4a6f-99f3-c7dc46e772ae'
+    const n8nFormData = new FormData()
+    n8nFormData.append('file', file)
+    n8nFormData.append('project_id', nextProjectId)
+    n8nFormData.append('title', title)
+    n8nFormData.append('document_id', newDoc.id) // 传递document_id，供N8N回调使用
+
+    console.log('[盖亚知识库] 开始上传到N8N（后台处理）:', {
+      url: webhookUrl,
+      project_id: nextProjectId,
+      document_id: newDoc.id,
+      title: title,
+      filename: file.name
+    })
+
+    // 发起请求但不等待（fire and forget）
+    fetch(webhookUrl, {
+      method: 'POST',
+      body: n8nFormData,
+    }).catch(error => {
+      console.error('[盖亚知识库] N8N webhook调用失败（异步）:', error)
+    })
+
+    // 立即返回成功响应
     return NextResponse.json({
       success: true,
       document: newDoc,
       project_id: nextProjectId,
+      message: '文档已提交，正在后台处理向量化...'
     })
   } catch (error: any) {
     console.error('[盖亚知识库] 上传失败:', error)
