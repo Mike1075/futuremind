@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Sparkles
 } from 'lucide-react'
+import { usePortalCourses } from '@/lib/hooks/usePortalCourses'
 
 interface User {
   id: string
@@ -45,11 +46,13 @@ export default function PortalPage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<string | null>(null)
-  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([])
   const [consciousnessGrowth, setConsciousnessGrowth] = useState(0)
 
   const router = useRouter()
   const supabase = createClient()
+
+  // ✅ 使用SWR缓存课程数据（首次4秒，后续瞬间）
+  const { courses: enrolledCourses, loading: coursesLoading } = usePortalCourses(user?.id || null)
 
   useEffect(() => {
     const getUser = async () => {
@@ -79,8 +82,7 @@ export default function PortalPage() {
           setConsciousnessGrowth(progress.consciousness_growth || 0)
         }
 
-        // Load enrolled courses
-        await loadEnrolledCourses(user.id)
+        // ✅ 课程数据由usePortalCourses hook自动加载和缓存
       } else {
         router.push('/login')
       }
@@ -90,169 +92,7 @@ export default function PortalPage() {
     getUser()
   }, [router, supabase])
 
-  const loadEnrolledCourses = async (userId: string) => {
-    try {
-      const { data: enrolledData, error } = await supabase
-        .from('student_course_assignments')
-        .select(`
-          assigned_at,
-          course_systems (id, title, system_key, is_active)
-        `)
-        .eq('student_id', userId)
-        .eq('status', 'active')
-
-      if (error) throw error
-
-      // 过滤掉已删除的课程（course_systems为null）以及已停用的课程（is_active为false）
-      const validEnrollments = (enrolledData || []).filter((item: any) =>
-        item.course_systems !== null && item.course_systems.is_active === true
-      )
-
-      // 计算每个课程的真实进度
-      const enrolled: EnrolledCourse[] = await Promise.all(
-        validEnrollments.map(async (item: any) => {
-          const courseSystemKey = item.course_systems.system_key
-
-          // PBL课程（伊卡洛斯）使用不同的进度计算方式
-          if (courseSystemKey === 'icarus' || courseSystemKey === 'pbl') {
-            // 获取该课程体系下的所有已发布项目
-            const { data: projects } = await supabase
-              .from('course_contents')
-              .select('id')
-              .eq('system_id', item.course_systems.id)
-              .eq('is_published', true)
-
-            const totalProjects = projects?.length || 0
-
-            if (totalProjects === 0) {
-              return {
-                course_id: item.course_systems.id,
-                course_title: item.course_systems.title,
-                course_system_key: courseSystemKey,
-                assigned_at: item.assigned_at,
-                progress: 0
-              }
-            }
-
-            // 获取用户已选择的项目及其完成百分比
-            const projectIds = projects?.map((p: any) => p.id) || []
-            const { data: selectedProjects } = await supabase
-              .from('user_selected_projects')
-              .select('project_id, completion_percentage')
-              .eq('user_id', userId)
-              .in('project_id', projectIds)
-              .eq('status', 'active')
-
-            if (!selectedProjects || selectedProjects.length === 0) {
-              return {
-                course_id: item.course_systems.id,
-                course_title: item.course_systems.title,
-                course_system_key: courseSystemKey,
-                assigned_at: item.assigned_at,
-                progress: 0
-              }
-            }
-
-            // 计算所有选中项目的平均完成度
-            const totalCompletion = selectedProjects.reduce(
-              (sum: number, proj: any) => sum + (proj.completion_percentage || 0),
-              0
-            )
-            const avgProgress = Math.round(totalCompletion / selectedProjects.length)
-
-            return {
-              course_id: item.course_systems.id,
-              course_title: item.course_systems.title,
-              course_system_key: courseSystemKey,
-              assigned_at: item.assigned_at,
-              progress: avgProgress
-            }
-          }
-
-          // 地球课程使用基于互动的进度计算（通过API）
-          if (courseSystemKey === 'earth') {
-            try {
-              const response = await fetch(
-                `/api/progress/earth-course-progress?courseSystemId=${item.course_systems.id}&userId=${userId}`
-              )
-
-              if (response.ok) {
-                const { progress } = await response.json()
-                return {
-                  course_id: item.course_systems.id,
-                  course_title: item.course_systems.title,
-                  course_system_key: courseSystemKey,
-                  assigned_at: item.assigned_at,
-                  progress: progress || 0
-                }
-              }
-            } catch (error) {
-              console.error('Failed to fetch earth course progress:', error)
-            }
-
-            // Fallback: 如果API调用失败，返回0
-            return {
-              course_id: item.course_systems.id,
-              course_title: item.course_systems.title,
-              course_system_key: courseSystemKey,
-              assigned_at: item.assigned_at,
-              progress: 0
-            }
-          }
-
-          // 其他课程（倾听）使用原有的进度计算方式
-          // 获取该课程体系下的所有已发布内容ID
-          const { data: contents } = await supabase
-            .from('course_contents')
-            .select('id')
-            .eq('system_id', item.course_systems.id)
-            .eq('is_published', true)
-
-          const totalContents = contents?.length || 0
-
-          if (totalContents === 0 || !contents) {
-            return {
-              course_id: item.course_systems.id,
-              course_title: item.course_systems.title,
-              course_system_key: courseSystemKey,
-              assigned_at: item.assigned_at,
-              progress: 0
-            }
-          }
-
-          // 获取用户对这些内容的进度记录
-          const contentIds = contents.map((c: any) => c.id)
-          const { data: progressRecords } = await supabase
-            .from('user_progress')
-            .select('ref_item_id, progress_value')
-            .eq('user_id', userId)
-            .in('ref_item_id', contentIds)
-            .eq('progress_type', 'reading')
-
-          // 计算平均进度（考虑所有内容的进度值，包括部分完成的）
-          let totalProgress = 0
-          progressRecords?.forEach((record: any) => {
-            totalProgress += record.progress_value || 0
-          })
-
-          // 计算进度百分比：平均进度 = 总进度 / 内容总数
-          const progress = Math.round(totalProgress / totalContents)
-
-          return {
-            course_id: item.course_systems.id,
-            course_title: item.course_systems.title,
-            course_system_key: courseSystemKey,
-            assigned_at: item.assigned_at,
-            progress
-          }
-        })
-      )
-
-      setEnrolledCourses(enrolled)
-    } catch (error) {
-      console.error('[Portal] 加载课程失败:', error)
-    }
-  }
+  // ✅ loadEnrolledCourses已移除，改用usePortalCourses hook（带SWR缓存）
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
