@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
+import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
 
 interface Activity {
   day?: string | number
@@ -79,6 +80,11 @@ export function PBLProjectDetail({
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null)
   const [historyDayKey, setHistoryDayKey] = useState<string | null>(null)
+  const [isPublic, setIsPublic] = useState(false) // 作业是否公开（默认私密）
+  const [togglingId, setTogglingId] = useState<string | null>(null) // 正在切换可见性的作业ID
+
+  // 公开作业刷新机制
+  const [publicSubmissionsRefreshKey, setPublicSubmissionsRefreshKey] = useState(0)
 
   // 获取用户ID
   useEffect(() => {
@@ -189,6 +195,7 @@ export function PBLProjectDetail({
     setSubmissionContent('')
     setUploadedFiles([])
     setSubmissionResult(null)
+    setIsPublic(false) // 默认私密
     setShowSubmitDialog(true)
   }
 
@@ -280,6 +287,48 @@ export function PBLProjectDetail({
     }
   }
 
+  // 切换作业可见性
+  const handleToggleVisibility = async (submissionId: string, currentIsPublic: boolean | null) => {
+    setTogglingId(submissionId)
+    try {
+      const isCurrentlyPublic = currentIsPublic ?? false
+
+      const response = await fetch('/api/submissions/toggle-visibility', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          submissionId,
+          isPublic: !isCurrentlyPublic
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || '切换失败')
+      }
+
+      const result = await response.json()
+      const actualIsPublic = result.isPublic
+
+      // 更新本地状态
+      setSubmissionsHistory(prev => prev.map(s =>
+        s.id === submissionId
+          ? { ...s, is_public: actualIsPublic }
+          : s
+      ))
+
+      // 触发公开作业列表刷新
+      setPublicSubmissionsRefreshKey(prev => prev + 1)
+    } catch (err) {
+      console.error('切换作业可见性失败:', err)
+      alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
+    } finally {
+      setTogglingId(null)
+    }
+  }
+
   // 提交任务
   const handleSubmitTask = async () => {
     if (!currentDayKey || !submissionContent.trim()) {
@@ -339,7 +388,8 @@ export function PBLProjectDetail({
         day_key: currentDayKey,
         submission_content: submissionContent,
         submission_type: 'project_deliverable',
-        attachments
+        attachments,
+        is_public: isPublic
       })
 
       const { data, error: functionError } = await supabase.functions.invoke('evaluate-pbl-task', {
@@ -349,7 +399,8 @@ export function PBLProjectDetail({
           day_key: currentDayKey,
           submission_content: submissionContent,
           submission_type: 'project_deliverable',
-          attachments
+          attachments,
+          is_public: isPublic
         }
       })
 
@@ -789,6 +840,60 @@ export function PBLProjectDetail({
                   </div>
                 )}
 
+                {/* 公开/私密选项 */}
+                <div className="mb-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-white mb-1">作业可见性</h4>
+                      <p className="text-xs text-gray-400">
+                        {isPublic
+                          ? '你的作业将对其他同学公开展示（需评分≥80分）'
+                          : '你的作业仅自己和老师可见'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsPublic(!isPublic)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                        isPublic ? 'bg-green-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          isPublic ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`px-2 py-0.5 rounded ${
+                      isPublic ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'
+                    }`}>
+                      {isPublic ? '公开' : '私密'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 隐私警告（仅在选择公开时显示） */}
+                {isPublic && (
+                  <div className="mb-4 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <div className="flex-1">
+                        <h5 className="text-sm font-semibold text-blue-400 mb-1">隐私提示</h5>
+                        <ul className="text-xs text-gray-300 space-y-1">
+                          <li>• 仅评分达到80分及以上的作业会被公开展示</li>
+                          <li>• 展示内容包括：你的姓名、作业内容和提交时间</li>
+                          <li>• 老师可以隐藏任何不适当的公开作业</li>
+                          <li>• 你可以随时将作业改为私密状态</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <button
                     onClick={handleSubmitTask}
@@ -966,6 +1071,37 @@ export function PBLProjectDetail({
                       </div>
                     </div>
 
+                    {/* 公开/私密切换 */}
+                    {submission.status === 'approved' && (
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-700">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-400">作业可见性:</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            (submission.is_public ?? false) ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'
+                          }`}>
+                            {(submission.is_public ?? false) ? '公开' : '私密'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
+                          disabled={togglingId === submission.id}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                            togglingId === submission.id
+                              ? 'opacity-50 cursor-not-allowed'
+                              : (submission.is_public ?? false)
+                              ? 'bg-green-500'
+                              : 'bg-gray-600'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    )}
+
                     {/* 操作按钮 */}
                     <div className="flex gap-2 mt-3">
                       <button
@@ -1105,6 +1241,15 @@ export function PBLProjectDetail({
           </div>
         </div>
       )}
+
+      {/* 优秀作业展示区域 */}
+      <div className="mt-16 mb-12 pt-12 border-t border-gray-800">
+        <PublicSubmissions
+          contentId={project.id}
+          limit={12}
+          refreshKey={publicSubmissionsRefreshKey}
+        />
+      </div>
     </div>
   )
 }

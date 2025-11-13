@@ -80,6 +80,10 @@ export function EarthContentDetail({
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null)
   const [historyProject, setHistoryProject] = useState<any>(null) // 当前查看提交记录的项目
+  const [togglingId, setTogglingId] = useState<string | null>(null) // 正在切换可见性的作业ID
+
+  // 公开作业刷新机制
+  const [publicSubmissionsRefreshKey, setPublicSubmissionsRefreshKey] = useState(0)
 
   // 刷新阶段进度（独立函数，可被多处调用）
   const fetchStageProgress = async () => {
@@ -299,6 +303,48 @@ export function EarthContentDetail({
     } catch (error) {
       console.error('Error deleting submission:', error)
       alert('删除失败，请重试')
+    }
+  }
+
+  // 切换作业可见性
+  const handleToggleVisibility = async (submissionId: string, currentIsPublic: boolean | null) => {
+    setTogglingId(submissionId)
+    try {
+      const isCurrentlyPublic = currentIsPublic ?? false
+
+      const response = await fetch('/api/submissions/toggle-visibility', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          submissionId,
+          isPublic: !isCurrentlyPublic
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || '切换失败')
+      }
+
+      const result = await response.json()
+      const actualIsPublic = result.isPublic
+
+      // 更新本地状态
+      setSubmissionsHistory(prev => prev.map(s =>
+        s.id === submissionId
+          ? { ...s, is_public: actualIsPublic }
+          : s
+      ))
+
+      // 触发公开作业列表刷新
+      setPublicSubmissionsRefreshKey(prev => prev + 1)
+    } catch (err) {
+      console.error('切换作业可见性失败:', err)
+      alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
+    } finally {
+      setTogglingId(null)
     }
   }
 
@@ -745,7 +791,11 @@ export function EarthContentDetail({
           animate={{ opacity: 1, y: 0 }}
           className="mt-16 mb-12 pt-12 border-t border-gray-800"
         >
-          <PublicSubmissions contentId={content.id} limit={12} />
+          <PublicSubmissions
+            contentId={content.id}
+            limit={12}
+            refreshKey={publicSubmissionsRefreshKey}
+          />
         </motion.div>
 
         {/* 项目详情弹窗 */}
@@ -1221,6 +1271,37 @@ export function EarthContentDetail({
                             )}
                           </div>
                         </div>
+
+                        {/* 公开/私密切换 */}
+                        {submission.status === 'approved' && (
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-700">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-400">作业可见性:</span>
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                (submission.is_public ?? false) ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'
+                              }`}>
+                                {(submission.is_public ?? false) ? '公开' : '私密'}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
+                              disabled={togglingId === submission.id}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                                togglingId === submission.id
+                                  ? 'opacity-50 cursor-not-allowed'
+                                  : (submission.is_public ?? false)
+                                  ? 'bg-green-500'
+                                  : 'bg-gray-600'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                  (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        )}
 
                         {/* 操作按钮 */}
                         <div className="flex gap-2 mt-3">
