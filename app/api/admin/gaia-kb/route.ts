@@ -98,14 +98,31 @@ export async function POST(request: Request) {
     n8nFormData.append('title', title)
 
     const webhookUrl = 'https://n8n.aifunbox.com/webhook/fca634ab-8e03-4a6f-99f3-c7dc46e772ae'
+
+    console.log('[盖亚知识库] 准备上传到N8N:', {
+      url: webhookUrl,
+      project_id: nextProjectId,
+      title: title,
+      filename: file.name
+    })
+
     const webhookResponse = await fetch(webhookUrl, {
       method: 'POST',
       body: n8nFormData,
     })
 
     if (!webhookResponse.ok) {
-      throw new Error(`N8N webhook失败: ${webhookResponse.statusText}`)
+      const errorBody = await webhookResponse.text()
+      console.error('[盖亚知识库] N8N webhook失败:', {
+        status: webhookResponse.status,
+        statusText: webhookResponse.statusText,
+        body: errorBody
+      })
+      throw new Error(`N8N webhook失败 (${webhookResponse.status}): ${webhookResponse.statusText}. Response: ${errorBody.substring(0, 200)}`)
     }
+
+    const webhookResult = await webhookResponse.text()
+    console.log('[盖亚知识库] N8N响应:', webhookResult)
 
     // 记录到数据库
     const { data: newDoc, error: insertError } = await supabase
