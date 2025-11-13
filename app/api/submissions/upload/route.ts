@@ -36,6 +36,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
+    // 验证文件类型：只允许图片
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!file.type.startsWith('image/') || !allowedImageTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: `不支持的文件格式。只支持图片格式: JPG, PNG, GIF, WEBP` },
+        { status: 400 }
+      )
+    }
+
     // 验证文件大小（10MB限制）
     const maxSize = 10 * 1024 * 1024 // 10MB
     if (file.size > maxSize) {

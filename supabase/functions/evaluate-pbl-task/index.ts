@@ -73,7 +73,7 @@ serve(async (req) => {
 
   try {
     // 1. 解析请求 - 与evaluate-submission完全一样的方式
-    const { user_id, content_id, submission_content, submission_type = 'project_deliverable', day_key, attachments = [] } = await req.json()
+    const { user_id, content_id, submission_content, submission_type = 'project_deliverable', day_key, attachments = [], is_public = false } = await req.json()
 
     if (!user_id || !content_id || !submission_content) {
       return new Response(
@@ -90,7 +90,7 @@ serve(async (req) => {
 
     console.log(`📝 开始评估：user_id=${user_id}, content_id=${content_id}, day_key=${day_key}`)
 
-    // 2. 创建提交记录 - 保存附件信息和day_key
+    // 2. 创建提交记录 - 保存附件信息、day_key和可见性设置
     const { data: newSubmission, error: insertError } = await supabase
       .from('user_submissions')
       .insert({
@@ -101,6 +101,7 @@ serve(async (req) => {
         attachments: attachments.length > 0 ? attachments : null, // 保存图片URL
         day_key: day_key || null, // 保存项目/任务标识
         status: 'under_review',
+        is_public: is_public, // 保存作业可见性设置
       })
       .select()
       .single()

@@ -11,6 +11,7 @@ import imageCompression from 'browser-image-compression'
 import { KnowledgeSectionV2 } from '@/components/courses/tabs/KnowledgeSectionV2'
 import { SocraticQuestionsV2 } from '@/components/courses/tabs/SocraticQuestionsV2'
 import { PostReflectionV2 } from '@/components/courses/tabs/PostReflectionV2'
+import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -71,6 +72,7 @@ export function EarthContentDetail({
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submissionResult, setSubmissionResult] = useState<any | null>(null)
+  const [isPublic, setIsPublic] = useState(false) // 作业是否公开（默认私密）
 
   // 提交记录相关状态
   const [showSubmissionsHistory, setShowSubmissionsHistory] = useState(false)
@@ -190,19 +192,30 @@ export function EarthContentDetail({
     setSubmissionContent('')
     setUploadedFiles([])
     setSubmissionResult(null)
+    setIsPublic(false) // 默认私密
     setShowSubmitDialog(true)
   }
 
-  // 处理文件选择（自动压缩图片）
+  // 处理文件选择（只允许图片，自动压缩）
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
 
     const filesArray = Array.from(e.target.files)
     const processedFiles: File[] = []
 
+    // 允许的图片格式
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+
     for (const file of filesArray) {
-      // 如果是图片且大于1MB，自动压缩
-      if (file.type.startsWith('image/') && file.size > 1024 * 1024) {
+      // 验证文件类型：只允许图片
+      if (!file.type.startsWith('image/') || !allowedImageTypes.includes(file.type)) {
+        alert(`❌ 不支持的文件格式: ${file.name}\n\n只支持图片格式: JPG, PNG, GIF, WEBP`)
+        console.warn('❌ 拒绝非图片文件:', file.name, file.type)
+        continue
+      }
+
+      // 如果图片大于1MB，自动压缩
+      if (file.size > 1024 * 1024) {
         console.log(`📦 压缩图片: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
 
         try {
@@ -224,12 +237,14 @@ export function EarthContentDetail({
           processedFiles.push(file)
         }
       } else {
-        // 不是图片或小于1MB，直接使用
+        // 小于1MB，直接使用
         processedFiles.push(file)
       }
     }
 
-    setUploadedFiles(prev => [...prev, ...processedFiles])
+    if (processedFiles.length > 0) {
+      setUploadedFiles(prev => [...prev, ...processedFiles])
+    }
   }
 
   // 移除已选择的文件
@@ -371,7 +386,8 @@ export function EarthContentDetail({
           day_key: projectKey,
           submission_content: submissionContent,
           submission_type: 'project_deliverable',
-          attachments: attachments // 传递附件信息
+          attachments: attachments, // 传递附件信息
+          is_public: isPublic // 传递作业可见性设置
         }
       })
 
@@ -723,6 +739,15 @@ export function EarthContentDetail({
           </motion.div>
         )}
 
+        {/* 优秀作业展示区域 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-16 mb-12 pt-12 border-t border-gray-800"
+        >
+          <PublicSubmissions contentId={content.id} limit={12} />
+        </motion.div>
+
         {/* 项目详情弹窗 */}
         <AnimatePresence>
           {selectedProject && (
@@ -897,12 +922,13 @@ export function EarthContentDetail({
                             <svg className="w-8 h-8 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
-                            <p className="text-sm text-gray-400">点击选择文件或拖拽到此处</p>
-                            <p className="text-xs text-gray-500 mt-1">支持图片、文档等文件</p>
+                            <p className="text-sm text-gray-400">点击选择图片或拖拽到此处</p>
+                            <p className="text-xs text-gray-500 mt-1">仅支持图片格式 (JPG, PNG, GIF, WEBP)</p>
                           </div>
                           <input
                             type="file"
                             multiple
+                            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                             onChange={handleFileChange}
                             className="hidden"
                             disabled={uploading}
@@ -940,6 +966,60 @@ export function EarthContentDetail({
                             </button>
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {/* 公开/私密选项 */}
+                    <div className="mb-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="text-sm font-semibold text-white mb-1">作业可见性</h4>
+                          <p className="text-xs text-gray-400">
+                            {isPublic
+                              ? '你的作业将对其他同学公开展示（需评分≥80分）'
+                              : '你的作业仅自己和老师可见'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsPublic(!isPublic)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                            isPublic ? 'bg-orange-500' : 'bg-gray-600'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              isPublic ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className={`px-2 py-0.5 rounded ${
+                          isPublic ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-700 text-gray-400'
+                        }`}>
+                          {isPublic ? '公开' : '私密'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 隐私警告（仅在选择公开时显示） */}
+                    {isPublic && (
+                      <div className="mb-4 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                          <div className="flex-1">
+                            <h5 className="text-sm font-semibold text-blue-400 mb-1">隐私提示</h5>
+                            <ul className="text-xs text-gray-300 space-y-1">
+                              <li>• 仅评分达到80分及以上的作业会被公开展示</li>
+                              <li>• 展示内容包括：你的姓名、作业内容和提交时间</li>
+                              <li>• 老师可以隐藏任何不适当的公开作业</li>
+                              <li>• 你可以随时将作业改为私密状态</li>
+                            </ul>
+                          </div>
+                        </div>
                       </div>
                     )}
 
