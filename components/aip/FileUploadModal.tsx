@@ -152,7 +152,11 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       }, 300)
 
       // 上传文件到Supabase Storage
-      const filePath = `${projectId}/${Date.now()}-${uploadFile.file.name}`
+      // 生成安全的文件名（URL encode处理中文）
+      const fileExtension = uploadFile.file.name.split('.').pop() || 'bin'
+      const safeFileName = `${Date.now()}-${encodeURIComponent(uploadFile.file.name)}`
+      const filePath = `${projectId}/${safeFileName}`
+
       const { error: uploadError } = await supabase.storage
         .from('project-documents')
         .upload(filePath, uploadFile.file)
