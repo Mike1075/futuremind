@@ -6,7 +6,7 @@ import { Plus, Building2, Home } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useOrganizations } from '@/lib/aip/hooks'
 import { OrganizationList } from '@/components/aip/OrganizationList'
-import { ChatBot } from '@/components/aip/ChatBot'
+import { FloatingChatBot } from '@/components/aip/FloatingChatBot'
 import { CreateOrganizationModal } from '@/components/aip/CreateOrganizationModal'
 import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { InteractionLog } from '@/components/aip/InteractionLog'
@@ -189,7 +189,7 @@ export default function ExplorerAlliancePage() {
       </div>
 
       {/* 聊天机器人 */}
-      <ChatBot />
+      <FloatingChatBot showProjectSelector={true} />
 
       {/* 创建组织弹窗（仅管理员） */}
       {showCreateOrganization && isAdmin && (

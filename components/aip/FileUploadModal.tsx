@@ -161,7 +161,43 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
 
       if (uploadError) throw uploadError
 
-      // 保存文档元数据
+      // 获取文件的下载URL
+      const { data: urlData } = supabase.storage
+        .from('project-documents')
+        .getPublicUrl(filePath)
+
+      const fileUrl = urlData?.publicUrl
+
+      // 调用N8N webhook进行向量化处理
+      console.log('[FileUpload] 调用N8N webhook进行文档处理:', {
+        project_id: projectId,
+        file_url: fileUrl,
+        title: uploadFile.title
+      })
+
+      const n8nResponse = await fetch('https://n8n.aifunbox.com/webhook/upload-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: projectId,
+          user_id: userId,
+          file_url: fileUrl,
+          title: uploadFile.title,
+          filename: uploadFile.file.name,
+          file_type: uploadFile.file.type,
+          file_size: uploadFile.file.size
+        })
+      })
+
+      if (!n8nResponse.ok) {
+        const errorText = await n8nResponse.text()
+        console.error('[FileUpload] N8N处理失败:', errorText)
+        // N8N失败不阻断流程，但记录错误
+      } else {
+        console.log('[FileUpload] N8N处理成功')
+      }
+
+      // 保存文档元数据到project_documents表
       const { error: dbError } = await supabase
         .from('project_documents')
         .insert({

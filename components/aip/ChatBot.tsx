@@ -238,13 +238,22 @@ export function ChatBot() {
                   <h3 className="text-lg font-semibold text-white">AIP AI 助手</h3>
                   <p className="text-sm text-gray-400 mt-1">智能项目管理助手</p>
                 </div>
-                <button
-                  onClick={handleClearConversation}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors group"
-                  title="清空聊天记录"
-                >
-                  <Trash2 className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleClearConversation}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors group"
+                    title="清空聊天记录"
+                  >
+                    <Trash2 className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+                  </button>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors group"
+                    title="关闭对话窗口"
+                  >
+                    <X className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
+                  </button>
+                </div>
               </div>
 
               {/* Messages */}
