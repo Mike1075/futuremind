@@ -7,7 +7,8 @@ import { motion } from 'framer-motion'
 import {
   Users,
   BookOpen,
-  UserCheck
+  UserCheck,
+  Brain
 } from 'lucide-react'
 
 export default function AdminDashboardClient() {
@@ -114,6 +115,15 @@ export default function AdminDashboardClient() {
         href: '/admin/students',
         icon: Users,
         gradient: 'from-blue-500 via-cyan-500 to-teal-500'
+      })
+
+      // 校长和老师共有：盖亚知识库管理
+      cards.push({
+        title: '盖亚知识库',
+        description: '上传文档到盖亚AI向量数据库',
+        href: '/admin/gaia-kb',
+        icon: Brain,
+        gradient: 'from-indigo-500 via-purple-500 to-pink-500'
       })
     }
 
