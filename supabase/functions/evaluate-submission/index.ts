@@ -272,9 +272,10 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('❌ 更新提交记录失败:', updateError)
-    } else {
-      console.log('✅ 提交记录已更新')
+      throw new Error(`更新提交记录失败: ${updateError.message}`)
     }
+
+    console.log('✅ 提交记录已更新')
 
     // 8. 驱动意识树生长（调用RPC函数）
     if (aiResult.growth_impact && Object.keys(aiResult.growth_impact).length > 0) {

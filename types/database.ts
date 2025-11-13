@@ -1851,7 +1851,9 @@ export type Database = {
           created_at: string | null
           day_key: string | null
           feedback: string | null
+          hidden_by_teacher: boolean | null
           id: string
+          is_public: boolean | null
           reviewed_at: string | null
           reviewer_id: string | null
           score: number | null
@@ -1869,7 +1871,9 @@ export type Database = {
           created_at?: string | null
           day_key?: string | null
           feedback?: string | null
+          hidden_by_teacher?: boolean | null
           id?: string
+          is_public?: boolean | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           score?: number | null
@@ -1887,7 +1891,9 @@ export type Database = {
           created_at?: string | null
           day_key?: string | null
           feedback?: string | null
+          hidden_by_teacher?: boolean | null
           id?: string
+          is_public?: boolean | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           score?: number | null

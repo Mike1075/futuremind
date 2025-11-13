@@ -11,7 +11,7 @@ interface Submission {
   consciousness_growth_points: number | null
   submitted_at: string | null
   reviewed_at: string | null
-  is_public: boolean
+  is_public: boolean | null
 }
 
 interface SubmissionHistoryProps {
@@ -57,9 +57,12 @@ export default function SubmissionHistory({
     }
   }
 
-  const handleToggleVisibility = async (submissionId: string, currentIsPublic: boolean) => {
+  const handleToggleVisibility = async (submissionId: string, currentIsPublic: boolean | null) => {
     setTogglingId(submissionId)
     try {
+      // 将 null 视为 false (私密)
+      const isCurrentlyPublic = currentIsPublic ?? false
+
       const response = await fetch('/api/submissions/toggle-visibility', {
         method: 'PATCH',
         headers: {
@@ -67,7 +70,7 @@ export default function SubmissionHistory({
         },
         body: JSON.stringify({
           submissionId,
-          isPublic: !currentIsPublic
+          isPublic: !isCurrentlyPublic
         })
       })
 
@@ -78,7 +81,7 @@ export default function SubmissionHistory({
       // 更新本地状态
       setSubmissions(prev => prev.map(s =>
         s.id === submissionId
-          ? { ...s, is_public: !currentIsPublic }
+          ? { ...s, is_public: !isCurrentlyPublic }
           : s
       ))
     } catch (err) {
@@ -278,19 +281,19 @@ export default function SubmissionHistory({
                                 onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
                                 disabled={togglingId === submission.id}
                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed ${
-                                  submission.is_public ? 'bg-blue-600' : 'bg-gray-600'
+                                  (submission.is_public ?? false) ? 'bg-blue-600' : 'bg-gray-600'
                                 }`}
                               >
                                 <span
                                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                    submission.is_public ? 'translate-x-6' : 'translate-x-1'
+                                    (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
                                   }`}
                                 />
                               </button>
                               <span className={`text-xs font-medium ${
-                                submission.is_public ? 'text-blue-400' : 'text-gray-400'
+                                (submission.is_public ?? false) ? 'text-blue-400' : 'text-gray-400'
                               }`}>
-                                {togglingId === submission.id ? '切换中...' : (submission.is_public ? '公开' : '私密')}
+                                {togglingId === submission.id ? '切换中...' : ((submission.is_public ?? false) ? '公开' : '私密')}
                               </span>
                             </div>
                           )}
