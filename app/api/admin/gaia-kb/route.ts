@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     n8nFormData.append('project_id', nextProjectId)
     n8nFormData.append('title', title)
 
-    const webhookUrl = 'https://n8n.aifunbox.com/webhook-test/fca634ab-8e03-4a6f-99f3-c7dc46e772ae'
+    const webhookUrl = 'https://n8n.aifunbox.com/webhook/fca634ab-8e03-4a6f-99f3-c7dc46e772ae'
     const webhookResponse = await fetch(webhookUrl, {
       method: 'POST',
       body: n8nFormData,

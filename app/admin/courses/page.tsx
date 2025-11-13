@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2 } from 'lucide-react'
+import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2, Brain } from 'lucide-react'
 
 interface CourseSystem {
   id: string
@@ -209,6 +209,13 @@ export default function CoursesPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push('/admin/gaia-kb')}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg border border-purple-500/30 transition-all group"
+              >
+                <Brain className="w-5 h-5" />
+                <span className="text-sm font-medium">盖亚知识库</span>
+              </button>
               <BookOpen className="w-6 h-6 text-purple-400" />
             </div>
           </div>

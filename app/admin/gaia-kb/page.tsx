@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Upload, Trash2, FileText, AlertCircle, CheckCircle } from 'lucide-react'
+import { Upload, Trash2, FileText, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react'
 
 interface Document {
   id: string
@@ -170,19 +170,28 @@ export default function GaiaKnowledgeBasePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-black text-white py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* 返回按钮 */}
+        <button
+          onClick={() => router.push('/admin/courses')}
+          className="mb-6 flex items-center text-purple-300 hover:text-purple-200 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          返回课程管理
+        </button>
+
         {/* 页头 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">盖亚知识库管理</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-white">盖亚知识库管理</h1>
+          <p className="mt-2 text-sm text-gray-400">
             上传文档到盖亚AI向量数据库，用于增强盖亚的知识能力
           </p>
         </div>
@@ -190,10 +199,10 @@ export default function GaiaKnowledgeBasePage() {
         {/* 消息提示 */}
         {message && (
           <div
-            className={`mb-6 p-4 rounded-lg flex items-center ${
+            className={`mb-6 p-4 rounded-lg flex items-center border ${
               message.type === 'success'
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
+                ? 'bg-green-500/10 text-green-300 border-green-500/30'
+                : 'bg-red-500/10 text-red-300 border-red-500/30'
             }`}
           >
             {message.type === 'success' ? (
@@ -206,14 +215,14 @@ export default function GaiaKnowledgeBasePage() {
         )}
 
         {/* 上传表单 */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Upload className="w-5 h-5 mr-2 text-purple-600" />
+        <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-6 mb-8">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <Upload className="w-5 h-5 mr-2 text-purple-400" />
             上传新文档
           </h2>
           <form onSubmit={handleUpload} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 文件 *
               </label>
               <input
@@ -221,7 +230,7 @@ export default function GaiaKnowledgeBasePage() {
                 type="file"
                 onChange={handleFileSelect}
                 accept=".pdf,.doc,.docx,.txt,.md"
-                className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                className="block w-full text-sm text-gray-300 border border-white/20 rounded-lg cursor-pointer bg-white/5 focus:outline-none focus:ring-2 focus:ring-purple-500 file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-500/20 file:text-purple-300 hover:file:bg-purple-500/30"
               />
               <p className="mt-1 text-xs text-gray-500">
                 支持的格式: PDF, DOC, DOCX, TXT, MD
@@ -229,7 +238,7 @@ export default function GaiaKnowledgeBasePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 文档标题 *
               </label>
               <input
@@ -237,13 +246,13 @@ export default function GaiaKnowledgeBasePage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="例如: 盖亚系统使用指南"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="block w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
               />
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-400">
                 {selectedFile && (
                   <span>
                     已选择: {selectedFile.name} ({formatFileSize(selectedFile.size)})
@@ -253,7 +262,7 @@ export default function GaiaKnowledgeBasePage() {
               <button
                 type="submit"
                 disabled={uploading || !selectedFile || !title.trim()}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center"
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors flex items-center"
               >
                 {uploading ? (
                   <>
@@ -272,69 +281,69 @@ export default function GaiaKnowledgeBasePage() {
         </div>
 
         {/* 文档列表 */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-              <FileText className="w-5 h-5 mr-2 text-purple-600" />
+        <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/10">
+            <h2 className="text-lg font-semibold text-white flex items-center">
+              <FileText className="w-5 h-5 mr-2 text-purple-400" />
               已上传文档 ({documents.length})
             </h2>
           </div>
 
           {documents.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <div className="p-12 text-center text-gray-400">
+              <FileText className="w-16 h-16 mx-auto mb-4 text-gray-600" />
               <p>还没有上传任何文档</p>
-              <p className="text-sm mt-2">上传文档后，盖亚AI将能够基于这些知识回答问题</p>
+              <p className="text-sm mt-2 text-gray-500">上传文档后，盖亚AI将能够基于这些知识回答问题</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-white/10">
+                <thead className="bg-white/5">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       项目ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       标题
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       文件名
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       大小
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       上传时间
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
                       操作
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-white/10">
                   {documents.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-gray-50">
+                    <tr key={doc.id} className="hover:bg-white/5 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-500/20 text-purple-300">
                           {doc.metadata?.custom_project_id || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{doc.title}</div>
+                        <div className="text-sm font-medium text-white">{doc.title}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {doc.metadata?.filename || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {doc.metadata?.file_size ? formatFileSize(doc.metadata.file_size) : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {formatDate(doc.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => handleDelete(doc.id, doc.title)}
-                          className="text-red-600 hover:text-red-900 inline-flex items-center"
+                          className="text-red-400 hover:text-red-300 inline-flex items-center transition-colors"
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
                           删除
