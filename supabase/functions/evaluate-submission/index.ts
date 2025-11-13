@@ -362,5 +362,5 @@ function calculateGrowthPoints(growthImpact: any): number {
     points += 5
   }
 
-  return Math.round(points * 10) / 10 // 保留一位小数
+  return Math.round(points) // 返回整数
 }

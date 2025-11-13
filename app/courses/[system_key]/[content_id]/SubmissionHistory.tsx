@@ -18,12 +18,14 @@ interface SubmissionHistoryProps {
   userId: string
   contentId: string
   onClose: () => void
+  onVisibilityChanged?: () => void
 }
 
 export default function SubmissionHistory({
   userId,
   contentId,
-  onClose
+  onClose,
+  onVisibilityChanged
 }: SubmissionHistoryProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,18 +77,28 @@ export default function SubmissionHistory({
       })
 
       if (!response.ok) {
-        throw new Error('切换失败')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || '切换失败')
       }
 
-      // 更新本地状态
+      // 从服务器响应中获取实际保存的状态
+      const result = await response.json()
+      const actualIsPublic = result.isPublic
+
+      // 使用服务器返回的实际值更新本地状态
       setSubmissions(prev => prev.map(s =>
         s.id === submissionId
-          ? { ...s, is_public: !isCurrentlyPublic }
+          ? { ...s, is_public: actualIsPublic }
           : s
       ))
+
+      // 触发公开作业列表刷新
+      if (onVisibilityChanged) {
+        onVisibilityChanged()
+      }
     } catch (err) {
       console.error('切换作业可见性失败:', err)
-      alert('操作失败，请重试')
+      alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
     } finally {
       setTogglingId(null)
     }

@@ -8,12 +8,14 @@ interface SubmissionButtonProps {
   userId: string
   contentId: string
   contentTitle: string
+  onVisibilityChanged?: () => void
 }
 
 export default function SubmissionButton({
   userId,
   contentId,
-  contentTitle
+  contentTitle,
+  onVisibilityChanged
 }: SubmissionButtonProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
@@ -77,6 +79,7 @@ export default function SubmissionButton({
           userId={userId}
           contentId={contentId}
           onClose={() => setIsHistoryOpen(false)}
+          onVisibilityChanged={onVisibilityChanged}
         />
       )}
     </>

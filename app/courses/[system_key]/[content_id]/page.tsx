@@ -2,12 +2,11 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import SubmissionButton from './SubmissionButton'
 import { CourseService } from '@/lib/services/course.service'
 import { ProgressService } from '@/lib/services/progress.service'
 import { PBLProjectDetail } from '@/components/courses/PBLProjectDetail'
 import { EarthContentWrapperV2 } from './EarthContentWrapperV2'
-import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
+import { CourseContentClient } from './CourseContentClient'
 
 // Resource 类型定义（对应 course_contents.resources 的结构）
 interface Resource {
@@ -490,19 +489,12 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
           {renderContent()}
         </div>
 
-        {/* 作业提交按钮 */}
-        <div className="mb-8">
-          <SubmissionButton
-            userId={user.id}
-            contentId={contentId}
-            contentTitle={content.title}
-          />
-        </div>
-
-        {/* 优秀作业展示区域 */}
-        <div className="mb-12 pt-12 border-t border-gray-800">
-          <PublicSubmissions contentId={contentId} limit={12} />
-        </div>
+        {/* 作业提交和优秀作业展示 */}
+        <CourseContentClient
+          userId={user.id}
+          contentId={contentId}
+          contentTitle={content.title}
+        />
 
         {/* 导航按钮 */}
         <div className="flex justify-between items-center pt-8 border-t border-gray-800">

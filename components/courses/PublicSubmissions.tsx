@@ -22,16 +22,17 @@ interface PublicSubmission {
 interface PublicSubmissionsProps {
   contentId: string
   limit?: number
+  refreshKey?: number
 }
 
-export function PublicSubmissions({ contentId, limit = 20 }: PublicSubmissionsProps) {
+export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicSubmissionsProps) {
   const [submissions, setSubmissions] = useState<PublicSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchPublicSubmissions()
-  }, [contentId, limit])
+  }, [contentId, limit, refreshKey])
 
   const fetchPublicSubmissions = async () => {
     setLoading(true)
