@@ -169,8 +169,29 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
         }
       }
 
-      // 显示给用户：正在上传的关键信息
-      alert(`📁 准备上传文件:\n\n文件名: ${uploadFile.file.name}\n项目ID: ${projectId}\n用户ID: ${userId}\n标题: ${uploadFile.title}\n\n请查看控制台了解详细信息`)
+      // 诊断信息窗口
+      const diagnosticInfo = `
+📊 上传诊断信息
+====================
+
+✅ 步骤1: 前端参数检查
+- 文件名: ${uploadFile.file.name}
+- 项目ID: ${projectId}
+- 用户ID: ${userId}
+- 标题: ${uploadFile.title}
+- 文件大小: ${uploadFile.file.size} bytes
+
+📤 步骤2: FormData准备
+- file字段: ✓
+- project_id字段: ✓
+- user_id字段: ✓
+- title字段: ✓
+
+⏳ 即将发送到N8N...
+      `.trim()
+
+      alert(diagnosticInfo)
+      console.log(diagnosticInfo)
 
       console.log('[FileUpload] 上传二进制文件到N8N webhook:', {
         filename: uploadFile.file.name,
@@ -189,65 +210,39 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
 
       clearInterval(progressInterval)
 
-      // N8N可能返回500但实际处理成功，所以检查响应内容
+      // N8N响应处理
       const responseText = await n8nResponse.text()
-      console.log('[FileUpload] N8N响应:', { status: n8nResponse.status, response: responseText })
 
-      if (n8nResponse.ok || (n8nResponse.status === 500 && responseText)) {
-        console.log('[FileUpload] N8N文件处理完成，现在手动保存文档记录到数据库...')
+      const diagnosticResult = `
+📊 上传结果诊断
+====================
 
-        // 手动保存文档记录到数据库（参考shareplatform实现）
-        try {
-          // 首先获取项目的organization_id
-          const { data: project } = await supabase
-            .from('projects')
-            .select('organization_id')
-            .eq('id', projectId)
-            .single()
+📥 步骤3: N8N响应
+- HTTP状态: ${n8nResponse.status}
+- 响应内容: ${responseText.substring(0, 200)}${responseText.length > 200 ? '...' : ''}
 
-          if (!project) {
-            throw new Error('项目不存在')
-          }
+${n8nResponse.ok ? '✅ N8N返回成功' : '❌ N8N返回错误'}
+      `.trim()
 
-          // 保存文档记录
-          const { error: dbError } = await supabase
-            .from('documents')
-            .insert({
-              title: uploadFile.title,
-              content: '', // 初始内容为空，N8N处理后会更新
-              metadata: {
-                filename: uploadFile.file.name,
-                file_type: uploadFile.file.type,
-                file_size: uploadFile.file.size,
-                upload_status: 'processing'
-              },
-              project_id: projectId,
-              user_id: userId,
-              organization_id: project.organization_id
-            })
+      console.log(diagnosticResult)
+      alert(diagnosticResult)
 
-          if (dbError) {
-            console.error('[FileUpload] 保存文档记录失败:', dbError)
-            throw dbError
-          }
-
-          console.log('[FileUpload] ✅ 文档记录保存成功')
-        } catch (dbError) {
-          console.error('[FileUpload] ⚠️ 保存文档记录失败（但文件上传成功）:', dbError)
-          // 不影响主要流程，继续显示成功
-        }
-
-        setUploadFiles(prev => prev.map(f =>
-          f.id === uploadFile.id
-            ? { ...f, status: 'success', progress: 100 }
-            : f
-        ))
-
-        // 重新加载文档列表
-        loadDocuments()
-      } else {
-        throw new Error(`N8N处理失败: ${n8nResponse.status} ${responseText}`)
+      if (!n8nResponse.ok) {
+        const errorMsg = `N8N处理失败: ${n8nResponse.status}\n${responseText}`
+        console.error('[FileUpload] N8N处理失败:', errorMsg)
+        throw new Error(errorMsg)
       }
+
+      console.log('[FileUpload] ✅ N8N处理成功，文档应该已保存到数据库')
+
+      setUploadFiles(prev => prev.map(f =>
+        f.id === uploadFile.id
+          ? { ...f, status: 'success', progress: 100 }
+          : f
+      ))
+
+      // 重新加载文档列表
+      loadDocuments()
     } catch (error) {
       setUploadFiles(prev => prev.map(f =>
         f.id === uploadFile.id
