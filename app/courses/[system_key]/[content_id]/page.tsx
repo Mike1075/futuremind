@@ -7,6 +7,7 @@ import { CourseService } from '@/lib/services/course.service'
 import { ProgressService } from '@/lib/services/progress.service'
 import { PBLProjectDetail } from '@/components/courses/PBLProjectDetail'
 import { EarthContentWrapperV2 } from './EarthContentWrapperV2'
+import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
 
 // Resource 类型定义（对应 course_contents.resources 的结构）
 interface Resource {
@@ -496,6 +497,11 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
             contentId={contentId}
             contentTitle={content.title}
           />
+        </div>
+
+        {/* 优秀作业展示区域 */}
+        <div className="mb-12 pt-12 border-t border-gray-800">
+          <PublicSubmissions contentId={contentId} limit={12} />
         </div>
 
         {/* 导航按钮 */}

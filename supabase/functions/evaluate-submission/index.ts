@@ -72,7 +72,7 @@ serve(async (req) => {
 
   try {
     // 1. 解析请求
-    const { user_id, content_id, submission_content, submission_type = 'reflection' } = await req.json()
+    const { user_id, content_id, submission_content, submission_type = 'reflection', is_public = false } = await req.json()
 
     if (!user_id || !content_id || !submission_content) {
       return new Response(
@@ -98,6 +98,7 @@ serve(async (req) => {
         submission_type,
         content: submission_content,    // 修正字段名
         status: 'under_review',
+        is_public: is_public, // 保存作业可见性设置
       })
       .select()
       .single()
