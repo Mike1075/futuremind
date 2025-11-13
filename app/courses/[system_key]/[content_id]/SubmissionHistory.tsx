@@ -41,6 +41,10 @@ export default function SubmissionHistory({
   }, [])
 
   const loadSubmissions = async () => {
+    console.log('📂 [加载] 开始加载提交历史')
+    console.log('   userId:', userId)
+    console.log('   contentId:', contentId)
+
     try {
       const { data, error } = await supabase
         .from('user_submissions')
@@ -49,55 +53,90 @@ export default function SubmissionHistory({
         .eq('course_content_id', contentId)
         .order('submitted_at', { ascending: false })
 
+      console.log('📥 [加载] 数据库查询结果:', {
+        dataCount: data?.length,
+        error,
+        data: data?.map(s => ({ id: s.id, is_public: s.is_public }))
+      })
+
       if (error) throw error
 
       setSubmissions(data || [])
+      console.log('✅ [加载] 提交历史加载完成，共', data?.length, '条记录')
     } catch (err) {
-      console.error('加载提交历史失败:', err)
+      console.error('❌ [加载] 加载提交历史失败:', err)
     } finally {
       setLoading(false)
     }
   }
 
   const handleToggleVisibility = async (submissionId: string, currentIsPublic: boolean | null) => {
+    console.log('🎯 [前端] 开始切换可见性')
+    console.log('   submissionId:', submissionId)
+    console.log('   当前状态 currentIsPublic:', currentIsPublic)
+
     setTogglingId(submissionId)
     try {
       // 将 null 视为 false (私密)
       const isCurrentlyPublic = currentIsPublic ?? false
+      const targetState = !isCurrentlyPublic
+
+      console.log('   目标状态 targetState:', targetState)
+
+      const requestBody = {
+        submissionId,
+        isPublic: targetState
+      }
+      console.log('📤 [前端] 发送请求:', requestBody)
 
       const response = await fetch('/api/submissions/toggle-visibility', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          submissionId,
-          isPublic: !isCurrentlyPublic
-        })
+        body: JSON.stringify(requestBody)
+      })
+
+      console.log('📥 [前端] 收到响应:', {
+        status: response.status,
+        ok: response.ok
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+        console.error('❌ [前端] API返回错误:', errorData)
         throw new Error(errorData.error || '切换失败')
       }
 
       // 从服务器响应中获取实际保存的状态
       const result = await response.json()
+      console.log('✅ [前端] 服务器返回结果:', result)
+
       const actualIsPublic = result.isPublic
+      console.log('   实际保存的状态:', actualIsPublic)
+      console.log('   验证是否匹配:', result.verified)
 
       // 使用服务器返回的实际值更新本地状态
-      setSubmissions(prev => prev.map(s =>
-        s.id === submissionId
-          ? { ...s, is_public: actualIsPublic }
-          : s
-      ))
+      console.log('🔄 [前端] 更新本地状态为:', actualIsPublic)
+      setSubmissions(prev => {
+        const updated = prev.map(s =>
+          s.id === submissionId
+            ? { ...s, is_public: actualIsPublic }
+            : s
+        )
+        console.log('📋 [前端] 更新后的submissions:', updated.find(s => s.id === submissionId))
+        return updated
+      })
 
       // 触发公开作业列表刷新
       if (onVisibilityChanged) {
+        console.log('🔔 [前端] 触发公开作业列表刷新')
         onVisibilityChanged()
       }
+
+      console.log('✨ [前端] 切换完成')
     } catch (err) {
-      console.error('切换作业可见性失败:', err)
+      console.error('❌ [前端] 切换作业可见性失败:', err)
       alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
     } finally {
       setTogglingId(null)
