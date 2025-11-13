@@ -157,6 +157,15 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       formData.append('user_id', userId)
       formData.append('title', uploadFile.title)
 
+      // 验证FormData内容
+      console.log('[FileUpload] FormData检查:')
+      for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size}bytes)` : value)
+      }
+
+      // 显示给用户：正在上传的关键信息
+      alert(`📁 准备上传文件:\n\n文件名: ${uploadFile.file.name}\n项目ID: ${projectId}\n用户ID: ${userId}\n标题: ${uploadFile.title}\n\n请查看控制台了解详细信息`)
+
       console.log('[FileUpload] 上传二进制文件到N8N webhook:', {
         filename: uploadFile.file.name,
         size: uploadFile.file.size,
