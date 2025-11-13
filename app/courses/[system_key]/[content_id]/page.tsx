@@ -89,10 +89,8 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 
   // 地球课程使用专属详情页（带盖亚对话）
   if (systemKey === 'earth') {
-    // ✅ 性能优化：并行查询所有需要的数据（从6个串行查询优化为1次并行查询）
+    // 获取阶段信息
     const contentWithStage = content as any
-
-    // 第一步：获取当前阶段信息
     const { data: stage } = await supabase
       .from('course_stages')
       .select('id, stage_number, stage_name')
@@ -101,66 +99,30 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 
     const stageData = stage as { id: string; stage_number: number; stage_name: string } | null
 
-    // 第二步：并行查询所有相关数据
-    const [stageContentsResult, prevStageResult, nextStageResult] = await Promise.all([
-      // 当前阶段的所有内容
-      supabase
-        .from('course_contents')
-        .select('id')
-        .eq('stage_id', contentWithStage.stage_id)
-        .eq('is_published', true)
-        .order('sequence_number'),
+    // 获取当前阶段的所有内容
+    const { data: stageContents } = await supabase
+      .from('course_contents')
+      .select('id')
+      .eq('stage_id', contentWithStage.stage_id)
+      .eq('is_published', true)
+      .order('sequence_number')
 
-      // 上一阶段信息
-      supabase
-        .from('course_stages')
-        .select('id, stage_number, stage_name')
-        .eq('system_id', courseSystem.id)
-        .eq('stage_number', (stageData?.stage_number || 0) - 1)
-        .single(),
+    const contentsData = stageContents as { id: string }[] | null
 
-      // 下一阶段信息
-      supabase
-        .from('course_stages')
-        .select('id, stage_number, stage_name')
-        .eq('system_id', courseSystem.id)
-        .eq('stage_number', (stageData?.stage_number || 0) + 1)
-        .single()
-    ])
+    // 获取上一个阶段信息
+    const { data: prevStage } = await supabase
+      .from('course_stages')
+      .select('id, stage_number, stage_name')
+      .eq('system_id', courseSystem.id)
+      .eq('stage_number', (stageData?.stage_number || 0) - 1)
+      .single()
 
-    const contentsData = stageContentsResult.data as { id: string }[] | null
-    const prevStageData = prevStageResult.data as { id: string; stage_number: number; stage_name: string } | null
-    const nextStageData = nextStageResult.data as { id: string; stage_number: number; stage_name: string } | null
+    const prevStageData = prevStage as { id: string; stage_number: number; stage_name: string } | null
 
-    // 第三步：并行查询相邻阶段的第一个内容
-    let prevStageFirstContent: { id: string } | null = null
-    let nextStageFirstContent: { id: string } | null = null
-
-    if (prevStageData && nextStageData) {
-      // 两个都有，并行查询
-      const [prevResult, nextResult] = await Promise.all([
-        supabase
-          .from('course_contents')
-          .select('id')
-          .eq('stage_id', prevStageData.id)
-          .eq('is_published', true)
-          .order('sequence_number')
-          .limit(1)
-          .single(),
-        supabase
-          .from('course_contents')
-          .select('id')
-          .eq('stage_id', nextStageData.id)
-          .eq('is_published', true)
-          .order('sequence_number')
-          .limit(1)
-          .single()
-      ])
-      prevStageFirstContent = prevResult.data as { id: string } | null
-      nextStageFirstContent = nextResult.data as { id: string } | null
-    } else if (prevStageData) {
-      // 只有上一阶段
-      const { data } = await supabase
+    // 获取上一阶段的第一个内容
+    let prevStageFirstContent = null
+    if (prevStageData) {
+      const { data: prevStageContent } = await supabase
         .from('course_contents')
         .select('id')
         .eq('stage_id', prevStageData.id)
@@ -168,10 +130,24 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
         .order('sequence_number')
         .limit(1)
         .single()
-      prevStageFirstContent = data as { id: string } | null
-    } else if (nextStageData) {
-      // 只有下一阶段
-      const { data } = await supabase
+
+      prevStageFirstContent = prevStageContent as { id: string } | null
+    }
+
+    // 获取下一个阶段信息
+    const { data: nextStage } = await supabase
+      .from('course_stages')
+      .select('id, stage_number, stage_name')
+      .eq('system_id', courseSystem.id)
+      .eq('stage_number', (stageData?.stage_number || 0) + 1)
+      .single()
+
+    const nextStageData = nextStage as { id: string; stage_number: number; stage_name: string } | null
+
+    // 获取下一阶段的第一个内容
+    let nextStageFirstContent = null
+    if (nextStageData) {
+      const { data: nextStageContent } = await supabase
         .from('course_contents')
         .select('id')
         .eq('stage_id', nextStageData.id)
@@ -179,7 +155,8 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
         .order('sequence_number')
         .limit(1)
         .single()
-      nextStageFirstContent = data as { id: string } | null
+
+      nextStageFirstContent = nextStageContent as { id: string } | null
     }
 
     return (
