@@ -235,7 +235,13 @@ export default function PortalPage() {
                 <h3 className="text-2xl font-bold text-white">我的课程</h3>
               </div>
 
-              {enrolledCourses.length > 0 ? (
+              {/* 课程加载中（仅首次无缓存时显示） */}
+              {coursesLoading ? (
+                <div className="text-center py-16">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+                  <p className="text-gray-400 mt-4">正在加载课程...</p>
+                </div>
+              ) : enrolledCourses.length > 0 ? (
                 <div className="space-y-4">
                   {enrolledCourses.map((course, index) => {
                     const Icon = getCourseIcon(course.course_system_key)

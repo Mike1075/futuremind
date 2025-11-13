@@ -187,7 +187,7 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
  * - 跨页面共享缓存
  */
 export function usePortalCourses(userId: string | null) {
-  const { data: courses, error, isLoading } = useSWR(
+  const { data: courses, error, isLoading, isValidating } = useSWR(
     userId ? `portal-courses-${userId}` : null,
     () => fetchEnrolledCourses(userId!),
     {
@@ -198,13 +198,15 @@ export function usePortalCourses(userId: string | null) {
       errorRetryCount: 2,            // 错误重试2次
       errorRetryInterval: 1000,      // 重试间隔1秒
       shouldRetryOnError: true,      // 错误时重试
-      fallbackData: [],              // 加载失败时的fallback数据
+      keepPreviousData: true,        // 🔥 保持旧数据显示，直到新数据加载完成
+      // ⚠️ 移除fallbackData，让SWR使用缓存数据
     }
   )
 
   return {
     courses: courses || [],
-    loading: isLoading,
+    loading: isLoading && !courses,  // 只有在没有缓存数据时才显示loading
+    isRefreshing: isValidating,      // 后台刷新状态
     error
   }
 }
