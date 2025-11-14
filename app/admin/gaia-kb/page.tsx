@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Upload, Trash2, FileText, ArrowLeft } from 'lucide-react'
+import { Upload, Trash2, FileText, ArrowLeft, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 
 interface Document {
   id: string
@@ -11,11 +11,13 @@ interface Document {
   metadata: {
     type: string
     custom_project_id: string
+    project_id: string
     filename: string
     file_size: number
     file_type: string
     uploaded_at: string
     status?: string // 处理状态：processing, completed, error
+    vector_count?: number
   }
   created_at: string
 }
@@ -35,6 +37,8 @@ export default function GaiaKnowledgeBasePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
   const [courseId, setCourseId] = useState<string>('p001') // 默认选中第一个课程
+  const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set())
+  const [deleting, setDeleting] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -136,6 +140,57 @@ export default function GaiaKnowledgeBasePage() {
     }
   }
 
+  // 智能判断文档状态
+  const getDocumentStatus = (doc: Document): 'completed' | 'processing' | 'error' => {
+    const vectorCount = doc.metadata?.vector_count || 0
+    const createdAt = new Date(doc.created_at).getTime()
+    const now = Date.now()
+    const elapsedMinutes = (now - createdAt) / 1000 / 60
+
+    // 如果有向量块，说明已完成
+    if (vectorCount > 0) {
+      return 'completed'
+    }
+
+    // 如果超过10分钟还没生成向量块，说明出错了
+    if (elapsedMinutes > 10) {
+      return 'error'
+    }
+
+    // 否则还在处理中
+    return 'processing'
+  }
+
+  // 获取状态配置
+  const getStatusConfig = (status: 'completed' | 'processing' | 'error') => {
+    switch (status) {
+      case 'completed':
+        return {
+          icon: CheckCircle2,
+          label: '已完成',
+          color: 'text-green-500',
+          bg: 'bg-green-500/10',
+          border: 'border-green-500/20'
+        }
+      case 'processing':
+        return {
+          icon: Clock,
+          label: '转写中',
+          color: 'text-yellow-500',
+          bg: 'bg-yellow-500/10',
+          border: 'border-yellow-500/20'
+        }
+      case 'error':
+        return {
+          icon: AlertCircle,
+          label: '出错了',
+          color: 'text-red-500',
+          bg: 'bg-red-500/10',
+          border: 'border-red-500/20'
+        }
+    }
+  }
+
   const handleDelete = async (id: string, title: string) => {
     console.log('[前端] 准备删除文档:', { id, title })
 
@@ -176,6 +231,70 @@ export default function GaiaKnowledgeBasePage() {
       console.error('[前端] 删除异常:', error)
       alert('❌ 删除失败\n\n网络错误，请稍后重试。')
     }
+  }
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (selectedDocs.size === 0) {
+      alert('⚠️ 请先选择要删除的文档')
+      return
+    }
+
+    const selectedDocsArray = Array.from(selectedDocs)
+    if (!confirm(`⚠️ 确定要删除选中的 ${selectedDocs.size} 个文档吗？\n\n此操作不可撤销，删除后盖亚将无法再使用这些知识。`)) {
+      return
+    }
+
+    setDeleting(true)
+    let successCount = 0
+    let failCount = 0
+
+    for (const docId of selectedDocsArray) {
+      try {
+        const response = await fetch(`/api/admin/gaia-kb?id=${docId}`, {
+          method: 'DELETE',
+        })
+
+        if (response.ok) {
+          successCount++
+        } else {
+          failCount++
+        }
+      } catch (error) {
+        failCount++
+      }
+    }
+
+    setDeleting(false)
+    setSelectedDocs(new Set())
+
+    if (failCount === 0) {
+      alert(`✅ 批量删除成功\n\n已删除 ${successCount} 个文档`)
+    } else {
+      alert(`⚠️ 批量删除完成\n\n成功: ${successCount} 个\n失败: ${failCount} 个`)
+    }
+
+    await loadDocuments()
+  }
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectedDocs.size === documents.length) {
+      setSelectedDocs(new Set())
+    } else {
+      setSelectedDocs(new Set(documents.map(d => d.id)))
+    }
+  }
+
+  // 切换单个文档选择
+  const toggleDocSelection = (docId: string) => {
+    const newSelected = new Set(selectedDocs)
+    if (newSelected.has(docId)) {
+      newSelected.delete(docId)
+    } else {
+      newSelected.add(docId)
+    }
+    setSelectedDocs(newSelected)
   }
 
   const formatFileSize = (bytes: number) => {
@@ -313,11 +432,30 @@ export default function GaiaKnowledgeBasePage() {
 
         {/* 文档列表 */}
         <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/10">
+          <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white flex items-center">
               <FileText className="w-5 h-5 mr-2 text-purple-400" />
               已上传文档 ({documents.length})
             </h2>
+            {selectedDocs.size > 0 && (
+              <button
+                onClick={handleBatchDelete}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg flex items-center gap-2 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+              >
+                {deleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    删除中...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    批量删除 ({selectedDocs.size})
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           {documents.length === 0 ? (
@@ -331,17 +469,25 @@ export default function GaiaKnowledgeBasePage() {
               <table className="min-w-full divide-y divide-white/10">
                 <thead className="bg-white/5">
                   <tr>
+                    <th className="px-6 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        checked={selectedDocs.size === documents.length && documents.length > 0}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 rounded border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-900"
+                      />
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      项目ID
+                      课程
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       标题
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      文件名
+                      状态
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      大小
+                      向量数
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       上传时间
@@ -352,28 +498,44 @@ export default function GaiaKnowledgeBasePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
-                  {documents.map((doc) => (
+                  {documents.map((doc) => {
+                    const status = getDocumentStatus(doc)
+                    const statusConfig = getStatusConfig(status)
+                    const StatusIcon = statusConfig.icon
+
+                    return (
                     <tr key={doc.id} className="hover:bg-white/5 transition-colors">
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedDocs.has(doc.id)}
+                          onChange={() => toggleDocSelection(doc.id)}
+                          className="w-4 h-4 rounded border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-900"
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-500/20 text-purple-300">
-                          {doc.metadata?.custom_project_id || 'N/A'}
+                          {doc.metadata?.project_id || doc.metadata?.custom_project_id || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-medium text-white">{doc.title}</div>
-                          {doc.metadata?.status === 'processing' && (
-                            <span className="px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-300 rounded border border-yellow-500/30">
-                              处理中
-                            </span>
-                          )}
+                        <div className="text-sm font-medium text-white line-clamp-2 max-w-xs">
+                          {doc.title}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {doc.metadata?.filename || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${statusConfig.bg} border ${statusConfig.border} w-fit`}>
+                          <StatusIcon className={`h-3.5 w-3.5 ${statusConfig.color}`} />
+                          <span className={`text-xs font-medium ${statusConfig.color}`}>
+                            {statusConfig.label}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                        {doc.metadata?.filename || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                        {doc.metadata?.file_size ? formatFileSize(doc.metadata.file_size) : '-'}
+                        {doc.metadata?.vector_count || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {formatDate(doc.created_at)}
@@ -388,7 +550,8 @@ export default function GaiaKnowledgeBasePage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  )
+                  })}
                 </tbody>
               </table>
             </div>
