@@ -11,7 +11,7 @@ import { FileUploadModal } from '@/components/aip/FileUploadModal'
 import { InviteModal } from '@/components/aip/InviteModal'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { Settings, UserPlus, Upload, ArrowLeft } from 'lucide-react'
+import { Settings, UserPlus, Upload, ArrowLeft, Trash2 } from 'lucide-react'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params)
@@ -26,6 +26,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const [documentsCount, setDocumentsCount] = useState(0)
   const [documents, setDocuments] = useState<any[]>([])
   const [documentsLoading, setDocumentsLoading] = useState(false)
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -71,6 +73,64 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     checkUserRole()
     loadDocuments()
   }, [projectId])
+
+  const toggleSelectDocument = (docId: string) => {
+    const newSelected = new Set(selectedDocuments)
+    if (newSelected.has(docId)) {
+      newSelected.delete(docId)
+    } else {
+      newSelected.add(docId)
+    }
+    setSelectedDocuments(newSelected)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedDocuments.size === documents.length) {
+      setSelectedDocuments(new Set())
+    } else {
+      setSelectedDocuments(new Set(documents.map(doc => doc.id)))
+    }
+  }
+
+  const handleBatchDelete = async () => {
+    if (selectedDocuments.size === 0) return
+
+    if (!confirm(`确定要删除选中的 ${selectedDocuments.size} 份文档吗？此操作不可撤销。`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .delete()
+        .in('id', Array.from(selectedDocuments))
+
+      if (error) throw error
+
+      alert(`成功删除 ${selectedDocuments.size} 份文档`)
+      setSelectedDocuments(new Set())
+
+      // 重新加载文档列表
+      const { data, count, error: loadError } = await supabase
+        .from('documents')
+        .select('*', { count: 'exact' })
+        .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
+        .order('created_at', { ascending: false })
+
+      if (loadError) throw loadError
+
+      setDocuments(data || [])
+      setDocumentsCount(count || 0)
+    } catch (error) {
+      console.error('批量删除失败:', error)
+      alert('删除失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   if (projectLoading) {
     return (
@@ -334,17 +394,42 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold">项目文档</h2>
-                <p className="text-sm text-gray-400 mt-1">共 {documentsCount} 份文档</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  共 {documentsCount} 份文档
+                  {selectedDocuments.size > 0 && (
+                    <span className="ml-2 text-blue-400">（已选择 {selectedDocuments.size} 份）</span>
+                  )}
+                </p>
               </div>
-              {isManager && (
-                <button
-                  onClick={() => setShowFileUpload(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20"
-                >
-                  <Upload className="w-5 h-5" />
-                  上传文档
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {selectedDocuments.size > 0 && isManager && (
+                  <>
+                    <button
+                      onClick={toggleSelectAll}
+                      className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                    >
+                      {selectedDocuments.size === documents.length ? '取消全选' : '全选'}
+                    </button>
+                    <button
+                      onClick={handleBatchDelete}
+                      disabled={isDeleting}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {isDeleting ? '删除中...' : `删除 (${selectedDocuments.size})`}
+                    </button>
+                  </>
+                )}
+                {isManager && (
+                  <button
+                    onClick={() => setShowFileUpload(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20"
+                  >
+                    <Upload className="w-5 h-5" />
+                    上传文档
+                  </button>
+                )}
+              </div>
             </div>
 
             {documentsLoading ? (
@@ -374,16 +459,29 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   const docTitle = doc.title || doc.metadata?.title || '未命名文档'
                   const isKnowledgeBase = docTitle === '项目智慧库'
                   const contentLength = doc.content?.length || 0
+                  const isSelected = selectedDocuments.has(doc.id)
                   return (
                     <div
                       key={doc.id}
-                      className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-6 hover:border-zinc-600/50 transition-all duration-200"
+                      className={`bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border rounded-xl p-6 transition-all duration-200 ${
+                        isSelected
+                          ? 'border-blue-500 ring-2 ring-blue-500/50'
+                          : 'border-zinc-700/50 hover:border-zinc-600/50'
+                      }`}
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-1">
+                          {isManager && (
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleSelectDocument(doc.id)}
+                              className="w-5 h-5 rounded border-zinc-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 bg-zinc-800 cursor-pointer"
+                            />
+                          )}
                           <span className="text-3xl">{isKnowledgeBase ? '📚' : '📄'}</span>
-                          <div>
-                            <h3 className="font-semibold text-white">{docTitle}</h3>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-white truncate">{docTitle}</h3>
                             {isKnowledgeBase && (
                               <span className="text-xs text-blue-400">系统默认</span>
                             )}
