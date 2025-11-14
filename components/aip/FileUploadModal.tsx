@@ -65,10 +65,12 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       setLoading(true)
       const supabase = createClient()
 
+      // N8N Supabase Vector Store 把 project_id 存储在 metadata 里
+      // 需要用 JSONB 查询语法：metadata->>'project_id'
       const { data, error} = await supabase
         .from('documents')
         .select('*')
-        .eq('project_id', projectId)
+        .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -274,21 +276,25 @@ ${n8nResponse.ok ? '✅ 上传成功' : '❌ 上传失败'}
   }
 
   const handleDeleteDocument = async (doc: ProjectDocument) => {
+    // N8N把字段存在metadata里，需要兼容处理
+    const docTitle = doc.title || doc.metadata?.title || '未命名文档'
+    const docUserId = doc.user_id || doc.metadata?.user_id
+
     // 防止删除项目智慧库
-    if (doc.title === '项目智慧库') {
+    if (docTitle === '项目智慧库') {
       alert('项目智慧库不能被删除')
       return
     }
 
     // 权限检查：项目经理或文档创建者可以删除
-    const canDelete = isManager || doc.user_id === userId
+    const canDelete = isManager || docUserId === userId
 
     if (!canDelete) {
       alert('您没有权限删除此文档')
       return
     }
 
-    if (!confirm(`确定要删除文档"${doc.title}"吗？此操作不可撤销。`)) {
+    if (!confirm(`确定要删除文档"${docTitle}"吗？此操作不可撤销。`)) {
       return
     }
 
@@ -392,7 +398,10 @@ ${n8nResponse.ok ? '✅ 上传成功' : '❌ 上传失败'}
             ) : (
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {existingDocuments.map((doc) => {
-                  const isKnowledgeBase = doc.title === '项目智慧库'
+                  // N8N把字段存在metadata里，需要兼容处理
+                  const docTitle = doc.title || doc.metadata?.title || '未命名文档'
+                  const docUserId = doc.user_id || doc.metadata?.user_id
+                  const isKnowledgeBase = docTitle === '项目智慧库'
                   const contentLength = doc.content?.length || 0
                   return (
                     <div
@@ -401,7 +410,7 @@ ${n8nResponse.ok ? '✅ 上传成功' : '❌ 上传失败'}
                     >
                       <span className="text-lg">{isKnowledgeBase ? '📚' : '📄'}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white truncate">{doc.title}</p>
+                        <p className="font-medium text-white truncate">{docTitle}</p>
                         <div className="flex items-center gap-2 text-xs text-zinc-500">
                           <span>{contentLength} 字符</span>
                           <span>•</span>
@@ -416,7 +425,7 @@ ${n8nResponse.ok ? '✅ 上传成功' : '❌ 上传失败'}
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {!isKnowledgeBase && (isManager || doc.user_id === userId) && (
+                        {!isKnowledgeBase && (isManager || docUserId === userId) && (
                           <button
                             onClick={() => handleDeleteDocument(doc)}
                             className="p-1 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300"
