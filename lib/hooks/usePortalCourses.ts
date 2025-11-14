@@ -19,8 +19,12 @@ const supabase = createClient()
 
 // 课程数据获取器（SWR使用）
 const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {
+  const startTime = performance.now()
+  console.log('[usePortalCourses] 🚀 开始获取课程数据', { userId, time: new Date().toISOString() })
+
   try {
     // 获取课程分配记录
+    const queryStart = performance.now()
     const { data: enrolledData, error } = await supabase
       .from('student_course_assignments')
       .select(`
@@ -30,6 +34,11 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
       .eq('student_id', userId)
       .eq('status', 'active')
 
+    console.log('[usePortalCourses] ✅ 课程分配查询完成', {
+      耗时: `${(performance.now() - queryStart).toFixed(0)}ms`,
+      课程数量: enrolledData?.length || 0
+    })
+
     if (error) throw error
 
     // 过滤有效课程
@@ -38,13 +47,20 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
     )
 
     // 计算每个课程的进度
+    console.log('[usePortalCourses] 📊 开始计算进度', { 有效课程数: validEnrollments.length })
+    const progressStart = performance.now()
+
     const enrolled: EnrolledCourse[] = await Promise.all(
       validEnrollments.map(async (item: any) => {
         const courseSystemKey = item.course_systems.system_key
+        const courseStart = performance.now()
 
         // 地球课程：调用进度API
         if (courseSystemKey === 'earth') {
           try {
+            console.log('[usePortalCourses] 🌍 开始获取地球课程进度', { courseId: item.course_systems.id })
+            const apiStart = performance.now()
+
             const response = await fetch(
               `/api/progress/earth-course-progress?courseSystemId=${item.course_systems.id}&userId=${userId}`,
               { next: { revalidate: 30 } }
@@ -52,6 +68,10 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
 
             if (response.ok) {
               const { progress } = await response.json()
+              console.log('[usePortalCourses] ✅ 地球课程进度获取完成', {
+                耗时: `${(performance.now() - apiStart).toFixed(0)}ms`,
+                进度: `${progress}%`
+              })
               return {
                 course_id: item.course_systems.id,
                 course_title: item.course_systems.title,
@@ -61,7 +81,7 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
               }
             }
           } catch (error) {
-            console.error('[usePortalCourses] 获取地球课程进度失败:', error)
+            console.error('[usePortalCourses] ❌ 获取地球课程进度失败:', error)
           }
 
           return {
@@ -170,9 +190,17 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
       })
     )
 
+    const totalTime = performance.now() - startTime
+    console.log('[usePortalCourses] 🎉 课程数据获取完成', {
+      总耗时: `${totalTime.toFixed(0)}ms`,
+      进度计算耗时: `${(performance.now() - progressStart).toFixed(0)}ms`,
+      课程数量: enrolled.length,
+      各课程进度: enrolled.map(c => `${c.course_title}: ${c.progress}%`).join(', ')
+    })
+
     return enrolled
   } catch (error) {
-    console.error('[usePortalCourses] 加载失败:', error)
+    console.error('[usePortalCourses] ❌ 加载失败:', error)
     return []
   }
 }
@@ -190,8 +218,10 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
  * 首次打开慢（3-4秒）→ 后续秒开（0秒）→ 数据自动保持最新
  */
 export function usePortalCourses(userId: string | null) {
+  const swrKey = userId ? `portal-courses-${userId}` : null
+
   const { data: courses, error, isLoading, isValidating } = useSWR(
-    userId ? `portal-courses-${userId}` : null,
+    swrKey,
     () => fetchEnrolledCourses(userId!),
     {
       revalidateOnFocus: false,      // 窗口焦点不触发刷新
@@ -202,8 +232,27 @@ export function usePortalCourses(userId: string | null) {
       errorRetryInterval: 1000,      // 重试间隔1秒
       shouldRetryOnError: true,      // 错误时重试
       keepPreviousData: true,        // 🔥 刷新时保持显示旧数据，新数据到达后平滑切换
+      onSuccess: (data) => {
+        console.log('[usePortalCourses] ✅ SWR缓存更新成功', {
+          课程数量: data.length,
+          是否从缓存: !isValidating
+        })
+      },
+      onError: (err) => {
+        console.error('[usePortalCourses] ❌ SWR加载失败', err)
+      }
     }
   )
+
+  // 监控SWR状态变化
+  console.log('[usePortalCourses] 📡 SWR状态', {
+    key: swrKey,
+    isLoading,
+    isValidating,
+    hasCachedData: !!courses,
+    coursesCount: courses?.length || 0,
+    willShowLoading: isLoading && !courses
+  })
 
   return {
     courses: courses || [],
