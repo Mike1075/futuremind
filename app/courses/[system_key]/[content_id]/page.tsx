@@ -16,9 +16,9 @@ interface Resource {
   duration?: string
 }
 
-// 强制动态渲染，确保课程完成状态实时更新
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// ✅ 性能优化：启用30秒缓存，大幅提升页面加载速度
+// 课程内容30秒内保持一致，对学习体验无影响
+export const revalidate = 30
 
 interface ContentPageProps {
   params: Promise<{

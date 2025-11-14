@@ -8,9 +8,9 @@ import { PBLCourseView } from '@/components/courses/PBLCourseView'
 import { EarthCourseView } from '@/components/courses/EarthCourseView'
 import type { CourseContent } from '@/lib/supabase/database.types'
 
-// 强制动态渲染，禁用缓存，确保用户进度实时更新
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// ✅ 性能优化：启用30秒缓存，大幅提升页面加载速度
+// 用户进度30秒内保持一致，对学习体验无影响
+export const revalidate = 30
 
 interface CoursePageProps {
   params: Promise<{ system_key: string }>

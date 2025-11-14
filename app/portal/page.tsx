@@ -60,26 +60,26 @@ export default function PortalPage() {
       if (user) {
         setUser(user as User)
 
-        // Get user role
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
+        // ✅ 性能优化：并行查询用户角色和进度，减少等待时间
+        const [profileResult, progressResult] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single(),
+          supabase
+            .from('user_progress')
+            .select('consciousness_growth')
+            .eq('user_id', user.id)
+            .single()
+        ])
 
-        if (profile) {
-          setUserRole(profile.role)
+        if (profileResult.data) {
+          setUserRole(profileResult.data.role)
         }
 
-        // Load user progress
-        const { data: progress } = await supabase
-          .from('user_progress')
-          .select('consciousness_growth')
-          .eq('user_id', user.id)
-          .single()
-
-        if (progress) {
-          setConsciousnessGrowth(progress.consciousness_growth || 0)
+        if (progressResult.data) {
+          setConsciousnessGrowth(progressResult.data.consciousness_growth || 0)
         }
 
         // ✅ 课程数据由usePortalCourses hook自动加载和缓存
