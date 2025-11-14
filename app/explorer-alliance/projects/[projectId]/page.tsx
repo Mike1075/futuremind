@@ -49,10 +49,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       const supabase = createClient()
       setDocumentsLoading(true)
       try {
+        // N8N Supabase Vector Store 把 project_id 存储在 metadata 里
+        // 需要用 JSONB 查询语法：metadata->>'project_id'
         const { data, count, error } = await supabase
           .from('documents')
           .select('*', { count: 'exact' })
-          .eq('project_id', projectId)
+          .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
           .order('created_at', { ascending: false })
 
         if (error) throw error
@@ -368,7 +370,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {documents.map((doc) => {
-                  const isKnowledgeBase = doc.title === '项目智慧库'
+                  // N8N把字段存在metadata里，需要兼容处理
+                  const docTitle = doc.title || doc.metadata?.title || '未命名文档'
+                  const isKnowledgeBase = docTitle === '项目智慧库'
                   const contentLength = doc.content?.length || 0
                   return (
                     <div
@@ -379,7 +383,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                         <div className="flex items-center gap-3">
                           <span className="text-3xl">{isKnowledgeBase ? '📚' : '📄'}</span>
                           <div>
-                            <h3 className="font-semibold text-white">{doc.title}</h3>
+                            <h3 className="font-semibold text-white">{docTitle}</h3>
                             {isKnowledgeBase && (
                               <span className="text-xs text-blue-400">系统默认</span>
                             )}
