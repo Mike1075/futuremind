@@ -38,11 +38,15 @@ export async function GET() {
     if (documents && documents.length > 0) {
       for (const doc of documents) {
         const metadata = doc.metadata as any
-        const projectId = metadata?.custom_project_id
+        const projectId = metadata?.custom_project_id || metadata?.project_id
         const currentStatus = metadata?.status
+
+        console.log(`[盖亚知识库] 检查文档: ${doc.id}, title: ${doc.title}, status: ${currentStatus}, project_id: ${projectId}`)
 
         // 如果状态是processing，检查是否实际已完成
         if (currentStatus === 'processing' && projectId) {
+          console.log(`[盖亚知识库] 开始查询向量块，project_id: ${projectId}`)
+
           // 使用Admin客户端查询向量块（排除主文档自己，只统计向量块）
           const { count, error: countError } = await supabase
             .from('documents')
@@ -50,18 +54,30 @@ export async function GET() {
             .eq('metadata->>project_id', projectId)
             .neq('metadata->>type', 'gaia_knowledge_base') // 排除主文档
 
+          console.log(`[盖亚知识库] 查询结果: count=${count}, error=${countError?.message}`)
+
           if (!countError && count && count > 0) {
             metadata.status = 'completed'
             metadata.vector_count = count
 
+            console.log(`[盖亚知识库] 准备更新文档${doc.id}状态为completed，向量块数: ${count}`)
+
             // 使用Admin客户端更新数据库
-            await supabase
+            const { error: updateError } = await supabase
               .from('documents')
-              .update({ metadata })
-              .eq('id', doc.id)
-              .then(() => {
-                console.log(`[盖亚知识库] 已更新文档${doc.id}状态为completed，向量块数: ${count}`)
+              .update({
+                metadata,
+                updated_at: new Date().toISOString()
               })
+              .eq('id', doc.id)
+
+            if (updateError) {
+              console.error(`[盖亚知识库] 更新失败:`, updateError)
+            } else {
+              console.log(`[盖亚知识库] ✅ 成功更新文档${doc.id}状态为completed，向量块数: ${count}`)
+            }
+          } else if (countError) {
+            console.error(`[盖亚知识库] 查询向量块失败:`, countError)
           }
         }
       }
