@@ -202,7 +202,7 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
         title: uploadFile.title
       })
 
-      const n8nResponse = await fetch('https://n8n.aifunbox.com/webhook/upload-document', {
+      const n8nResponse = await fetch('https://n8n.aifunbox.com/webhook/267d2f36-116d-4e67-bedd-ef5d536cd200', {
         method: 'POST',
         // 不设置 Content-Type header，让浏览器自动设置为 multipart/form-data
         body: formData
