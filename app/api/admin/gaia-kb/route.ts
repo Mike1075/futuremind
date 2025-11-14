@@ -1,19 +1,20 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 // GET: 获取盖亚知识库文档列表
 export async function GET() {
   try {
-    const supabase = await createClient()
+    // 先用普通客户端验证权限
+    const authClient = await createClient()
 
     // 验证用户权限
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await authClient.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
 
     // 检查用户角色（只有老师和校长可访问）
-    const { data: profile } = await supabase
+    const { data: profile } = await authClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -23,7 +24,8 @@ export async function GET() {
       return NextResponse.json({ error: '权限不足' }, { status: 403 })
     }
 
-    // 查询盖亚知识库文档
+    // ✅ 使用Admin客户端查询文档（绕过RLS）
+    const supabase = createAdminClient()
     const { data: documents, error } = await supabase
       .from('documents')
       .select('*')
@@ -32,7 +34,7 @@ export async function GET() {
 
     if (error) throw error
 
-    // 智能更新状态：检查是否有对应的向量块
+    // 智能更新状态：检查是否有对应的向量块（使用Admin客户端）
     if (documents && documents.length > 0) {
       for (const doc of documents) {
         const metadata = doc.metadata as any
@@ -41,28 +43,24 @@ export async function GET() {
 
         // 如果状态是processing，检查是否实际已完成
         if (currentStatus === 'processing' && projectId) {
-          // 查询是否有向量块
-          const { data: vectorChunks, error: countError } = await supabase
+          // 使用Admin客户端查询向量块
+          const { count, error: countError } = await supabase
             .from('documents')
             .select('id', { count: 'exact', head: true })
             .eq('metadata->>project_id', projectId)
 
-          if (!countError && vectorChunks) {
-            const count = (vectorChunks as any).count || 0
-            // 如果有向量块，说明已完成
-            if (count > 0) {
-              metadata.status = 'completed'
-              metadata.vector_count = count
+          if (!countError && count && count > 0) {
+            metadata.status = 'completed'
+            metadata.vector_count = count
 
-              // 更新数据库
-              await supabase
-                .from('documents')
-                .update({ metadata })
-                .eq('id', doc.id)
-                .then(() => {
-                  console.log(`[盖亚知识库] 已更新文档${doc.id}状态为completed，向量块数: ${count}`)
-                })
-            }
+            // 使用Admin客户端更新数据库
+            await supabase
+              .from('documents')
+              .update({ metadata })
+              .eq('id', doc.id)
+              .then(() => {
+                console.log(`[盖亚知识库] 已更新文档${doc.id}状态为completed，向量块数: ${count}`)
+              })
           }
         }
       }
@@ -81,15 +79,16 @@ export async function GET() {
 // POST: 上传文档到N8N webhook并记录到数据库
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
+    // 先用普通客户端验证权限
+    const authClient = await createClient()
 
     // 验证用户权限
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await authClient.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await authClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -98,6 +97,9 @@ export async function POST(request: Request) {
     if (!profile || !profile.role || !['teacher', 'principal'].includes(profile.role)) {
       return NextResponse.json({ error: '权限不足' }, { status: 403 })
     }
+
+    // ✅ 使用Admin客户端进行数据库操作（绕过RLS）
+    const supabase = createAdminClient()
 
     // 解析FormData
     const formData = await request.formData()
@@ -227,11 +229,12 @@ export async function DELETE(request: Request) {
   console.log('[后端DELETE] 请求URL:', request.url)
 
   try {
-    const supabase = await createClient()
-    console.log('[后端DELETE] Supabase客户端已创建')
+    // 先用普通客户端验证权限
+    const authClient = await createClient()
+    console.log('[后端DELETE] 身份验证客户端已创建')
 
     // 验证用户权限
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await authClient.auth.getUser()
     console.log('[后端DELETE] 用户验证结果:', user ? `用户ID: ${user.id}` : '未登录')
 
     if (!user) {
@@ -239,7 +242,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await authClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -251,6 +254,10 @@ export async function DELETE(request: Request) {
       console.log('[后端DELETE] 权限不足，返回403')
       return NextResponse.json({ error: '权限不足' }, { status: 403 })
     }
+
+    // ✅ 使用Admin客户端进行删除操作（绕过RLS）
+    const supabase = createAdminClient()
+    console.log('[后端DELETE] Admin客户端已创建（绕过RLS）')
 
     const { searchParams } = new URL(request.url)
     const documentId = searchParams.get('id')
