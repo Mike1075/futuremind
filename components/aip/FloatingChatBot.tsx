@@ -61,19 +61,25 @@ export function FloatingChatBot({
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        const { data: projectMembers } = await supabase
-          .from('project_members')
-          .select('*, project:projects(*)')
-          .eq('user_id', user.id)
+        let projects: any[] = []
 
-        const projects = projectMembers?.map(pm => pm.project).filter(Boolean) || []
+        if (organization?.id) {
+          // 如果有组织上下文，直接查询该组织的所有项目
+          const { data } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('organization_id', organization.id)
+          projects = data || []
+        } else {
+          // 否则查询用户参与的项目
+          const { data: projectMembers } = await supabase
+            .from('project_members')
+            .select('*, project:projects(*)')
+            .eq('user_id', user.id)
+          projects = projectMembers?.map(pm => pm.project).filter(Boolean) || []
+        }
 
-        // 如果有组织上下文，只显示该组织的项目
-        const filtered = organization?.id
-          ? projects.filter(p => p.organization_id === organization.id)
-          : projects
-
-        setUserProjects(filtered as Project[])
+        setUserProjects(projects as Project[])
       } catch (err) {
         console.error('加载项目失败:', err)
       } finally {
