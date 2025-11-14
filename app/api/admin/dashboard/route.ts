@@ -6,7 +6,13 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+// ✅ 性能优化：启用60秒缓存，Dashboard数据不需要实时更新
+// 减少重复查询，大幅提升管理后台加载速度
+export const revalidate = 60
+
 export async function GET(request: Request) {
+  const startTime = performance.now()
+  console.log('[Dashboard API] 🚀 开始获取统计数据')
   try {
     const supabase = createRouteHandlerClient({ cookies })
 
@@ -161,32 +167,60 @@ export async function GET(request: Request) {
       .order('recorded_at', { ascending: false })
       .limit(10)
 
-    // 12. 获取课程统计
+    // 12. 获取课程统计 - 🔥 优化：批量查询，避免N+1问题
+    const query12Start = performance.now()
     const { data: courses } = await supabase
       .from('course_systems')
       .select('id, title, system_key')
 
-    const courseStats = await Promise.all(
-      (courses || []).map(async (course) => {
-        const { count: assignedStudents } = await supabase
-          .from('student_course_assignments')
-          .select('id', { count: 'exact', head: true })
-          .eq('course_system_id', course.id)
+    console.log('[Dashboard API] ✅ 查询12完成：课程列表', {
+      耗时: `${(performance.now() - query12Start).toFixed(0)}ms`,
+      课程数: courses?.length || 0
+    })
 
-        const { count: assignedGroups } = await supabase
-          .from('course_assignments')
-          .select('id', { count: 'exact', head: true })
-          .eq('course_system_id', course.id)
+    // 🔥 批量查询所有课程的分配数据（2次查询 vs 原来的2N次）
+    const query13Start = performance.now()
+    const courseIds = courses?.map(c => c.id) || []
 
-        return {
-          ...course,
-          assigned_students: assignedStudents || 0,
-          assigned_groups: assignedGroups || 0
-        }
-      })
-    )
+    const [studentAssignments, groupAssignments] = await Promise.all([
+      supabase
+        .from('student_course_assignments')
+        .select('course_system_id')
+        .in('course_system_id', courseIds),
+      supabase
+        .from('course_assignments')
+        .select('course_system_id')
+        .in('course_system_id', courseIds)
+    ])
+
+    console.log('[Dashboard API] ✅ 查询13完成：批量课程分配', {
+      耗时: `${(performance.now() - query13Start).toFixed(0)}ms`
+    })
+
+    // 在内存中按课程ID分组统计（超快）
+    const studentCountMap = new Map<string, number>()
+    studentAssignments.data?.forEach(a => {
+      studentCountMap.set(a.course_system_id, (studentCountMap.get(a.course_system_id) || 0) + 1)
+    })
+
+    const groupCountMap = new Map<string, number>()
+    groupAssignments.data?.forEach(a => {
+      groupCountMap.set(a.course_system_id, (groupCountMap.get(a.course_system_id) || 0) + 1)
+    })
+
+    const courseStats = courses?.map(course => ({
+      ...course,
+      assigned_students: studentCountMap.get(course.id) || 0,
+      assigned_groups: groupCountMap.get(course.id) || 0
+    })) || []
 
     // 13. 返回统计数据
+    const totalTime = performance.now() - startTime
+    console.log('[Dashboard API] 🎉 统计数据获取完成', {
+      总耗时: `${totalTime.toFixed(0)}ms`,
+      查询优化: '课程统计批量查询（2次 vs 原2N次）'
+    })
+
     return NextResponse.json({
       overview: {
         total_students: totalStudents || 0,

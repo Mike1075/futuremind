@@ -79,10 +79,11 @@ export default function Home() {
     }
   }
 
-  // 生成固定的粒子配置
+  // ⚡ 性能优化：减少粒子数量，提升低端设备性能
+  // 从50个减少到30个，降低GPU/CPU负担
   const particles = useMemo(() => {
     if (!isMounted) return []
-    return [...Array(50)].map((_, i) => ({
+    return [...Array(30)].map((_, i) => ({
       id: i,
       x: Math.random() * 100 - 50,
       y: Math.random() * 100 - 50,
