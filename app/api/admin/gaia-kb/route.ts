@@ -223,12 +223,19 @@ export async function POST(request: Request) {
 
 // DELETE: 删除文档
 export async function DELETE(request: Request) {
+  console.log('[后端DELETE] ========== 开始删除操作 ==========')
+  console.log('[后端DELETE] 请求URL:', request.url)
+
   try {
     const supabase = await createClient()
+    console.log('[后端DELETE] Supabase客户端已创建')
 
     // 验证用户权限
     const { data: { user } } = await supabase.auth.getUser()
+    console.log('[后端DELETE] 用户验证结果:', user ? `用户ID: ${user.id}` : '未登录')
+
     if (!user) {
+      console.log('[后端DELETE] 用户未授权，返回401')
       return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
 
@@ -238,18 +245,24 @@ export async function DELETE(request: Request) {
       .eq('id', user.id)
       .single()
 
+    console.log('[后端DELETE] 用户角色:', profile?.role || '未知')
+
     if (!profile || !profile.role || !['teacher', 'principal'].includes(profile.role)) {
+      console.log('[后端DELETE] 权限不足，返回403')
       return NextResponse.json({ error: '权限不足' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
     const documentId = searchParams.get('id')
 
+    console.log('[后端DELETE] 提取的文档ID:', documentId)
+
     if (!documentId) {
+      console.log('[后端DELETE] 缺少文档ID，返回400')
       return NextResponse.json({ error: '缺少文档ID' }, { status: 400 })
     }
 
-    console.log('[盖亚知识库] 开始删除文档:', documentId)
+    console.log('[后端DELETE] ===== 步骤1: 查询文档信息 =====')
 
     // 第一步：获取文档的project_id
     const { data: doc, error: fetchError } = await supabase
@@ -259,27 +272,47 @@ export async function DELETE(request: Request) {
       .eq('metadata->>type', 'gaia_knowledge_base')
       .single()
 
+    console.log('[后端DELETE] 查询结果:', {
+      找到文档: !!doc,
+      错误: fetchError,
+      文档数据: doc
+    })
+
     if (fetchError) {
-      console.error('[盖亚知识库] 查询文档失败:', fetchError)
+      console.error('[后端DELETE] 查询文档失败，错误详情:', fetchError)
       throw fetchError
     }
 
     if (!doc) {
+      console.log('[后端DELETE] 文档不存在，返回404')
       return NextResponse.json({ error: '文档不存在' }, { status: 404 })
     }
 
     const metadata = doc.metadata as any
     const projectId = metadata?.custom_project_id
 
-    console.log('[盖亚知识库] 文档信息:', {
+    console.log('[后端DELETE] 文档元数据:', {
       documentId,
       projectId,
-      filename: metadata?.filename
+      filename: metadata?.filename,
+      完整metadata: metadata
     })
 
     // 第二步：删除所有关联的向量块
     if (projectId) {
-      console.log('[盖亚知识库] 开始删除向量块，project_id:', projectId)
+      console.log('[后端DELETE] ===== 步骤2: 删除向量块 =====')
+      console.log('[后端DELETE] 查询条件: metadata->>project_id =', projectId)
+
+      // 先查询有多少向量块
+      const { data: countData, error: countError } = await supabase
+        .from('documents')
+        .select('id', { count: 'exact', head: true })
+        .eq('metadata->>project_id', projectId)
+
+      console.log('[后端DELETE] 向量块查询结果:', {
+        数量: (countData as any)?.count || 0,
+        错误: countError
+      })
 
       const { data: vectorChunks, error: deleteVectorError } = await supabase
         .from('documents')
@@ -287,34 +320,59 @@ export async function DELETE(request: Request) {
         .eq('metadata->>project_id', projectId)
         .select('id')
 
+      console.log('[后端DELETE] 向量块删除结果:', {
+        已删除数量: vectorChunks?.length || 0,
+        删除的ID列表: vectorChunks?.map(v => v.id),
+        错误: deleteVectorError
+      })
+
       if (deleteVectorError) {
-        console.error('[盖亚知识库] 删除向量块失败:', deleteVectorError)
+        console.error('[后端DELETE] 删除向量块失败，错误详情:', deleteVectorError)
         throw deleteVectorError
       }
-
-      console.log('[盖亚知识库] 已删除向量块数量:', vectorChunks?.length || 0)
+    } else {
+      console.log('[后端DELETE] 无project_id，跳过向量块删除')
     }
 
     // 第三步：删除主记录
-    const { error: deleteMainError } = await supabase
+    console.log('[后端DELETE] ===== 步骤3: 删除主记录 =====')
+    console.log('[后端DELETE] 删除条件:', {
+      id: documentId,
+      'metadata->>type': 'gaia_knowledge_base'
+    })
+
+    const { error: deleteMainError, data: deleteMainData } = await supabase
       .from('documents')
       .delete()
       .eq('id', documentId)
       .eq('metadata->>type', 'gaia_knowledge_base')
+      .select()
+
+    console.log('[后端DELETE] 主记录删除结果:', {
+      删除的记录: deleteMainData,
+      错误: deleteMainError
+    })
 
     if (deleteMainError) {
-      console.error('[盖亚知识库] 删除主记录失败:', deleteMainError)
+      console.error('[后端DELETE] 删除主记录失败，错误详情:', deleteMainError)
       throw deleteMainError
     }
 
-    console.log('[盖亚知识库] 删除成功')
+    console.log('[后端DELETE] ========== 删除完成 ==========')
 
     return NextResponse.json({
       success: true,
-      deletedVectorChunks: projectId ? true : false
+      deletedVectorChunks: projectId ? true : false,
+      message: '删除成功'
     })
-  } catch (error) {
-    console.error('[盖亚知识库] 删除失败:', error)
-    return NextResponse.json({ error: '删除失败' }, { status: 500 })
+  } catch (error: any) {
+    console.error('[后端DELETE] ========== 删除失败 ==========')
+    console.error('[后端DELETE] 错误类型:', error?.constructor?.name)
+    console.error('[后端DELETE] 错误消息:', error?.message)
+    console.error('[后端DELETE] 完整错误:', error)
+    return NextResponse.json({
+      error: error?.message || '删除失败',
+      details: error?.toString()
+    }, { status: 500 })
   }
 }

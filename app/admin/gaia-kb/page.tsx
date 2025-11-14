@@ -127,24 +127,43 @@ export default function GaiaKnowledgeBasePage() {
   }
 
   const handleDelete = async (id: string, title: string) => {
+    console.log('[前端] 准备删除文档:', { id, title })
+
     if (!confirm(`⚠️ 确定要删除文档「${title}」吗？\n\n此操作不可撤销，删除后盖亚将无法再使用这份知识。`)) {
+      console.log('[前端] 用户取消删除')
       return
     }
 
+    console.log('[前端] 开始调用DELETE API...')
+
     try {
-      const response = await fetch(`/api/admin/gaia-kb?id=${id}`, {
+      const url = `/api/admin/gaia-kb?id=${id}`
+      console.log('[前端] 请求URL:', url)
+
+      const response = await fetch(url, {
         method: 'DELETE',
       })
 
+      console.log('[前端] 收到响应:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      })
+
+      const data = await response.json()
+      console.log('[前端] 响应数据:', data)
+
       if (response.ok) {
-        alert(`✅ 删除成功\n\n文档「${title}」已从盖亚知识库中移除。`)
+        console.log('[前端] 删除成功，准备刷新列表')
+        alert(`✅ 删除成功\n\n文档「${title}」已从盖亚知识库中移除。${data.deletedVectorChunks ? '\n已同时删除所有相关向量块。' : ''}`)
         await loadDocuments()
+        console.log('[前端] 列表已刷新')
       } else {
-        const data = await response.json()
+        console.error('[前端] 删除失败:', data.error)
         alert(`❌ 删除失败\n\n${data.error || '未知错误'}`)
       }
     } catch (error) {
-      console.error('删除失败:', error)
+      console.error('[前端] 删除异常:', error)
       alert('❌ 删除失败\n\n网络错误，请稍后重试。')
     }
   }
