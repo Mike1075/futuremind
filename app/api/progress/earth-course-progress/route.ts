@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { InteractionService } from '@/lib/services/interaction.service'
 
+// ✅ 性能优化：启用30秒缓存，避免重复计算进度
+// 地球课程进度计算涉及大量数据库查询（约50次），缓存可大幅提升速度
+export const revalidate = 30
+
 /**
  * GET /api/progress/earth-course-progress?courseSystemId=xxx&userId=xxx
  * 计算地球课程的总体进度（所有阶段的平均）

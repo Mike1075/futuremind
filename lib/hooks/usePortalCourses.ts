@@ -47,7 +47,7 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
           try {
             const response = await fetch(
               `/api/progress/earth-course-progress?courseSystemId=${item.course_systems.id}&userId=${userId}`,
-              { cache: 'no-store' } // 防止浏览器缓存
+              { next: { revalidate: 30 } } // ✅ 启用30秒缓存，大幅提升速度
             )
 
             if (response.ok) {
