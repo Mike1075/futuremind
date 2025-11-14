@@ -127,17 +127,17 @@ export async function POST(request: Request) {
     const fileExtension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase()
     let mimeType = file.type || 'application/octet-stream'
 
-    // 强制设置正确的MIME类型（N8N不支持octet-stream）
-    if (fileExtension === '.md') {
-      mimeType = 'text/markdown'
-    } else if (fileExtension === '.txt') {
+    // 强制设置正确的MIME类型（N8N只支持text/plain和application/pdf）
+    if (fileExtension === '.md' || fileExtension === '.txt') {
+      // ⚠️ N8N不支持text/markdown，统一使用text/plain
       mimeType = 'text/plain'
     } else if (fileExtension === '.pdf') {
       mimeType = 'application/pdf'
     } else if (fileExtension === '.doc' || fileExtension === '.docx') {
-      mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    } else if (mimeType === 'application/octet-stream') {
-      // 如果仍是octet-stream，默认当作纯文本
+      // Word文档也当作纯文本处理
+      mimeType = 'text/plain'
+    } else {
+      // 其他所有类型都当作纯文本
       mimeType = 'text/plain'
     }
 
