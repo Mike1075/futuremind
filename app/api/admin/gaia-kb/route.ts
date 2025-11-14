@@ -43,11 +43,12 @@ export async function GET() {
 
         // 如果状态是processing，检查是否实际已完成
         if (currentStatus === 'processing' && projectId) {
-          // 使用Admin客户端查询向量块
+          // 使用Admin客户端查询向量块（排除主文档自己，只统计向量块）
           const { count, error: countError } = await supabase
             .from('documents')
             .select('id', { count: 'exact', head: true })
             .eq('metadata->>project_id', projectId)
+            .neq('metadata->>type', 'gaia_knowledge_base') // 排除主文档
 
           if (!countError && count && count > 0) {
             metadata.status = 'completed'
