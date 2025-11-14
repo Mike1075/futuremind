@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // N8N webhook URL - 使用生产环境
-    const webhookUrl = 'https://n8n.aifunbox.com/webhook/fd6b2fff-af4c-4013-8fb6-ada231750a5a'
+    const webhookUrl = 'https://n8n.aifunbox.com/webhook/c3585e19-255f-48ed-a481-b0c4d1c748ac'
 
     // 直接传递project_id，N8N可以处理字符串或数组
     // 如果project_id是空数组，转换为空字符串
