@@ -59,6 +59,7 @@ export async function GET() {
           if (!countError && count && count > 0) {
             metadata.status = 'completed'
             metadata.vector_count = count
+            const now = new Date().toISOString()
 
             console.log(`[盖亚知识库] 准备更新文档${doc.id}状态为completed，向量块数: ${count}`)
 
@@ -67,7 +68,7 @@ export async function GET() {
               .from('documents')
               .update({
                 metadata,
-                updated_at: new Date().toISOString()
+                updated_at: now
               })
               .eq('id', doc.id)
 
@@ -75,6 +76,9 @@ export async function GET() {
               console.error(`[盖亚知识库] 更新失败:`, updateError)
             } else {
               console.log(`[盖亚知识库] ✅ 成功更新文档${doc.id}状态为completed，向量块数: ${count}`)
+              // 🔧 关键修复：同步更新内存中的文档对象，确保返回最新数据
+              doc.metadata = metadata
+              doc.updated_at = now
             }
           } else if (countError) {
             console.error(`[盖亚知识库] 查询向量块失败:`, countError)
