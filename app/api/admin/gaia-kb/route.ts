@@ -105,28 +105,13 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const title = formData.get('title') as string
+    const courseId = formData.get('courseId') as string
 
-    if (!file || !title) {
+    if (!file || !title || !courseId) {
       return NextResponse.json(
-        { error: '缺少文件或标题' },
+        { error: '缺少文件、标题或课程ID' },
         { status: 400 }
       )
-    }
-
-    // 获取下一个project_id编号
-    const { data: existingDocs } = await supabase
-      .from('documents')
-      .select('metadata')
-      .eq('metadata->>type', 'gaia_knowledge_base')
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    let nextProjectId = 'p001'
-    if (existingDocs && existingDocs.length > 0) {
-      const metadata = existingDocs[0].metadata as any
-      const lastProjectId = metadata?.custom_project_id as string || 'p000'
-      const lastNumber = parseInt(lastProjectId.substring(1))
-      nextProjectId = `p${String(lastNumber + 1).padStart(3, '0')}`
     }
 
     // 先记录到数据库（标记为processing状态）
@@ -138,7 +123,8 @@ export async function POST(request: Request) {
         user_id: user.id,
         metadata: {
           type: 'gaia_knowledge_base',
-          custom_project_id: nextProjectId,
+          custom_project_id: courseId, // 使用用户选择的课程ID
+          project_id: courseId, // 同时保存到project_id字段（用于向量搜索）
           filename: file.name,
           file_size: file.size,
           file_type: file.type,
@@ -154,7 +140,7 @@ export async function POST(request: Request) {
       throw insertError
     }
 
-    console.log('[盖亚知识库] 已保存到数据库，document_id:', newDoc.id)
+    console.log('[盖亚知识库] 已保存到数据库，document_id:', newDoc.id, 'course_id:', courseId)
 
     // 异步上传到N8N（不等待结果，让N8N在后台处理）
     const webhookUrl = 'https://n8n.aifunbox.com/webhook/fca634ab-8e03-4a6f-99f3-c7dc46e772ae'
@@ -184,13 +170,13 @@ export async function POST(request: Request) {
     const blob = new Blob([fileBuffer], { type: mimeType })
 
     n8nFormData.append('file', blob, fileName)
-    n8nFormData.append('project_id', nextProjectId)
+    n8nFormData.append('project_id', courseId) // 使用用户选择的课程ID
     n8nFormData.append('title', title)
     n8nFormData.append('document_id', newDoc.id) // 传递document_id，供N8N回调使用
 
     console.log('[盖亚知识库] 开始上传到N8N（后台处理）:', {
       url: webhookUrl,
-      project_id: nextProjectId,
+      project_id: courseId,
       document_id: newDoc.id,
       title: title,
       filename: fileName,
@@ -211,7 +197,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       document: newDoc,
-      project_id: nextProjectId,
+      project_id: courseId,
       message: '文档已提交，正在后台处理向量化...'
     })
   } catch (error: any) {

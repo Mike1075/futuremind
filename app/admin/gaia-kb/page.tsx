@@ -20,12 +20,21 @@ interface Document {
   created_at: string
 }
 
+// 课程列表
+const COURSES = [
+  { id: 'p001', name: '伊卡洛斯计划' },
+  { id: 'p002', name: '自在聆听·观音之旅' },
+  { id: 'p003', name: '卡洛罗韦利4本' },
+  { id: 'p004', name: '欢迎来到地球' },
+]
+
 export default function GaiaKnowledgeBasePage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
+  const [courseId, setCourseId] = useState<string>('p001') // 默认选中第一个课程
   const router = useRouter()
   const supabase = createClient()
 
@@ -97,6 +106,7 @@ export default function GaiaKnowledgeBasePage() {
       const formData = new FormData()
       formData.append('file', selectedFile)
       formData.append('title', title.trim())
+      formData.append('courseId', courseId) // 添加课程ID
 
       const response = await fetch('/api/admin/gaia-kb', {
         method: 'POST',
@@ -221,6 +231,27 @@ export default function GaiaKnowledgeBasePage() {
             上传新文档
           </h2>
           <form onSubmit={handleUpload} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                所属课程 *
+              </label>
+              <select
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
+                className="block w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                required
+              >
+                {COURSES.map(course => (
+                  <option key={course.id} value={course.id} className="bg-zinc-900">
+                    {course.id} - {course.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                选择文档所属的课程项目
+              </p>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 文件 *
