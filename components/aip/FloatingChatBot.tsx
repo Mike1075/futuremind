@@ -61,23 +61,13 @@ export function FloatingChatBot({
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        let projects: any[] = []
+        // 统一查询用户参与的所有项目（包括发起的和参与的）
+        const { data: projectMembers } = await supabase
+          .from('project_members')
+          .select('*, project:projects(*)')
+          .eq('user_id', user.id)
 
-        if (organization?.id) {
-          // 如果有组织上下文，直接查询该组织的所有项目
-          const { data } = await supabase
-            .from('projects')
-            .select('*')
-            .eq('organization_id', organization.id)
-          projects = data || []
-        } else {
-          // 否则查询用户参与的项目
-          const { data: projectMembers } = await supabase
-            .from('project_members')
-            .select('*, project:projects(*)')
-            .eq('user_id', user.id)
-          projects = projectMembers?.map(pm => pm.project).filter(Boolean) || []
-        }
+        const projects = projectMembers?.map(pm => pm.project).filter(Boolean) || []
 
         setUserProjects(projects as Project[])
       } catch (err) {
@@ -88,7 +78,7 @@ export function FloatingChatBot({
     }
 
     loadProjects()
-  }, [isOpen, organization])
+  }, [isOpen])
 
   // 初始化欢迎消息
   useEffect(() => {
@@ -329,7 +319,7 @@ export function FloatingChatBot({
                     <FolderOpen className="h-12 w-12 text-zinc-700 mx-auto mb-3" />
                     <p className="text-sm text-zinc-500">暂无可选项目</p>
                     <p className="text-xs text-zinc-600 mt-1">
-                      {organization ? '该组织下暂无项目' : '您还未加入任何项目'}
+                      您还未加入或发起任何项目
                     </p>
                   </div>
                 ) : (
