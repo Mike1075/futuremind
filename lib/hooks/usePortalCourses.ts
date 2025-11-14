@@ -37,17 +37,138 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
       item.course_systems !== null && item.course_systems.is_active === true
     )
 
-    // ⚡ 性能优化：快速返回课程列表，暂不计算进度
-    // 原因：进度计算太慢（地球课程需要50次数据库查询，耗时3-5秒）
-    // 解决：先显示课程列表，进度暂时显示0%，不影响用户点击进入课程
-    // 备注：进度计算逻辑已注释在下方，如需恢复请取消注释
-    const enrolled: EnrolledCourse[] = validEnrollments.map((item: any) => ({
-      course_id: item.course_systems.id,
-      course_title: item.course_systems.title,
-      course_system_key: item.course_systems.system_key,
-      assigned_at: item.assigned_at,
-      progress: 0  // 暂时显示0%，用户可正常点击课程
-    }))
+    // 计算每个课程的进度
+    const enrolled: EnrolledCourse[] = await Promise.all(
+      validEnrollments.map(async (item: any) => {
+        const courseSystemKey = item.course_systems.system_key
+
+        // 地球课程：调用进度API
+        if (courseSystemKey === 'earth') {
+          try {
+            const response = await fetch(
+              `/api/progress/earth-course-progress?courseSystemId=${item.course_systems.id}&userId=${userId}`,
+              { next: { revalidate: 30 } }
+            )
+
+            if (response.ok) {
+              const { progress } = await response.json()
+              return {
+                course_id: item.course_systems.id,
+                course_title: item.course_systems.title,
+                course_system_key: courseSystemKey,
+                assigned_at: item.assigned_at,
+                progress: progress || 0
+              }
+            }
+          } catch (error) {
+            console.error('[usePortalCourses] 获取地球课程进度失败:', error)
+          }
+
+          return {
+            course_id: item.course_systems.id,
+            course_title: item.course_systems.title,
+            course_system_key: courseSystemKey,
+            assigned_at: item.assigned_at,
+            progress: 0
+          }
+        }
+
+        // PBL课程：快速计算
+        if (courseSystemKey === 'icarus' || courseSystemKey === 'pbl') {
+          const { data: projects } = await supabase
+            .from('course_contents')
+            .select('id')
+            .eq('system_id', item.course_systems.id)
+            .eq('is_published', true)
+
+          const totalProjects = projects?.length || 0
+
+          if (totalProjects === 0) {
+            return {
+              course_id: item.course_systems.id,
+              course_title: item.course_systems.title,
+              course_system_key: courseSystemKey,
+              assigned_at: item.assigned_at,
+              progress: 0
+            }
+          }
+
+          const projectIds = projects?.map((p: any) => p.id) || []
+          const { data: selectedProjects } = await supabase
+            .from('user_selected_projects')
+            .select('project_id, completion_percentage')
+            .eq('user_id', userId)
+            .in('project_id', projectIds)
+            .eq('status', 'active')
+
+          if (!selectedProjects || selectedProjects.length === 0) {
+            return {
+              course_id: item.course_systems.id,
+              course_title: item.course_systems.title,
+              course_system_key: courseSystemKey,
+              assigned_at: item.assigned_at,
+              progress: 0
+            }
+          }
+
+          const totalCompletion = selectedProjects.reduce(
+            (sum: number, proj: any) => sum + (proj.completion_percentage || 0),
+            0
+          )
+          const avgProgress = Math.round(totalCompletion / selectedProjects.length)
+
+          return {
+            course_id: item.course_systems.id,
+            course_title: item.course_systems.title,
+            course_system_key: courseSystemKey,
+            assigned_at: item.assigned_at,
+            progress: avgProgress
+          }
+        }
+
+        // 其他课程（倾听）
+        const { data: contents } = await supabase
+          .from('course_contents')
+          .select('id')
+          .eq('system_id', item.course_systems.id)
+          .eq('is_published', true)
+
+        const totalContents = contents?.length || 0
+
+        if (totalContents === 0 || !contents) {
+          return {
+            course_id: item.course_systems.id,
+            course_title: item.course_systems.title,
+            course_system_key: courseSystemKey,
+            assigned_at: item.assigned_at,
+            progress: 0
+          }
+        }
+
+        const contentIds = contents.map((c: any) => c.id)
+        const { data: progressRecords } = await supabase
+          .from('user_progress')
+          .select('ref_item_id, progress_value')
+          .eq('user_id', userId)
+          .in('ref_item_id', contentIds)
+          .eq('progress_type', 'reading')
+
+        let totalProgress = 0
+        progressRecords?.forEach((record: any) => {
+          totalProgress += record.progress_value || 0
+        })
+
+        const progress = Math.round(totalProgress / totalContents)
+
+        return {
+          course_id: item.course_systems.id,
+          course_title: item.course_systems.title,
+          course_system_key: courseSystemKey,
+          assigned_at: item.assigned_at,
+          progress
+        }
+      })
+    )
 
     return enrolled
   } catch (error) {
@@ -59,26 +180,28 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
 /**
  * Portal课程数据Hook - 带智能缓存
  *
- * 特性：
- * - 首次访问查询数据库（4-5秒）
- * - 后续访问从缓存读取（0秒，瞬间显示）
- * - 60秒后自动后台刷新
- * - 跨页面共享缓存
+ * 缓存策略（SWR智能缓存）：
+ * - 【首次访问】查询数据库计算进度（3-4秒）✅ 正常等待
+ * - 【后续访问】立即显示上次的数据（0秒）🚀 瞬间显示
+ * - 【后台刷新】5分钟后悄悄更新数据 🔄 用户无感知
+ * - 【跨页面共享】所有Portal页面共享同一份缓存 💾
+ *
+ * 用户体验：
+ * 首次打开慢（3-4秒）→ 后续秒开（0秒）→ 数据自动保持最新
  */
 export function usePortalCourses(userId: string | null) {
   const { data: courses, error, isLoading, isValidating } = useSWR(
     userId ? `portal-courses-${userId}` : null,
     () => fetchEnrolledCourses(userId!),
     {
-      revalidateOnFocus: false,      // 窗口获得焦点时不重新验证
-      revalidateOnReconnect: false,  // 网络重连时不重新验证
-      dedupingInterval: 60000,       // 60秒内不重复请求
-      refreshInterval: 60000,        // 60秒后台自动刷新
+      revalidateOnFocus: false,      // 窗口焦点不触发刷新
+      revalidateOnReconnect: false,  // 网络重连不触发刷新
+      dedupingInterval: 300000,      // 5分钟内相同请求直接用缓存（不发请求）
+      refreshInterval: 300000,       // 5分钟后自动后台刷新数据
       errorRetryCount: 2,            // 错误重试2次
       errorRetryInterval: 1000,      // 重试间隔1秒
       shouldRetryOnError: true,      // 错误时重试
-      keepPreviousData: true,        // 🔥 保持旧数据显示，直到新数据加载完成
-      // ⚠️ 移除fallbackData，让SWR使用缓存数据
+      keepPreviousData: true,        // 🔥 刷新时保持显示旧数据，新数据到达后平滑切换
     }
   )
 
