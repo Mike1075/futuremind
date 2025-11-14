@@ -162,39 +162,6 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       formData.append('title', uploadFile.title)
 
       // 验证FormData内容
-      console.log('[FileUpload] FormData检查:')
-      for (const [key, value] of formData.entries()) {
-        if (value && typeof value === 'object' && 'name' in value && 'size' in value) {
-          console.log(`  ${key}: File(${(value as File).name}, ${(value as File).size}bytes)`)
-        } else {
-          console.log(`  ${key}:`, value)
-        }
-      }
-
-      // 诊断信息窗口
-      const diagnosticInfo = `
-📊 上传诊断信息
-====================
-
-✅ 步骤1: 前端参数检查
-- 文件名: ${uploadFile.file.name}
-- 项目ID: ${projectId}
-- 用户ID: ${userId}
-- 标题: ${uploadFile.title}
-- 文件大小: ${uploadFile.file.size} bytes
-
-📤 步骤2: FormData准备
-- file字段: ✓
-- project_id字段: ✓
-- user_id字段: ✓
-- title字段: ✓
-
-⏳ 即将发送到N8N...
-      `.trim()
-
-      alert(diagnosticInfo)
-      console.log(diagnosticInfo)
-
       console.log('[FileUpload] 上传文件到后端API:', {
         filename: uploadFile.file.name,
         size: uploadFile.file.size,
@@ -216,19 +183,11 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       // 后端API响应处理
       const responseData = await n8nResponse.json()
 
-      const diagnosticResult = `
-📊 上传结果诊断
-====================
-
-📥 步骤3: 后端API响应
-- HTTP状态: ${n8nResponse.status}
-- 响应: ${JSON.stringify(responseData, null, 2).substring(0, 200)}
-
-${n8nResponse.ok ? '✅ 上传成功' : '❌ 上传失败'}
-      `.trim()
-
-      console.log(diagnosticResult)
-      alert(diagnosticResult)
+      console.log('[FileUpload] 后端API响应:', {
+        status: n8nResponse.status,
+        success: n8nResponse.ok,
+        data: responseData
+      })
 
       if (!n8nResponse.ok) {
         const errorMsg = `上传失败: ${n8nResponse.status}\n${JSON.stringify(responseData)}`
@@ -558,7 +517,16 @@ ${n8nResponse.ok ? '✅ 上传成功' : '❌ 上传失败'}
 
         {/* Footer */}
         <div className="flex gap-3 p-6 border-t border-zinc-800">
-          <button onClick={onClose} className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors">
+          <button
+            onClick={() => {
+              // 如果有成功上传的文件，关闭时也刷新主页面
+              if (hasSuccess) {
+                onSuccess()
+              }
+              onClose()
+            }}
+            className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors"
+          >
             {allCompleted ? '完成' : '取消'}
           </button>
 
@@ -569,18 +537,6 @@ ${n8nResponse.ok ? '✅ 上传成功' : '❌ 上传失败'}
               className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               开始上传 ({uploadFiles.filter(f => f.status === 'pending').length})
-            </button>
-          )}
-
-          {allCompleted && hasSuccess && (
-            <button
-              onClick={() => {
-                onSuccess()
-                onClose()
-              }}
-              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              刷新文档列表
             </button>
           )}
         </div>
