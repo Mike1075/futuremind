@@ -152,9 +152,13 @@ export default function OrganizationDashboardPage() {
     )
   }
 
-  // Split projects into user's projects and other projects
-  const myProjects = projects.filter(p => userProjectPermissions[p.id] === 'owner' || userProjectPermissions[p.id] === 'manager' || userProjectPermissions[p.id] === 'member')
+  // Split projects into: owned by me, joined by me, and other projects
+  const myOwnedProjects = projects.filter(p => userProjectPermissions[p.id] === 'owner')
+  const myJoinedProjects = projects.filter(p => userProjectPermissions[p.id] === 'manager' || userProjectPermissions[p.id] === 'member')
   const otherProjects = projects.filter(p => !userProjectPermissions[p.id] || userProjectPermissions[p.id] === 'none')
+
+  // For statistics: all projects I'm involved in
+  const allMyProjects = [...myOwnedProjects, ...myJoinedProjects]
 
   const handleProjectClick = (project: Project) => {
     router.push(`/explorer-alliance/projects/${project.id}`)
@@ -429,7 +433,7 @@ export default function OrganizationDashboardPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-emerald-400 font-medium mb-1">参与项目</p>
-                      <p className="text-3xl font-bold text-white">{myProjects.length}</p>
+                      <p className="text-3xl font-bold text-white">{allMyProjects.length}</p>
                       <p className="text-xs text-zinc-500 mt-1">正在进行的项目</p>
                     </div>
                     <div className="bg-emerald-500/10 p-3 rounded-lg">
@@ -448,63 +452,99 @@ export default function OrganizationDashboardPage() {
               />
             )}
 
-            {/* My Projects Section */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-white">
-                  我的项目
-                  <span className="ml-3 text-lg font-normal text-zinc-500">
-                    ({myProjects.length})
-                  </span>
-                </h2>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setShowCreateProject(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium"
-                  >
-                    <Plus className="w-4 h-4" />
-                    创建项目
-                  </button>
-                  <button
-                    onClick={() => setShowInvite(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    邀请成员
-                  </button>
-                </div>
-              </div>
-
-              {projectsLoading ? (
-                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-                  <p className="text-zinc-400">加载项目中...</p>
-                </div>
-              ) : myProjects.length === 0 ? (
-                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
-                  <Folder className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-                  <p className="text-zinc-400 mb-4">你还没有参与任何项目</p>
-                  <button
-                    onClick={() => setShowCreateProject(true)}
-                    className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-                  >
-                    创建第一个项目
-                  </button>
-                </div>
-              ) : (
-                <ProjectGrid
-                  projects={myProjects}
-                  onProjectClick={handleProjectClick}
-                  onDeleteProject={handleDeleteProject}
-                  onEditDescription={handleEditDescription}
-                  onTogglePublic={handleTogglePublic}
-                  onToggleRecruiting={handleToggleRecruiting}
-                  userProjectPermissions={userProjectPermissions}
-                  showEditControls={true}
-                  showApplyButton={false}
-                />
-              )}
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-3 mb-6">
+              <button
+                onClick={() => setShowCreateProject(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                创建项目
+              </button>
+              <button
+                onClick={() => setShowInvite(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                <UserPlus className="w-4 h-4" />
+                邀请成员
+              </button>
             </div>
+
+            {projectsLoading ? (
+              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+                <p className="text-zinc-400">加载项目中...</p>
+              </div>
+            ) : allMyProjects.length === 0 ? (
+              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
+                <Folder className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
+                <p className="text-zinc-400 mb-4">你还没有参与任何项目</p>
+                <button
+                  onClick={() => setShowCreateProject(true)}
+                  className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                >
+                  创建第一个项目
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* My Owned Projects Section */}
+                {myOwnedProjects.length > 0 && (
+                  <div className="mb-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg p-2">
+                        <Briefcase className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-white">
+                        我发起的项目
+                        <span className="ml-3 text-lg font-normal text-zinc-500">
+                          ({myOwnedProjects.length})
+                        </span>
+                      </h2>
+                    </div>
+                    <ProjectGrid
+                      projects={myOwnedProjects}
+                      onProjectClick={handleProjectClick}
+                      onDeleteProject={handleDeleteProject}
+                      onEditDescription={handleEditDescription}
+                      onTogglePublic={handleTogglePublic}
+                      onToggleRecruiting={handleToggleRecruiting}
+                      userProjectPermissions={userProjectPermissions}
+                      showEditControls={true}
+                      showApplyButton={false}
+                    />
+                  </div>
+                )}
+
+                {/* My Joined Projects Section */}
+                {myJoinedProjects.length > 0 && (
+                  <div className="mb-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-lg p-2">
+                        <UserPlus className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-white">
+                        我参与的项目
+                        <span className="ml-3 text-lg font-normal text-zinc-500">
+                          ({myJoinedProjects.length})
+                        </span>
+                      </h2>
+                    </div>
+                    <ProjectGrid
+                      projects={myJoinedProjects}
+                      onProjectClick={handleProjectClick}
+                      onDeleteProject={handleDeleteProject}
+                      onEditDescription={handleEditDescription}
+                      onTogglePublic={handleTogglePublic}
+                      onToggleRecruiting={handleToggleRecruiting}
+                      userProjectPermissions={userProjectPermissions}
+                      showEditControls={true}
+                      showApplyButton={false}
+                    />
+                  </div>
+                )}
+              </>
+            )}
 
             {/* Organization Projects Section (projects user hasn't joined) */}
             {otherProjects.length > 0 && (
