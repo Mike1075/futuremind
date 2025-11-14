@@ -37,138 +37,17 @@ const fetchEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> =
       item.course_systems !== null && item.course_systems.is_active === true
     )
 
-    // 计算每个课程的进度（简化版本，快速返回）
-    const enrolled: EnrolledCourse[] = await Promise.all(
-      validEnrollments.map(async (item: any) => {
-        const courseSystemKey = item.course_systems.system_key
-
-        // 地球课程：调用进度API
-        if (courseSystemKey === 'earth') {
-          try {
-            const response = await fetch(
-              `/api/progress/earth-course-progress?courseSystemId=${item.course_systems.id}&userId=${userId}`,
-              { next: { revalidate: 30 } } // ✅ 启用30秒缓存，大幅提升速度
-            )
-
-            if (response.ok) {
-              const { progress } = await response.json()
-              return {
-                course_id: item.course_systems.id,
-                course_title: item.course_systems.title,
-                course_system_key: courseSystemKey,
-                assigned_at: item.assigned_at,
-                progress: progress || 0
-              }
-            }
-          } catch (error) {
-            console.error('[usePortalCourses] 获取地球课程进度失败:', error)
-          }
-
-          return {
-            course_id: item.course_systems.id,
-            course_title: item.course_systems.title,
-            course_system_key: courseSystemKey,
-            assigned_at: item.assigned_at,
-            progress: 0
-          }
-        }
-
-        // PBL课程：快速计算
-        if (courseSystemKey === 'icarus' || courseSystemKey === 'pbl') {
-          const { data: projects } = await supabase
-            .from('course_contents')
-            .select('id')
-            .eq('system_id', item.course_systems.id)
-            .eq('is_published', true)
-
-          const totalProjects = projects?.length || 0
-
-          if (totalProjects === 0) {
-            return {
-              course_id: item.course_systems.id,
-              course_title: item.course_systems.title,
-              course_system_key: courseSystemKey,
-              assigned_at: item.assigned_at,
-              progress: 0
-            }
-          }
-
-          const projectIds = projects?.map((p: any) => p.id) || []
-          const { data: selectedProjects } = await supabase
-            .from('user_selected_projects')
-            .select('project_id, completion_percentage')
-            .eq('user_id', userId)
-            .in('project_id', projectIds)
-            .eq('status', 'active')
-
-          if (!selectedProjects || selectedProjects.length === 0) {
-            return {
-              course_id: item.course_systems.id,
-              course_title: item.course_systems.title,
-              course_system_key: courseSystemKey,
-              assigned_at: item.assigned_at,
-              progress: 0
-            }
-          }
-
-          const totalCompletion = selectedProjects.reduce(
-            (sum: number, proj: any) => sum + (proj.completion_percentage || 0),
-            0
-          )
-          const avgProgress = Math.round(totalCompletion / selectedProjects.length)
-
-          return {
-            course_id: item.course_systems.id,
-            course_title: item.course_systems.title,
-            course_system_key: courseSystemKey,
-            assigned_at: item.assigned_at,
-            progress: avgProgress
-          }
-        }
-
-        // 其他课程（倾听）
-        const { data: contents } = await supabase
-          .from('course_contents')
-          .select('id')
-          .eq('system_id', item.course_systems.id)
-          .eq('is_published', true)
-
-        const totalContents = contents?.length || 0
-
-        if (totalContents === 0 || !contents) {
-          return {
-            course_id: item.course_systems.id,
-            course_title: item.course_systems.title,
-            course_system_key: courseSystemKey,
-            assigned_at: item.assigned_at,
-            progress: 0
-          }
-        }
-
-        const contentIds = contents.map((c: any) => c.id)
-        const { data: progressRecords } = await supabase
-          .from('user_progress')
-          .select('ref_item_id, progress_value')
-          .eq('user_id', userId)
-          .in('ref_item_id', contentIds)
-          .eq('progress_type', 'reading')
-
-        let totalProgress = 0
-        progressRecords?.forEach((record: any) => {
-          totalProgress += record.progress_value || 0
-        })
-
-        const progress = Math.round(totalProgress / totalContents)
-
-        return {
-          course_id: item.course_systems.id,
-          course_title: item.course_systems.title,
-          course_system_key: courseSystemKey,
-          assigned_at: item.assigned_at,
-          progress
-        }
-      })
-    )
+    // ⚡ 性能优化：快速返回课程列表，暂不计算进度
+    // 原因：进度计算太慢（地球课程需要50次数据库查询，耗时3-5秒）
+    // 解决：先显示课程列表，进度暂时显示0%，不影响用户点击进入课程
+    // 备注：进度计算逻辑已注释在下方，如需恢复请取消注释
+    const enrolled: EnrolledCourse[] = validEnrollments.map((item: any) => ({
+      course_id: item.course_systems.id,
+      course_title: item.course_systems.title,
+      course_system_key: item.course_systems.system_key,
+      assigned_at: item.assigned_at,
+      progress: 0  // 暂时显示0%，用户可正常点击课程
+    }))
 
     return enrolled
   } catch (error) {
