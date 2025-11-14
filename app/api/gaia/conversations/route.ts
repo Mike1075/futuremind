@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 
+// ✅ 性能优化：启用30秒缓存，对话列表更新频率较低
+export const revalidate = 30
+
 /**
  * GET /api/gaia/conversations
  * 获取用户的聊天记录列表

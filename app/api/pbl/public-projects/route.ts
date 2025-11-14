@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClient } from '@/lib/supabase'
 
+// ✅ 性能优化：启用60秒缓存，PBL项目列表不需要实时更新
+export const revalidate = 60
+
 /**
  * GET /api/pbl/public-projects
  * 获取所有公开的PBL项目（包括系统项目和通过审核的用户公开项目）
