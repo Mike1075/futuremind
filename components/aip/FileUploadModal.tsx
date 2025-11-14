@@ -193,7 +193,7 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       alert(diagnosticInfo)
       console.log(diagnosticInfo)
 
-      console.log('[FileUpload] 上传二进制文件到N8N webhook:', {
+      console.log('[FileUpload] 上传文件到后端API:', {
         filename: uploadFile.file.name,
         size: uploadFile.file.size,
         type: uploadFile.file.type,
@@ -202,7 +202,8 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
         title: uploadFile.title
       })
 
-      const n8nResponse = await fetch('https://n8n.aifunbox.com/webhook/267d2f36-116d-4e67-bedd-ef5d536cd200', {
+      // 调用后端API代理（避免CORS问题）
+      const n8nResponse = await fetch('/api/aip/upload-document', {
         method: 'POST',
         // 不设置 Content-Type header，让浏览器自动设置为 multipart/form-data
         body: formData
@@ -210,30 +211,30 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
 
       clearInterval(progressInterval)
 
-      // N8N响应处理
-      const responseText = await n8nResponse.text()
+      // 后端API响应处理
+      const responseData = await n8nResponse.json()
 
       const diagnosticResult = `
 📊 上传结果诊断
 ====================
 
-📥 步骤3: N8N响应
+📥 步骤3: 后端API响应
 - HTTP状态: ${n8nResponse.status}
-- 响应内容: ${responseText.substring(0, 200)}${responseText.length > 200 ? '...' : ''}
+- 响应: ${JSON.stringify(responseData, null, 2).substring(0, 200)}
 
-${n8nResponse.ok ? '✅ N8N返回成功' : '❌ N8N返回错误'}
+${n8nResponse.ok ? '✅ 上传成功' : '❌ 上传失败'}
       `.trim()
 
       console.log(diagnosticResult)
       alert(diagnosticResult)
 
       if (!n8nResponse.ok) {
-        const errorMsg = `N8N处理失败: ${n8nResponse.status}\n${responseText}`
-        console.error('[FileUpload] N8N处理失败:', errorMsg)
-        throw new Error(errorMsg)
+        const errorMsg = `上传失败: ${n8nResponse.status}\n${JSON.stringify(responseData)}`
+        console.error('[FileUpload] 上传失败:', errorMsg)
+        throw new Error(responseData.error || errorMsg)
       }
 
-      console.log('[FileUpload] ✅ N8N处理成功，文档应该已保存到数据库')
+      console.log('[FileUpload] ✅ 文档上传成功，已保存到数据库')
 
       setUploadFiles(prev => prev.map(f =>
         f.id === uploadFile.id
