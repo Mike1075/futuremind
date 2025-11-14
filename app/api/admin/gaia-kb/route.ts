@@ -121,7 +121,31 @@ export async function POST(request: Request) {
     // 异步上传到N8N（不等待结果，让N8N在后台处理）
     const webhookUrl = 'https://n8n.aifunbox.com/webhook/fca634ab-8e03-4a6f-99f3-c7dc46e772ae'
     const n8nFormData = new FormData()
-    n8nFormData.append('file', file)
+
+    // 🔧 修复：根据文件扩展名设置正确的MIME类型
+    const fileName = file.name
+    const fileExtension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase()
+    let mimeType = file.type || 'application/octet-stream'
+
+    // 强制设置正确的MIME类型（N8N不支持octet-stream）
+    if (fileExtension === '.md') {
+      mimeType = 'text/markdown'
+    } else if (fileExtension === '.txt') {
+      mimeType = 'text/plain'
+    } else if (fileExtension === '.pdf') {
+      mimeType = 'application/pdf'
+    } else if (fileExtension === '.doc' || fileExtension === '.docx') {
+      mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    } else if (mimeType === 'application/octet-stream') {
+      // 如果仍是octet-stream，默认当作纯文本
+      mimeType = 'text/plain'
+    }
+
+    // 创建带正确MIME类型的Blob
+    const fileBuffer = await file.arrayBuffer()
+    const blob = new Blob([fileBuffer], { type: mimeType })
+
+    n8nFormData.append('file', blob, fileName)
     n8nFormData.append('project_id', nextProjectId)
     n8nFormData.append('title', title)
     n8nFormData.append('document_id', newDoc.id) // 传递document_id，供N8N回调使用
@@ -131,7 +155,10 @@ export async function POST(request: Request) {
       project_id: nextProjectId,
       document_id: newDoc.id,
       title: title,
-      filename: file.name
+      filename: fileName,
+      original_mime_type: file.type,
+      corrected_mime_type: mimeType,
+      file_size: file.size
     })
 
     // 发起请求但不等待（fire and forget）
