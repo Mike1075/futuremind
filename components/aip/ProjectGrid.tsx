@@ -12,7 +12,8 @@ import {
   Clock,
   Pause,
   AlertCircle,
-  User
+  User,
+  Crown
 } from 'lucide-react'
 import type { Project } from '@/lib/aip/types'
 
@@ -25,8 +26,10 @@ interface ProjectGridProps {
   onToggleRecruiting?: (projectId: string, isRecruiting: boolean) => void
   onApplyToJoin?: (projectId: string, projectName: string) => void
   userProjectPermissions?: Record<string, 'owner' | 'manager' | 'member' | 'none'>
+  userId?: string | null      // 当前用户ID，用于标识自己创建的项目
   showEditControls?: boolean  // 是否显示编辑控制（删除、编辑等）
   showApplyButton?: boolean   // 是否显示申请加入按钮
+  showCreatorBadge?: boolean  // 是否显示创建者徽章（针对自己创建的项目）
 }
 
 export function ProjectGrid({
@@ -38,8 +41,10 @@ export function ProjectGrid({
   onToggleRecruiting,
   onApplyToJoin,
   userProjectPermissions = {},
+  userId = null,
   showEditControls = true,
   showApplyButton = false,
+  showCreatorBadge = false,
 }: ProjectGridProps) {
 
   const getStatusConfig = (status: string) => {
@@ -181,9 +186,24 @@ export function ProjectGrid({
 
             {/* 创建者信息 */}
             {project.creator && (
-              <div className="flex items-center gap-2 mb-3 text-xs text-zinc-500">
-                <User className="h-3.5 w-3.5" />
-                <span>创建者: {project.creator.full_name || project.creator.email || '未知'}</span>
+              <div className="flex items-center gap-2 mb-3 text-xs">
+                {showCreatorBadge && userId && project.creator_id === userId ? (
+                  // 当前用户创建的项目 - 显示皇冠标记
+                  <>
+                    <Crown className="h-3.5 w-3.5 text-yellow-500" fill="currentColor" />
+                    <span className="text-yellow-500 font-medium">
+                      我创建的 · {project.creator.full_name || project.creator.email || '未知'}
+                    </span>
+                  </>
+                ) : (
+                  // 其他人创建的项目
+                  <>
+                    <User className="h-3.5 w-3.5 text-zinc-500" />
+                    <span className="text-zinc-500">
+                      创建者: {project.creator.full_name || project.creator.email || '未知'}
+                    </span>
+                  </>
+                )}
               </div>
             )}
 

@@ -152,6 +152,9 @@ export default function OrganizationDashboardPage() {
     )
   }
 
+  // 判断是否是"社区项目"组织（显示所有公开项目，不分类）
+  const isCommunityOrg = organization?.name === '社区项目'
+
   // Split projects into: owned by me, joined by me, and other projects
   const myOwnedProjects = projects.filter(p => userProjectPermissions[p.id] === 'owner')
   const myJoinedProjects = projects.filter(p => userProjectPermissions[p.id] === 'manager' || userProjectPermissions[p.id] === 'member')
@@ -470,12 +473,55 @@ export default function OrganizationDashboardPage() {
               </button>
             </div>
 
-            {projectsLoading ? (
+{projectsLoading ? (
               <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
                 <p className="text-zinc-400">加载项目中...</p>
               </div>
+            ) : isCommunityOrg ? (
+              /* 社区项目：显示所有公开项目，不分类 */
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg p-2">
+                    <Folder className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">
+                    所有公开项目
+                    <span className="ml-3 text-lg font-normal text-zinc-500">
+                      ({projects.length})
+                    </span>
+                  </h2>
+                </div>
+                {projects.length === 0 ? (
+                  <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
+                    <Folder className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
+                    <p className="text-zinc-400 mb-4">暂无公开项目</p>
+                    <button
+                      onClick={() => setShowCreateProject(true)}
+                      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                    >
+                      创建第一个项目
+                    </button>
+                  </div>
+                ) : (
+                  <ProjectGrid
+                    projects={projects}
+                    onProjectClick={handleProjectClick}
+                    onDeleteProject={handleDeleteProject}
+                    onEditDescription={handleEditDescription}
+                    onTogglePublic={handleTogglePublic}
+                    onToggleRecruiting={handleToggleRecruiting}
+                    onApplyToJoin={handleApplyToJoin}
+                    userProjectPermissions={userProjectPermissions}
+                    userId={userId}
+                    showEditControls={true}
+                    showApplyButton={true}
+                    showCreatorBadge={true}
+                  />
+                )}
+              </div>
             ) : allMyProjects.length === 0 ? (
+              /* 普通组织：用户没有参与任何项目 */
               <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
                 <Folder className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
                 <p className="text-zinc-400 mb-4">你还没有参与任何项目</p>
@@ -487,6 +533,7 @@ export default function OrganizationDashboardPage() {
                 </button>
               </div>
             ) : (
+              /* 普通组织：按照发起和参与分类显示 */
               <>
                 {/* My Owned Projects Section */}
                 {myOwnedProjects.length > 0 && (
@@ -546,8 +593,8 @@ export default function OrganizationDashboardPage() {
               </>
             )}
 
-            {/* Organization Projects Section (projects user hasn't joined) */}
-            {otherProjects.length > 0 && (
+            {/* Organization Projects Section (projects user hasn't joined) - 不在社区项目中显示 */}
+            {!isCommunityOrg && otherProjects.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold text-white">
