@@ -1,10 +1,11 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, Loader2, History } from 'lucide-react'
+import { MessageCircle, X, Send, Loader2, History, Edit3, Check, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface Message {
+  id?: string
   role: 'user' | 'assistant'
   content: string
   timestamp: string
@@ -29,6 +30,9 @@ export function GlobalGaiaV3() {
   const [highlightedMessageIndex, setHighlightedMessageIndex] = useState<number | null>(null)
   const [collapsedAfterIndex, setCollapsedAfterIndex] = useState<number | null>(null)
   const [showCollapsed, setShowCollapsed] = useState(false)
+
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [selectedMessages, setSelectedMessages] = useState<Set<number>>(new Set())
 
   console.log('[GlobalGaia] 当前状态:', {
     isOpen,
@@ -345,6 +349,53 @@ export function GlobalGaiaV3() {
     }
   }
 
+  // 切换消息选中状态
+  const toggleMessageSelection = (index: number) => {
+    setSelectedMessages(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
+  }
+
+  // 全选/取消全选（排除第一条欢迎消息）
+  const toggleSelectAll = () => {
+    // 找出第一条消息的索引（通常是0）
+    const firstMessageIndex = 0
+    const selectableCount = messages.length - 1 // 排除第一条
+
+    if (selectedMessages.size === selectableCount) {
+      // 已全选，取消全选
+      setSelectedMessages(new Set())
+    } else {
+      // 全选（排除第一条欢迎消息）
+      const allIndices = new Set<number>()
+      messages.forEach((_, index) => {
+        if (index !== firstMessageIndex) {
+          allIndices.add(index)
+        }
+      })
+      setSelectedMessages(allIndices)
+    }
+  }
+
+  // 删除选中的消息
+  const deleteSelectedMessages = () => {
+    if (selectedMessages.size === 0) return
+
+    if (!confirm(`确定要删除选中的 ${selectedMessages.size} 条消息吗？`)) return
+
+    // 过滤掉选中的消息
+    const newMessages = messages.filter((_, index) => !selectedMessages.has(index))
+    setMessages(newMessages)
+    setSelectedMessages(new Set())
+    setIsEditMode(false)
+  }
+
   return (
     <>
       {/* 浮动按钮 - 仅在对话框关闭时显示 */}
@@ -376,22 +427,57 @@ export function GlobalGaiaV3() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* 聊天记录按钮 - 加载所有历史消息 */}
-              <button
-                onClick={loadAllHistoryMessages}
-                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                title="加载历史记录"
-              >
-                <History className="w-5 h-5 text-gray-400" />
-              </button>
-
-              {/* 关闭按钮 */}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-400" />
-              </button>
+              {isEditMode ? (
+                <>
+                  <button
+                    onClick={toggleSelectAll}
+                    className="px-3 py-2 text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg border border-blue-500/30 flex items-center gap-2"
+                    title="全选/取消全选"
+                  >
+                    <Check className="w-4 h-4" /> {selectedMessages.size === messages.length - 1 ? '取消全选' : '全选'}
+                  </button>
+                  <button
+                    onClick={deleteSelectedMessages}
+                    disabled={selectedMessages.size === 0}
+                    className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="删除选中的消息"
+                  >
+                    <Trash2 className="w-4 h-4" /> 删除选中 ({selectedMessages.size})
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditMode(false)
+                      setSelectedMessages(new Set())
+                    }}
+                    className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20"
+                  >
+                    取消
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setIsEditMode(true)}
+                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                    title="编辑聊天记录"
+                  >
+                    <Edit3 className="w-5 h-5 text-gray-400" />
+                  </button>
+                  <button
+                    onClick={loadAllHistoryMessages}
+                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                    title="加载历史记录"
+                  >
+                    <History className="w-5 h-5 text-gray-400" />
+                  </button>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-400" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -414,8 +500,24 @@ export function GlobalGaiaV3() {
                     <div
                       key={index}
                       ref={(el) => { messageRefs.current[index] = el }}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
+                      {/* 编辑模式下显示复选框（左侧-用户消息） */}
+                      {isEditMode && message.role === 'user' && (
+                        <div className="flex items-center pt-2">
+                          <input
+                            type="checkbox"
+                            id={`checkbox-user-${index}`}
+                            checked={selectedMessages.has(index)}
+                            onChange={(e) => {
+                              e.stopPropagation()
+                              toggleMessageSelection(index)
+                            }}
+                            className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-purple-600 checked:border-purple-600 border-white/40 bg-transparent"
+                          />
+                        </div>
+                      )}
+
                       <div className={`max-w-[85%] ${
                         message.role === 'user'
                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
@@ -423,6 +525,10 @@ export function GlobalGaiaV3() {
                       } rounded-2xl px-4 py-3 shadow-sm transition-all duration-300 ${
                         isHighlighted
                           ? 'ring-4 ring-yellow-400 ring-opacity-75 scale-105 animate-pulse'
+                          : ''
+                      } ${
+                        isEditMode && selectedMessages.has(index)
+                          ? 'ring-2 ring-blue-500'
                           : ''
                       }`}>
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
@@ -435,6 +541,22 @@ export function GlobalGaiaV3() {
                           })}
                         </p>
                       </div>
+
+                      {/* 编辑模式下显示复选框（右侧-AI消息，排除第一条欢迎消息） */}
+                      {isEditMode && message.role === 'assistant' && index !== 0 && (
+                        <div className="flex items-center pt-2">
+                          <input
+                            type="checkbox"
+                            id={`checkbox-assistant-${index}`}
+                            checked={selectedMessages.has(index)}
+                            onChange={(e) => {
+                              e.stopPropagation()
+                              toggleMessageSelection(index)
+                            }}
+                            className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-purple-600 checked:border-purple-600 border-white/40 bg-transparent"
+                          />
+                        </div>
+                      )}
                     </div>
                   )
                 })}

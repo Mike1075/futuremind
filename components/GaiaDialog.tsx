@@ -480,11 +480,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                           e.stopPropagation()
                           toggleMessageSelection(message.id)
                         }}
-                        className={`w-5 h-5 rounded cursor-pointer transition-all ${
-                          selectedMessages.has(message.id)
-                            ? 'bg-purple-600 border-purple-600'
-                            : 'bg-transparent border-2 border-white/40'
-                        }`}
+                        className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-purple-600 checked:border-purple-600 border-white/40 bg-transparent"
                       />
                     </div>
                   )}
@@ -521,17 +517,13 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                     <div className="flex items-center pt-6">
                       <input
                         type="checkbox"
-                        id={`checkbox-${message.id}`}
+                        id={`checkbox-gaia-${message.id}`}
                         checked={selectedMessages.has(message.id)}
                         onChange={(e) => {
                           e.stopPropagation()
                           toggleMessageSelection(message.id)
                         }}
-                        className={`w-5 h-5 rounded cursor-pointer transition-all ${
-                          selectedMessages.has(message.id)
-                            ? 'bg-purple-600 border-purple-600'
-                            : 'bg-transparent border-2 border-white/40'
-                        }`}
+                        className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-purple-600 checked:border-purple-600 border-white/40 bg-transparent"
                       />
                     </div>
                   )}
