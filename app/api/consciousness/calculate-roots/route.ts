@@ -172,8 +172,9 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
+    const existingTreeView = (profile?.consciousness_tree_view as Record<string, any>) || {}
     const updatedTreeView = {
-      ...(profile?.consciousness_tree_view || {}),
+      ...existingTreeView,
       roots: rootsView,
       last_updated: new Date().toISOString(),
     }
