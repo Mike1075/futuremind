@@ -430,10 +430,21 @@ export function GlobalGaiaV3() {
       // 保存到数据库
       if (currentConversationId) {
         const supabase = createClient()
+
+        // 将消息转换为可序列化的JSON格式
+        const serializableMessages = newMessages.map(msg => ({
+          id: msg.id,
+          role: msg.role,
+          isGaia: msg.isGaia,
+          content: msg.content,
+          timestamp: msg.timestamp,
+          metadata: msg.metadata
+        }))
+
         const { error } = await supabase
           .from('gaia_conversations')
           .update({
-            messages: newMessages,
+            messages: serializableMessages as any,
             message_count: newMessages.length,
             updated_at: new Date().toISOString()
           })
