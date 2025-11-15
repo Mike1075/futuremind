@@ -174,9 +174,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             {/* Breadcrumb with Back Button */}
             <div className="flex items-center gap-3">
               <Link
-                href="/explorer-alliance"
+                href={project.organization_id ? `/explorer-alliance/organizations/${project.organization_id}` : '/explorer-alliance'}
                 className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
-                title="返回探索者联盟"
+                title="返回上一级"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
@@ -185,6 +185,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   探索者联盟
                 </Link>
                 <span>/</span>
+                {project.organization_id && (
+                  <>
+                    <Link
+                      href={`/explorer-alliance/organizations/${project.organization_id}`}
+                      className="hover:text-white transition-colors"
+                    >
+                      我的组织
+                    </Link>
+                    <span>/</span>
+                  </>
+                )}
                 <span className="text-white">{project.name}</span>
               </div>
             </div>
