@@ -210,9 +210,53 @@ export async function POST(request: Request) {
     fetch(webhookUrl, {
       method: 'POST',
       body: n8nFormData,
-    }).catch(error => {
-      console.error('[盖亚知识库] N8N webhook调用失败（异步）:', error)
     })
+      .then(async (response) => {
+        console.log('[盖亚知识库] N8N webhook响应:', {
+          status: response.status,
+          statusText: response.statusText,
+          document_id: newDoc.id
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
+        const responseText = await response.text()
+        console.log('[盖亚知识库] N8N webhook成功，响应内容:', responseText)
+      })
+      .catch(async (error) => {
+        console.error('[盖亚知识库] N8N webhook调用失败（异步）:', error)
+        console.error('[盖亚知识库] 错误详情:', {
+          message: error.message,
+          stack: error.stack,
+          document_id: newDoc.id
+        })
+
+        // 🔧 webhook失败时，自动更新文档状态为error
+        try {
+          const metadata = newDoc.metadata as any
+          metadata.status = 'error'
+          metadata.error_message = `N8N调用失败: ${error.message}`
+          metadata.error_time = new Date().toISOString()
+
+          const { error: updateError } = await supabase
+            .from('documents')
+            .update({
+              metadata,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', newDoc.id)
+
+          if (updateError) {
+            console.error('[盖亚知识库] 更新错误状态失败:', updateError)
+          } else {
+            console.log('[盖亚知识库] 已将文档状态更新为error:', newDoc.id)
+          }
+        } catch (updateErr) {
+          console.error('[盖亚知识库] 捕获更新异常:', updateErr)
+        }
+      })
 
     // 立即返回成功响应
     return NextResponse.json({
