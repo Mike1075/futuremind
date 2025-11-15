@@ -21,6 +21,19 @@ export default function Home() {
     checkAdminStatus()
   }, [])
 
+  // 监听侧边栏盖亚打开事件，自动关闭主页盖亚对话框
+  useEffect(() => {
+    const handleGlobalGaiaOpened = () => {
+      console.log('[首页] 📢 收到侧边栏盖亚打开事件，关闭主页对话框')
+      setShowGaiaDialog(false)
+    }
+
+    window.addEventListener('globalGaiaOpened', handleGlobalGaiaOpened)
+    return () => {
+      window.removeEventListener('globalGaiaOpened', handleGlobalGaiaOpened)
+    }
+  }, [])
+
   // 检查管理员状态和登录状态
   const checkAdminStatus = async () => {
     try {

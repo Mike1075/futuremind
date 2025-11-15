@@ -58,6 +58,9 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     
     if (isOpen) {
       getUserAndLoadHistory()
+      // 通知GlobalGaiaV3关闭
+      window.dispatchEvent(new CustomEvent('gaiaDialogOpened'))
+      console.log('[GaiaDialog] 📢 已发送打开事件，通知侧边栏盖亚关闭')
     }
   }, [isOpen])
 

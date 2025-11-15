@@ -44,6 +44,27 @@ export function GlobalGaiaV3() {
     isFromKnowledgePoint
   })
 
+  // 监听GaiaDialog打开事件，自动关闭侧边栏
+  useEffect(() => {
+    const handleGaiaDialogOpened = () => {
+      console.log('[GlobalGaia] 📢 收到主页盖亚对话框打开事件，关闭侧边栏')
+      setIsOpen(false)
+    }
+
+    window.addEventListener('gaiaDialogOpened', handleGaiaDialogOpened)
+    return () => {
+      window.removeEventListener('gaiaDialogOpened', handleGaiaDialogOpened)
+    }
+  }, [])
+
+  // 当侧边栏打开时，通知其他组件
+  useEffect(() => {
+    if (isOpen) {
+      console.log('[GlobalGaia] 📢 侧边栏盖亚打开，发送事件通知其他组件')
+      window.dispatchEvent(new CustomEvent('globalGaiaOpened'))
+    }
+  }, [isOpen])
+
   // 监听来自知识点的打开请求
   useEffect(() => {
     console.log('[GlobalGaia] 🎯 useEffect执行：注册事件监听器')
