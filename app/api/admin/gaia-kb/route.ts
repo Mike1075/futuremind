@@ -35,6 +35,9 @@ export async function GET() {
     if (error) throw error
 
     // 智能更新状态：检查是否有对应的向量块（使用Admin客户端）
+    console.log(`[盖亚知识库] ========== 开始智能状态检测 ==========`)
+    console.log(`[盖亚知识库] 获取到文档数量: ${documents?.length || 0}`)
+
     if (documents && documents.length > 0) {
       for (const doc of documents) {
         const metadata = doc.metadata as any
@@ -45,7 +48,7 @@ export async function GET() {
 
         // 如果状态是processing，检查是否实际已完成
         if (currentStatus === 'processing' && projectId) {
-          console.log(`[盖亚知识库] 开始查询向量块，project_id: ${projectId}`)
+          console.log(`[盖亚知识库] >>> 发现processing状态文档，开始查询向量块，project_id: ${projectId}`)
 
           // 使用Admin客户端查询向量块（排除主文档自己，只统计向量块）
           const { count, error: countError } = await supabase
@@ -54,14 +57,23 @@ export async function GET() {
             .eq('metadata->>project_id', projectId)
             .neq('metadata->>type', 'gaia_knowledge_base') // 排除主文档
 
-          console.log(`[盖亚知识库] 查询结果: count=${count}, error=${countError?.message}`)
+          console.log(`[盖亚知识库] 查询结果详情:`, {
+            count,
+            countType: typeof count,
+            countError: countError?.message,
+            hasError: !!countError,
+            countIsValid: !countError && count && count > 0,
+            condition1: !countError,
+            condition2: !!count,
+            condition3: count > 0
+          })
 
           if (!countError && count && count > 0) {
             metadata.status = 'completed'
             metadata.vector_count = count
             const now = new Date().toISOString()
 
-            console.log(`[盖亚知识库] 准备更新文档${doc.id}状态为completed，向量块数: ${count}`)
+            console.log(`[盖亚知识库] ✅ 条件满足，准备更新文档${doc.id}状态为completed，向量块数: ${count}`)
 
             // 使用Admin客户端更新数据库
             const { error: updateError } = await supabase
@@ -73,7 +85,7 @@ export async function GET() {
               .eq('id', doc.id)
 
             if (updateError) {
-              console.error(`[盖亚知识库] 更新失败:`, updateError)
+              console.error(`[盖亚知识库] ❌ 更新失败:`, updateError)
             } else {
               console.log(`[盖亚知识库] ✅ 成功更新文档${doc.id}状态为completed，向量块数: ${count}`)
               // 🔧 关键修复：同步更新内存中的文档对象，确保返回最新数据
@@ -81,7 +93,9 @@ export async function GET() {
               doc.updated_at = now
             }
           } else if (countError) {
-            console.error(`[盖亚知识库] 查询向量块失败:`, countError)
+            console.error(`[盖亚知识库] ❌ 查询向量块失败:`, countError)
+          } else {
+            console.log(`[盖亚知识库] ⚠️ 条件不满足，跳过更新。原因: ${!count || count === 0 ? 'count为0或null' : '未知'}`)
           }
         }
       }
