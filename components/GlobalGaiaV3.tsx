@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 
 interface Message {
   id?: string
-  role: 'user' | 'assistant'
+  role?: 'user' | 'assistant'
+  isGaia?: boolean  // 旧格式兼容
   content: string
   timestamp: string
   metadata?: {
@@ -349,6 +350,24 @@ export function GlobalGaiaV3() {
     }
   }
 
+  // 判断消息是否是用户消息（兼容新旧格式）
+  const isUserMessage = (message: Message) => {
+    // 新格式：role === 'user'
+    if (message.role === 'user') return true
+    // 旧格式：isGaia === false
+    if (message.isGaia === false) return true
+    return false
+  }
+
+  // 判断消息是否是AI消息（兼容新旧格式）
+  const isAssistantMessage = (message: Message) => {
+    // 新格式：role === 'assistant'
+    if (message.role === 'assistant') return true
+    // 旧格式：isGaia === true
+    if (message.isGaia === true) return true
+    return false
+  }
+
   // 切换消息选中状态
   const toggleMessageSelection = (index: number) => {
     setSelectedMessages(prev => {
@@ -500,10 +519,10 @@ export function GlobalGaiaV3() {
                     <div
                       key={index}
                       ref={(el) => { messageRefs.current[index] = el }}
-                      className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      className={`flex gap-3 ${isUserMessage(message) ? 'justify-end' : 'justify-start'}`}
                     >
                       {/* 编辑模式下显示复选框（左侧-用户消息，排除第一条） */}
-                      {isEditMode && message.role === 'user' && index !== 0 && (
+                      {isEditMode && isUserMessage(message) && index !== 0 && (
                         <div className="flex items-center pt-2">
                           <input
                             type="checkbox"
@@ -519,7 +538,7 @@ export function GlobalGaiaV3() {
                       )}
 
                       <div className={`max-w-[85%] ${
-                        message.role === 'user'
+                        isUserMessage(message)
                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                           : 'bg-gray-800 text-gray-100 border border-gray-700'
                       } rounded-2xl px-4 py-3 shadow-sm transition-all duration-300 ${
@@ -533,7 +552,7 @@ export function GlobalGaiaV3() {
                       }`}>
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                         <p className={`text-xs mt-2 ${
-                          message.role === 'user' ? 'text-purple-100' : 'text-gray-500'
+                          isUserMessage(message) ? 'text-purple-100' : 'text-gray-500'
                         }`}>
                           {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
                             hour: '2-digit',
@@ -543,7 +562,7 @@ export function GlobalGaiaV3() {
                       </div>
 
                       {/* 编辑模式下显示复选框（右侧-AI消息，排除第一条欢迎消息） */}
-                      {isEditMode && message.role === 'assistant' && index !== 0 && (
+                      {isEditMode && isAssistantMessage(message) && index !== 0 && (
                         <div className="flex items-center pt-2">
                           <input
                             type="checkbox"
