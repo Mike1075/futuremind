@@ -51,21 +51,25 @@ export async function GET() {
           console.log(`[盖亚知识库] >>> 发现processing状态文档，开始查询向量块，project_id: ${projectId}`)
 
           try {
-            // 🔧 完全重写：直接查询向量块，用.length统计，100%可靠
+            // 🔧 修复：.neq()不匹配NULL，需要查询所有然后手动过滤
             console.log(`[盖亚知识库] 开始查询向量块...`)
 
-            const { data: vectors, error: vectorError } = await supabase
+            const { data: allDocs, error: vectorError } = await supabase
               .from('documents')
-              .select('id')
+              .select('id, metadata')
               .eq('metadata->>project_id', projectId)
-              .neq('metadata->>type', 'gaia_knowledge_base')
 
             let vectorCount = 0
             if (vectorError) {
-              console.error(`[盖亚知识库] ❌ 查询向量块失败:`, vectorError)
-            } else if (vectors) {
+              console.error(`[盖亚知识库] ❌ 查询失败:`, vectorError)
+            } else if (allDocs) {
+              // 手动过滤掉主文档（type = 'gaia_knowledge_base'）
+              const vectors = allDocs.filter((d: any) => {
+                const meta = d.metadata as any
+                return meta?.type !== 'gaia_knowledge_base'
+              })
               vectorCount = vectors.length
-              console.log(`[盖亚知识库] ✅ 查询成功，找到${vectorCount}个向量块`)
+              console.log(`[盖亚知识库] ✅ 查询成功，总文档: ${allDocs.length}, 向量块: ${vectorCount}`)
             } else {
               console.log(`[盖亚知识库] ⚠️ 查询返回null`)
             }
