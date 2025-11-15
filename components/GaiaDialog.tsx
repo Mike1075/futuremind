@@ -289,6 +289,19 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     }
   }
 
+  // 判断是否是欢迎消息（不应该被删除）
+  const isWelcomeMessage = (message: ChatMessage) => {
+    // 通过ID判断（欢迎消息ID是'1'）
+    if (message.id === '1') return true
+    // 通过内容判断
+    if (message.content.includes('你好，亲爱的探索者') ||
+        message.content.includes('我是盖亚，你的意识觉醒导师') ||
+        message.content.includes('我是盖亚（Gaia），你的AI学习伙伴')) {
+      return true
+    }
+    return false
+  }
+
   // 切换消息选中状态
   const toggleMessageSelection = (messageId: string) => {
     setSelectedMessages(prev => {
@@ -302,16 +315,19 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     })
   }
 
-  // 全选/取消全选
+  // 全选/取消全选（排除欢迎消息）
   const toggleSelectAll = () => {
-    if (selectedMessages.size === messages.length - 1) {
-      // 如果已全选，则取消全选（保留欢迎消息）
+    // 计算可选择的消息数量（排除欢迎消息）
+    const selectableCount = messages.filter(m => !isWelcomeMessage(m)).length
+
+    if (selectedMessages.size === selectableCount) {
+      // 已全选，取消全选
       setSelectedMessages(new Set())
     } else {
       // 全选（排除欢迎消息）
       const allIds = new Set(
         messages
-          .filter(m => m.id !== '1') // 不选欢迎消息
+          .filter(m => !isWelcomeMessage(m))
           .map(m => m.id)
       )
       setSelectedMessages(allIds)
@@ -380,7 +396,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                       className="px-3 py-2 text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg border border-blue-500/30 flex items-center gap-2"
                       title="全选/取消全选"
                     >
-                      <Check className="w-4 h-4" /> {selectedMessages.size === messages.length - 1 ? '取消全选' : '全选'}
+                      <Check className="w-4 h-4" /> {selectedMessages.size === messages.filter(m => !isWelcomeMessage(m)).length ? '取消全选' : '全选'}
                     </button>
                     <button
                       onClick={deleteSelectedMessages}
@@ -469,8 +485,8 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex gap-3 ${message.isGaia ? 'justify-start' : 'justify-end'}`}
                 >
-                  {/* 编辑模式下显示复选框（左侧） */}
-                  {isEditMode && !message.isGaia && (
+                  {/* 编辑模式下显示复选框（左侧-用户消息，排除欢迎消息） */}
+                  {isEditMode && !message.isGaia && !isWelcomeMessage(message) && (
                     <div className="flex items-center pt-6">
                       <input
                         type="checkbox"
@@ -512,8 +528,8 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                     </div>
                   </div>
 
-                  {/* 编辑模式下显示复选框（右侧，针对盖亚消息） */}
-                  {isEditMode && message.isGaia && message.id !== '1' && (
+                  {/* 编辑模式下显示复选框（右侧，针对盖亚消息，排除欢迎消息） */}
+                  {isEditMode && message.isGaia && !isWelcomeMessage(message) && (
                     <div className="flex items-center pt-6">
                       <input
                         type="checkbox"
