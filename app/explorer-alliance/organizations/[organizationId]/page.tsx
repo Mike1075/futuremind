@@ -40,57 +40,50 @@ export default function OrganizationDashboardPage() {
 
   useEffect(() => {
     setIsMounted(true)
-    loadOrganization()
-    loadUserData()
+    loadAllData()
   }, [organizationId])
 
-  const loadOrganization = async () => {
+  const loadAllData = async () => {
     try {
       const supabase = createClient()
-      const { data, error: fetchError } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('id', organizationId)
-        .single()
 
-      if (fetchError) {
+      // 并行加载所有数据
+      const [
+        { data: { user } },
+        { data: orgData, error: orgError },
+      ] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from('organizations').select('*').eq('id', organizationId).single(),
+      ])
+
+      if (orgError) {
         setError('获取组织信息失败')
-        console.error(fetchError)
-      } else {
-        setOrganization(data as Organization)
+        console.error(orgError)
+        setLoading(false)
+        return
       }
-    } catch (err) {
-      console.error('加载组织失败:', err)
-      setError('加载组织失败')
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  const loadUserData = async () => {
-    try {
-      const supabase = createClient()
+      setOrganization(orgData as Organization)
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        setLoading(false)
+        return
+      }
 
       setUserId(user.id)
 
-      // Load user's tasks across all projects
-      const { data: tasks } = await supabase
-        .from('tasks')
-        .select('*, project:projects(*)')
-        .eq('assigned_to', user.id)
-        .order('created_at', { ascending: false })
+      // 并行加载用户相关数据
+      const [
+        { data: tasks },
+        { data: memberships },
+        { data: orgMembership }
+      ] = await Promise.all([
+        supabase.from('tasks').select('*, project:projects(*)').eq('assigned_to', user.id).order('created_at', { ascending: false }),
+        supabase.from('project_members').select('project_id, role_in_project').eq('user_id', user.id),
+        supabase.from('user_organizations').select('role_in_org').eq('user_id', user.id).eq('organization_id', organizationId).single()
+      ])
 
       setUserTasks((tasks as any) || [])
-
-      // Load user's project permissions
-      const { data: memberships } = await supabase
-        .from('project_members')
-        .select('project_id, role_in_project')
-        .eq('user_id', user.id)
 
       const permissions: Record<string, 'owner' | 'manager' | 'member' | 'none'> = {}
       memberships?.forEach(m => {
@@ -98,17 +91,13 @@ export default function OrganizationDashboardPage() {
       })
       setUserProjectPermissions(permissions)
 
-      // 检查是否是组织管理员
-      const { data: orgMembership } = await supabase
-        .from('user_organizations')
-        .select('role_in_org')
-        .eq('user_id', user.id)
-        .eq('organization_id', organizationId)
-        .single()
-
       setIsOrgAdmin(orgMembership?.role_in_org === 'admin' || orgMembership?.role_in_org === 'owner')
+
     } catch (err) {
-      console.error('加载用户数据失败:', err)
+      console.error('加载数据失败:', err)
+      setError('加载数据失败')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -636,7 +625,7 @@ export default function OrganizationDashboardPage() {
           onSuccess={() => {
             setShowCreateProject(false)
             reloadProjects()
-            loadUserData()  // 重新加载用户权限，确保新项目显示在"我的项目"中
+            loadAllData()  // 重新加载用户权限，确保新项目显示在"我的项目"中
           }}
         />
       )}

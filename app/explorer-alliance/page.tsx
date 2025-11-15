@@ -22,12 +22,14 @@ export default function ExplorerAlliancePage() {
 
   // 确保只在客户端渲染并检查权限
   useEffect(() => {
+    console.time('[探索者联盟] 页面总加载时间')
     setIsMounted(true)
     checkAdminStatus()
   }, [])
 
   // 检查管理员权限
   const checkAdminStatus = async () => {
+    console.time('[探索者联盟] 检查管理员权限')
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -43,9 +45,18 @@ export default function ExplorerAlliancePage() {
         setIsAdmin(userRole === 'principal' || userRole === 'teacher')
       }
     } catch (error) {
-      console.error('检查管理员权限失败:', error)
+      // 静默失败，不影响页面加载
+      setIsAdmin(false)
     }
+    console.timeEnd('[探索者联盟] 检查管理员权限')
   }
+
+  // 监听加载状态变化，加载完成时打印总时间
+  useEffect(() => {
+    if (!orgsLoading && isMounted) {
+      console.timeEnd('[探索者联盟] 页面总加载时间')
+    }
+  }, [orgsLoading, isMounted])
 
 
   // 生成固定的星空粒子配置

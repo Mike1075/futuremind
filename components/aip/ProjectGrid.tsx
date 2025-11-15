@@ -238,8 +238,8 @@ export function ProjectGrid({
                 </div>
               </div>
 
-              {/* 申请加入按钮 */}
-              {showApplyButton && project.is_recruiting && (
+              {/* 申请加入按钮 - 只对非成员且招募中的项目显示 */}
+              {showApplyButton && project.is_recruiting && !userProjectPermissions[project.id] && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -249,6 +249,20 @@ export function ProjectGrid({
                 >
                   <UserPlus className="h-3.5 w-3.5" />
                   申请加入
+                </button>
+              )}
+
+              {/* 进入项目按钮 - 对已经是成员的项目显示 */}
+              {showApplyButton && userProjectPermissions[project.id] && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onProjectClick?.(project)
+                  }}
+                  className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg flex items-center gap-1.5 transition-colors"
+                >
+                  <Folder className="h-3.5 w-3.5" />
+                  进入项目
                 </button>
               )}
 
