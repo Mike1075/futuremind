@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Brain, RefreshCw, CheckCircle, XCircle, Loader, Heart, Clock, Sparkles } from 'lucide-react'
+import { Brain, RefreshCw, CheckCircle, XCircle, Loader, Heart, Clock, Sparkles, Apple } from 'lucide-react'
 
 export default function ConsciousnessAdminPage() {
   const [calculating, setCalculating] = useState(false)
@@ -20,6 +20,10 @@ export default function ConsciousnessAdminPage() {
   const [extractingInsights, setExtractingInsights] = useState(false)
   const [insightsResult, setInsightsResult] = useState<any>(null)
   const [insightsError, setInsightsError] = useState<string | null>(null)
+
+  const [calculatingFruits, setCalculatingFruits] = useState(false)
+  const [fruitsResult, setFruitsResult] = useState<any>(null)
+  const [fruitsError, setFruitsError] = useState<string | null>(null)
 
   const handleCalculateRoots = async () => {
     setCalculating(true)
@@ -143,6 +147,33 @@ export default function ConsciousnessAdminPage() {
       setInsightsError(err.message)
     } finally {
       setExtractingInsights(false)
+    }
+  }
+
+  const handleCalculateFruits = async () => {
+    setCalculatingFruits(true)
+    setFruitsError(null)
+    setFruitsResult(null)
+
+    try {
+      const response = await fetch('/api/consciousness/calculate-fruits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '计算失败')
+      }
+
+      setFruitsResult(data)
+    } catch (err: any) {
+      setFruitsError(err.message)
+    } finally {
+      setCalculatingFruits(false)
     }
   }
 
@@ -516,6 +547,132 @@ export default function ConsciousnessAdminPage() {
                 <p>✅ {insightsResult.message}</p>
                 <p className="text-xs text-gray-400 mt-2">
                   这些洞见已经生成为意识树的叶子，访问意识树即可查看！
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Calculate Fruits Card */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Apple className="w-5 h-5 text-orange-400" />
+            计算成果果实
+          </h2>
+          <p className="text-gray-300 mb-6">
+            基于您的项目完成度、社区参与度和协作质量，计算意识树上的成果果实。
+          </p>
+
+          <button
+            onClick={handleCalculateFruits}
+            disabled={calculatingFruits}
+            className="flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium"
+          >
+            {calculatingFruits ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                计算中...
+              </>
+            ) : (
+              <>
+                <Apple className="w-5 h-5" />
+                开始计算
+              </>
+            )}
+          </button>
+
+          {calculatingFruits && (
+            <div className="mt-4 text-sm text-orange-200">
+              ⏳ 正在分析您的项目数据和社区反响...
+            </div>
+          )}
+        </div>
+
+        {/* Fruits Error Display */}
+        {fruitsError && (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-200">计算失败</h3>
+              <p className="text-red-300 text-sm mt-1">{fruitsError}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Fruits Result Display */}
+        {fruitsResult && (
+          <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-6 mb-6 flex items-start gap-3">
+            <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-green-200 text-lg mb-4">计算成功！</h3>
+
+              {fruitsResult.stats && (
+                <div className="bg-black/30 rounded-lg p-4 mb-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">统计信息</h4>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-gray-400">总项目数:</span>
+                      <span className="ml-2 text-white font-semibold">{fruitsResult.stats.total_projects || 0}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">新增果实:</span>
+                      <span className="ml-2 text-white font-semibold">{fruitsResult.stats.fruits_created || 0}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">更新果实:</span>
+                      <span className="ml-2 text-white font-semibold">{fruitsResult.stats.fruits_updated || 0}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">已收获:</span>
+                      <span className="ml-2 text-white font-semibold">{fruitsResult.stats.harvested_fruits || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {fruitsResult.fruits && fruitsResult.fruits.length > 0 && (
+                <div className="bg-black/30 rounded-lg p-4 mb-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">果实详情</h4>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {fruitsResult.fruits.map((fruit: any) => {
+                      const typeLabels: Record<string, string> = {
+                        project_completion: '🎯 项目完成',
+                        community_recognition: '❤️ 社区认可',
+                        knowledge_contribution: '📚 知识贡献',
+                        collaboration_achievement: '🤝 协作成就',
+                      }
+                      return (
+                        <div key={fruit.id} className="bg-white/5 rounded-lg p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <span className="text-xs px-2 py-1 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                                {typeLabels[fruit.fruit_type] || fruit.fruit_type}
+                              </span>
+                              <p className="text-sm font-medium text-white mt-2">
+                                {fruit.metadata?.project_name || '未命名项目'}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-gray-400">成熟度</p>
+                              <p className="text-lg font-bold text-orange-300">{fruit.maturity_level}%</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-3 text-xs text-gray-400 mt-2">
+                            <span>成员: {fruit.metadata?.member_count || 0}</span>
+                            <span>任务: {fruit.metadata?.completed_tasks || 0}/{fruit.metadata?.total_tasks || 0}</span>
+                            <span>点赞: {fruit.metadata?.likes_count || 0}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 text-sm text-gray-300">
+                <p>✅ {fruitsResult.message}</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  成果果实已生成！访问意识树即可看到您的成就！
                 </p>
               </div>
             </div>
