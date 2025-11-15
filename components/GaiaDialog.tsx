@@ -2,9 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Sparkles, UploadCloud, MessageSquare, Edit3, Trash2, Check } from 'lucide-react'
-import UploadToGaia from '@/components/UploadToGaia'
-import ConversationManager from '@/components/ConversationManager'
+import { X, Send, Sparkles, Edit3, Trash2, Check } from 'lucide-react'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
 
 // 使用从 GaiaAPI 导入的 ChatMessage 类型
@@ -31,8 +29,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   const [isTyping, setIsTyping] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [showUpload, setShowUpload] = useState(false)
-  const [showConversationManager, setShowConversationManager] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set())
 
@@ -414,20 +410,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                       <Edit3 className="w-4 h-4" /> 编辑
                     </button>
                     <button
-                      onClick={() => setShowConversationManager(true)}
-                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
-                      title="管理对话"
-                    >
-                      <MessageSquare className="w-4 h-4" /> 对话
-                    </button>
-                    <button
-                      onClick={() => setShowUpload(true)}
-                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
-                      title="上传文档给盖亚"
-                    >
-                      <UploadCloud className="w-4 h-4" /> 上传文档
-                    </button>
-                    <button
                       onClick={async () => {
                         if (!confirm('确定要清除所有聊天记录吗？这将删除所有对话。')) return
 
@@ -492,9 +474,17 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                     <div className="flex items-center pt-6">
                       <input
                         type="checkbox"
+                        id={`checkbox-${message.id}`}
                         checked={selectedMessages.has(message.id)}
-                        onChange={() => toggleMessageSelection(message.id)}
-                        className="w-5 h-5 rounded border-white/30 bg-white/10 text-purple-600 focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          toggleMessageSelection(message.id)
+                        }}
+                        className={`w-5 h-5 rounded cursor-pointer transition-all ${
+                          selectedMessages.has(message.id)
+                            ? 'bg-purple-600 border-purple-600'
+                            : 'bg-transparent border-2 border-white/40'
+                        }`}
                       />
                     </div>
                   )}
@@ -531,9 +521,17 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                     <div className="flex items-center pt-6">
                       <input
                         type="checkbox"
+                        id={`checkbox-${message.id}`}
                         checked={selectedMessages.has(message.id)}
-                        onChange={() => toggleMessageSelection(message.id)}
-                        className="w-5 h-5 rounded border-white/30 bg-white/10 text-purple-600 focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          toggleMessageSelection(message.id)
+                        }}
+                        className={`w-5 h-5 rounded cursor-pointer transition-all ${
+                          selectedMessages.has(message.id)
+                            ? 'bg-purple-600 border-purple-600'
+                            : 'bg-transparent border-2 border-white/40'
+                        }`}
                       />
                     </div>
                   )}
@@ -592,16 +590,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 按 Enter 发送，Shift + Enter 换行
               </p>
             </div>
-            <UploadToGaia isOpen={showUpload} onClose={() => setShowUpload(false)} />
           </motion.div>
-
-          {/* Conversation Manager */}
-          <ConversationManager
-            isOpen={showConversationManager}
-            onClose={() => setShowConversationManager(false)}
-            onSelectConversation={switchToConversation}
-            currentConversationId={currentConversationId || undefined}
-          />
         </>
       )}
     </AnimatePresence>

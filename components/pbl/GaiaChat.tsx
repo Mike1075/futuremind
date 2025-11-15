@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Send, Sparkles, User, Trash2, Brain, Zap, Heart } from 'lucide-react'
+import { X, Send, Sparkles, User, Trash2, Brain, Zap, Heart, Edit3, Check } from 'lucide-react'
 import { PBLProject } from '@/lib/pbl-data'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
@@ -25,6 +25,8 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [gaiaEmotion, setGaiaEmotion] = useState<'curious' | 'excited' | 'thoughtful' | 'supportive'>('curious')
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set())
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -207,6 +209,45 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
     }
   }
 
+  // 切换消息选中状态
+  const toggleMessageSelection = (messageId: string) => {
+    setSelectedMessages(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId)
+      } else {
+        newSet.add(messageId)
+      }
+      return newSet
+    })
+  }
+
+  // 全选/取消全选（排除欢迎消息）
+  const toggleSelectAll = () => {
+    if (selectedMessages.size === messages.length - 1) {
+      setSelectedMessages(new Set())
+    } else {
+      const allIds = new Set(
+        messages
+          .filter(m => m.id !== 'welcome' && !m.id.startsWith('welcome-'))
+          .map(m => m.id)
+      )
+      setSelectedMessages(allIds)
+    }
+  }
+
+  // 删除选中的消息
+  const deleteSelectedMessages = () => {
+    if (selectedMessages.size === 0) return
+
+    if (!confirm(`确定要删除选中的 ${selectedMessages.size} 条消息吗？`)) return
+
+    const newMessages = messages.filter(m => !selectedMessages.has(m.id))
+    setMessages(newMessages)
+    setSelectedMessages(new Set())
+    setIsEditMode(false)
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-cosmic-900 rounded-2xl shadow-2xl w-full max-w-4xl h-[700px] flex flex-col border border-cosmic-700">
@@ -225,19 +266,57 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleClearChat}
-              className="p-2 text-cosmic-400 hover:text-white transition-colors rounded-lg hover:bg-cosmic-800"
-              title="清空对话"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 text-cosmic-400 hover:text-white transition-colors rounded-lg hover:bg-cosmic-800"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {isEditMode ? (
+              <>
+                <button
+                  onClick={toggleSelectAll}
+                  className="px-3 py-2 text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg border border-blue-500/30 flex items-center gap-2"
+                  title="全选/取消全选"
+                >
+                  <Check className="w-4 h-4" /> {selectedMessages.size === messages.length - 1 ? '取消全选' : '全选'}
+                </button>
+                <button
+                  onClick={deleteSelectedMessages}
+                  disabled={selectedMessages.size === 0}
+                  className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="删除选中的消息"
+                >
+                  <Trash2 className="w-4 h-4" /> 删除选中 ({selectedMessages.size})
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditMode(false)
+                    setSelectedMessages(new Set())
+                  }}
+                  className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20"
+                >
+                  取消
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsEditMode(true)}
+                  className="p-2 text-cosmic-400 hover:text-white transition-colors rounded-lg hover:bg-cosmic-800"
+                  title="编辑聊天记录"
+                >
+                  <Edit3 className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleClearChat}
+                  className="p-2 text-cosmic-400 hover:text-white transition-colors rounded-lg hover:bg-cosmic-800"
+                  title="清空对话"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-2 text-cosmic-400 hover:text-white transition-colors rounded-lg hover:bg-cosmic-800"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -248,6 +327,26 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
               key={message.id}
               className={`flex gap-4 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
             >
+              {/* 编辑模式下显示复选框（左侧-用户消息） */}
+              {isEditMode && message.role === 'user' && (
+                <div className="flex items-center pt-2">
+                  <input
+                    type="checkbox"
+                    id={`checkbox-${message.id}`}
+                    checked={selectedMessages.has(message.id)}
+                    onChange={(e) => {
+                      e.stopPropagation()
+                      toggleMessageSelection(message.id)
+                    }}
+                    className={`w-5 h-5 rounded cursor-pointer transition-all ${
+                      selectedMessages.has(message.id)
+                        ? 'bg-purple-600 border-purple-600'
+                        : 'bg-transparent border-2 border-white/40'
+                    }`}
+                  />
+                </div>
+              )}
+
               <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'user'
                   ? 'bg-primary-600'
                   : 'bg-gradient-cosmic'
@@ -262,6 +361,10 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
                 <div className={`inline-block p-4 rounded-2xl ${message.role === 'user'
                     ? 'bg-primary-600 text-white'
                     : 'bg-cosmic-800/50 text-cosmic-100 border border-cosmic-700'
+                  } ${
+                    isEditMode && selectedMessages.has(message.id)
+                      ? 'ring-2 ring-blue-500'
+                      : ''
                   }`}>
                   {message.role === 'assistant' ? (
                     <MarkdownRenderer content={message.content} />
@@ -274,6 +377,26 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
                   {message.timestamp.toLocaleTimeString()}
                 </p>
               </div>
+
+              {/* 编辑模式下显示复选框（右侧-AI消息，排除欢迎消息） */}
+              {isEditMode && message.role === 'assistant' && message.id !== 'welcome' && !message.id.startsWith('welcome-') && (
+                <div className="flex items-center pt-2">
+                  <input
+                    type="checkbox"
+                    id={`checkbox-${message.id}`}
+                    checked={selectedMessages.has(message.id)}
+                    onChange={(e) => {
+                      e.stopPropagation()
+                      toggleMessageSelection(message.id)
+                    }}
+                    className={`w-5 h-5 rounded cursor-pointer transition-all ${
+                      selectedMessages.has(message.id)
+                        ? 'bg-purple-600 border-purple-600'
+                        : 'bg-transparent border-2 border-white/40'
+                    }`}
+                  />
+                </div>
+              )}
             </div>
           ))}
 
