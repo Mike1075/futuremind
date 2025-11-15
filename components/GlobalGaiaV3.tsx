@@ -502,8 +502,8 @@ export function GlobalGaiaV3() {
                       ref={(el) => { messageRefs.current[index] = el }}
                       className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      {/* 编辑模式下显示复选框（左侧-用户消息） */}
-                      {isEditMode && message.role === 'user' && (
+                      {/* 编辑模式下显示复选框（左侧-用户消息，排除第一条） */}
+                      {isEditMode && message.role === 'user' && index !== 0 && (
                         <div className="flex items-center pt-2">
                           <input
                             type="checkbox"
