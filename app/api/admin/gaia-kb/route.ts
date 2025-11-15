@@ -62,10 +62,10 @@ export async function GET() {
             countType: typeof count,
             countError: countError?.message,
             hasError: !!countError,
-            countIsValid: !countError && count && count > 0,
+            countIsValid: !countError && count !== null && count > 0,
             condition1: !countError,
-            condition2: !!count,
-            condition3: count > 0
+            condition2: count !== null,
+            condition3: count !== null ? count > 0 : false
           })
 
           if (!countError && count && count > 0) {
