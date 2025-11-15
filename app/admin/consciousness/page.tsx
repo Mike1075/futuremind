@@ -1,12 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { Brain, RefreshCw, CheckCircle, XCircle, Loader } from 'lucide-react'
+import { Brain, RefreshCw, CheckCircle, XCircle, Loader, Heart, Clock } from 'lucide-react'
 
 export default function ConsciousnessAdminPage() {
   const [calculating, setCalculating] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const [calculatingTrunk, setCalculatingTrunk] = useState(false)
+  const [trunkResult, setTrunkResult] = useState<any>(null)
+  const [trunkError, setTrunkError] = useState<string | null>(null)
+
+  const [recordingMeditation, setRecordingMeditation] = useState(false)
+  const [meditationDuration, setMeditationDuration] = useState(15)
+  const [meditationNotes, setMeditationNotes] = useState('')
+  const [meditationResult, setMeditationResult] = useState<any>(null)
 
   const handleCalculateRoots = async () => {
     setCalculating(true)
@@ -32,6 +41,73 @@ export default function ConsciousnessAdminPage() {
       setError(err.message)
     } finally {
       setCalculating(false)
+    }
+  }
+
+  const handleCalculateTrunk = async () => {
+    setCalculatingTrunk(true)
+    setTrunkError(null)
+    setTrunkResult(null)
+
+    try {
+      const response = await fetch('/api/consciousness/calculate-trunk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '计算失败')
+      }
+
+      setTrunkResult(data)
+    } catch (err: any) {
+      setTrunkError(err.message)
+    } finally {
+      setCalculatingTrunk(false)
+    }
+  }
+
+  const handleRecordMeditation = async () => {
+    if (meditationDuration < 1) {
+      alert('请输入有效的冥想时长')
+      return
+    }
+
+    setRecordingMeditation(true)
+    setMeditationResult(null)
+
+    try {
+      const response = await fetch('/api/meditation/record', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          duration_minutes: meditationDuration,
+          notes: meditationNotes,
+          meditation_type: 'general',
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '记录失败')
+      }
+
+      setMeditationResult(data)
+      setMeditationNotes('')
+
+      // 记录成功后自动重新计算树干
+      setTimeout(() => handleCalculateTrunk(), 500)
+    } catch (err: any) {
+      alert('记录失败：' + err.message)
+    } finally {
+      setRecordingMeditation(false)
     }
   }
 
@@ -140,6 +216,160 @@ export default function ConsciousnessAdminPage() {
                 <p className="text-xs text-gray-400 mt-2">
                   现在可以去查看您的意识树，根系已经根据课程进度更新！
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Meditation Record Card */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Heart className="w-5 h-5 text-pink-400" />
+            记录冥想练习
+          </h2>
+          <p className="text-gray-300 mb-4">
+            记录您的冥想时长，系统会根据冥想数据动态调整意识树的树干粗细。
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                冥想时长（分钟）
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="120"
+                value={meditationDuration}
+                onChange={(e) => setMeditationDuration(parseInt(e.target.value) || 0)}
+                className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                笔记（可选）
+              </label>
+              <textarea
+                value={meditationNotes}
+                onChange={(e) => setMeditationNotes(e.target.value)}
+                placeholder="记录您的感受和体会..."
+                rows={3}
+                className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-400 resize-none"
+              />
+            </div>
+
+            <button
+              onClick={handleRecordMeditation}
+              disabled={recordingMeditation}
+              className="flex items-center gap-2 px-6 py-3 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium"
+            >
+              {recordingMeditation ? (
+                <>
+                  <Loader className="w-5 h-5 animate-spin" />
+                  保存中...
+                </>
+              ) : (
+                <>
+                  <Heart className="w-5 h-5" />
+                  保存冥想记录
+                </>
+              )}
+            </button>
+
+            {meditationResult && (
+              <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-3 text-sm text-green-200">
+                ✅ {meditationResult.message}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Calculate Trunk Card */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-green-400" />
+            计算树干粗细
+          </h2>
+          <p className="text-gray-300 mb-6">
+            根据您最近90天的冥想练习，计算意识树的树干粗细和稳定性。
+          </p>
+
+          <button
+            onClick={handleCalculateTrunk}
+            disabled={calculatingTrunk}
+            className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium"
+          >
+            {calculatingTrunk ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                计算中...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-5 h-5" />
+                开始计算
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Trunk Error Display */}
+        {trunkError && (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-200">计算失败</h3>
+              <p className="text-red-300 text-sm mt-1">{trunkError}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Trunk Result Display */}
+        {trunkResult && (
+          <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-6 mb-6 flex items-start gap-3">
+            <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-green-200 text-lg mb-4">树干计算成功！</h3>
+
+              <div className="bg-black/30 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-medium text-gray-300 mb-3">树干数据</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-200">粗细度</span>
+                    <span className="font-mono text-green-300 font-semibold text-lg">{trunkResult.trunk?.thickness || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-200">稳定性</span>
+                    <span className="font-mono text-green-300 font-semibold">{trunkResult.trunk?.stability || 0}%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-black/30 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-300 mb-2">冥想统计</h4>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-gray-400">总次数:</span>
+                    <span className="ml-2 text-white font-semibold">{trunkResult.meditation_stats?.total_sessions || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">独立天数:</span>
+                    <span className="ml-2 text-white font-semibold">{trunkResult.meditation_stats?.unique_days || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">最长连续:</span>
+                    <span className="ml-2 text-white font-semibold">{trunkResult.meditation_stats?.longest_streak || 0}天</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">规律性:</span>
+                    <span className="ml-2 text-white font-semibold">{trunkResult.meditation_stats?.regularity_score || 0}分</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 text-sm text-gray-300">
+                <p>✅ {trunkResult.message}</p>
               </div>
             </div>
           </div>
