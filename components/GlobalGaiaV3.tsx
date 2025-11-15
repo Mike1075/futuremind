@@ -415,16 +415,40 @@ export function GlobalGaiaV3() {
   }
 
   // 删除选中的消息
-  const deleteSelectedMessages = () => {
+  const deleteSelectedMessages = async () => {
     if (selectedMessages.size === 0) return
 
     if (!confirm(`确定要删除选中的 ${selectedMessages.size} 条消息吗？`)) return
 
-    // 过滤掉选中的消息
-    const newMessages = messages.filter((_, index) => !selectedMessages.has(index))
-    setMessages(newMessages)
-    setSelectedMessages(new Set())
-    setIsEditMode(false)
+    try {
+      // 过滤掉选中的消息
+      const newMessages = messages.filter((_, index) => !selectedMessages.has(index))
+      setMessages(newMessages)
+      setSelectedMessages(new Set())
+      setIsEditMode(false)
+
+      // 保存到数据库
+      if (currentConversationId) {
+        const supabase = createClient()
+        const { error } = await supabase
+          .from('gaia_conversations')
+          .update({
+            messages: newMessages,
+            message_count: newMessages.length,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentConversationId)
+
+        if (error) {
+          console.error('[GlobalGaia] 保存删除后的消息失败:', error)
+        } else {
+          console.log('[GlobalGaia] ✅ 成功保存删除后的消息')
+        }
+      }
+    } catch (error) {
+      console.error('[GlobalGaia] 删除消息失败:', error)
+      alert('删除消息失败，请重试')
+    }
   }
 
   return (
