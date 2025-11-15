@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Brain, RefreshCw, CheckCircle, XCircle, Loader, Heart, Clock } from 'lucide-react'
+import { Brain, RefreshCw, CheckCircle, XCircle, Loader, Heart, Clock, Sparkles } from 'lucide-react'
 
 export default function ConsciousnessAdminPage() {
   const [calculating, setCalculating] = useState(false)
@@ -16,6 +16,10 @@ export default function ConsciousnessAdminPage() {
   const [meditationDuration, setMeditationDuration] = useState(15)
   const [meditationNotes, setMeditationNotes] = useState('')
   const [meditationResult, setMeditationResult] = useState<any>(null)
+
+  const [extractingInsights, setExtractingInsights] = useState(false)
+  const [insightsResult, setInsightsResult] = useState<any>(null)
+  const [insightsError, setInsightsError] = useState<string | null>(null)
 
   const handleCalculateRoots = async () => {
     setCalculating(true)
@@ -108,6 +112,37 @@ export default function ConsciousnessAdminPage() {
       alert('记录失败：' + err.message)
     } finally {
       setRecordingMeditation(false)
+    }
+  }
+
+  const handleExtractInsights = async () => {
+    setExtractingInsights(true)
+    setInsightsError(null)
+    setInsightsResult(null)
+
+    try {
+      const response = await fetch('/api/insights/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          days: 30,
+          min_depth_score: 60,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '提取失败')
+      }
+
+      setInsightsResult(data)
+    } catch (err: any) {
+      setInsightsError(err.message)
+    } finally {
+      setExtractingInsights(false)
     }
   }
 
@@ -370,6 +405,118 @@ export default function ConsciousnessAdminPage() {
 
               <div className="mt-4 text-sm text-gray-300">
                 <p>✅ {trunkResult.message}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Extract Insights Card */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-yellow-400" />
+            提取洞见叶子
+          </h2>
+          <p className="text-gray-300 mb-6">
+            AI分析您与Gaia的对话，提取深刻的洞见并生成叶子挂在意识树上。
+          </p>
+
+          <button
+            onClick={handleExtractInsights}
+            disabled={extractingInsights}
+            className="flex items-center gap-2 px-6 py-3 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium"
+          >
+            {extractingInsights ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                AI分析中...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                开始提取
+              </>
+            )}
+          </button>
+
+          {extractingInsights && (
+            <div className="mt-4 text-sm text-yellow-200">
+              ⏳ AI正在分析您最近30天与Gaia的对话，这可能需要1-2分钟...
+            </div>
+          )}
+        </div>
+
+        {/* Insights Error Display */}
+        {insightsError && (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-200">提取失败</h3>
+              <p className="text-red-300 text-sm mt-1">{insightsError}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Insights Result Display */}
+        {insightsResult && (
+          <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-6 mb-6 flex items-start gap-3">
+            <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-green-200 text-lg mb-4">洞见提取成功！</h3>
+
+              <div className="bg-black/30 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-medium text-gray-300 mb-3">提取统计</h4>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <span className="text-gray-400">分析消息:</span>
+                    <span className="ml-2 text-white font-semibold">{insightsResult.stats?.total_messages_analyzed || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">提取洞见:</span>
+                    <span className="ml-2 text-white font-semibold">{insightsResult.stats?.insights_extracted || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">保存成功:</span>
+                    <span className="ml-2 text-white font-semibold">{insightsResult.stats?.insights_saved || 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              {insightsResult.insights && insightsResult.insights.length > 0 && (
+                <div className="bg-black/30 rounded-lg p-4 mb-4 max-h-96 overflow-y-auto">
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">洞见列表</h4>
+                  <div className="space-y-3">
+                    {insightsResult.insights.map((insight: any, index: number) => (
+                      <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                        <div className="flex items-start justify-between mb-2">
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            insight.insight_type === 'breakthrough' ? 'bg-yellow-500/20 text-yellow-300' :
+                            insight.insight_type === 'integration' ? 'bg-purple-500/20 text-purple-300' :
+                            insight.insight_type === 'reflection' ? 'bg-blue-500/20 text-blue-300' :
+                            insight.insight_type === 'awareness' ? 'bg-green-500/20 text-green-300' :
+                            'bg-gray-500/20 text-gray-300'
+                          }`}>
+                            {insight.insight_type || 'general'}
+                          </span>
+                          <div className="flex gap-2 text-xs">
+                            <span className="text-gray-400">深度: <strong className="text-yellow-300">{insight.depth_score}</strong></span>
+                            <span className="text-gray-400">原创: <strong className="text-purple-300">{insight.originality_score}</strong></span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-200 leading-relaxed">{insight.content}</p>
+                        {insight.ai_reasoning && (
+                          <p className="text-xs text-gray-400 mt-2 italic">💡 {insight.ai_reasoning}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 text-sm text-gray-300">
+                <p>✅ {insightsResult.message}</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  这些洞见已经生成为意识树的叶子，访问意识树即可查看！
+                </p>
               </div>
             </div>
           </div>
