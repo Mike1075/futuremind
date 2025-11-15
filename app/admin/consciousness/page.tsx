@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Brain, RefreshCw, CheckCircle, XCircle, Loader, Heart, Clock, Sparkles, Apple } from 'lucide-react'
+import { Brain, RefreshCw, CheckCircle, XCircle, Loader, Heart, Clock, Sparkles, Apple, Trophy } from 'lucide-react'
 
 export default function ConsciousnessAdminPage() {
   const [calculating, setCalculating] = useState(false)
@@ -24,6 +24,10 @@ export default function ConsciousnessAdminPage() {
   const [calculatingFruits, setCalculatingFruits] = useState(false)
   const [fruitsResult, setFruitsResult] = useState<any>(null)
   const [fruitsError, setFruitsError] = useState<string | null>(null)
+
+  const [calculatingLevel, setCalculatingLevel] = useState(false)
+  const [levelResult, setLevelResult] = useState<any>(null)
+  const [levelError, setLevelError] = useState<string | null>(null)
 
   const handleCalculateRoots = async () => {
     setCalculating(true)
@@ -174,6 +178,33 @@ export default function ConsciousnessAdminPage() {
       setFruitsError(err.message)
     } finally {
       setCalculatingFruits(false)
+    }
+  }
+
+  const handleCalculateLevel = async () => {
+    setCalculatingLevel(true)
+    setLevelError(null)
+    setLevelResult(null)
+
+    try {
+      const response = await fetch('/api/consciousness/calculate-level', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '计算失败')
+      }
+
+      setLevelResult(data)
+    } catch (err: any) {
+      setLevelError(err.message)
+    } finally {
+      setCalculatingLevel(false)
     }
   }
 
@@ -674,6 +705,170 @@ export default function ConsciousnessAdminPage() {
                 <p className="text-xs text-gray-400 mt-2">
                   成果果实已生成！访问意识树即可看到您的成就！
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Calculate Consciousness Level Card */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-purple-400" />
+            计算意识等级
+          </h2>
+          <p className="text-gray-300 mb-6">
+            综合评估您的领域深度、活跃度、质量和对话深度，计算您的意识等级（1-7级）。
+          </p>
+
+          <button
+            onClick={handleCalculateLevel}
+            disabled={calculatingLevel}
+            className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium"
+          >
+            {calculatingLevel ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                计算中...
+              </>
+            ) : (
+              <>
+                <Trophy className="w-5 h-5" />
+                开始计算
+              </>
+            )}
+          </button>
+
+          {calculatingLevel && (
+            <div className="mt-4 text-sm text-purple-200">
+              ⏳ 正在综合分析您的所有意识树数据...
+            </div>
+          )}
+        </div>
+
+        {/* Level Error Display */}
+        {levelError && (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-200">计算失败</h3>
+              <p className="text-red-300 text-sm mt-1">{levelError}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Level Result Display */}
+        {levelResult && (
+          <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/50 rounded-xl p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <Trophy className="w-10 h-10 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-white text-2xl mb-2">
+                  意识等级 Level {levelResult.consciousness_level}
+                </h3>
+                <p className="text-purple-200 mb-4">
+                  综合评分：<span className="font-bold text-white">{levelResult.composite_score}</span> 分
+                  <span className="ml-3 text-sm">（百分位：前 {100 - levelResult.percentile_rank}%）</span>
+                </p>
+
+                {levelResult.scores && (
+                  <div className="bg-black/30 rounded-lg p-4 mb-4">
+                    <h4 className="text-sm font-medium text-gray-300 mb-3">分项得分</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-gray-400">领域深度</span>
+                          <span className="text-sm font-semibold text-purple-300">{levelResult.scores.domain_depth}</span>
+                        </div>
+                        <div className="h-2 bg-black/50 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-500"
+                            style={{ width: `${levelResult.scores.domain_depth}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-gray-400">活跃度</span>
+                          <span className="text-sm font-semibold text-green-300">{levelResult.scores.activity}</span>
+                        </div>
+                        <div className="h-2 bg-black/50 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
+                            style={{ width: `${levelResult.scores.activity}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-gray-400">质量</span>
+                          <span className="text-sm font-semibold text-yellow-300">{levelResult.scores.quality}</span>
+                        </div>
+                        <div className="h-2 bg-black/50 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 transition-all duration-500"
+                            style={{ width: `${levelResult.scores.quality}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-gray-400">对话深度</span>
+                          <span className="text-sm font-semibold text-blue-300">{levelResult.scores.dialogue_depth}</span>
+                        </div>
+                        <div className="h-2 bg-black/50 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-500"
+                            style={{ width: `${levelResult.scores.dialogue_depth}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {levelResult.stats && (
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-300 mb-3">数据统计</h4>
+                    <div className="grid grid-cols-3 gap-2 text-xs text-gray-300">
+                      <div>
+                        <span className="text-gray-400">冥想:</span>
+                        <span className="ml-1 text-white font-semibold">{levelResult.stats.meditation_count}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">对话:</span>
+                        <span className="ml-1 text-white font-semibold">{levelResult.stats.conversation_count}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">作业:</span>
+                        <span className="ml-1 text-white font-semibold">{levelResult.stats.submission_count}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">洞见:</span>
+                        <span className="ml-1 text-white font-semibold">{levelResult.stats.insight_count}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">果实:</span>
+                        <span className="ml-1 text-white font-semibold">{levelResult.stats.fruit_count}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">根深:</span>
+                        <span className="ml-1 text-white font-semibold">{levelResult.stats.avg_root_depth}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 text-sm text-white">
+                  <p>✅ {levelResult.message}</p>
+                  <p className="text-xs text-purple-200 mt-2">
+                    您的意识等级已记录到历史，继续保持觉察和成长！
+                  </p>
+                </div>
               </div>
             </div>
           </div>
