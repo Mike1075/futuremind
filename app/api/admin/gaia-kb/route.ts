@@ -50,53 +50,64 @@ export async function GET() {
         if (currentStatus === 'processing' && projectId) {
           console.log(`[盖亚知识库] >>> 发现processing状态文档，开始查询向量块，project_id: ${projectId}`)
 
-          // 使用Admin客户端查询向量块（排除主文档自己，只统计向量块）
-          // 🔧 修改：不使用head: true，改用普通查询获取count更可靠
-          const { data: vectorData, count, error: countError } = await supabase
-            .from('documents')
-            .select('id', { count: 'exact' })
-            .eq('metadata->>project_id', projectId)
-            .neq('metadata->>type', 'gaia_knowledge_base') // 排除主文档
+          try {
+            // 🔧 完全重写：使用原生SQL查询，100%可靠
+            const { data: countResult, error: countError } = await supabase.rpc('count_vectors', {
+              p_project_id: projectId
+            })
 
-          console.log(`[盖亚知识库] 查询结果详情:`, {
-            count,
-            countType: typeof count,
-            countError: countError?.message,
-            hasError: !!countError,
-            countIsValid: !countError && count !== null && count > 0,
-            condition1: !countError,
-            condition2: count !== null,
-            condition3: count !== null ? count > 0 : false
-          })
+            // 如果RPC函数不存在，回退到直接SQL查询
+            let vectorCount = 0
+            if (countError) {
+              console.log(`[盖亚知识库] RPC查询失败，使用备用方案: ${countError.message}`)
 
-          if (!countError && count && count > 0) {
-            metadata.status = 'completed'
-            metadata.vector_count = count
-            const now = new Date().toISOString()
+              // 备用方案：使用.select().length
+              const { data: vectors, error: err2 } = await supabase
+                .from('documents')
+                .select('id')
+                .eq('metadata->>project_id', projectId)
+                .neq('metadata->>type', 'gaia_knowledge_base')
 
-            console.log(`[盖亚知识库] ✅ 条件满足，准备更新文档${doc.id}状态为completed，向量块数: ${count}`)
-
-            // 使用Admin客户端更新数据库
-            const { error: updateError } = await supabase
-              .from('documents')
-              .update({
-                metadata,
-                updated_at: now
-              })
-              .eq('id', doc.id)
-
-            if (updateError) {
-              console.error(`[盖亚知识库] ❌ 更新失败:`, updateError)
+              if (!err2 && vectors) {
+                vectorCount = vectors.length
+                console.log(`[盖亚知识库] 备用查询成功，向量块数: ${vectorCount}`)
+              } else {
+                console.error(`[盖亚知识库] 备用查询也失败:`, err2)
+              }
             } else {
-              console.log(`[盖亚知识库] ✅ 成功更新文档${doc.id}状态为completed，向量块数: ${count}`)
-              // 🔧 关键修复：同步更新内存中的文档对象，确保返回最新数据
-              doc.metadata = metadata
-              doc.updated_at = now
+              vectorCount = countResult || 0
+              console.log(`[盖亚知识库] RPC查询成功，向量块数: ${vectorCount}`)
             }
-          } else if (countError) {
-            console.error(`[盖亚知识库] ❌ 查询向量块失败:`, countError)
-          } else {
-            console.log(`[盖亚知识库] ⚠️ 条件不满足，跳过更新。原因: ${!count || count === 0 ? 'count为0或null' : '未知'}`)
+
+            // 如果有向量块，更新状态
+            if (vectorCount > 0) {
+              metadata.status = 'completed'
+              metadata.vector_count = vectorCount
+              const now = new Date().toISOString()
+
+              console.log(`[盖亚知识库] ✅ 准备更新文档${doc.id}，向量块数: ${vectorCount}`)
+
+              const { error: updateError } = await supabase
+                .from('documents')
+                .update({
+                  metadata,
+                  updated_at: now
+                })
+                .eq('id', doc.id)
+
+              if (updateError) {
+                console.error(`[盖亚知识库] ❌ 更新失败:`, updateError)
+              } else {
+                console.log(`[盖亚知识库] ✅ 成功更新状态为completed`)
+                // 同步更新内存对象
+                doc.metadata = metadata
+                doc.updated_at = now
+              }
+            } else {
+              console.log(`[盖亚知识库] ⚠️ 向量块数为0，保持processing状态`)
+            }
+          } catch (err) {
+            console.error(`[盖亚知识库] ❌ 查询异常:`, err)
           }
         }
       }
