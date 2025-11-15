@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Sparkles, UploadCloud, MessageSquare } from 'lucide-react'
+import { X, Send, Sparkles, UploadCloud, MessageSquare, Edit3, Trash2, Check } from 'lucide-react'
 import UploadToGaia from '@/components/UploadToGaia'
 import ConversationManager from '@/components/ConversationManager'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
@@ -33,6 +33,8 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showUpload, setShowUpload] = useState(false)
   const [showConversationManager, setShowConversationManager] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set())
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -291,6 +293,58 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     }
   }
 
+  // 切换消息选中状态
+  const toggleMessageSelection = (messageId: string) => {
+    setSelectedMessages(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId)
+      } else {
+        newSet.add(messageId)
+      }
+      return newSet
+    })
+  }
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    if (selectedMessages.size === messages.length - 1) {
+      // 如果已全选，则取消全选（保留欢迎消息）
+      setSelectedMessages(new Set())
+    } else {
+      // 全选（排除欢迎消息）
+      const allIds = new Set(
+        messages
+          .filter(m => m.id !== '1') // 不选欢迎消息
+          .map(m => m.id)
+      )
+      setSelectedMessages(allIds)
+    }
+  }
+
+  // 删除选中的消息
+  const deleteSelectedMessages = async () => {
+    if (selectedMessages.size === 0) return
+
+    if (!confirm(`确定要删除选中的 ${selectedMessages.size} 条消息吗？`)) return
+
+    try {
+      // 过滤掉选中的消息
+      const newMessages = messages.filter(m => !selectedMessages.has(m.id))
+      setMessages(newMessages)
+
+      // 保存到数据库
+      await saveChatHistory(newMessages)
+
+      // 清空选中状态并退出编辑模式
+      setSelectedMessages(new Set())
+      setIsEditMode(false)
+    } catch (error) {
+      console.error('删除消息失败:', error)
+      alert('删除消息失败，请重试')
+    }
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -323,53 +377,91 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowConversationManager(true)}
-                  className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
-                  title="管理对话"
-                >
-                  <MessageSquare className="w-4 h-4" /> 对话
-                </button>
-                <button
-                  onClick={() => setShowUpload(true)}
-                  className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
-                  title="上传文档给盖亚"
-                >
-                  <UploadCloud className="w-4 h-4" /> 上传文档
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!confirm('确定要清除所有聊天记录吗？这将删除所有对话。')) return
+                {isEditMode ? (
+                  <>
+                    <button
+                      onClick={toggleSelectAll}
+                      className="px-3 py-2 text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg border border-blue-500/30 flex items-center gap-2"
+                      title="全选/取消全选"
+                    >
+                      <Check className="w-4 h-4" /> {selectedMessages.size === messages.length - 1 ? '取消全选' : '全选'}
+                    </button>
+                    <button
+                      onClick={deleteSelectedMessages}
+                      disabled={selectedMessages.size === 0}
+                      className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="删除选中的消息"
+                    >
+                      <Trash2 className="w-4 h-4" /> 删除选中 ({selectedMessages.size})
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditMode(false)
+                        setSelectedMessages(new Set())
+                      }}
+                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20"
+                    >
+                      取消
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setIsEditMode(true)}
+                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
+                      title="编辑聊天记录"
+                    >
+                      <Edit3 className="w-4 h-4" /> 编辑
+                    </button>
+                    <button
+                      onClick={() => setShowConversationManager(true)}
+                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
+                      title="管理对话"
+                    >
+                      <MessageSquare className="w-4 h-4" /> 对话
+                    </button>
+                    <button
+                      onClick={() => setShowUpload(true)}
+                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
+                      title="上传文档给盖亚"
+                    >
+                      <UploadCloud className="w-4 h-4" /> 上传文档
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('确定要清除所有聊天记录吗？这将删除所有对话。')) return
 
-                    try {
-                      const result = await GaiaAPI.clearChatHistory()
+                        try {
+                          const result = await GaiaAPI.clearChatHistory()
 
-                      if (result.success) {
-                        // 重置所有对话状态
-                        setCurrentConversationId(null)
-                        setConversationTitle('新对话')
-                        // 生成新的 session_id
-                        setSessionId(crypto.randomUUID())
-                        setMessages([{
-                          id: '1',
-                          content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
-                          isGaia: true,
-                          timestamp: new Date()
-                        }])
-                      } else {
-                        console.error('清除聊天记录失败:', result.error)
-                        alert('清除聊天记录失败: ' + result.error)
-                      }
-                    } catch (error) {
-                      console.error('清除聊天记录时发生错误:', error)
-                      alert('清除聊天记录时发生错误')
-                    }
-                  }}
-                  className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2"
-                  title="清除所有聊天记录"
-                >
-                  清除记录
-                </button>
+                          if (result.success) {
+                            // 重置所有对话状态
+                            setCurrentConversationId(null)
+                            setConversationTitle('新对话')
+                            // 生成新的 session_id
+                            setSessionId(crypto.randomUUID())
+                            setMessages([{
+                              id: '1',
+                              content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
+                              isGaia: true,
+                              timestamp: new Date()
+                            }])
+                          } else {
+                            console.error('清除聊天记录失败:', result.error)
+                            alert('清除聊天记录失败: ' + result.error)
+                          }
+                        } catch (error) {
+                          console.error('清除聊天记录时发生错误:', error)
+                          alert('清除聊天记录时发生错误')
+                        }
+                      }}
+                      className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2"
+                      title="清除所有聊天记录"
+                    >
+                      清除记录
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={onClose}
                   className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
@@ -393,8 +485,20 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   key={message.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${message.isGaia ? 'justify-start' : 'justify-end'}`}
+                  className={`flex gap-3 ${message.isGaia ? 'justify-start' : 'justify-end'}`}
                 >
+                  {/* 编辑模式下显示复选框（左侧） */}
+                  {isEditMode && !message.isGaia && (
+                    <div className="flex items-center pt-6">
+                      <input
+                        type="checkbox"
+                        checked={selectedMessages.has(message.id)}
+                        onChange={() => toggleMessageSelection(message.id)}
+                        className="w-5 h-5 rounded border-white/30 bg-white/10 text-purple-600 focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                      />
+                    </div>
+                  )}
+
                   <div className={`max-w-[80%] ${message.isGaia ? 'order-2' : 'order-1'}`}>
                     {message.isGaia && (
                       <div className="flex items-center mb-2">
@@ -409,6 +513,10 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                         message.isGaia
                           ? 'bg-gradient-to-r from-purple-600/30 to-blue-600/30 border border-purple-500/30 text-white'
                           : 'bg-white/10 border border-white/20 text-white ml-auto'
+                      } ${
+                        isEditMode && selectedMessages.has(message.id)
+                          ? 'ring-2 ring-blue-500'
+                          : ''
                       }`}
                     >
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
@@ -417,6 +525,18 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                       </p>
                     </div>
                   </div>
+
+                  {/* 编辑模式下显示复选框（右侧，针对盖亚消息） */}
+                  {isEditMode && message.isGaia && message.id !== '1' && (
+                    <div className="flex items-center pt-6">
+                      <input
+                        type="checkbox"
+                        checked={selectedMessages.has(message.id)}
+                        onChange={() => toggleMessageSelection(message.id)}
+                        className="w-5 h-5 rounded border-white/30 bg-white/10 text-purple-600 focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                      />
+                    </div>
+                  )}
                 </motion.div>
               ))}
 
