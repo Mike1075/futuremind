@@ -184,18 +184,20 @@ export function GlobalGaiaV3() {
     if (isOpen && messages.length === 0 && !isFromKnowledgePoint) {
       console.log('[GlobalGaia] 📥 加载最近的聊天记录...')
 
-      // 加载最近的10条消息
+      // 加载历史消息
       fetch('/api/gaia/recent-messages')
         .then(res => res.json())
         .then(data => {
           console.log('[GlobalGaia] 收到历史消息:', data)
 
           if (data.messages && data.messages.length > 0) {
+            // 有消息，直接显示
             console.log('[GlobalGaia] ✅ 显示历史消息:', data.messages.length, '条')
             setMessages(data.messages)
             setCurrentConversationId(data.conversationId)
-          } else {
-            console.log('[GlobalGaia] ✅ 没有历史记录，显示欢迎消息')
+          } else if (data.conversationId === null) {
+            // 完全没有对话记录，第一次使用，显示欢迎消息
+            console.log('[GlobalGaia] ✅ 第一次使用，显示欢迎消息')
             const welcomeMessage: Message = {
               role: 'assistant',
               content: `🌟 你好！我是盖亚（Gaia），你的AI学习伙伴。
@@ -210,25 +212,17 @@ export function GlobalGaiaV3() {
               timestamp: new Date().toISOString()
             }
             setMessages([welcomeMessage])
+          } else {
+            // 有对话ID但消息为空（用户删除了所有消息），不显示欢迎语
+            console.log('[GlobalGaia] ✅ 对话存在但无消息，显示空白')
+            setMessages([])
+            setCurrentConversationId(data.conversationId)
           }
         })
         .catch(error => {
           console.error('[GlobalGaia] ❌ 加载历史消息失败:', error)
-          // 失败时显示欢迎消息
-          const welcomeMessage: Message = {
-            role: 'assistant',
-            content: `🌟 你好！我是盖亚（Gaia），你的AI学习伙伴。
-
-我可以帮助你：
-✨ 探索课程知识
-🧠 深入理解概念
-💡 激发新的思考
-🤝 陪伴你的学习之旅
-
-有什么想要探讨的吗？`,
-            timestamp: new Date().toISOString()
-          }
-          setMessages([welcomeMessage])
+          // 失败时显示空白，不显示欢迎消息
+          setMessages([])
         })
     } else {
       console.log('[GlobalGaia] ⏭️ 跳过加载历史（条件不满足）')
@@ -398,18 +392,7 @@ export function GlobalGaiaV3() {
     return false
   }
 
-  // 判断是否是欢迎消息（不应该被删除）
-  const isWelcomeMessage = (message: Message) => {
-    // 通过ID判断（旧格式的欢迎消息ID是'1'）
-    if (message.id === '1') return true
-    // 通过内容判断
-    if (message.content.includes('你好，亲爱的探索者') ||
-        message.content.includes('我是盖亚，你的意识觉醒导师') ||
-        message.content.includes('我是盖亚（Gaia），你的AI学习伙伴')) {
-      return true
-    }
-    return false
-  }
+  // 注：欢迎消息现在也可以被删除了
 
   // 切换消息选中状态
   const toggleMessageSelection = (index: number) => {
@@ -424,21 +407,16 @@ export function GlobalGaiaV3() {
     })
   }
 
-  // 全选/取消全选（排除欢迎消息）
+  // 全选/取消全选
   const toggleSelectAll = () => {
-    // 计算可选择的消息数量（排除欢迎消息）
-    const selectableCount = messages.filter((m, idx) => !isWelcomeMessage(m)).length
-
-    if (selectedMessages.size === selectableCount) {
+    if (selectedMessages.size === messages.length) {
       // 已全选，取消全选
       setSelectedMessages(new Set())
     } else {
-      // 全选（排除欢迎消息）
+      // 全选所有消息
       const allIndices = new Set<number>()
       messages.forEach((message, index) => {
-        if (!isWelcomeMessage(message)) {
-          allIndices.add(index)
-        }
+        allIndices.add(index)
       })
       setSelectedMessages(allIndices)
     }
@@ -533,7 +511,7 @@ export function GlobalGaiaV3() {
                     className="px-3 py-2 text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg border border-blue-500/30 flex items-center gap-2"
                     title="全选/取消全选"
                   >
-                    <Check className="w-4 h-4" /> {selectedMessages.size === messages.filter(m => !isWelcomeMessage(m)).length ? '取消全选' : '全选'}
+                    <Check className="w-4 h-4" /> {selectedMessages.size === messages.length ? '取消全选' : '全选'}
                   </button>
                   <button
                     onClick={deleteSelectedMessages}
@@ -601,8 +579,8 @@ export function GlobalGaiaV3() {
                       ref={(el) => { messageRefs.current[index] = el }}
                       className={`flex gap-3 ${isUserMessage(message) ? 'justify-end' : 'justify-start'}`}
                     >
-                      {/* 编辑模式下显示复选框（左侧-用户消息，排除欢迎消息） */}
-                      {isEditMode && isUserMessage(message) && !isWelcomeMessage(message) && (
+                      {/* 编辑模式下显示复选框（左侧-用户消息） */}
+                      {isEditMode && isUserMessage(message) && (
                         <div className="flex items-center pt-2">
                           <input
                             type="checkbox"
@@ -641,8 +619,8 @@ export function GlobalGaiaV3() {
                         </p>
                       </div>
 
-                      {/* 编辑模式下显示复选框（右侧-AI消息，排除欢迎消息） */}
-                      {isEditMode && isAssistantMessage(message) && !isWelcomeMessage(message) && (
+                      {/* 编辑模式下显示复选框（右侧-AI消息） */}
+                      {isEditMode && isAssistantMessage(message) && (
                         <div className="flex items-center pt-2">
                           <input
                             type="checkbox"

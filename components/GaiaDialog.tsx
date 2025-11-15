@@ -17,14 +17,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID())
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
   const [conversationTitle, setConversationTitle] = useState<string>('新对话')
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
-      isGaia: true,
-      timestamp: new Date()
-    }
-  ])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -115,13 +108,20 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         if (result.data.messages.length > 0) {
           setMessages(result.data.messages)
         } else {
-          // 如果没有消息，保留默认的欢迎消息
-          setMessages([{
-            id: '1',
-            content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
-            isGaia: true,
-            timestamp: new Date()
-          }])
+          // 没有消息，判断是否是第一次使用
+          const isNewConversation = result.data.created_at === result.data.updated_at
+          if (isNewConversation) {
+            // 刚创建的对话，第一次使用，显示欢迎消息
+            setMessages([{
+              id: '1',
+              content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
+              isGaia: true,
+              timestamp: new Date()
+            }])
+          } else {
+            // 对话存在但无消息（用户删除了所有消息），显示空白
+            setMessages([])
+          }
         }
       }
     } catch (error) {
@@ -305,17 +305,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   }
 
   // 判断是否是欢迎消息（不应该被删除）
-  const isWelcomeMessage = (message: ChatMessage) => {
-    // 通过ID判断（欢迎消息ID是'1'）
-    if (message.id === '1') return true
-    // 通过内容判断
-    if (message.content.includes('你好，亲爱的探索者') ||
-        message.content.includes('我是盖亚，你的意识觉醒导师') ||
-        message.content.includes('我是盖亚（Gaia），你的AI学习伙伴')) {
-      return true
-    }
-    return false
-  }
+  // 注：欢迎消息现在也可以被删除了
 
   // 切换消息选中状态
   const toggleMessageSelection = (messageId: string) => {
@@ -330,21 +320,14 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     })
   }
 
-  // 全选/取消全选（排除欢迎消息）
+  // 全选/取消全选
   const toggleSelectAll = () => {
-    // 计算可选择的消息数量（排除欢迎消息）
-    const selectableCount = messages.filter(m => !isWelcomeMessage(m)).length
-
-    if (selectedMessages.size === selectableCount) {
+    if (selectedMessages.size === messages.length) {
       // 已全选，取消全选
       setSelectedMessages(new Set())
     } else {
-      // 全选（排除欢迎消息）
-      const allIds = new Set(
-        messages
-          .filter(m => !isWelcomeMessage(m))
-          .map(m => m.id)
-      )
+      // 全选所有消息
+      const allIds = new Set(messages.map(m => m.id))
       setSelectedMessages(allIds)
     }
   }
@@ -415,7 +398,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                       className="px-3 py-2 text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg border border-blue-500/30 flex items-center gap-2"
                       title="全选/取消全选"
                     >
-                      <Check className="w-4 h-4" /> {selectedMessages.size === messages.filter(m => !isWelcomeMessage(m)).length ? '取消全选' : '全选'}
+                      <Check className="w-4 h-4" /> {selectedMessages.size === messages.length ? '取消全选' : '全选'}
                     </button>
                     <button
                       onClick={deleteSelectedMessages}
@@ -505,7 +488,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   className={`flex gap-3 ${message.isGaia ? 'justify-start' : 'justify-end'}`}
                 >
                   {/* 编辑模式下显示复选框（左侧-用户消息，排除欢迎消息） */}
-                  {isEditMode && !message.isGaia && !isWelcomeMessage(message) && (
+                  {isEditMode && !message.isGaia && (
                     <div className="flex items-center pt-6">
                       <input
                         type="checkbox"
@@ -548,7 +531,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   </div>
 
                   {/* 编辑模式下显示复选框（右侧，针对盖亚消息，排除欢迎消息） */}
-                  {isEditMode && message.isGaia && !isWelcomeMessage(message) && (
+                  {isEditMode && message.isGaia && (
                     <div className="flex items-center pt-6">
                       <input
                         type="checkbox"
