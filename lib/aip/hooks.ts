@@ -28,6 +28,23 @@ export function useOrganizations() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // 先尝试从缓存加载
+    const cached = localStorage.getItem('organizations')
+    if (cached) {
+      try {
+        const { data, timestamp } = JSON.parse(cached)
+        // 如果缓存在5分钟内，直接使用
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          setOrganizations(data)
+          setLoading(false)
+          console.log('[组织加载] 使用缓存:', data.length, '个组织')
+        }
+      } catch (e) {
+        console.error('缓存解析失败:', e)
+      }
+    }
+
+    // 然后异步加载最新数据
     loadOrganizations()
   }, [])
 
@@ -43,8 +60,16 @@ export function useOrganizations() {
     if (result.error) {
       setError(result.error)
     } else {
-      setOrganizations(result.data || [])
-      console.log('[组织加载] 获取到', result.data?.length || 0, '个组织')
+      const orgs = result.data || []
+      setOrganizations(orgs)
+
+      // 保存到缓存
+      localStorage.setItem('organizations', JSON.stringify({
+        data: orgs,
+        timestamp: Date.now()
+      }))
+
+      console.log('[组织加载] 获取到', orgs.length, '个组织')
 
       // 如果没有组织，才初始化默认组织
       if (!result.data || result.data.length === 0) {

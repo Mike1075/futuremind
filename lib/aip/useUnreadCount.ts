@@ -34,6 +34,13 @@ export function useUnreadCount() {
       const totalCount = notifCount || 0
 
       setUnreadCount(totalCount)
+
+      // 保存到缓存
+      localStorage.setItem('unreadCount', JSON.stringify({
+        count: totalCount,
+        timestamp: Date.now()
+      }))
+
       console.log('[未读计数] 最终计数:', totalCount)
       console.timeEnd('[未读计数] 总耗时')
     } catch (err) {
@@ -46,6 +53,19 @@ export function useUnreadCount() {
   }
 
   useEffect(() => {
+    // 先尝试从缓存加载
+    const cached = localStorage.getItem('unreadCount')
+    if (cached) {
+      const { count, timestamp } = JSON.parse(cached)
+      // 如果缓存在5分钟内，直接使用
+      if (Date.now() - timestamp < 5 * 60 * 1000) {
+        setUnreadCount(count)
+        setLoading(false)
+        console.log('[未读计数] 使用缓存:', count)
+      }
+    }
+
+    // 然后异步加载最新数据
     loadUnreadCount()
 
     // 每30秒刷新一次
