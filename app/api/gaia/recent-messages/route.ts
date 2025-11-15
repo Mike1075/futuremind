@@ -3,7 +3,7 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server'
 
 /**
  * GET /api/gaia/recent-messages
- * 获取用户最近的10条聊天消息（用于打开盖亚时显示上下文）
+ * 获取用户最新对话的所有聊天消息（用于GlobalGaiaV3显示完整对话历史）
  */
 export async function GET() {
   try {
@@ -37,11 +37,9 @@ export async function GET() {
       timestamp: string
     }>
 
-    // 返回最后10条消息
-    const recentMessages = allMessages.slice(-10)
-
+    // 返回所有消息（与GaiaDialog保持一致）
     return NextResponse.json({
-      messages: recentMessages,
+      messages: allMessages,
       conversationId: conversation.id
     })
   } catch (error) {

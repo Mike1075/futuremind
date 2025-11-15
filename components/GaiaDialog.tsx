@@ -384,7 +384,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-white">{conversationTitle}</h2>
+                  <h2 className="text-xl font-semibold text-white">与盖亚对话</h2>
                   <p className="text-sm text-purple-200">你的意识觉醒导师</p>
                 </div>
               </div>
