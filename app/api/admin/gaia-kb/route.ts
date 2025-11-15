@@ -51,9 +51,10 @@ export async function GET() {
           console.log(`[盖亚知识库] >>> 发现processing状态文档，开始查询向量块，project_id: ${projectId}`)
 
           // 使用Admin客户端查询向量块（排除主文档自己，只统计向量块）
-          const { count, error: countError } = await supabase
+          // 🔧 修改：不使用head: true，改用普通查询获取count更可靠
+          const { data: vectorData, count, error: countError } = await supabase
             .from('documents')
-            .select('id', { count: 'exact', head: true })
+            .select('id', { count: 'exact' })
             .eq('metadata->>project_id', projectId)
             .neq('metadata->>type', 'gaia_knowledge_base') // 排除主文档
 
