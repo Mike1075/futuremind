@@ -51,32 +51,23 @@ export async function GET() {
           console.log(`[盖亚知识库] >>> 发现processing状态文档，开始查询向量块，project_id: ${projectId}`)
 
           try {
-            // 🔧 完全重写：使用原生SQL查询，100%可靠
-            const { data: countResult, error: countError } = await supabase.rpc('count_vectors', {
-              p_project_id: projectId
-            })
+            // 🔧 完全重写：直接查询向量块，用.length统计，100%可靠
+            console.log(`[盖亚知识库] 开始查询向量块...`)
 
-            // 如果RPC函数不存在，回退到直接SQL查询
+            const { data: vectors, error: vectorError } = await supabase
+              .from('documents')
+              .select('id')
+              .eq('metadata->>project_id', projectId)
+              .neq('metadata->>type', 'gaia_knowledge_base')
+
             let vectorCount = 0
-            if (countError) {
-              console.log(`[盖亚知识库] RPC查询失败，使用备用方案: ${countError.message}`)
-
-              // 备用方案：使用.select().length
-              const { data: vectors, error: err2 } = await supabase
-                .from('documents')
-                .select('id')
-                .eq('metadata->>project_id', projectId)
-                .neq('metadata->>type', 'gaia_knowledge_base')
-
-              if (!err2 && vectors) {
-                vectorCount = vectors.length
-                console.log(`[盖亚知识库] 备用查询成功，向量块数: ${vectorCount}`)
-              } else {
-                console.error(`[盖亚知识库] 备用查询也失败:`, err2)
-              }
+            if (vectorError) {
+              console.error(`[盖亚知识库] ❌ 查询向量块失败:`, vectorError)
+            } else if (vectors) {
+              vectorCount = vectors.length
+              console.log(`[盖亚知识库] ✅ 查询成功，找到${vectorCount}个向量块`)
             } else {
-              vectorCount = countResult || 0
-              console.log(`[盖亚知识库] RPC查询成功，向量块数: ${vectorCount}`)
+              console.log(`[盖亚知识库] ⚠️ 查询返回null`)
             }
 
             // 如果有向量块，更新状态
