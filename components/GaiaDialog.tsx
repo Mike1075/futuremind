@@ -129,6 +129,21 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     }
   }
 
+  // 监听来自其他组件的消息同步事件
+  useEffect(() => {
+    const handleMessagesSync = () => {
+      console.log('[GaiaDialog] 📢 收到消息同步事件')
+      if (isOpen) {
+        loadChatHistory()
+      }
+    }
+
+    window.addEventListener('gaiaMessagesUpdated', handleMessagesSync)
+    return () => {
+      window.removeEventListener('gaiaMessagesUpdated', handleMessagesSync)
+    }
+  }, [isOpen])
+
   // 保存聊天记录到 Supabase（支持多对话系统）
   const saveChatHistory = async (msgs: ChatMessage[]) => {
     try {
@@ -351,6 +366,10 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       // 清空选中状态并退出编辑模式
       setSelectedMessages(new Set())
       setIsEditMode(false)
+
+      // 触发同步事件，通知其他盖亚组件更新
+      window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
+      console.log('[GaiaDialog] 📢 已触发消息同步事件')
     } catch (error) {
       console.error('删除消息失败:', error)
       alert('删除消息失败，请重试')

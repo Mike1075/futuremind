@@ -237,6 +237,36 @@ export function GlobalGaiaV3() {
 
   // 当用户发送消息后，重置知识点标记（在handleSend中处理）
 
+  // 重新加载当前对话的消息（用于同步）
+  const reloadCurrentConversation = async () => {
+    try {
+      console.log('[GlobalGaia] 🔄 重新加载对话消息...')
+      const response = await fetch('/api/gaia/recent-messages')
+      const data = await response.json()
+
+      if (data.messages && data.messages.length > 0) {
+        console.log('[GlobalGaia] ✅ 同步成功，更新消息:', data.messages.length, '条')
+        setMessages(data.messages)
+        setCurrentConversationId(data.conversationId)
+      }
+    } catch (error) {
+      console.error('[GlobalGaia] ❌ 重新加载消息失败:', error)
+    }
+  }
+
+  // 监听来自其他组件的消息同步事件
+  useEffect(() => {
+    const handleMessagesSync = () => {
+      console.log('[GlobalGaia] 📢 收到消息同步事件')
+      reloadCurrentConversation()
+    }
+
+    window.addEventListener('gaiaMessagesUpdated', handleMessagesSync)
+    return () => {
+      window.removeEventListener('gaiaMessagesUpdated', handleMessagesSync)
+    }
+  }, [])
+
   // 加载所有历史消息（合并所有对话）
   const loadAllHistoryMessages = async () => {
     try {
@@ -454,6 +484,9 @@ export function GlobalGaiaV3() {
           console.error('[GlobalGaia] 保存删除后的消息失败:', error)
         } else {
           console.log('[GlobalGaia] ✅ 成功保存删除后的消息')
+          // 触发同步事件，通知其他盖亚组件更新
+          window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
+          console.log('[GlobalGaia] 📢 已触发消息同步事件')
         }
       }
     } catch (error) {
