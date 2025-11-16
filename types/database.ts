@@ -1194,6 +1194,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_ai_assist_enabled: boolean | null
+          level_progress: number | null
           level_updated_at: string | null
           percentile_rank: number | null
           role: string | null
@@ -1210,6 +1211,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_ai_assist_enabled?: boolean | null
+          level_progress?: number | null
           level_updated_at?: string | null
           percentile_rank?: number | null
           role?: string | null
@@ -1226,6 +1228,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_ai_assist_enabled?: boolean | null
+          level_progress?: number | null
           level_updated_at?: string | null
           percentile_rank?: number | null
           role?: string | null
