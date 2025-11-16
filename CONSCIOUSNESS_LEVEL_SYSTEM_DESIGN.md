@@ -1,8 +1,15 @@
 # 意识层级系统完整设计方案
 
-**文档版本**: v1.0
+**文档版本**: v1.1
 **创建时间**: 2025-11-10
+**最后更新**: 2025-11-16
 **状态**: 设计阶段 → 待评审 → 待实现
+
+---
+
+## 📚 相关文档
+
+- **[意识树成长与升级系统设计](./CONSCIOUSNESS_GROWTH_SYSTEM_DESIGN.md)** - 详细的升级机制、经验值计算和动态成长方案
 
 ---
 
@@ -387,6 +394,199 @@ function meetsLevelRequirements(user: User, level: number): boolean {
 ### 核心设计原则
 
 **不同层级的意识树应该有本质性的视觉差异**，而不仅仅是颜色变化。
+
+### 🌟 金色点缀系统 (Gold Accent System)
+
+**设计理念**: 金色贯穿所有7个等级，渐进增强，象征觉醒与智慧之光
+
+**金色象征意义**:
+- 智慧与觉醒的光芒
+- 珍贵的成长成果
+- 神性与超越
+- 温暖的生命能量
+
+**美学合理性分析**:
+
+| 等级 | 主色 | 与金色搭配效果 | 美学评分 |
+|------|------|----------------|----------|
+| Level 1 | 灰色 #9CA3AF | 对比强烈，暗示"沉睡中的黄金潜能" | ⭐⭐⭐⭐⭐ |
+| Level 2 | 绿色 #10B981 | 自然搭配，如阳光照耀绿叶 | ⭐⭐⭐⭐⭐ |
+| Level 3 | 蓝色 #3B82F6 | 经典组合，如星空中的金色星辰 | ⭐⭐⭐⭐⭐ |
+| Level 4 | 紫色 #8B5CF6 | 皇家/灵性组合，神秘而高贵 | ⭐⭐⭐⭐⭐ |
+| Level 5 | 黄色 #F59E0B | 同色系强化，智慧之光更盛 | ⭐⭐⭐⭐ |
+| Level 6 | 橙色 #F97316 | 火焰与黄金，太阳般的能量 | ⭐⭐⭐⭐⭐ |
+| Level 7 | 红色 #EF4444 | 吉祥组合，觉醒之巅 | ⭐⭐⭐⭐⭐ |
+
+**渐进式设计原则**:
+- **Level 1-2**: 微光暗示 (5-20% opacity) - 沉睡中的潜能
+- **Level 3-4**: 金色线索 (25-50% opacity) - 探索的成果
+- **Level 5-6**: 金色核心 (60-90% opacity) - 智慧的显现
+- **Level 7**: 金色宇宙 (95-100% opacity) - 光明的化身
+
+**金色标准色值**:
+```typescript
+export const GOLD_COLORS = {
+  pure: '#FFD700',      // hsl(51, 100%, 50%) - 纯金色
+  light: '#FFEB80',     // hsl(51, 100%, 75%) - 高光
+  dark: '#CC9900',      // hsl(45, 100%, 40%) - 阴影
+  warm: '#FFAA00'       // hsl(40, 100%, 50%) - 暖金(橙金)
+}
+```
+
+**各等级金色点缀详细配置**:
+
+#### Level 1: 沉睡者 - 微光暗示 (Gold Opacity: 5-10%)
+- **粒子**: 10个粒子中混入2-3个淡金色 (opacity 0.1)
+- **根系**: 无金色
+- **树干**: 无金色
+- **叶子**: 无
+- **果实**: 无
+- **效果**: 偶尔闪现的金色粒子，像沉睡意识中偶尔的灵光一现
+
+#### Level 2: 觉醒者 - 初现金光 (Gold Opacity: 15-20%)
+- **粒子**: 绿色+金色混合 (20%金色)
+- **根系**: depth > 8 的根系末端有细微金色光点
+- **树干**: 第一圈年轮带淡金色边缘
+- **叶子**: 无
+- **果实**: 无
+- **效果**: 金色开始在深度探索的领域显现
+
+#### Level 3: 探索者 - 金色线索 (Gold Opacity: 25-35%)
+- **粒子**: 蓝色+金色双色粒子流 (30%金色)
+- **根系**: depth > 12 的根系有明显金色光晕
+- **树干**: 年轮之间有细金色纹路
+- **叶子**: 5%的叶子边缘带金色 (高质量洞见)
+- **果实**: 未成熟果实有微弱金色核心
+- **效果**: 金色成为探索成果的标记
+
+#### Level 4: 实践者 - 金色脉络 (Gold Opacity: 40-50%)
+- **粒子**: 紫色+金色螺旋 (40%金色)
+- **根系**: depth > 15 的根系有明显金色能量流
+- **树干**: **金色纹理贯穿树干，如同能量经络**
+- **叶子**: 20%金色，整合性洞见全金色
+- **果实**: 成熟果实 (maturity > 0.7) 发出金色光芒
+- **效果**: 金色能量在树中流动
+
+#### Level 5: 洞察者 - 金色核心 (Gold Opacity: 60-75%)
+- **粒子**: 金色为主 (60%)，形成曼陀罗图案
+- **根系**: 深度根系完全金色化
+- **树干**: **核心是脉动的金色光球**
+- **叶子**: 50%金色，排列成几何图案
+- **果实**: 所有成熟果实金光闪耀
+- **特殊**: **果实之间有细金色光线连接**
+- **效果**: 金色成为智慧的核心，光芒四射
+
+#### Level 6: 先锋者 - 金色烈焰 (Gold Opacity: 80-90%)
+- **粒子**: 橙红+金色凤凰羽翼 (80%金色)
+- **根系**: 根系末端喷涌金色能量
+- **树干**: 表面流动金橙色能量波纹
+- **叶子**: 70%金色，部分叶子蜕变为金色光点
+- **果实**: 所有果实金光璀璨
+- **世界种子**: **巨大的金色八芒星**
+- **特殊**: **树周围有金色光环 (halo)**
+- **效果**: 金色如烈焰般燃烧，引领他人之路
+
+#### Level 7: 引领者 - 金色宇宙 (Gold Opacity: 95-100%)
+- **粒子**: 多彩+金色星系 (90%金色，点缀彩虹色)
+- **根系**: 根系延伸成金色星图
+- **树干**: **内部是金色光的通道，外部流动金色符文**
+- **叶子**: 所有叶子发出金色+彩虹光芒
+- **果实**: 金色网络连接所有果实
+- **世界种子**: **如同小太阳般的金色球体**
+- **特殊效果**:
+  - 定期的"觉醒爆发"动画 (金色光波扩散)
+  - 树周围形成金色曼陀罗图案
+  - 金色光柱连接天地
+- **效果**: 金色统治整个画面，光明的化身
+
+**技术实现配置表**:
+
+```typescript
+export interface GoldAccentConfig {
+  particleGoldRatio: number      // 粒子中金色比例 0-1
+  rootGoldThreshold: number       // 根系金色化的depth阈值
+  trunkGoldFeatures: {
+    hasCore: boolean              // 是否有金色核心
+    hasVeins: boolean             // 是否有金色纹理
+    hasFlow: boolean              // 是否有金色能量流
+    hasPillar: boolean            // 是否有金色光柱
+  }
+  leafGoldRatio: number           // 叶子金色比例
+  fruitGoldGlow: boolean          // 果实是否金色发光
+  specialGoldEffects: {
+    halo: boolean                 // 光环
+    connections: boolean          // 连接线
+    mandala: boolean              // 曼陀罗
+    burst: boolean                // 爆发动画
+  }
+}
+
+const GOLD_CONFIGS: Record<number, GoldAccentConfig> = {
+  1: {
+    particleGoldRatio: 0.1,
+    rootGoldThreshold: 999,
+    trunkGoldFeatures: { hasCore: false, hasVeins: false, hasFlow: false, hasPillar: false },
+    leafGoldRatio: 0,
+    fruitGoldGlow: false,
+    specialGoldEffects: { halo: false, connections: false, mandala: false, burst: false }
+  },
+  2: {
+    particleGoldRatio: 0.2,
+    rootGoldThreshold: 8,
+    trunkGoldFeatures: { hasCore: false, hasVeins: false, hasFlow: false, hasPillar: false },
+    leafGoldRatio: 0,
+    fruitGoldGlow: false,
+    specialGoldEffects: { halo: false, connections: false, mandala: false, burst: false }
+  },
+  3: {
+    particleGoldRatio: 0.3,
+    rootGoldThreshold: 12,
+    trunkGoldFeatures: { hasCore: false, hasVeins: false, hasFlow: false, hasPillar: false },
+    leafGoldRatio: 0.05,
+    fruitGoldGlow: true,
+    specialGoldEffects: { halo: false, connections: false, mandala: false, burst: false }
+  },
+  4: {
+    particleGoldRatio: 0.4,
+    rootGoldThreshold: 15,
+    trunkGoldFeatures: { hasCore: false, hasVeins: true, hasFlow: false, hasPillar: false },
+    leafGoldRatio: 0.2,
+    fruitGoldGlow: true,
+    specialGoldEffects: { halo: false, connections: false, mandala: false, burst: false }
+  },
+  5: {
+    particleGoldRatio: 0.6,
+    rootGoldThreshold: 20,
+    trunkGoldFeatures: { hasCore: true, hasVeins: true, hasFlow: false, hasPillar: false },
+    leafGoldRatio: 0.5,
+    fruitGoldGlow: true,
+    specialGoldEffects: { halo: false, connections: true, mandala: false, burst: false }
+  },
+  6: {
+    particleGoldRatio: 0.8,
+    rootGoldThreshold: 25,
+    trunkGoldFeatures: { hasCore: true, hasVeins: true, hasFlow: true, hasPillar: false },
+    leafGoldRatio: 0.7,
+    fruitGoldGlow: true,
+    specialGoldEffects: { halo: true, connections: true, mandala: false, burst: false }
+  },
+  7: {
+    particleGoldRatio: 0.9,
+    rootGoldThreshold: 0, // 全部金色
+    trunkGoldFeatures: { hasCore: true, hasVeins: true, hasFlow: true, hasPillar: true },
+    leafGoldRatio: 1.0,
+    fruitGoldGlow: true,
+    specialGoldEffects: { halo: true, connections: true, mandala: true, burst: true }
+  }
+}
+```
+
+**实现优先级**:
+- ✅ **Phase 1** (必须): 粒子金色混合、根系金色光晕、果实金色发光
+- ⚠️ **Phase 2** (重要): 树干金色纹理/核心、叶子金色边缘、果实金色连线
+- 💫 **Phase 3** (锦上添花): 金色光环、曼陀罗图案、觉醒爆发动画、金色光柱
+
+---
 
 ### 七种树的视觉特征
 

@@ -3,6 +3,21 @@
 import { useRef, useEffect, useCallback, useState } from "react"
 import consciousnessTreeAPI, { ConsciousnessTreeView } from '@/lib/api/consciousness-tree'
 import { createClient } from '@/lib/supabase/client'
+import { getTreeStage, getTreeScaling, type TreeStage } from '@/lib/consciousness/tree-stage-config'
+
+// Mock mode props interface
+interface MockModeProps {
+  mockMode?: boolean
+  mockLevel?: number
+  mockProgress?: number
+  mockDomains?: {
+    self_awareness?: number
+    life_sciences?: number
+    universal_laws?: number
+    creative_expression?: number
+    social_connection?: number
+  }
+}
 
 interface Vector2D {
   x: number
@@ -49,14 +64,20 @@ interface DomainState {
   db_score: number // 数据库中的深度分数
 }
 
-export function DatabaseConsciousnessRoots() {
+export function DatabaseConsciousnessRoots({
+  mockMode = false,
+  mockLevel = 1,
+  mockProgress = 0,
+  mockDomains = {}
+}: MockModeProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number | undefined>(undefined)
   const treeRef = useRef<Tree | null>(null)
   const [treeView, setTreeView] = useState<ConsciousnessTreeView | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [consciousnessLevel, setConsciousnessLevel] = useState(1) // 用户意识等级
-  const [compositeScore, setCompositeScore] = useState(0) // 综合评分 0-100
+  const [levelProgress, setLevelProgress] = useState(0) // 等级内进度 0-100
+  const [compositeScore, setCompositeScore] = useState(0) // 综合评分 0-100 (保留向后兼容)
 
   // 数据库五个领域配置 - 替换前端小姐姐的科学、艺术、哲学
   const [domains, setDomains] = useState<Record<string, DomainState>>({
@@ -107,67 +128,78 @@ export function DatabaseConsciousnessRoots() {
     return levelHues[level] || levelHues[1]
   }
 
-  // 根据综合评分判断树的形态
-  const getTreeForm = (score: number): 'seedling' | 'young' | 'mature' => {
-    if (score < 34) return 'seedling'  // 小苗: 0-33分
-    if (score < 67) return 'young'     // 小树: 34-66分
-    return 'mature'                     // 大树: 67-100分
-  }
-
-  // 获取当前形态的缩放参数
-  const getFormScaling = (form: 'seedling' | 'young' | 'mature') => {
-    const scalings = {
-      seedling: {
-        trunkWidth: 0.08,      // 极细的茎（8%基础宽度）
-        trunkLength: 0.12,      // 很短（12%屏幕高度）
-        rootWidth: 0.15,        // 细根
-        rootLength: 0.6,        // 短根
-        maxRootBranches: 2,     // 最多2根
-        branchProbability: 0.3, // 很少分叉
-      },
-      young: {
-        trunkWidth: 0.4,        // 较细的树干（40%基础宽度）
-        trunkLength: 0.35,      // 中等长度
-        rootWidth: 0.5,         // 中等粗细
-        rootLength: 0.8,        // 中等长度
-        maxRootBranches: 8,     // 最多8根
-        branchProbability: 0.6, // 适度分叉
-      },
-      mature: {
-        trunkWidth: 1.0,        // 完整宽度
-        trunkLength: 0.5,       // 标准长度
-        rootWidth: 1.0,         // 完整粗细
-        rootLength: 1.0,        // 完整长度
-        maxRootBranches: 25,    // 最多25根（当前逻辑）
-        branchProbability: 0.75,// 正常分叉
-      }
-    }
-    return scalings[form]
-  }
+  // 注：保留旧的3形态系统用于向后兼容，但实际使用新的5阶段系统
 
   // 加载意识树视图数据
   useEffect(() => {
     const loadTreeViewData = async () => {
       setIsLoading(true)
       try {
-        // 获取意识等级和综合评分
+        // Mock模式：使用传入的模拟数据
+        if (mockMode) {
+          setConsciousnessLevel(mockLevel)
+          setLevelProgress(mockProgress)
+          setCompositeScore(mockProgress) // 向后兼容
+
+          const currentStage = getTreeStage(mockProgress)
+          console.log(`🌳 [Mock模式] 等级: ${mockLevel}, 进度: ${mockProgress}%, 阶段: ${currentStage}`)
+
+          // 创建模拟的意识树视图数据
+          const mockTreeView: ConsciousnessTreeView = {
+            roots: {
+              main_roots: [
+                { domain: 'self_awareness', length: mockDomains.self_awareness || 0 },
+                { domain: 'life_sciences', length: mockDomains.life_sciences || 0 },
+                { domain: 'universal_laws', length: mockDomains.universal_laws || 0 },
+                { domain: 'creative_expression', length: mockDomains.creative_expression || 0 },
+                { domain: 'social_connection', length: mockDomains.social_connection || 0 }
+              ]
+            },
+            trunk: { thickness: 1, stability: 1 },
+            branches_and_leaves: { total_leaves: 0 },
+            fruits: [],
+            last_updated: null
+          }
+          setTreeView(mockTreeView)
+
+          // 更新领域状态
+          setDomains(prev => ({
+            self_awareness: { ...prev.self_awareness, db_score: mockDomains.self_awareness || 0, depth: mockDomains.self_awareness || 0 },
+            life_sciences: { ...prev.life_sciences, db_score: mockDomains.life_sciences || 0, depth: mockDomains.life_sciences || 0 },
+            universal_laws: { ...prev.universal_laws, db_score: mockDomains.universal_laws || 0, depth: mockDomains.universal_laws || 0 },
+            creative_expression: { ...prev.creative_expression, db_score: mockDomains.creative_expression || 0, depth: mockDomains.creative_expression || 0 },
+            social_connection: { ...prev.social_connection, db_score: mockDomains.social_connection || 0, depth: mockDomains.social_connection || 0 }
+          }))
+
+          setIsLoading(false)
+          return
+        }
+
+        // 真实模式：从数据库获取数据
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('consciousness_level, composite_score')
+            .select('consciousness_level, level_progress, composite_score')
             .eq('id', user.id)
             .single()
 
           if (profile) {
             setConsciousnessLevel(profile.consciousness_level || 1)
-            // composite_score可能是字符串类型，需要转换
-            const score = typeof profile.composite_score === 'string'
-              ? parseFloat(profile.composite_score)
-              : (profile.composite_score || 0)
-            setCompositeScore(score)
-            console.log(`🌳 当前等级: ${profile.consciousness_level}, 评分: ${score}, 形态: ${getTreeForm(score)}`)
+
+            // 优先使用 level_progress，fallback 到 composite_score
+            const progress = profile.level_progress !== null && profile.level_progress !== undefined
+              ? profile.level_progress
+              : (typeof profile.composite_score === 'string'
+                  ? parseFloat(profile.composite_score)
+                  : (profile.composite_score || 0))
+
+            setLevelProgress(progress)
+            setCompositeScore(progress) // 向后兼容
+
+            const currentStage = getTreeStage(progress)
+            console.log(`🌳 当前等级: ${profile.consciousness_level}, 进度: ${progress}%, 阶段: ${currentStage}`)
           }
         }
 
@@ -319,7 +351,7 @@ export function DatabaseConsciousnessRoots() {
     }
 
     loadTreeViewData()
-  }, [])
+  }, [mockMode, mockLevel, mockProgress, mockDomains])
 
   // Balanced constants for elegant simplicity - 保持前端小姐姐的常量
   const maxlife = 18 // Moderate life span
@@ -333,18 +365,18 @@ export function DatabaseConsciousnessRoots() {
   }
 
   const createTree = useCallback((width: number, height: number): Tree => {
-    // 获取当前形态和缩放参数
-    const currentForm = getTreeForm(compositeScore)
-    const scaling = getFormScaling(currentForm)
+    // 使用新的5阶段系统
+    const currentStage = getTreeStage(levelProgress)
+    const scaling = getTreeScaling(levelProgress)
 
-    console.log(`🌱 创建${currentForm}形态的树，缩放: `, scaling)
+    console.log(`🌱 创建${currentStage}阶段的树，进度: ${levelProgress}%，缩放: `, scaling)
 
     // ROOT SYSTEM: Start at horizontal line for proper root system
     const x = width / 2
     const y = height * 0.5 // FIXED: Back to 50% to match horizontal line
     const start = createVector(x, y)
 
-    // 根据形态调整概率
+    // 根据阶段调整概率
     const baseProbability = scaling.branchProbability
 
     const tree: Tree = {
@@ -353,25 +385,31 @@ export function DatabaseConsciousnessRoots() {
       coeff: start.y / (height - 100),
       teinte: getLevelBaseHue(consciousnessLevel), // 使用基于等级的颜色
       index: 0,
-      // 根据形态调整分支概率
+      // 根据阶段调整分支概率
       proba1: baseProbability,
       proba2: baseProbability,
       proba3: baseProbability * 0.6,
       proba4: baseProbability * 0.6,
     }
 
-    // 根据形态创建主干/茎
+    // 种子期：完全没有树干，只有根系
+    if (scaling.trunkWidth === 0) {
+      console.log(`🌰 种子期：不创建树干，仅显示根系`)
+      return tree
+    }
+
+    // 其他阶段：根据阶段创建主干/茎
     const baseTrunkWidth = 25 * Math.sqrt(start.y / height)
     const trunk: Branch = {
       position: { ...start },
-      stw: baseTrunkWidth * scaling.trunkWidth * trunkThickness, // 应用形态缩放
+      stw: baseTrunkWidth * scaling.trunkWidth * trunkThickness, // 应用阶段缩放
       gen: 1,
       alive: true,
       age: 0,
       angle: random(-0.15, 0.15),
       speed: createVector(random(-0.3, 0.3), +3.2),
       index: 0,
-      maxlife: maxlife * scaling.trunkLength * 2, // 根据形态调整长度
+      maxlife: maxlife * scaling.trunkLength * 2, // 根据阶段调整长度
       proba1: tree.proba1,
       proba2: tree.proba2,
       proba3: tree.proba3,
@@ -381,7 +419,7 @@ export function DatabaseConsciousnessRoots() {
 
     tree.branches.push(trunk)
     return tree
-  }, [trunkThickness, consciousnessLevel, compositeScore])
+  }, [trunkThickness, consciousnessLevel, levelProgress])
 
   const createBranch = (
     start: Vector2D,
@@ -410,8 +448,8 @@ export function DatabaseConsciousnessRoots() {
 
   // 根据意识树视图的根部长度自动生成初始根系
   const generateInitialRoots = useCallback((scores: Record<string, { depth_score: number }>) => {
-    const currentForm = getTreeForm(compositeScore)
-    const scaling = getFormScaling(currentForm)
+    const currentStage = getTreeStage(levelProgress)
+    const scaling = getTreeScaling(levelProgress)
 
     // 等待树初始化完成
     setTimeout(() => {
@@ -419,15 +457,15 @@ export function DatabaseConsciousnessRoots() {
         // 直接使用根部长度，不需要标准化（因为已经是预计算的值）
         const rootLength = data.depth_score
 
-        // 根据形态调整根的数量
-        // seedling: 最多2根，young: 最多8根，mature: 最多25根
+        // 根据阶段调整根的数量
+        // seed: 最多2根，sprout: 最多3根，seedling: 最多4根，young: 最多5根，mature: 最多5根
         const maxBranches = Math.min(
           scaling.maxRootBranches,
           Math.ceil(rootLength / 3)
         )
         const branchCount = Math.max(rootLength > 0 ? 1 : 0, maxBranches)
 
-        console.log(`🌿 ${domainKey}: 数据库深度=${rootLength}, 生成${branchCount}根 (形态=${currentForm}, 上限=${scaling.maxRootBranches})`)
+        console.log(`🌿 ${domainKey}: 数据库深度=${rootLength}, 生成${branchCount}根 (阶段=${currentStage}, 上限=${scaling.maxRootBranches})`)
 
         // 为每个领域生成相应数量的分支
         for (let i = 0; i < branchCount; i++) {
@@ -436,8 +474,8 @@ export function DatabaseConsciousnessRoots() {
           }, i * 200) // 每200ms生成一个分支，创造生长动画效果
         }
       })
-    }, 1000) // 等待1秒让主干完成初始生长
-  }, [compositeScore])
+    }, 1000) // 等待1秒让主干完成初始生长（种子期无主干，直接生成根系）
+  }, [levelProgress])
 
   // 自动创建领域分支（不依赖depth计数器）
   const autoCreateDomainBranch = (domainKey: string) => {
@@ -447,15 +485,14 @@ export function DatabaseConsciousnessRoots() {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    // 获取当前形态的缩放参数
-    const currentForm = getTreeForm(compositeScore)
-    const scaling = getFormScaling(currentForm)
+    // 获取当前阶段的缩放参数
+    const currentStage = getTreeStage(levelProgress)
+    const scaling = getTreeScaling(levelProgress)
 
     // 找到主干（可能已经死亡或还活着）
+    // 种子期没有主干，直接从start位置创建根系
     const mainTrunk = tree.branches.find(b => b.gen === 1)
-    if (!mainTrunk) {
-      return
-    }
+    const startPos = mainTrunk ? mainTrunk.position : tree.start
 
     // Domain-specific branch angles for visual separation - 五个固定角度
     const getDomainAngle = (domainKey: string): number => {
@@ -472,10 +509,12 @@ export function DatabaseConsciousnessRoots() {
 
     const domainAngle = getDomainAngle(domainKey)
 
-    // Create domain branch - 根据形态调整根的粗细和长度
+    // Create domain branch - 根据阶段调整根的粗细和长度
+    // 种子期：使用固定基础粗细，因为没有主干
+    const baseStw = mainTrunk ? mainTrunk.stw * 0.65 : 5
     const domainBranch = createBranch(
-      { x: mainTrunk.position.x, y: mainTrunk.position.y },
-      mainTrunk.stw * 0.65 * scaling.rootWidth, // 应用根宽度缩放
+      { x: startPos.x, y: startPos.y },
+      baseStw * scaling.rootWidth, // 应用根宽度缩放
       domainAngle,
       2, // Second generation
       tree.index++,
