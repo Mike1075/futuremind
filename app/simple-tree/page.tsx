@@ -1,7 +1,6 @@
 'use client'
 
 import { DatabaseConsciousnessRoots } from '@/components/ui/database-consciousness-roots'
-import { InsightsPanel } from '@/components/InsightsPanel'
 import { ConsciousnessLevelBadge } from '@/components/ConsciousnessLevelBadge'
 import { FruitsOverlay } from '@/components/FruitsOverlay'
 import { motion } from 'framer-motion'
@@ -41,13 +40,13 @@ export default function SimpleTreePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <div className="min-h-screen flex flex-col relative overflow-hidden bg-black">
       {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         {isMounted && particles.map((particle) => (
           <motion.div
             key={particle.id}
-            className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-20"
+            className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30"
             animate={{
               x: [0, particle.x],
               y: [0, particle.y],
@@ -134,9 +133,6 @@ export default function SimpleTreePage() {
 
       {/* Consciousness Level Badge */}
       <ConsciousnessLevelBadge />
-
-      {/* Insights Panel */}
-      <InsightsPanel />
 
       {/* Floating Gaia Button */}
       <motion.button

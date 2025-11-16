@@ -102,18 +102,6 @@ export function ConsciousnessLevelBadge() {
         </div>
       </div>
 
-      {/* Score Info */}
-      <div className="bg-white/5 rounded-lg p-3 mb-3">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-gray-400">综合评分</span>
-          <span className="text-sm font-bold text-white">{score}/100</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-400">百分位排名</span>
-          <span className="text-sm font-bold text-purple-300">前 {100 - percentile}%</span>
-        </div>
-      </div>
-
       {/* Progress to Next Level */}
       {level < 7 && (
         <div className="bg-white/5 rounded-lg p-3">

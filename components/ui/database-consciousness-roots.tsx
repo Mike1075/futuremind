@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback, useState } from "react"
 import consciousnessTreeAPI, { ConsciousnessTreeView } from '@/lib/api/consciousness-tree'
+import { createClient } from '@/lib/supabase/client'
 
 interface Vector2D {
   x: number
@@ -54,6 +55,7 @@ export function DatabaseConsciousnessRoots() {
   const treeRef = useRef<Tree | null>(null)
   const [treeView, setTreeView] = useState<ConsciousnessTreeView | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [consciousnessLevel, setConsciousnessLevel] = useState(1) // 用户意识等级
 
   // 数据库五个领域配置 - 替换前端小姐姐的科学、艺术、哲学
   const [domains, setDomains] = useState<Record<string, DomainState>>({
@@ -90,11 +92,40 @@ export function DatabaseConsciousnessRoots() {
     return score // 已经是0-1范围的正确值
   }
 
+  // 根据意识等级返回基础色调
+  const getLevelBaseHue = (level: number): number => {
+    const levelHues: Record<number, number> = {
+      1: 110,  // 初醒者 - 嫩绿色 (新生、发芽)
+      2: 150,  // 探索者 - 青绿色 (成长)
+      3: 180,  // 觉察者 - 蓝绿色 (清明)
+      4: 220,  // 实践者 - 蓝色 (沉稳)
+      5: 280,  // 贤者 - 紫色 (智慧)
+      6: 320,  // 智者 - 紫红色 (深邃)
+      7: 40,   // 觉醒者 - 金色 (觉悟)
+    }
+    return levelHues[level] || levelHues[1]
+  }
+
   // 加载意识树视图数据
   useEffect(() => {
     const loadTreeViewData = async () => {
       setIsLoading(true)
       try {
+        // 获取意识等级
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('consciousness_level')
+            .eq('id', user.id)
+            .single()
+
+          if (profile) {
+            setConsciousnessLevel(profile.consciousness_level || 1)
+          }
+        }
+
         const result = await consciousnessTreeAPI.getConsciousnessTreeView()
         if (result.success && result.data) {
           setTreeView(result.data)
@@ -266,7 +297,7 @@ export function DatabaseConsciousnessRoots() {
       branches: [],
       start,
       coeff: start.y / (height - 100), // Keep original coefficient calculation
-      teinte: random(20, 40), // Keep original warm hues for organic feel
+      teinte: getLevelBaseHue(consciousnessLevel), // 使用基于等级的颜色
       index: 0,
       // MODERATE PROBABILITIES: Balanced values for appropriate first growth
       proba1: 0.75, // Moderate 75% probability for main branches
@@ -295,7 +326,7 @@ export function DatabaseConsciousnessRoots() {
 
     tree.branches.push(trunk)
     return tree
-  }, [trunkThickness])
+  }, [trunkThickness, consciousnessLevel])
 
   const createBranch = (
     start: Vector2D,
@@ -807,32 +838,33 @@ export function DatabaseConsciousnessRoots() {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
-    // Clean, elegant background
-    const bgColor = hsbToRgb(42, 12, 248)
-    ctx.fillStyle = bgColor
+    // 纯黑色背景，与页面背景匹配
+    ctx.fillStyle = "rgb(0, 0, 0)"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    // Draw horizontal line at middle
-    ctx.strokeStyle = "rgba(0,0,0,0.2)"
-    ctx.lineWidth = 2
+    // Draw horizontal line at middle - 使用更亮的颜色在黑色背景上可见
+    ctx.strokeStyle = "rgba(255,255,255,0.1)"
+    ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(0, canvas.height / 2)
     ctx.lineTo(canvas.width, canvas.height / 2)
     ctx.stroke()
 
-    // Very subtle vignette
-    const gradient = ctx.createRadialGradient(
-      canvas.width / 2,
-      canvas.height / 2,
-      0,
-      canvas.width / 2,
-      canvas.height / 2,
-      Math.max(canvas.width, canvas.height) * 0.9,
-    )
-    gradient.addColorStop(0, "rgba(0,0,0,0)")
-    gradient.addColorStop(1, "rgba(0,0,0,0.02)")
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    // Level 1 特殊效果: 在中心添加嫩绿色柔和光晕
+    if (consciousnessLevel === 1) {
+      const glowGradient = ctx.createRadialGradient(
+        canvas.width / 2,
+        canvas.height / 2,
+        0,
+        canvas.width / 2,
+        canvas.height / 2,
+        Math.max(canvas.width, canvas.height) * 0.4,
+      )
+      glowGradient.addColorStop(0, "rgba(100, 200, 100, 0.05)") // 嫩绿色微光
+      glowGradient.addColorStop(1, "rgba(100, 200, 100, 0)")
+      ctx.fillStyle = glowGradient
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+    }
 
     // Create root system
     treeRef.current = createTree(canvas.width, canvas.height)
@@ -845,7 +877,7 @@ export function DatabaseConsciousnessRoots() {
       }, {} as Record<string, { depth_score: number }>)
       generateInitialRoots(rootsMap)
     }
-  }, [treeView, createTree, generateInitialRoots])
+  }, [treeView, createTree, generateInitialRoots, consciousnessLevel])
 
 
   const draw = useCallback(() => {
@@ -935,49 +967,24 @@ export function DatabaseConsciousnessRoots() {
         }}
       />
 
-      {/* 冥想按钮 - 增加树干粗细 */}
-      <div className="absolute top-6 left-6">
-        <button
-          onClick={handleMeditation}
-          disabled={trunkThickness >= MAX_TRUNK_THICKNESS}
-          className={`px-6 py-3 rounded-lg shadow-lg transition-all duration-300 font-medium text-sm ${
-            trunkThickness >= MAX_TRUNK_THICKNESS
-              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-              : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white transform hover:scale-105'
-          }`}
-        >
-          🧘 冥想修炼
-        </button>
-        <div className="mt-2 text-center">
-          <div className="text-xs text-gray-600">
-            树干粗细: {trunkThickness.toFixed(1)}x
-          </div>
-          <div className="w-24 bg-gray-200 rounded-full h-2 mt-1">
-            <div
-              className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(trunkThickness / MAX_TRUNK_THICKNESS) * 100}%` }}
-            ></div>
-          </div>
-          <div className="text-xs text-gray-500 mt-1">
-            {trunkThickness >= MAX_TRUNK_THICKNESS ? '已达最大' : `还可增长 ${(MAX_TRUNK_THICKNESS - trunkThickness).toFixed(1)}x`}
-          </div>
-        </div>
-      </div>
-
       {/* Domain Control Buttons - 数据库五个领域 */}
       <div className="absolute top-6 right-6 space-y-3">
         {Object.entries(domains).map(([key, domain]) => (
           <button
             key={key}
             onClick={() => addDomainBranch(key)}
-            className="block w-40 px-4 py-3 bg-white/90 hover:bg-white text-gray-700 text-sm font-medium rounded-lg shadow-sm border border-gray-200 transition-colors"
-            style={{ borderLeftColor: `hsl(${domain.color}, 70%, 50%)`, borderLeftWidth: '4px' }}
+            className="block w-40 px-4 py-3 bg-black/80 hover:bg-black/90 backdrop-blur-sm text-white text-sm font-medium rounded-lg shadow-lg border border-white/20 hover:border-white/40 transition-all duration-300"
+            style={{
+              borderLeftColor: `hsl(${domain.color}, 70%, 60%)`,
+              borderLeftWidth: '4px',
+              boxShadow: `0 0 20px hsla(${domain.color}, 70%, 50%, 0.2)`
+            }}
           >
             <div className="flex items-center justify-between">
               <span>{domain.name}</span>
             </div>
-            <div className="text-xs text-gray-500 mt-1">
-              <span>深度: {domain.depth}</span>
+            <div className="text-xs text-gray-400 mt-1">
+              <span>深度: {domain.depth} | 数据库: {domain.db_score.toFixed(1)}</span>
             </div>
           </button>
         ))}
@@ -1006,13 +1013,10 @@ export function DatabaseConsciousnessRoots() {
         </div>
       )}
 
-      {/* Minimal elegant overlay */}
-      <div className="absolute bottom-6 right-6 text-xs text-black/20 font-light">点击重新生长根系</div>
-
       {/* Clean title */}
-      <div className="absolute top-6 left-6 text-black/25">
-        <h1 className="text-2xl font-extralight tracking-wider">意识根系</h1>
-        <p className="text-sm font-light mt-1 opacity-80">点击领域深化根须</p>
+      <div className="absolute bottom-6 left-6 text-white/30 text-xs">
+        <p>Level {consciousnessLevel} · {['初醒者', '探索者', '觉察者', '实践者', '贤者', '智者', '觉醒者'][consciousnessLevel - 1]}</p>
+        <p className="mt-1 opacity-60">点击右侧领域深化根须</p>
       </div>
     </div>
   )
