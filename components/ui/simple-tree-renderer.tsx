@@ -106,24 +106,25 @@ function drawSeedStage(
   ctx.restore()
 
   // 绘制根须（随进度生长）
-  // 基础长度15px + 进度增长45px，确保0%时也能看到根须
-  const rootLength = 15 + progressInStage * 45 // 15px-60px
+  // 基础长度30px + 进度增长40px，确保0%时也能看到根须
+  const rootLength = 30 + progressInStage * 40 // 30px-70px
   const rootCount = Math.max(1, Math.floor(progressInStage * 2.5 + 1)) // 1-3根
 
   for (let i = 0; i < rootCount; i++) {
     const angle = (i / (rootCount - 1 || 1) - 0.5) * Math.PI * 0.4 // 分散角度
-    const endX = x + Math.sin(angle) * rootLength * 0.5
+    const endX = x + Math.sin(angle) * rootLength * 0.6
     const endY = y + rootLength
 
     ctx.save()
-    ctx.strokeStyle = `rgba(150, 100, 50, ${0.5 + progressInStage * 0.4})` // 提高可见度
-    ctx.lineWidth = 2
+    // 使用浅棕色/米黄色，在黑背景上清晰可见
+    ctx.strokeStyle = `rgba(210, 180, 140, ${0.8 + progressInStage * 0.2})`
+    ctx.lineWidth = 3 // 加粗根须
     ctx.beginPath()
-    ctx.moveTo(x, y + 5)
+    ctx.moveTo(x, y + 10) // 从种子底部开始
     // 使用二次贝塞尔曲线画弯曲的根
     ctx.quadraticCurveTo(
-      x + Math.sin(angle) * 10,
-      y + 20,
+      x + Math.sin(angle) * 15,
+      y + 25,
       endX,
       endY
     )

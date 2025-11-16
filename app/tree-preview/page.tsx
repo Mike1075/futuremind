@@ -252,30 +252,12 @@ export default function TreePreviewPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-6 right-6 bg-black/80 backdrop-blur-sm border border-gray-700 rounded-lg p-4 min-w-72"
+          className="absolute top-6 right-6 bg-black/80 backdrop-blur-sm border border-gray-700 rounded-lg p-4"
         >
           <div className="text-xs text-gray-400 mb-1">实时预览</div>
-          <div className="text-lg font-bold text-white">{stageName}</div>
-          <div className="text-sm text-gray-300 mt-1">Level {mockLevel} · {mockProgress}% 进度</div>
-
-          {/* 五大领域深度 - 带图标 */}
-          <div className="mt-3 space-y-1">
-            <div className="text-xs text-gray-400 mb-2">五大领域深度</div>
-            {[
-              { key: 'self_awareness', icon: '🧘', label: '自我觉察' },
-              { key: 'life_sciences', icon: '🧬', label: '生命科学' },
-              { key: 'universal_laws', icon: '🌌', label: '宇宙法则' },
-              { key: 'creative_expression', icon: '🎨', label: '创意表达' },
-              { key: 'social_connection', icon: '🤝', label: '社会连接' }
-            ].map(({ key, icon, label }) => (
-              <div key={key} className="flex items-center justify-between text-xs">
-                <span className="text-gray-400 flex items-center gap-1">
-                  <span>{icon}</span>
-                  <span>{label}</span>
-                </span>
-                <span className="text-white font-mono">{mockDomains[key as keyof typeof mockDomains]}</span>
-              </div>
-            ))}
+          <div className="text-lg font-bold text-white mb-2">{stageName}</div>
+          <div className="text-sm text-gray-300">
+            Level {mockLevel} · {mockProgress}% 进度
           </div>
         </motion.div>
       </div>
