@@ -3,20 +3,16 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
+import type { Json } from '@/types/database'
 
 interface Fruit {
   id: string
   fruit_type: string
   maturity_level: number
-  size: number
-  color: string
-  metadata: {
-    project_name?: string
-    member_count?: number
-    completion_percentage?: number
-    likes_count?: number
-  }
-  harvested_at?: string
+  size: number | null
+  color: string | null
+  metadata: Json | null
+  harvested_at?: string | null
 }
 
 export function FruitsOverlay() {
@@ -100,7 +96,8 @@ export function FruitsOverlay() {
         {fruits.map((fruit, index) => {
           const position = getFruitPosition(index, fruits.length)
           const isHovered = hoveredFruit === fruit.id
-          const scale = fruit.size / 20 // 标准化大小
+          const scale = (fruit.size || 20) / 20 // 标准化大小
+          const metadata = (fruit.metadata as any) || {}
 
           return (
             <motion.div
@@ -139,7 +136,7 @@ export function FruitsOverlay() {
                   <motion.div
                     className="absolute inset-0 rounded-full"
                     style={{
-                      background: `radial-gradient(circle, ${fruit.color}66 0%, transparent 70%)`,
+                      background: `radial-gradient(circle, ${fruit.color || '#a855f7'}66 0%, transparent 70%)`,
                       transform: 'scale(2)',
                     }}
                     animate={{
@@ -176,7 +173,7 @@ export function FruitsOverlay() {
                         <span className="text-2xl">{getFruitIcon(fruit.fruit_type)}</span>
                         <div className="flex-1">
                           <h4 className="text-sm font-semibold text-white">
-                            {fruit.metadata.project_name || '未命名项目'}
+                            {metadata.project_name || '未命名项目'}
                           </h4>
                           <p className="text-xs text-gray-400">{getFruitTypeName(fruit.fruit_type)}</p>
                         </div>
@@ -193,7 +190,7 @@ export function FruitsOverlay() {
                             className="h-full transition-all duration-300"
                             style={{
                               width: `${fruit.maturity_level}%`,
-                              background: fruit.color,
+                              background: fruit.color || '#a855f7',
                             }}
                           ></div>
                         </div>
@@ -201,22 +198,22 @@ export function FruitsOverlay() {
 
                       {/* 项目信息 */}
                       <div className="flex gap-3 text-xs text-gray-300">
-                        {fruit.metadata.member_count !== undefined && (
+                        {metadata.member_count !== undefined && (
                           <div>
                             <span className="text-gray-500">成员:</span>
-                            <span className="ml-1 text-white">{fruit.metadata.member_count}</span>
+                            <span className="ml-1 text-white">{metadata.member_count}</span>
                           </div>
                         )}
-                        {fruit.metadata.completion_percentage !== undefined && (
+                        {metadata.completion_percentage !== undefined && (
                           <div>
                             <span className="text-gray-500">进度:</span>
-                            <span className="ml-1 text-white">{fruit.metadata.completion_percentage}%</span>
+                            <span className="ml-1 text-white">{metadata.completion_percentage}%</span>
                           </div>
                         )}
-                        {fruit.metadata.likes_count !== undefined && (
+                        {metadata.likes_count !== undefined && (
                           <div>
                             <span className="text-gray-500">点赞:</span>
-                            <span className="ml-1 text-white">{fruit.metadata.likes_count}</span>
+                            <span className="ml-1 text-white">{metadata.likes_count}</span>
                           </div>
                         )}
                       </div>

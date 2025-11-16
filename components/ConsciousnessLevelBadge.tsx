@@ -5,9 +5,9 @@ import { Trophy, TrendingUp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface Profile {
-  consciousness_level: number
-  composite_score: number
-  percentile_rank: number
+  consciousness_level: number | null
+  composite_score: number | null
+  percentile_rank: number | null
 }
 
 export function ConsciousnessLevelBadge() {
