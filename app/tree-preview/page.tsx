@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { DatabaseConsciousnessRoots } from '@/components/ui/database-consciousness-roots'
+import { SimpleTreeRenderer } from '@/components/ui/simple-tree-renderer'
 import { getTreeStage, getTreeStageName, getTreeStageDescription } from '@/lib/consciousness/tree-stage-config'
 import { TreePine, Sparkles, RefreshCw } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -240,12 +240,11 @@ export default function TreePreviewPage() {
       <div className="flex-1 relative">
         {/* Tree Preview */}
         <div className="absolute inset-0">
-          <DatabaseConsciousnessRoots
+          <SimpleTreeRenderer
             key={refreshKey}
-            mockMode={true}
-            mockLevel={mockLevel}
-            mockProgress={mockProgress}
-            mockDomains={mockDomains}
+            levelProgress={mockProgress}
+            consciousnessLevel={mockLevel}
+            domainDepths={mockDomains}
           />
         </div>
 
