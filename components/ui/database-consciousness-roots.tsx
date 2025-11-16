@@ -171,15 +171,15 @@ export function DatabaseConsciousnessRoots() {
             }
           }))
         } else {
-          // 使用默认值
+          // 使用空数据（新用户）
           const defaultTreeView = {
             roots: {
               main_roots: [
-                { domain: 'self_awareness', length: 3 },
-                { domain: 'life_sciences', length: 2 },
-                { domain: 'universal_laws', length: 4 },
-                { domain: 'creative_expression', length: 5 },
-                { domain: 'social_connection', length: 3 }
+                { domain: 'self_awareness', length: 0 },
+                { domain: 'life_sciences', length: 0 },
+                { domain: 'universal_laws', length: 0 },
+                { domain: 'creative_expression', length: 0 },
+                { domain: 'social_connection', length: 0 }
               ]
             },
             trunk: { thickness: 1, stability: 1 },
@@ -189,47 +189,47 @@ export function DatabaseConsciousnessRoots() {
           }
           setTreeView(defaultTreeView)
 
-          // 更新 domains 状态
+          // 更新 domains 状态 - 全部为0
           setDomains(prev => ({
             self_awareness: {
               ...prev.self_awareness,
-              db_score: 3,
-              depth: 3 // 直接使用根部长度作为深度
+              db_score: 0,
+              depth: 0
             },
             life_sciences: {
               ...prev.life_sciences,
-              db_score: 2,
-              depth: 2 // 直接使用根部长度作为深度
+              db_score: 0,
+              depth: 0
             },
             universal_laws: {
               ...prev.universal_laws,
-              db_score: 4,
-              depth: 4 // 直接使用根部长度作为深度
+              db_score: 0,
+              depth: 0
             },
             creative_expression: {
               ...prev.creative_expression,
-              db_score: 5,
-              depth: 5 // 直接使用根部长度作为深度
+              db_score: 0,
+              depth: 0
             },
             social_connection: {
               ...prev.social_connection,
-              db_score: 3,
-              depth: 3 // 直接使用根部长度作为深度
+              db_score: 0,
+              depth: 0
             }
           }))
 
         }
       } catch (error) {
         console.error('加载意识树视图数据失败:', error)
-        // 使用默认值
+        // 使用空数据（新用户或加载失败）
         const defaultTreeView = {
           roots: {
             main_roots: [
-              { domain: 'self_awareness', length: 3 },
-              { domain: 'life_sciences', length: 2 },
-              { domain: 'universal_laws', length: 4 },
-              { domain: 'creative_expression', length: 5 },
-              { domain: 'social_connection', length: 3 }
+              { domain: 'self_awareness', length: 0 },
+              { domain: 'life_sciences', length: 0 },
+              { domain: 'universal_laws', length: 0 },
+              { domain: 'creative_expression', length: 0 },
+              { domain: 'social_connection', length: 0 }
             ]
           },
           trunk: { thickness: 1, stability: 1 },
@@ -239,32 +239,32 @@ export function DatabaseConsciousnessRoots() {
         }
         setTreeView(defaultTreeView)
 
-        // 更新 domains 状态
+        // 更新 domains 状态 - 全部为0
         setDomains(prev => ({
           self_awareness: {
             ...prev.self_awareness,
-            db_score: 3,
-            depth: 3 // 直接使用根部长度作为深度
+            db_score: 0,
+            depth: 0
           },
           life_sciences: {
             ...prev.life_sciences,
-            db_score: 2,
-            depth: 2 // 直接使用根部长度作为深度
+            db_score: 0,
+            depth: 0
           },
           universal_laws: {
             ...prev.universal_laws,
-            db_score: 4,
-            depth: 4 // 直接使用根部长度作为深度
+            db_score: 0,
+            depth: 0
           },
           creative_expression: {
             ...prev.creative_expression,
-            db_score: 5,
-            depth: 5 // 直接使用根部长度作为深度
+            db_score: 0,
+            depth: 0
           },
           social_connection: {
             ...prev.social_connection,
-            db_score: 3,
-            depth: 3 // 直接使用根部长度作为深度
+            db_score: 0,
+            depth: 0
           }
         }))
 
