@@ -106,8 +106,9 @@ function drawSeedStage(
   ctx.restore()
 
   // 绘制根须（随进度生长）
-  const rootLength = progressInStage * 60 // 最长60px
-  const rootCount = Math.max(1, Math.floor(progressInStage * 3)) // 1-3根
+  // 基础长度15px + 进度增长45px，确保0%时也能看到根须
+  const rootLength = 15 + progressInStage * 45 // 15px-60px
+  const rootCount = Math.max(1, Math.floor(progressInStage * 2.5 + 1)) // 1-3根
 
   for (let i = 0; i < rootCount; i++) {
     const angle = (i / (rootCount - 1 || 1) - 0.5) * Math.PI * 0.4 // 分散角度
@@ -115,7 +116,7 @@ function drawSeedStage(
     const endY = y + rootLength
 
     ctx.save()
-    ctx.strokeStyle = `rgba(150, 100, 50, ${0.3 + progressInStage * 0.5})`
+    ctx.strokeStyle = `rgba(150, 100, 50, ${0.5 + progressInStage * 0.4})` // 提高可见度
     ctx.lineWidth = 2
     ctx.beginPath()
     ctx.moveTo(x, y + 5)
