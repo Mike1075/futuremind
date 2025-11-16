@@ -471,7 +471,6 @@ export function DatabaseConsciousnessRoots() {
     }
 
     const domainAngle = getDomainAngle(domainKey)
-    const currentDomain = domains[domainKey]
 
     // Create domain branch - 根据形态调整根的粗细和长度
     const domainBranch = createBranch(
@@ -484,7 +483,8 @@ export function DatabaseConsciousnessRoots() {
       maxlife * 0.7 * scaling.rootLength // 应用根长度缩放
     )
 
-    domainBranch.domainColor = currentDomain.color
+    // 不设置domainColor，让根系也使用等级颜色
+    // domainBranch.domainColor = currentDomain.color
     domainBranch.isDomainRoot = true
 
     tree.branches.push(domainBranch)
