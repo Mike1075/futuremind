@@ -56,6 +56,7 @@ export function DatabaseConsciousnessRoots() {
   const [treeView, setTreeView] = useState<ConsciousnessTreeView | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [consciousnessLevel, setConsciousnessLevel] = useState(1) // 用户意识等级
+  const [compositeScore, setCompositeScore] = useState(0) // 综合评分 0-100
 
   // 数据库五个领域配置 - 替换前端小姐姐的科学、艺术、哲学
   const [domains, setDomains] = useState<Record<string, DomainState>>({
@@ -106,23 +107,67 @@ export function DatabaseConsciousnessRoots() {
     return levelHues[level] || levelHues[1]
   }
 
+  // 根据综合评分判断树的形态
+  const getTreeForm = (score: number): 'seedling' | 'young' | 'mature' => {
+    if (score < 34) return 'seedling'  // 小苗: 0-33分
+    if (score < 67) return 'young'     // 小树: 34-66分
+    return 'mature'                     // 大树: 67-100分
+  }
+
+  // 获取当前形态的缩放参数
+  const getFormScaling = (form: 'seedling' | 'young' | 'mature') => {
+    const scalings = {
+      seedling: {
+        trunkWidth: 0.08,      // 极细的茎（8%基础宽度）
+        trunkLength: 0.12,      // 很短（12%屏幕高度）
+        rootWidth: 0.15,        // 细根
+        rootLength: 0.6,        // 短根
+        maxRootBranches: 2,     // 最多2根
+        branchProbability: 0.3, // 很少分叉
+      },
+      young: {
+        trunkWidth: 0.4,        // 较细的树干（40%基础宽度）
+        trunkLength: 0.35,      // 中等长度
+        rootWidth: 0.5,         // 中等粗细
+        rootLength: 0.8,        // 中等长度
+        maxRootBranches: 8,     // 最多8根
+        branchProbability: 0.6, // 适度分叉
+      },
+      mature: {
+        trunkWidth: 1.0,        // 完整宽度
+        trunkLength: 0.5,       // 标准长度
+        rootWidth: 1.0,         // 完整粗细
+        rootLength: 1.0,        // 完整长度
+        maxRootBranches: 25,    // 最多25根（当前逻辑）
+        branchProbability: 0.75,// 正常分叉
+      }
+    }
+    return scalings[form]
+  }
+
   // 加载意识树视图数据
   useEffect(() => {
     const loadTreeViewData = async () => {
       setIsLoading(true)
       try {
-        // 获取意识等级
+        // 获取意识等级和综合评分
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('consciousness_level')
+            .select('consciousness_level, composite_score')
             .eq('id', user.id)
             .single()
 
           if (profile) {
             setConsciousnessLevel(profile.consciousness_level || 1)
+            // composite_score可能是字符串类型，需要转换
+            const score = typeof profile.composite_score === 'string'
+              ? parseFloat(profile.composite_score)
+              : (profile.composite_score || 0)
+            setCompositeScore(score)
+            console.log(`🌳 当前等级: ${profile.consciousness_level}, 评分: ${score}, 形态: ${getTreeForm(score)}`)
           }
         }
 
@@ -288,45 +333,55 @@ export function DatabaseConsciousnessRoots() {
   }
 
   const createTree = useCallback((width: number, height: number): Tree => {
+    // 获取当前形态和缩放参数
+    const currentForm = getTreeForm(compositeScore)
+    const scaling = getFormScaling(currentForm)
+
+    console.log(`🌱 创建${currentForm}形态的树，缩放: `, scaling)
+
     // ROOT SYSTEM: Start at horizontal line for proper root system
     const x = width / 2
     const y = height * 0.5 // FIXED: Back to 50% to match horizontal line
     const start = createVector(x, y)
 
+    // 根据形态调整概率
+    const baseProbability = scaling.branchProbability
+
     const tree: Tree = {
       branches: [],
       start,
-      coeff: start.y / (height - 100), // Keep original coefficient calculation
+      coeff: start.y / (height - 100),
       teinte: getLevelBaseHue(consciousnessLevel), // 使用基于等级的颜色
       index: 0,
-      // MODERATE PROBABILITIES: Balanced values for appropriate first growth
-      proba1: 0.75, // Moderate 75% probability for main branches
-      proba2: 0.75, // Moderate 75% probability for main branches
-      proba3: 0.45, // Moderate 45% probability for secondary branches
-      proba4: 0.45, // Moderate 45% probability for secondary branches
+      // 根据形态调整分支概率
+      proba1: baseProbability,
+      proba2: baseProbability,
+      proba3: baseProbability * 0.6,
+      proba4: baseProbability * 0.6,
     }
 
-    // Create main trunk - more natural proportions with meditation thickness
+    // 根据形态创建主干/茎
+    const baseTrunkWidth = 25 * Math.sqrt(start.y / height)
     const trunk: Branch = {
       position: { ...start },
-      stw: 25 * Math.sqrt(start.y / height) * trunkThickness, // Apply meditation thickness multiplier
+      stw: baseTrunkWidth * scaling.trunkWidth * trunkThickness, // 应用形态缩放
       gen: 1,
       alive: true,
       age: 0,
-      angle: random(-0.15, 0.15), // ENHANCED: More visible initial angle variation
-      speed: createVector(random(-0.3, 0.3), +3.2), // ENHANCED: More noticeable horizontal variation
+      angle: random(-0.15, 0.15),
+      speed: createVector(random(-0.3, 0.3), +3.2),
       index: 0,
-      maxlife: maxlife * 1.0, // FIXED life for trunk - no randomness
+      maxlife: maxlife * scaling.trunkLength * 2, // 根据形态调整长度
       proba1: tree.proba1,
       proba2: tree.proba2,
       proba3: tree.proba3,
       proba4: tree.proba4,
-      deviation: 0.65, // FIXED deviation for consistency
+      deviation: 0.65,
     }
 
     tree.branches.push(trunk)
     return tree
-  }, [trunkThickness, consciousnessLevel])
+  }, [trunkThickness, consciousnessLevel, compositeScore])
 
   const createBranch = (
     start: Vector2D,
@@ -355,13 +410,24 @@ export function DatabaseConsciousnessRoots() {
 
   // 根据意识树视图的根部长度自动生成初始根系
   const generateInitialRoots = useCallback((scores: Record<string, { depth_score: number }>) => {
+    const currentForm = getTreeForm(compositeScore)
+    const scaling = getFormScaling(currentForm)
+
     // 等待树初始化完成
     setTimeout(() => {
       Object.entries(scores).forEach(([domainKey, data]) => {
         // 直接使用根部长度，不需要标准化（因为已经是预计算的值）
         const rootLength = data.depth_score
-        // 非常缓慢增长：每3个深度点生成1个分支，最少1个，最多6个
-        const branchCount = Math.max(1, Math.min(6, Math.ceil(rootLength / 3)))
+
+        // 根据形态调整根的数量
+        // seedling: 最多2根，young: 最多8根，mature: 最多25根
+        const maxBranches = Math.min(
+          scaling.maxRootBranches,
+          Math.ceil(rootLength / 3)
+        )
+        const branchCount = Math.max(rootLength > 0 ? 1 : 0, maxBranches)
+
+        console.log(`🌿 ${domainKey}: 数据库深度=${rootLength}, 生成${branchCount}根 (形态=${currentForm}, 上限=${scaling.maxRootBranches})`)
 
         // 为每个领域生成相应数量的分支
         for (let i = 0; i < branchCount; i++) {
@@ -371,7 +437,7 @@ export function DatabaseConsciousnessRoots() {
         }
       })
     }, 1000) // 等待1秒让主干完成初始生长
-  }, []) // 这个函数不依赖外部状态
+  }, [compositeScore])
 
   // 自动创建领域分支（不依赖depth计数器）
   const autoCreateDomainBranch = (domainKey: string) => {
@@ -380,6 +446,10 @@ export function DatabaseConsciousnessRoots() {
     const tree = treeRef.current
     const canvas = canvasRef.current
     if (!canvas) return
+
+    // 获取当前形态的缩放参数
+    const currentForm = getTreeForm(compositeScore)
+    const scaling = getFormScaling(currentForm)
 
     // 找到主干（可能已经死亡或还活着）
     const mainTrunk = tree.branches.find(b => b.gen === 1)
@@ -403,15 +473,15 @@ export function DatabaseConsciousnessRoots() {
     const domainAngle = getDomainAngle(domainKey)
     const currentDomain = domains[domainKey]
 
-    // Create domain branch
+    // Create domain branch - 根据形态调整根的粗细和长度
     const domainBranch = createBranch(
       { x: mainTrunk.position.x, y: mainTrunk.position.y },
-      mainTrunk.stw * 0.65,
+      mainTrunk.stw * 0.65 * scaling.rootWidth, // 应用根宽度缩放
       domainAngle,
       2, // Second generation
       tree.index++,
       tree,
-      maxlife * 0.7
+      maxlife * 0.7 * scaling.rootLength // 应用根长度缩放
     )
 
     domainBranch.domainColor = currentDomain.color
@@ -967,57 +1037,6 @@ export function DatabaseConsciousnessRoots() {
         }}
       />
 
-      {/* Domain Control Buttons - 数据库五个领域 */}
-      <div className="absolute top-6 right-6 space-y-3">
-        {Object.entries(domains).map(([key, domain]) => (
-          <button
-            key={key}
-            onClick={() => addDomainBranch(key)}
-            className="block w-40 px-4 py-3 bg-black/80 hover:bg-black/90 backdrop-blur-sm text-white text-sm font-medium rounded-lg shadow-lg border border-white/20 hover:border-white/40 transition-all duration-300"
-            style={{
-              borderLeftColor: `hsl(${domain.color}, 70%, 60%)`,
-              borderLeftWidth: '4px',
-              boxShadow: `0 0 20px hsla(${domain.color}, 70%, 50%, 0.2)`
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <span>{domain.name}</span>
-            </div>
-            <div className="text-xs text-gray-400 mt-1">
-              <span>深度: {domain.depth} | 数据库: {domain.db_score.toFixed(1)}</span>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* HOVER TOOLTIP - 悬浮提示 */}
-      {hoveredDomain && mousePos && (
-        <div
-          className="absolute pointer-events-none bg-black/80 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-lg z-50"
-          style={{
-            left: mousePos.x + 15,
-            top: mousePos.y - 10,
-            transform: 'translateY(-100%)'
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: `hsl(${domains[hoveredDomain]?.color}, 70%, 50%)` }}
-            />
-            <span>{domains[hoveredDomain]?.name}</span>
-          </div>
-          <div className="text-xs text-gray-300 mt-1">
-            深度: {domains[hoveredDomain]?.depth}
-          </div>
-        </div>
-      )}
-
-      {/* Clean title */}
-      <div className="absolute bottom-6 left-6 text-white/30 text-xs">
-        <p>Level {consciousnessLevel} · {['初醒者', '探索者', '觉察者', '实践者', '贤者', '智者', '觉醒者'][consciousnessLevel - 1]}</p>
-        <p className="mt-1 opacity-60">点击右侧领域深化根须</p>
-      </div>
     </div>
   )
 }
