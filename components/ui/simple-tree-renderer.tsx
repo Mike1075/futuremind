@@ -115,7 +115,8 @@ function drawOrganicRoot(
   endY: number,
   startWidth: number,
   endWidth: number,
-  color: string
+  startColor: string,
+  endColor?: string
 ) {
   ctx.save()
   // 使用二次贝塞尔曲线画根的中心线
@@ -149,8 +150,8 @@ function drawOrganicRoot(
 
   // 渐变填充
   const gradient = ctx.createLinearGradient(startX, startY, endX, endY)
-  gradient.addColorStop(0, color)
-  gradient.addColorStop(1, color + '99') // 末端更透明
+  gradient.addColorStop(0, startColor)
+  gradient.addColorStop(1, endColor || startColor) // 如果没提供endColor，就用startColor
   ctx.fillStyle = gradient
   ctx.fill()
   ctx.restore()
@@ -196,7 +197,7 @@ function drawSeedStage(
     const endY = y + rootLength
 
     // 主根（用smooth曲线，不用小圆圈）
-    drawOrganicRoot(ctx, x, y + 15, endX, endY, 4, 1.5, 'rgba(230, 200, 170, 0.9)')
+    drawOrganicRoot(ctx, x, y + 15, endX, endY, 4, 1.5, 'rgba(230, 200, 170, 0.9)', 'rgba(200, 170, 140, 0.6)')
 
     // 侧根（细小分叉）
     if (progressInStage > 0.3) {
@@ -210,7 +211,7 @@ function drawSeedStage(
         const branchEndX = branchX + Math.sin(branchAngle) * branchLen
         const branchEndY = branchY + Math.cos(branchAngle) * branchLen
 
-        drawOrganicRoot(ctx, branchX, branchY, branchEndX, branchEndY, 2, 0.5, 'rgba(200, 170, 140, 0.6)')
+        drawOrganicRoot(ctx, branchX, branchY, branchEndX, branchEndY, 2, 0.5, 'rgba(200, 170, 140, 0.6)', 'rgba(200, 170, 140, 0.4)')
       }
     }
   }
@@ -472,7 +473,7 @@ function drawMatureStage(
     const endY = y + rootLength * 0.9
 
     // 主根（用smooth有机曲线）
-    drawOrganicRoot(ctx, x, y, endX, endY, 12, 4, rootColors[i])
+    drawOrganicRoot(ctx, x, y, endX, endY, 12, 4, rootColors[i], rootColors[i] + '99')
 
     // 侧根分叉
     for (let j = 1; j <= 2; j++) {
@@ -484,7 +485,7 @@ function drawMatureStage(
       const branchEndX = branchX + Math.sin(branchAngle) * branchLen
       const branchEndY = branchY + Math.cos(branchAngle) * branchLen
 
-      drawOrganicRoot(ctx, branchX, branchY, branchEndX, branchEndY, 6, 2, rootColors[i] + 'BB')
+      drawOrganicRoot(ctx, branchX, branchY, branchEndX, branchEndY, 6, 2, rootColors[i] + 'BB', rootColors[i] + '77')
     }
   }
 
