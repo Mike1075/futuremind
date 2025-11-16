@@ -44,12 +44,12 @@ export const TREE_STAGE_SCALING: Record<TreeStage, TreeScaling> = {
     trunkLength: 0,
     trunkOpacity: 0,
 
-    // 根系：1-2根极细的根须
-    rootWidth: 0.05,          // 只有5%的粗细
-    rootLength: 0.3,          // 只有30%的长度
-    rootOpacity: 0.4,         // 很淡
+    // 根系：1-2根极细的根须（放大显示）
+    rootWidth: 0.2,           // 20%粗细（相对放大，因为会整体缩放）
+    rootLength: 0.5,          // 50%长度
+    rootOpacity: 0.8,         // 较高透明度，让根须清晰可见
     maxRootBranches: 2,       // 最多2根主根
-    rootDepthThreshold: 3,    // depth >= 3 才显示
+    rootDepthThreshold: 0,    // 立即显示所有根系
 
     // 枝叶：完全没有
     maxLeaves: 0,

@@ -951,6 +951,47 @@ export function DatabaseConsciousnessRoots({
     ctx.fillStyle = "rgb(0, 0, 0)"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+    // 获取当前阶段
+    const currentStage = getTreeStage(levelProgress)
+
+    // 种子期：放大显示根系区域并绘制种子
+    if (currentStage === 'seed') {
+      const centerX = canvas.width / 2
+      const centerY = canvas.height / 2
+
+      // 绘制种子本体（在水平线上）
+      ctx.save()
+
+      // 画种子（椭圆形）
+      ctx.fillStyle = "rgba(139, 90, 43, 0.9)"  // 棕色种子
+      ctx.beginPath()
+      ctx.ellipse(centerX, centerY, 8, 12, 0, 0, Math.PI * 2)
+      ctx.fill()
+
+      // 种子高光
+      ctx.fillStyle = "rgba(180, 140, 100, 0.5)"
+      ctx.beginPath()
+      ctx.ellipse(centerX - 2, centerY - 3, 3, 4, 0, 0, Math.PI * 2)
+      ctx.fill()
+
+      // 添加"种子期特效"：柔和的光晕
+      const seedGlow = ctx.createRadialGradient(
+        centerX,
+        centerY,
+        0,
+        centerX,
+        centerY,
+        60
+      )
+      seedGlow.addColorStop(0, "rgba(100, 200, 100, 0.2)")  // 嫩绿色中心光
+      seedGlow.addColorStop(0.5, "rgba(100, 200, 100, 0.1)")
+      seedGlow.addColorStop(1, "rgba(100, 200, 100, 0)")
+      ctx.fillStyle = seedGlow
+      ctx.fillRect(centerX - 60, centerY - 60, 120, 120)
+
+      ctx.restore()
+    }
+
     // Draw horizontal line at middle - 使用更亮的颜色在黑色背景上可见
     ctx.strokeStyle = "rgba(255,255,255,0.1)"
     ctx.lineWidth = 1
@@ -960,7 +1001,7 @@ export function DatabaseConsciousnessRoots({
     ctx.stroke()
 
     // Level 1 特殊效果: 在中心添加嫩绿色柔和光晕
-    if (consciousnessLevel === 1) {
+    if (consciousnessLevel === 1 && currentStage !== 'seed') {
       const glowGradient = ctx.createRadialGradient(
         canvas.width / 2,
         canvas.height / 2,
@@ -996,6 +1037,21 @@ export function DatabaseConsciousnessRoots({
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
+    // 获取当前阶段
+    const currentStage = getTreeStage(levelProgress)
+
+    // 种子期：应用缩放变换
+    if (currentStage === 'seed') {
+      const scale = 3.0
+      const centerX = canvas.width / 2
+      const centerY = canvas.height / 2
+
+      ctx.save()
+      ctx.translate(centerX, centerY)
+      ctx.scale(scale, scale)
+      ctx.translate(-centerX, -centerY)
+    }
+
     // DON'T CLEAR - Let branches accumulate like original SimpleTree
     // Root grows once per frame
     const tree = treeRef.current
@@ -1009,8 +1065,13 @@ export function DatabaseConsciousnessRoots({
       }
     })
 
+    // 恢复变换
+    if (currentStage === 'seed') {
+      ctx.restore()
+    }
+
     // 动画循环现在由useEffect中的startAnimation处理
-  }, [])
+  }, [levelProgress])
 
 
   useEffect(() => {
