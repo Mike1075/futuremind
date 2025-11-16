@@ -42,16 +42,18 @@ export async function POST(request: NextRequest) {
     const parsedMeditations = meditationRecords.map(m => {
       try {
         const content = JSON.parse(m.content)
+        const submittedAt = m.submitted_at || new Date().toISOString()
         return {
-          date: new Date(m.submitted_at).toISOString().split('T')[0],
+          date: new Date(submittedAt).toISOString().split('T')[0],
           duration_minutes: content.duration_minutes || 0,
-          submitted_at: m.submitted_at,
+          submitted_at: submittedAt,
         }
       } catch {
+        const submittedAt = m.submitted_at || new Date().toISOString()
         return {
-          date: new Date(m.submitted_at).toISOString().split('T')[0],
+          date: new Date(submittedAt).toISOString().split('T')[0],
           duration_minutes: 0,
-          submitted_at: m.submitted_at,
+          submitted_at: submittedAt,
         }
       }
     })
