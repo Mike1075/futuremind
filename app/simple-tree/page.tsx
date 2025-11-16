@@ -3,6 +3,7 @@
 import { DatabaseConsciousnessRoots } from '@/components/ui/database-consciousness-roots'
 import { InsightsPanel } from '@/components/InsightsPanel'
 import { ConsciousnessLevelBadge } from '@/components/ConsciousnessLevelBadge'
+import { FruitsOverlay } from '@/components/FruitsOverlay'
 import { motion } from 'framer-motion'
 import { TreePine, Users, LogOut, MessageCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -127,6 +128,9 @@ export default function SimpleTreePage() {
       <div className="relative z-10 w-full" style={{ height: 'calc(100vh - 80px)' }}>
         <DatabaseConsciousnessRoots />
       </div>
+
+      {/* Fruits Overlay */}
+      <FruitsOverlay />
 
       {/* Consciousness Level Badge */}
       <ConsciousnessLevelBadge />
