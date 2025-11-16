@@ -81,6 +81,81 @@ export function SimpleTreeRenderer({
   )
 }
 
+// ========== 辅助函数：画有机云朵形状（树冠团块）==========
+function drawCloudShape(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  size: number,
+  blobCount: number = 6
+) {
+  ctx.beginPath()
+
+  // 用多个圆形叠加成云朵状
+  for (let i = 0; i < blobCount; i++) {
+    const angle = (i / blobCount) * Math.PI * 2
+    const offsetX = Math.cos(angle) * size * 0.4 * (0.8 + Math.random() * 0.4)
+    const offsetY = Math.sin(angle) * size * 0.4 * (0.8 + Math.random() * 0.4)
+    const blobSize = size * (0.4 + Math.random() * 0.3)
+
+    ctx.arc(centerX + offsetX, centerY + offsetY, blobSize, 0, Math.PI * 2)
+  }
+
+  // 中心大圆
+  ctx.arc(centerX, centerY, size * 0.5, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+// ========== 辅助函数：画有机根系（smooth曲线，不用小圆圈）==========
+function drawOrganicRoot(
+  ctx: CanvasRenderingContext2D,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+  startWidth: number,
+  endWidth: number,
+  color: string
+) {
+  ctx.save()
+  // 使用二次贝塞尔曲线画根的中心线
+  const controlX = (startX + endX) / 2 + (Math.random() - 0.5) * 20
+  const controlY = (startY + endY) / 2 + 20
+
+  // 画根的轮廓（两条曲线）
+  ctx.beginPath()
+  ctx.moveTo(startX - startWidth / 2, startY)
+
+  // 左侧轮廓
+  ctx.quadraticCurveTo(
+    controlX - (startWidth + endWidth) / 4,
+    controlY,
+    endX - endWidth / 2,
+    endY
+  )
+
+  // 末端
+  ctx.lineTo(endX + endWidth / 2, endY)
+
+  // 右侧轮廓
+  ctx.quadraticCurveTo(
+    controlX + (startWidth + endWidth) / 4,
+    controlY,
+    startX + startWidth / 2,
+    startY
+  )
+
+  ctx.closePath()
+
+  // 渐变填充
+  const gradient = ctx.createLinearGradient(startX, startY, endX, endY)
+  gradient.addColorStop(0, color)
+  gradient.addColorStop(1, color + '99') // 末端更透明
+  ctx.fillStyle = gradient
+  ctx.fill()
+  ctx.restore()
+}
+
 // ========== 种子期 (0-20%) ==========
 function drawSeedStage(
   ctx: CanvasRenderingContext2D,
@@ -111,7 +186,7 @@ function drawSeedStage(
   ctx.stroke()
   ctx.restore()
 
-  // 绘制根须（渐变粗细 + 分叉）
+  // 绘制根须（smooth有机曲线）
   const rootLength = 40 + progressInStage * 50
   const rootCount = Math.max(1, Math.floor(progressInStage * 2.5 + 1))
 
@@ -120,22 +195,8 @@ function drawSeedStage(
     const endX = x + Math.sin(angle) * rootLength * 0.7
     const endY = y + rootLength
 
-    // 主根（渐变线宽）
-    ctx.save()
-    const rootGradient = ctx.createLinearGradient(x, y + 15, endX, endY)
-    rootGradient.addColorStop(0, 'rgba(230, 200, 170, 0.9)')
-    rootGradient.addColorStop(1, 'rgba(200, 170, 140, 0.6)')
-
-    for (let t = 0; t <= 1; t += 0.1) {
-      const cx = x + (endX - x) * t
-      const cy = (y + 15) + (endY - (y + 15)) * t
-      const width = 4 * (1 - t * 0.7) // 根部粗4px，末端细1.2px
-
-      ctx.beginPath()
-      ctx.arc(cx, cy, width / 2, 0, Math.PI * 2)
-      ctx.fillStyle = rootGradient
-      ctx.fill()
-    }
+    // 主根（用smooth曲线，不用小圆圈）
+    drawOrganicRoot(ctx, x, y + 15, endX, endY, 4, 1.5, 'rgba(230, 200, 170, 0.9)')
 
     // 侧根（细小分叉）
     if (progressInStage > 0.3) {
@@ -149,20 +210,9 @@ function drawSeedStage(
         const branchEndX = branchX + Math.sin(branchAngle) * branchLen
         const branchEndY = branchY + Math.cos(branchAngle) * branchLen
 
-        ctx.strokeStyle = 'rgba(200, 170, 140, 0.4)'
-        ctx.lineWidth = 1.5
-        ctx.beginPath()
-        ctx.moveTo(branchX, branchY)
-        ctx.quadraticCurveTo(
-          branchX + Math.sin(branchAngle) * branchLen * 0.5,
-          branchY + branchLen * 0.3,
-          branchEndX,
-          branchEndY
-        )
-        ctx.stroke()
+        drawOrganicRoot(ctx, branchX, branchY, branchEndX, branchEndY, 2, 0.5, 'rgba(200, 170, 140, 0.6)')
       }
     }
-    ctx.restore()
   }
 
   // 柔和的生命光晕
@@ -413,7 +463,7 @@ function drawMatureStage(
 ) {
   const progressInStage = (progress - 80) / 20 // 0-1
 
-  // 绘制根系（渐变粗细 + 分叉）
+  // 绘制根系（smooth有机曲线）
   const rootLength = 170
   const rootColors = ['#B8860B', '#CD853F', '#D2691E', '#8B4513', '#A0522D']
   for (let i = 0; i < 5; i++) {
@@ -421,20 +471,8 @@ function drawMatureStage(
     const endX = x + Math.sin(angle) * rootLength
     const endY = y + rootLength * 0.9
 
-    // 主根（渐变线宽）
-    for (let t = 0; t <= 1; t += 0.05) {
-      const cx = x + (endX - x) * t
-      const cy = y + (endY - y) * t
-      const width = 12 * (1 - t * 0.6) // 根部12px，末端4.8px
-
-      ctx.beginPath()
-      ctx.arc(cx, cy, width / 2, 0, Math.PI * 2)
-      const rootGrad = ctx.createRadialGradient(cx - width/4, cy - width/4, 0, cx, cy, width)
-      rootGrad.addColorStop(0, rootColors[i])
-      rootGrad.addColorStop(1, '#4A2511')
-      ctx.fillStyle = rootGrad
-      ctx.fill()
-    }
+    // 主根（用smooth有机曲线）
+    drawOrganicRoot(ctx, x, y, endX, endY, 12, 4, rootColors[i])
 
     // 侧根分叉
     for (let j = 1; j <= 2; j++) {
@@ -446,17 +484,7 @@ function drawMatureStage(
       const branchEndX = branchX + Math.sin(branchAngle) * branchLen
       const branchEndY = branchY + Math.cos(branchAngle) * branchLen
 
-      ctx.strokeStyle = `${rootColors[i]}AA`
-      ctx.lineWidth = 4 * (1 - branchT * 0.5)
-      ctx.beginPath()
-      ctx.moveTo(branchX, branchY)
-      ctx.quadraticCurveTo(
-        branchX + Math.sin(branchAngle) * branchLen * 0.6,
-        branchY + branchLen * 0.4,
-        branchEndX,
-        branchEndY
-      )
-      ctx.stroke()
+      drawOrganicRoot(ctx, branchX, branchY, branchEndX, branchEndY, 6, 2, rootColors[i] + 'BB')
     }
   }
 
@@ -508,65 +536,87 @@ function drawMatureStage(
   ctx.fill()
   ctx.restore()
 
-  // 绘制树冠（多层次渐变圆形营造蓬松感）
+  // 绘制树冠（用云朵团块，不是完美圆形）
   const canopyCenterY = y - trunkHeight - 40
   const baseSize = 110 + progressInStage * 30
 
-  // 后层（较暗）
-  for (let layer = 0; layer < 3; layer++) {
-    for (let i = 0; i < 4; i++) {
-      const angle = (i / 4) * Math.PI * 2 + layer * 0.5
-      const dist = baseSize * 0.3
-      const cx = x + Math.cos(angle) * dist
-      const cy = canopyCenterY + Math.sin(angle) * dist * 0.5
-      const size = baseSize * (0.5 + layer * 0.15)
-
-      const canopyGrad = ctx.createRadialGradient(cx - size*0.2, cy - size*0.2, 0, cx, cy, size)
-      canopyGrad.addColorStop(0, `rgba(${80 + layer * 20}, ${140 + layer * 10}, ${70 + layer * 10}, 0.${7 - layer})`)
-      canopyGrad.addColorStop(0.7, `rgba(${50 + layer * 15}, ${110 + layer * 10}, ${50 + layer * 10}, 0.${6 - layer})`)
-      canopyGrad.addColorStop(1, `rgba(${30 + layer * 10}, ${80 + layer * 10}, ${40 + layer * 10}, 0)`)
-
-      ctx.fillStyle = canopyGrad
-      ctx.beginPath()
-      ctx.arc(cx, cy, size, 0, Math.PI * 2)
-      ctx.fill()
-    }
-  }
-
-  // 主树冠中心
-  const mainCanopyGrad = ctx.createRadialGradient(x - baseSize*0.2, canopyCenterY - baseSize*0.2, 0, x, canopyCenterY, baseSize)
-  mainCanopyGrad.addColorStop(0, 'rgba(120, 180, 100, 0.9)')
-  mainCanopyGrad.addColorStop(0.5, 'rgba(80, 150, 70, 0.85)')
-  mainCanopyGrad.addColorStop(1, 'rgba(50, 120, 50, 0)')
-  ctx.fillStyle = mainCanopyGrad
-  ctx.beginPath()
-  ctx.arc(x, canopyCenterY, baseSize, 0, Math.PI * 2)
-  ctx.fill()
-
-  // 绘制叶子簇（分层，有深浅变化）
-  const leafLayers = [
-    { count: 15, dist: 0.7, size: 14, alpha: 0.6 },  // 后层
-    { count: 18, dist: 0.5, size: 16, alpha: 0.8 },  // 中层
-    { count: 12, dist: 0.3, size: 18, alpha: 1.0 }   // 前层
+  // 后层云朵（深绿色，较暗）
+  const backCloudPositions = [
+    { angle: 0, dist: 0.4 },
+    { angle: Math.PI * 0.6, dist: 0.35 },
+    { angle: Math.PI * 1.2, dist: 0.4 },
+    { angle: Math.PI * 1.8, dist: 0.35 }
   ]
 
-  leafLayers.forEach((layer, layerIdx) => {
-    for (let i = 0; i < layer.count; i++) {
-      const angle = (i / layer.count) * Math.PI * 2 + layerIdx * 0.3
-      const dist = baseSize * layer.dist
-      const leafX = x + Math.cos(angle) * dist
-      const leafY = canopyCenterY + Math.sin(angle) * dist * 0.8
+  backCloudPositions.forEach(pos => {
+    const cx = x + Math.cos(pos.angle) * baseSize * pos.dist
+    const cy = canopyCenterY + Math.sin(pos.angle) * baseSize * pos.dist * 0.6
+    const cloudSize = baseSize * (0.35 + Math.random() * 0.1)
 
-      const leafGrad = ctx.createRadialGradient(leafX - layer.size*0.3, leafY - layer.size*0.3, 0, leafX, leafY, layer.size)
-      leafGrad.addColorStop(0, `rgba(${140 - layerIdx * 20}, ${200 - layerIdx * 10}, ${110 - layerIdx * 20}, ${layer.alpha})`)
-      leafGrad.addColorStop(1, `rgba(${70 - layerIdx * 10}, ${140 - layerIdx * 10}, ${60 - layerIdx * 10}, ${layer.alpha * 0.4})`)
+    const cloudGrad = ctx.createRadialGradient(cx - cloudSize*0.2, cy - cloudSize*0.2, 0, cx, cy, cloudSize)
+    cloudGrad.addColorStop(0, 'rgba(70, 130, 60, 0.7)')
+    cloudGrad.addColorStop(0.6, 'rgba(50, 110, 50, 0.5)')
+    cloudGrad.addColorStop(1, 'rgba(40, 90, 40, 0)')
 
-      ctx.fillStyle = leafGrad
-      ctx.beginPath()
-      ctx.ellipse(leafX, leafY, layer.size * 0.8, layer.size * 0.5, angle + Math.PI/4, 0, Math.PI * 2)
-      ctx.fill()
-    }
+    ctx.fillStyle = cloudGrad
+    drawCloudShape(ctx, cx, cy, cloudSize, 5)
   })
+
+  // 中层云朵（中绿色）
+  const midCloudPositions = [
+    { angle: Math.PI * 0.3, dist: 0.3 },
+    { angle: Math.PI * 0.9, dist: 0.25 },
+    { angle: Math.PI * 1.5, dist: 0.3 },
+    { angle: Math.PI * 0.1, dist: 0.25 }
+  ]
+
+  midCloudPositions.forEach(pos => {
+    const cx = x + Math.cos(pos.angle) * baseSize * pos.dist
+    const cy = canopyCenterY + Math.sin(pos.angle) * baseSize * pos.dist * 0.6
+    const cloudSize = baseSize * (0.4 + Math.random() * 0.1)
+
+    const cloudGrad = ctx.createRadialGradient(cx - cloudSize*0.2, cy - cloudSize*0.2, 0, cx, cy, cloudSize)
+    cloudGrad.addColorStop(0, 'rgba(90, 160, 80, 0.85)')
+    cloudGrad.addColorStop(0.6, 'rgba(70, 140, 70, 0.7)')
+    cloudGrad.addColorStop(1, 'rgba(50, 120, 50, 0)')
+
+    ctx.fillStyle = cloudGrad
+    drawCloudShape(ctx, cx, cy, cloudSize, 6)
+  })
+
+  // 前层云朵（亮绿色，最前）
+  const frontCloudPositions = [
+    { angle: 0, dist: 0.15 },
+    { angle: Math.PI * 0.7, dist: 0.2 },
+    { angle: Math.PI * 1.3, dist: 0.15 }
+  ]
+
+  frontCloudPositions.forEach(pos => {
+    const cx = x + Math.cos(pos.angle) * baseSize * pos.dist
+    const cy = canopyCenterY + Math.sin(pos.angle) * baseSize * pos.dist * 0.5
+    const cloudSize = baseSize * (0.45 + Math.random() * 0.1)
+
+    const cloudGrad = ctx.createRadialGradient(cx - cloudSize*0.2, cy - cloudSize*0.2, 0, cx, cy, cloudSize)
+    cloudGrad.addColorStop(0, 'rgba(120, 190, 100, 0.95)')
+    cloudGrad.addColorStop(0.6, 'rgba(90, 160, 80, 0.85)')
+    cloudGrad.addColorStop(1, 'rgba(60, 130, 60, 0)')
+
+    ctx.fillStyle = cloudGrad
+    drawCloudShape(ctx, cx, cy, cloudSize, 7)
+  })
+
+  // 中心主云朵
+  const mainCloudSize = baseSize * 0.6
+  const mainCloudGrad = ctx.createRadialGradient(
+    x - mainCloudSize*0.2, canopyCenterY - mainCloudSize*0.2, 0,
+    x, canopyCenterY, mainCloudSize
+  )
+  mainCloudGrad.addColorStop(0, 'rgba(130, 200, 110, 0.95)')
+  mainCloudGrad.addColorStop(0.5, 'rgba(100, 170, 90, 0.9)')
+  mainCloudGrad.addColorStop(1, 'rgba(70, 140, 70, 0)')
+
+  ctx.fillStyle = mainCloudGrad
+  drawCloudShape(ctx, x, canopyCenterY, mainCloudSize, 8)
 
   // 绘制成熟果实（渐变光泽感）
   const fruitCount = 6 + Math.floor(progressInStage * 3)
