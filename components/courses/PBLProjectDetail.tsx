@@ -9,6 +9,63 @@ import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
+// 智能文本预处理器：将中文段落标签转换为Markdown格式并添加表情
+function preprocessContentToMarkdown(content: string): string {
+  if (!content) return ''
+
+  let processed = content
+
+  // 移除开头的时长标记并转为醒目提示
+  processed = processed.replace(/^\(任务时长：([^)]+)\)\n?/m, '> ⏱️ **任务时长**: $1\n\n')
+
+  // 主要段落标题（转为三级标题 ###）
+  const mainLabels = [
+    { pattern: /^(任务说明|任务|主要任务|核心任务)[:：]/gm, emoji: '📝', title: '任务' },
+    { pattern: /^(目标|学习目标|本周目标)[:：]/gm, emoji: '🎯', title: '目标' },
+    { pattern: /^(准备材料|所需材料|材料准备)[:：]/gm, emoji: '🛠️', title: '准备材料' },
+    { pattern: /^(思考一下|思考|思考问题)[:：]/gm, emoji: '💭', title: '思考' },
+    { pattern: /^(接受任务|开始任务|任务开始)[:：]/gm, emoji: '✅', title: '接受任务' },
+    { pattern: /^(提交要求|提交|上传)[:：]/gm, emoji: '📤', title: '提交要求' },
+    { pattern: /^(温馨提示|注意事项|重要提示)[:：]/gm, emoji: '⚠️', title: '注意事项' }
+  ]
+
+  mainLabels.forEach(({ pattern, emoji, title }) => {
+    processed = processed.replace(pattern, `### ${emoji} ${title}\n\n`)
+  })
+
+  // 次要段落标题（转为四级标题 ####）
+  const subLabels = [
+    { pattern: /^(步骤|操作步骤|详细步骤)[:：]/gm, emoji: '👣', title: '步骤' },
+    { pattern: /^(选项[A-Z]|方案[A-Z])[:：]/gm, emoji: '🔹', keep: true }, // 保留原标题
+    { pattern: /^(示例|例子|参考示例)[:：]/gm, emoji: '💡', title: '示例' },
+    { pattern: /^(建议|小建议|友情提示)[:：]/gm, emoji: '💫', title: '建议' }
+  ]
+
+  subLabels.forEach(({ pattern, emoji, title, keep }) => {
+    if (keep) {
+      processed = processed.replace(pattern, (match) => `#### ${emoji} ${match.replace(/[:：]/, '')}\n\n`)
+    } else {
+      processed = processed.replace(pattern, `#### ${emoji} ${title}\n\n`)
+    }
+  })
+
+  // 处理项目符号列表 - 检测以"●"、"•"、"○"或数字开头的行
+  processed = processed.replace(/^([●•○])\s+(.+)$/gm, '- $2')
+  processed = processed.replace(/^(\d+[.、])\s+(.+)$/gm, '1. $2')
+
+  // 为纯粹的文本段落增加呼吸空间
+  processed = processed.split('\n\n').map(para => {
+    // 如果是标题、列表、引用，保持原样
+    if (para.match(/^(#{1,4}|>|-|\d+\.|\|)/m)) {
+      return para
+    }
+    // 普通段落确保前后有空行
+    return para.trim()
+  }).filter(p => p).join('\n\n')
+
+  return processed
+}
+
 interface Activity {
   sequence: number  // ✨ 新增：用于排序
   day_label: string  // "Day 1", "Day 2-4"
@@ -630,7 +687,8 @@ export function PBLProjectDetail({
                         const activityTitle = activity.title_zh || activity.title || '未命名活动'
                         const activityDayLabel = activity.day_label || `Day ${dayNumber}`
                         const activityDuration = activity.duration
-                        const activityContent = activity.content
+                        // 智能预处理：将中文标签转换为Markdown格式
+                        const activityContent = activity.content ? preprocessContentToMarkdown(activity.content) : null
 
                       return (
                         <div
@@ -734,30 +792,17 @@ export function PBLProjectDetail({
                                   <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
-                                      // 为标题自动添加表情符号
-                                      h3: ({node, children, ...props}) => {
-                                        const text = String(children)
-                                        const icon = text.includes('任务') ? '📝 ' :
-                                                    text.includes('目标') ? '🎯 ' :
-                                                    text.includes('要求') || text.includes('提交') ? '📦 ' :
-                                                    text.includes('建议') || text.includes('提示') ? '💡 ' :
-                                                    text.includes('评分') || text.includes('标准') ? '⭐ ' : ''
-                                        return <h3 {...props}>{icon}{children}</h3>
-                                      },
-                                      h4: ({node, children, ...props}) => {
-                                        const text = String(children)
-                                        const icon = text.includes('步骤') ? '👣 ' :
-                                                    text.includes('示例') || text.includes('例子') ? '💭 ' :
-                                                    text.includes('注意') ? '⚠️ ' : ''
-                                        return <h4 {...props}>{icon}{children}</h4>
-                                      },
-                                      // 为段落增加间距
+                                      // 优化段落间距
                                       p: ({node, children, ...props}) => {
                                         return <p className="my-3" {...props}>{children}</p>
                                       },
                                       // 优化列表项显示
                                       li: ({node, children, ...props}) => {
                                         return <li className="my-2 pl-2" {...props}>{children}</li>
+                                      },
+                                      // 优化引用块样式
+                                      blockquote: ({node, children, ...props}) => {
+                                        return <blockquote className="border-l-4 border-purple-500 bg-purple-500/10 py-3 px-4 rounded-r my-4" {...props}>{children}</blockquote>
                                       }
                                     }}
                                   >
