@@ -521,15 +521,14 @@ export default function IcarusAdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {module.range.map((seq) => {
                     const project = getProjectBySequence(seq)
-                    const difficulty = project?.subtitle as keyof typeof DIFFICULTY_LABELS || 'option_a'
-                    const diffConfig = DIFFICULTY_LABELS[difficulty] || DIFFICULTY_LABELS.option_a
                     const ProjectIcon = getProjectIcon(seq) // 获取对应的图标组件
+                    const weekCount = project?.week_plan ? (Array.isArray(project.week_plan) ? project.week_plan.length : 0) : 0
 
                     return (
                       <motion.div
                         key={seq}
                         whileHover={{ scale: 1.02 }}
-                        className={`bg-gradient-to-br ${diffConfig.color} p-0.5 rounded-lg cursor-pointer`}
+                        className="bg-gradient-to-br from-green-500 to-emerald-500 p-0.5 rounded-lg cursor-pointer"
                         onClick={() => project && router.push(`/admin/courses/pbl/projects/${project.id}`)}
                       >
                         <div className="bg-black/90 p-6 rounded-lg h-full">
@@ -538,10 +537,9 @@ export default function IcarusAdminPage() {
                             <div className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg">
                               <ProjectIcon className="w-6 h-6 text-white" />
                             </div>
-                            <span className="text-xs text-white/60">{project?.estimated_duration || 0}天</span>
+                            <span className="text-xs text-white/60">{weekCount}周</span>
                           </div>
-                          <h3 className="text-sm font-bold text-white mb-2">{diffConfig.label}</h3>
-                          <p className="text-xs text-white/80 line-clamp-2">
+                          <p className="text-sm font-bold text-white mb-2 line-clamp-2">
                             {project?.title || '未创建'}
                           </p>
                           {project && Array.isArray(project.week_plan) && (
@@ -590,8 +588,7 @@ export default function IcarusAdminPage() {
                   <X className="w-5 h-5 text-white" />
                 </button>
                 <h2 className="text-xl font-bold text-white">
-                  {DIFFICULTY_LABELS[selectedProject.subtitle as keyof typeof DIFFICULTY_LABELS]?.label} -
-                  {selectedProject.title}
+                  第{selectedProject.sequence_number}阶段：{selectedProject.title}
                 </h2>
               </div>
               <button

@@ -17,6 +17,7 @@ interface Project {
   project_icon_url: string | null
   project_cover_image: string | null
   sequence_number: number
+  week_plan?: any[] | null
   participant_count?: number
   is_system?: boolean
   creator?: {
@@ -540,20 +541,14 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
               </div>
 
               {/* Meta Info */}
-              {(selectedProject.module_name || selectedProject.estimated_duration || selectedProject.participant_count !== undefined) && (
+              {(selectedProject.week_plan || selectedProject.participant_count !== undefined) && (
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-3 text-gray-300">项目信息</h3>
                   <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-                    {selectedProject.module_name && (
+                    {selectedProject.week_plan && Array.isArray(selectedProject.week_plan) && selectedProject.week_plan.length > 0 && (
                       <div className="flex items-center gap-2">
-                        <span>📚</span>
-                        <span>{selectedProject.module_name}</span>
-                      </div>
-                    )}
-                    {selectedProject.estimated_duration && (
-                      <div className="flex items-center gap-2">
-                        <span>⏱️</span>
-                        <span>{selectedProject.estimated_duration}分钟</span>
+                        <span>📅</span>
+                        <span>{selectedProject.week_plan.length} 周计划</span>
                       </div>
                     )}
                     {selectedProject.participant_count !== undefined && (

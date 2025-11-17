@@ -704,21 +704,63 @@ export function PBLProjectDetail({
 
                           {/* 详细内容 (展开时显示) */}
                           {isDayExpanded && isUnlocked && (
-                            <div className="px-4 pb-4 space-y-4 border-t border-gray-800">
+                            <div className="px-4 pb-4 space-y-4 border-t border-gray-800 mt-4">
                               {/* ✨ 完整的Markdown内容 */}
                               {activityContent ? (
                                 <div className="prose prose-invert prose-sm max-w-none
-                                  prose-headings:text-white prose-headings:font-semibold
-                                  prose-h3:text-purple-400 prose-h4:text-blue-400
-                                  prose-p:text-gray-300 prose-p:leading-relaxed
-                                  prose-strong:text-white prose-strong:font-semibold
-                                  prose-ul:text-gray-300 prose-ol:text-gray-300
-                                  prose-li:text-gray-300
-                                  prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
-                                  prose-code:text-purple-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded
-                                  prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400
-                                  prose-table:text-gray-300">
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  prose-headings:text-white prose-headings:font-semibold prose-headings:mb-4 prose-headings:mt-6
+                                  prose-h1:text-2xl prose-h1:text-purple-300 prose-h1:border-b prose-h1:border-purple-500/30 prose-h1:pb-2
+                                  prose-h2:text-xl prose-h2:text-blue-300
+                                  prose-h3:text-lg prose-h3:text-purple-400
+                                  prose-h4:text-base prose-h4:text-cyan-400
+                                  prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4
+                                  prose-strong:text-white prose-strong:font-semibold prose-strong:bg-purple-500/10 prose-strong:px-1 prose-strong:rounded
+                                  prose-em:text-cyan-300 prose-em:not-italic
+                                  prose-ul:text-gray-300 prose-ul:space-y-2 prose-ul:my-4
+                                  prose-ol:text-gray-300 prose-ol:space-y-2 prose-ol:my-4
+                                  prose-li:text-gray-300 prose-li:leading-relaxed
+                                  prose-li::marker:text-purple-400
+                                  prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline hover:prose-a:text-blue-300
+                                  prose-code:text-purple-300 prose-code:bg-gray-800/50 prose-code:px-2 prose-code:py-0.5 prose-code:rounded prose-code:border prose-code:border-purple-500/20
+                                  prose-pre:bg-gray-900/50 prose-pre:border prose-pre:border-purple-500/20 prose-pre:rounded-lg
+                                  prose-blockquote:border-l-4 prose-blockquote:border-l-purple-500 prose-blockquote:bg-purple-500/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r
+                                  prose-blockquote:text-gray-400 prose-blockquote:italic
+                                  prose-table:text-gray-300 prose-table:border-collapse
+                                  prose-thead:bg-purple-500/10 prose-thead:border-b prose-thead:border-purple-500/30
+                                  prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold prose-th:text-purple-300
+                                  prose-td:px-4 prose-td:py-2 prose-td:border-t prose-td:border-gray-700/50
+                                  prose-tr:hover:bg-gray-800/30
+                                  prose-hr:border-gray-700/50 prose-hr:my-8">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      // 为标题自动添加表情符号
+                                      h3: ({node, children, ...props}) => {
+                                        const text = String(children)
+                                        const icon = text.includes('任务') ? '📝 ' :
+                                                    text.includes('目标') ? '🎯 ' :
+                                                    text.includes('要求') || text.includes('提交') ? '📦 ' :
+                                                    text.includes('建议') || text.includes('提示') ? '💡 ' :
+                                                    text.includes('评分') || text.includes('标准') ? '⭐ ' : ''
+                                        return <h3 {...props}>{icon}{children}</h3>
+                                      },
+                                      h4: ({node, children, ...props}) => {
+                                        const text = String(children)
+                                        const icon = text.includes('步骤') ? '👣 ' :
+                                                    text.includes('示例') || text.includes('例子') ? '💭 ' :
+                                                    text.includes('注意') ? '⚠️ ' : ''
+                                        return <h4 {...props}>{icon}{children}</h4>
+                                      },
+                                      // 为段落增加间距
+                                      p: ({node, children, ...props}) => {
+                                        return <p className="my-3" {...props}>{children}</p>
+                                      },
+                                      // 优化列表项显示
+                                      li: ({node, children, ...props}) => {
+                                        return <li className="my-2 pl-2" {...props}>{children}</li>
+                                      }
+                                    }}
+                                  >
                                     {activityContent}
                                   </ReactMarkdown>
                                 </div>
