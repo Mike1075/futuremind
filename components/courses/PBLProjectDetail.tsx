@@ -15,10 +15,14 @@ function preprocessContentToMarkdown(content: string): string {
 
   let processed = content
 
-  // 移除开头的时长标记并转为醒目提示
+  // 步骤1: 移除开头的时长标记并转为醒目提示
   processed = processed.replace(/^\(任务时长：([^)]+)\)\n?/m, '> ⏱️ **任务时长**: $1\n\n')
 
-  // 主要段落标题（转为三级标题 ###）
+  // 步骤2: 将句子结尾的单个换行符转为段落分隔（双换行符）
+  // 匹配中文句号、感叹号、问号、省略号后的单个换行符
+  processed = processed.replace(/([。！？…"」』】])\n(?!\n)/g, '$1\n\n')
+
+  // 步骤3: 主要段落标题（转为三级标题 ###）
   const mainLabels = [
     { pattern: /^(任务说明|任务|主要任务|核心任务)[:：]/gm, emoji: '📝', title: '任务' },
     { pattern: /^(目标|学习目标|本周目标)[:：]/gm, emoji: '🎯', title: '目标' },
@@ -26,44 +30,51 @@ function preprocessContentToMarkdown(content: string): string {
     { pattern: /^(思考一下|思考|思考问题)[:：]/gm, emoji: '💭', title: '思考' },
     { pattern: /^(接受任务|开始任务|任务开始)[:：]/gm, emoji: '✅', title: '接受任务' },
     { pattern: /^(提交要求|提交|上传)[:：]/gm, emoji: '📤', title: '提交要求' },
-    { pattern: /^(温馨提示|注意事项|重要提示)[:：]/gm, emoji: '⚠️', title: '注意事项' }
+    { pattern: /^(温馨提示|注意事项|重要提示)[:：]/gm, emoji: '⚠️', title: '注意事项' },
+    { pattern: /^(展示你的工具|展示作品|成果展示)[:：]/gm, emoji: '🎨', title: '展示作品' },
+    { pattern: /^(提交你的调查报告|提交报告|上传作业)[:：]/gm, emoji: '📋', title: '提交报告' }
   ]
 
   mainLabels.forEach(({ pattern, emoji, title }) => {
-    processed = processed.replace(pattern, `### ${emoji} ${title}\n\n`)
+    processed = processed.replace(pattern, `\n### ${emoji} ${title}\n\n`)
   })
 
-  // 次要段落标题（转为四级标题 ####）
+  // 步骤4: 次要段落标题（转为四级标题 ####）
   const subLabels = [
     { pattern: /^(步骤|操作步骤|详细步骤)[:：]/gm, emoji: '👣', title: '步骤' },
     { pattern: /^(选项[A-Z]|方案[A-Z])[:：]/gm, emoji: '🔹', keep: true }, // 保留原标题
     { pattern: /^(示例|例子|参考示例)[:：]/gm, emoji: '💡', title: '示例' },
-    { pattern: /^(建议|小建议|友情提示)[:：]/gm, emoji: '💫', title: '建议' }
+    { pattern: /^(建议|小建议|友情提示)[:：]/gm, emoji: '💫', title: '建议' },
+    { pattern: /^(格式|提交格式|格式要求)[:：]/gm, emoji: '📄', title: '格式' }
   ]
 
   subLabels.forEach(({ pattern, emoji, title, keep }) => {
     if (keep) {
-      processed = processed.replace(pattern, (match) => `#### ${emoji} ${match.replace(/[:：]/, '')}\n\n`)
+      processed = processed.replace(pattern, (match) => `\n#### ${emoji} ${match.replace(/[:：]/, '')}\n\n`)
     } else {
-      processed = processed.replace(pattern, `#### ${emoji} ${title}\n\n`)
+      processed = processed.replace(pattern, `\n#### ${emoji} ${title}\n\n`)
     }
   })
 
-  // 处理项目符号列表 - 检测以"●"、"•"、"○"或数字开头的行
+  // 步骤5: 处理项目符号列表 - 检测以"●"、"•"、"○"或数字开头的行
   processed = processed.replace(/^([●•○])\s+(.+)$/gm, '- $2')
   processed = processed.replace(/^(\d+[.、])\s+(.+)$/gm, '1. $2')
 
-  // 为纯粹的文本段落增加呼吸空间
-  processed = processed.split('\n\n').map(para => {
-    // 如果是标题、列表、引用，保持原样
-    if (para.match(/^(#{1,4}|>|-|\d+\.|\|)/m)) {
-      return para
-    }
-    // 普通段落确保前后有空行
-    return para.trim()
-  }).filter(p => p).join('\n\n')
+  // 步骤6: 为特殊内容添加表情（句子开头的关键词）
+  const sentenceEmojis = [
+    { pattern: /^(欢迎|恭喜)/gm, emoji: '🎉 ' },
+    { pattern: /^(重要|注意|警告)/gm, emoji: '⚠️ ' },
+    { pattern: /^(提示|小贴士)/gm, emoji: '💡 ' }
+  ]
 
-  return processed
+  sentenceEmojis.forEach(({ pattern, emoji }) => {
+    processed = processed.replace(pattern, emoji + '$1')
+  })
+
+  // 步骤7: 清理多余的空行（超过2个连续换行符的）
+  processed = processed.replace(/\n{3,}/g, '\n\n')
+
+  return processed.trim()
 }
 
 interface Activity {
