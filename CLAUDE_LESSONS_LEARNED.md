@@ -101,6 +101,42 @@ git add components/ui/lottie-tree-renderer.tsx \
 
 ---
 
+### ✅ 经验 #1: 果断删除有问题的非核心功能 (2025-01-17)
+
+**情况**：
+- 意识树可视化组件连续导致3次构建失败
+- TypeScript 类型错误：`totalFrames is possibly undefined`
+- 这些组件不是伊卡洛斯项目的核心功能
+- 用户反馈：意识树画得不好，需要重新设计
+
+**正确决策**：
+- **立即删除所有有问题的意识树组件（1958行代码）**
+- 保留功能位置，使用占位符显示"开发中..."
+- 专注于核心功能的部署
+
+**教训**：
+- ✅ **不要为非核心功能阻碍主要功能的部署**
+- ✅ **遇到连续失败时，果断评估是否需要该功能**
+- ✅ **删除代码也是一种进步，保持代码库清洁**
+- ✅ **占位符是很好的临时方案**
+
+**删除清单**：
+```bash
+# 删除文件
+git rm components/ui/dynamic-consciousness-tree*.tsx
+git rm components/ui/lottie-tree-renderer.tsx
+git rm app/tree-preview/page.tsx
+git rm -r public/animations/
+
+# 删除依赖
+npm uninstall lottie-react
+
+# 修改引用
+# 将组件使用替换为占位符
+```
+
+---
+
 ### ❌ 错误 #2: 分批提交相互依赖的文件 (2025-01-17 - 第1次)
 
 **错误描述**：
