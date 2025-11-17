@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Save, Users, UsersRound, FileText, Plus, Trash2, Search, UserPlus } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface PBLProject {
   id: string
@@ -21,15 +23,25 @@ interface PBLProject {
 interface WeekPlan {
   week: number
   theme: string
-  goals: string[]
+  days_range?: string
+  goals?: string[]
   activities: Activity[]
 }
 
 interface Activity {
-  day: string
-  title: string
-  description: string
-  deliverables: string[]
+  // New fields (from updated database)
+  sequence?: number
+  day_label?: string
+  day_range?: string
+  title_zh?: string
+  title_en?: string
+  duration?: string
+  content?: string
+  // Old fields (for backward compatibility)
+  day?: string
+  title?: string
+  description?: string
+  deliverables?: string[]
 }
 
 interface Prerequisite {
@@ -346,19 +358,20 @@ export default function PBLProjectDetailPage() {
 
   const handleAddGoal = (weekIndex: number) => {
     const updated = [...formData.week_plan]
-    updated[weekIndex].goals = [...updated[weekIndex].goals, '']
+    updated[weekIndex].goals = [...(updated[weekIndex].goals || []), '']
     setFormData({ ...formData, week_plan: updated })
   }
 
   const handleUpdateGoal = (weekIndex: number, goalIndex: number, value: string) => {
     const updated = [...formData.week_plan]
-    updated[weekIndex].goals[goalIndex] = value
+    if (!updated[weekIndex].goals) updated[weekIndex].goals = []
+    updated[weekIndex].goals![goalIndex] = value
     setFormData({ ...formData, week_plan: updated })
   }
 
   const handleDeleteGoal = (weekIndex: number, goalIndex: number) => {
     const updated = [...formData.week_plan]
-    updated[weekIndex].goals = updated[weekIndex].goals.filter((_, i) => i !== goalIndex)
+    updated[weekIndex].goals = (updated[weekIndex].goals || []).filter((_, i) => i !== goalIndex)
     setFormData({ ...formData, week_plan: updated })
   }
 
@@ -392,7 +405,7 @@ export default function PBLProjectDetailPage() {
   const handleAddDeliverable = (weekIndex: number, activityIndex: number) => {
     const updated = [...formData.week_plan]
     updated[weekIndex].activities[activityIndex].deliverables = [
-      ...updated[weekIndex].activities[activityIndex].deliverables,
+      ...(updated[weekIndex].activities[activityIndex].deliverables || []),
       ''
     ]
     setFormData({ ...formData, week_plan: updated })
@@ -400,14 +413,17 @@ export default function PBLProjectDetailPage() {
 
   const handleUpdateDeliverable = (weekIndex: number, activityIndex: number, deliverableIndex: number, value: string) => {
     const updated = [...formData.week_plan]
-    updated[weekIndex].activities[activityIndex].deliverables[deliverableIndex] = value
+    if (!updated[weekIndex].activities[activityIndex].deliverables) {
+      updated[weekIndex].activities[activityIndex].deliverables = []
+    }
+    updated[weekIndex].activities[activityIndex].deliverables![deliverableIndex] = value
     setFormData({ ...formData, week_plan: updated })
   }
 
   const handleDeleteDeliverable = (weekIndex: number, activityIndex: number, deliverableIndex: number) => {
     const updated = [...formData.week_plan]
     updated[weekIndex].activities[activityIndex].deliverables =
-      updated[weekIndex].activities[activityIndex].deliverables.filter((_, i) => i !== deliverableIndex)
+      (updated[weekIndex].activities[activityIndex].deliverables || []).filter((_, i) => i !== deliverableIndex)
     setFormData({ ...formData, week_plan: updated })
   }
 
@@ -713,86 +729,125 @@ export default function PBLProjectDetailPage() {
                             </div>
                             {week.activities && week.activities.length > 0 ? (
                               <div className="space-y-3">
-                                {week.activities.map((activity: any, actIdx: number) => (
-                                  <div key={actIdx} className="bg-black/30 rounded-lg p-4 border border-white/10">
-                                    <div className="flex items-start justify-between mb-2">
-                                      <div className="flex-1 space-y-2">
-                                        {editMode ? (
-                                          <>
-                                            <input
-                                              type="text"
-                                              value={activity.day}
-                                              onChange={(e) => handleUpdateActivity(weekIdx, actIdx, 'day', e.target.value)}
-                                              placeholder="例如：第1天"
-                                              className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-sm focus:outline-none focus:border-cyan-500"
-                                            />
-                                            <input
-                                              type="text"
-                                              value={activity.title}
-                                              onChange={(e) => handleUpdateActivity(weekIdx, actIdx, 'title', e.target.value)}
-                                              placeholder="活动标题"
-                                              className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-sm font-medium focus:outline-none focus:border-cyan-500"
-                                            />
-                                            <textarea
-                                              value={activity.description}
-                                              onChange={(e) => handleUpdateActivity(weekIdx, actIdx, 'description', e.target.value)}
-                                              placeholder="活动描述"
-                                              rows={2}
-                                              className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-sm focus:outline-none focus:border-cyan-500"
-                                            />
-                                          </>
-                                        ) : (
-                                          <>
-                                            <p className="text-white font-medium">
-                                              {activity.day} - {activity.title}
-                                            </p>
-                                            <p className="text-gray-400 text-sm">{activity.description}</p>
-                                          </>
-                                        )}
+                                {/* ✨ Sort activities by sequence field */}
+                                {[...week.activities]
+                                  .sort((a: any, b: any) => (a.sequence || 0) - (b.sequence || 0))
+                                  .map((activity: any, actIdx: number) => {
+                                    // ✨ Use new fields with fallback to old fields
+                                    const dayDisplay = activity.day_label || activity.day || `活动 ${actIdx + 1}`
+                                    const titleDisplay = activity.title_zh || activity.title || '未命名活动'
+                                    const hasNewContent = !!activity.content
 
-                                        {/* 可交付成果 */}
-                                        <div>
-                                          <div className="flex items-center justify-between mb-1">
-                                            <p className="text-green-300 text-xs">✅ 可交付成果</p>
-                                            {editMode && (
-                                              <button
-                                                onClick={() => handleAddDeliverable(weekIdx, actIdx)}
-                                                className="px-1.5 py-0.5 bg-green-600/30 hover:bg-green-600/50 text-green-300 rounded text-xs"
-                                              >
-                                                <Plus className="w-3 h-3" />
-                                              </button>
+                                    return (
+                                      <div key={actIdx} className="bg-black/30 rounded-lg p-4 border border-white/10">
+                                        <div className="flex items-start justify-between mb-2">
+                                          <div className="flex-1 space-y-2">
+                                            {editMode ? (
+                                              <>
+                                                <input
+                                                  type="text"
+                                                  value={activity.day}
+                                                  onChange={(e) => handleUpdateActivity(weekIdx, actIdx, 'day', e.target.value)}
+                                                  placeholder="例如：第1天"
+                                                  className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-sm focus:outline-none focus:border-cyan-500"
+                                                />
+                                                <input
+                                                  type="text"
+                                                  value={activity.title}
+                                                  onChange={(e) => handleUpdateActivity(weekIdx, actIdx, 'title', e.target.value)}
+                                                  placeholder="活动标题"
+                                                  className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-sm font-medium focus:outline-none focus:border-cyan-500"
+                                                />
+                                                <textarea
+                                                  value={activity.description}
+                                                  onChange={(e) => handleUpdateActivity(weekIdx, actIdx, 'description', e.target.value)}
+                                                  placeholder="活动描述"
+                                                  rows={2}
+                                                  className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-sm focus:outline-none focus:border-cyan-500"
+                                                />
+                                              </>
+                                            ) : (
+                                              <>
+                                                {/* ✨ Display new content structure */}
+                                                <div className="flex items-baseline gap-2">
+                                                  <p className="text-white font-medium">
+                                                    {dayDisplay}: {titleDisplay}
+                                                  </p>
+                                                  {activity.title_en && (
+                                                    <p className="text-gray-500 text-sm italic">{activity.title_en}</p>
+                                                  )}
+                                                </div>
+                                                {activity.duration && (
+                                                  <p className="text-cyan-400 text-xs">⏱️ {activity.duration}</p>
+                                                )}
+                                                {hasNewContent ? (
+                                                  // ✨ Render markdown content
+                                                  <div className="mt-3 prose prose-invert prose-sm max-w-none
+                                                    prose-headings:text-white prose-headings:font-semibold
+                                                    prose-h3:text-purple-400 prose-h4:text-cyan-400
+                                                    prose-p:text-gray-300 prose-p:leading-relaxed
+                                                    prose-strong:text-white prose-strong:font-semibold
+                                                    prose-ul:text-gray-300 prose-ol:text-gray-300
+                                                    prose-li:text-gray-300
+                                                    prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline
+                                                    prose-code:text-purple-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded
+                                                    prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400">
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                      {activity.content}
+                                                    </ReactMarkdown>
+                                                  </div>
+                                                ) : (
+                                                  // Old format fallback
+                                                  <p className="text-gray-400 text-sm">{activity.description}</p>
+                                                )}
+                                              </>
+                                            )}
+
+                                        {/* 可交付成果 - Only show in edit mode or if using old format */}
+                                        {(editMode || !hasNewContent) && (
+                                          <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                              <p className="text-green-300 text-xs">✅ 可交付成果</p>
+                                              {editMode && (
+                                                <button
+                                                  onClick={() => handleAddDeliverable(weekIdx, actIdx)}
+                                                  className="px-1.5 py-0.5 bg-green-600/30 hover:bg-green-600/50 text-green-300 rounded text-xs"
+                                                >
+                                                  <Plus className="w-3 h-3" />
+                                                </button>
+                                              )}
+                                            </div>
+                                            {activity.deliverables && activity.deliverables.length > 0 ? (
+                                              <ul className="space-y-1">
+                                                {activity.deliverables.map((deliverable: any, delIdx: number) => (
+                                                  <li key={delIdx} className="flex items-start gap-2">
+                                                    {editMode ? (
+                                                      <>
+                                                        <input
+                                                          type="text"
+                                                          value={deliverable}
+                                                          onChange={(e) => handleUpdateDeliverable(weekIdx, actIdx, delIdx, e.target.value)}
+                                                          placeholder="可交付成果"
+                                                          className="flex-1 px-2 py-1 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-xs focus:outline-none focus:border-green-500"
+                                                        />
+                                                        <button
+                                                          onClick={() => handleDeleteDeliverable(weekIdx, actIdx, delIdx)}
+                                                          className="p-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded"
+                                                        >
+                                                          <Trash2 className="w-2.5 h-2.5" />
+                                                        </button>
+                                                      </>
+                                                    ) : (
+                                                      <span className="text-gray-400 text-xs">• {deliverable}</span>
+                                                    )}
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            ) : (
+                                              <p className="text-gray-500 text-xs">暂无可交付成果</p>
                                             )}
                                           </div>
-                                          {activity.deliverables && activity.deliverables.length > 0 ? (
-                                            <ul className="space-y-1">
-                                              {activity.deliverables.map((deliverable: any, delIdx: number) => (
-                                                <li key={delIdx} className="flex items-start gap-2">
-                                                  {editMode ? (
-                                                    <>
-                                                      <input
-                                                        type="text"
-                                                        value={deliverable}
-                                                        onChange={(e) => handleUpdateDeliverable(weekIdx, actIdx, delIdx, e.target.value)}
-                                                        placeholder="可交付成果"
-                                                        className="flex-1 px-2 py-1 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 text-xs focus:outline-none focus:border-green-500"
-                                                      />
-                                                      <button
-                                                        onClick={() => handleDeleteDeliverable(weekIdx, actIdx, delIdx)}
-                                                        className="p-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded"
-                                                      >
-                                                        <Trash2 className="w-2.5 h-2.5" />
-                                                      </button>
-                                                    </>
-                                                  ) : (
-                                                    <span className="text-gray-400 text-xs">• {deliverable}</span>
-                                                  )}
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          ) : (
-                                            <p className="text-gray-500 text-xs">暂无可交付成果</p>
-                                          )}
-                                        </div>
+                                        )}
                                       </div>
                                       {editMode && (
                                         <button
@@ -804,7 +859,9 @@ export default function PBLProjectDetailPage() {
                                       )}
                                     </div>
                                   </div>
-                                ))}
+                                    )
+                                  }
+                                )}
                               </div>
                             ) : (
                               <p className="text-gray-500 text-sm">暂无活动</p>

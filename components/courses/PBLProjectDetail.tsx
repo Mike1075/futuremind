@@ -6,10 +6,20 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
 import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface Activity {
+  sequence: number  // ✨ 新增：用于排序
+  day_label: string  // "Day 1", "Day 2-4"
+  day_range: string  // "1", "2-4"
+  title_zh: string
+  title_en?: string
+  duration?: string
+  content?: string  // ✨ 新增：完整的markdown内容
+  // 保留旧字段以向后兼容
   day?: string | number
-  title: string
+  title?: string
   description?: string
   tasks?: string[]
   deliverables?: string[]
@@ -18,6 +28,7 @@ interface Activity {
 interface WeekPlan {
   week: number
   theme: string
+  days_range?: string  // ✨ 新增
   goals?: string[]
   activities: Activity[]
 }
@@ -602,13 +613,24 @@ export function PBLProjectDetail({
                 {/* 每日任务列表 */}
                 {isWeekExpanded && week.activities && (
                   <div className="p-4 space-y-3">
-                    {week.activities.map((activity, index) => {
-                      // 使用activity.day字段或索引+1作为day编号
-                      const dayNumber = activity.day ? (typeof activity.day === 'number' ? activity.day : parseInt(String(activity.day))) : (index + 1)
-                      const dayKey = `project_${project.sequence_number}_week${week.week}_day${dayNumber}`
-                      const isCompleted = (userProgress[dayKey] || 0) > 0  // 有得分就算完成
-                      const isUnlocked = isDayUnlocked(week.week, dayNumber)
-                      const isDayExpanded = expandedDays.has(dayKey)
+                    {/* ✨ 按sequence字段排序activities */}
+                    {[...week.activities]
+                      .sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
+                      .map((activity, index) => {
+                        // ✨ 优先使用新字段day_range，向后兼容旧的day字段
+                        const dayRangeStr = activity.day_range || activity.day || String(index + 1)
+                        // 从day_range提取第一个数字作为dayNumber（如"2-4" -> 2）
+                        const dayNumber = parseInt(dayRangeStr.toString().split('-')[0])
+                        const dayKey = `project_${project.sequence_number}_week${week.week}_day${dayNumber}`
+                        const isCompleted = (userProgress[dayKey] || 0) > 0  // 有得分就算完成
+                        const isUnlocked = isDayUnlocked(week.week, dayNumber)
+                        const isDayExpanded = expandedDays.has(dayKey)
+
+                        // ✨ 使用新字段，向后兼容
+                        const activityTitle = activity.title_zh || activity.title || '未命名活动'
+                        const activityDayLabel = activity.day_label || `Day ${dayNumber}`
+                        const activityDuration = activity.duration
+                        const activityContent = activity.content
 
                       return (
                         <div
@@ -646,11 +668,11 @@ export function PBLProjectDetail({
 
                               <div className="flex-1">
                                 <h4 className={`font-semibold ${isUnlocked ? 'text-white' : 'text-gray-600'}`}>
-                                  Day {dayNumber}: {activity.title}
+                                  {activityDayLabel}: {activityTitle}
                                 </h4>
-                                {activity.description && isDayExpanded && (
-                                  <p className={`text-sm mt-1 ${isUnlocked ? 'text-gray-400' : 'text-gray-600'}`}>
-                                    {activity.description}
+                                {activityDuration && (
+                                  <p className={`text-xs mt-1 ${isUnlocked ? 'text-gray-500' : 'text-gray-600'}`}>
+                                    {activityDuration}
                                   </p>
                                 )}
                               </div>
@@ -683,34 +705,54 @@ export function PBLProjectDetail({
                           {/* 详细内容 (展开时显示) */}
                           {isDayExpanded && isUnlocked && (
                             <div className="px-4 pb-4 space-y-4 border-t border-gray-800">
-                              {/* 任务列表 */}
-                              {activity.tasks && activity.tasks.length > 0 && (
-                                <div>
-                                  <h5 className="text-sm font-semibold text-purple-400 mb-2">📝 今日任务：</h5>
-                                  <ul className="space-y-2">
-                                    {activity.tasks.map((task, idx) => (
-                                      <li key={idx} className="text-sm text-gray-300 flex items-start gap-2 pl-4">
-                                        <span className="text-purple-400">•</span>
-                                        <span>{task}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
+                              {/* ✨ 完整的Markdown内容 */}
+                              {activityContent ? (
+                                <div className="prose prose-invert prose-sm max-w-none
+                                  prose-headings:text-white prose-headings:font-semibold
+                                  prose-h3:text-purple-400 prose-h4:text-blue-400
+                                  prose-p:text-gray-300 prose-p:leading-relaxed
+                                  prose-strong:text-white prose-strong:font-semibold
+                                  prose-ul:text-gray-300 prose-ol:text-gray-300
+                                  prose-li:text-gray-300
+                                  prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+                                  prose-code:text-purple-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded
+                                  prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400
+                                  prose-table:text-gray-300">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {activityContent}
+                                  </ReactMarkdown>
                                 </div>
-                              )}
+                              ) : (
+                                <>
+                                  {/* 向后兼容：如果没有content字段，显示旧的tasks/deliverables */}
+                                  {activity.tasks && activity.tasks.length > 0 && (
+                                    <div>
+                                      <h5 className="text-sm font-semibold text-purple-400 mb-2">📝 今日任务：</h5>
+                                      <ul className="space-y-2">
+                                        {activity.tasks.map((task, idx) => (
+                                          <li key={idx} className="text-sm text-gray-300 flex items-start gap-2 pl-4">
+                                            <span className="text-purple-400">•</span>
+                                            <span>{task}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
 
-                              {/* 交付物 */}
-                              {activity.deliverables && activity.deliverables.length > 0 && (
-                                <div>
-                                  <h5 className="text-sm font-semibold text-orange-400 mb-2">📦 需要提交：</h5>
-                                  <ul className="space-y-1">
-                                    {activity.deliverables.map((deliverable, idx) => (
-                                      <li key={idx} className="text-sm text-gray-300 flex items-start gap-2 pl-4">
-                                        <span className="text-orange-400">✓</span>
-                                        <span>{deliverable}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
+                                  {activity.deliverables && activity.deliverables.length > 0 && (
+                                    <div>
+                                      <h5 className="text-sm font-semibold text-orange-400 mb-2">📦 需要提交：</h5>
+                                      <ul className="space-y-1">
+                                        {activity.deliverables.map((deliverable, idx) => (
+                                          <li key={idx} className="text-sm text-gray-300 flex items-start gap-2 pl-4">
+                                            <span className="text-orange-400">✓</span>
+                                            <span>{deliverable}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </>
                               )}
 
                               {/* 提交和查看记录按钮 */}
