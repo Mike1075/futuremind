@@ -137,6 +137,57 @@ class ConsciousnessTreeAPI {
       return { success: false, error: '获取领域探索记录失败' }
     }
   }
+
+  async getTreeGrowthData(): Promise<{
+    success: boolean
+    data?: {
+      levelProgress: number
+      consciousnessLevel: number
+      domainDepths: Record<string, number>
+    }
+    error?: string
+  }> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, error: '用户未登录' }
+      }
+
+      // 获取 level_progress 和 consciousness_level
+      const { data: profileData, error: profileError } = await this.supabase
+        .from('profiles')
+        .select('level_progress, consciousness_level')
+        .eq('id', user.id)
+        .single<{ level_progress: number | null; consciousness_level: number | null }>()
+
+      if (profileError) {
+        return { success: false, error: profileError.message }
+      }
+
+      // 获取领域深度
+      const domainResult = await this.getDomainExploration()
+      if (!domainResult.success || !domainResult.data) {
+        return { success: false, error: '获取领域数据失败' }
+      }
+
+      const domainDepths: Record<string, number> = {}
+      Object.entries(domainResult.data.domain_scores).forEach(([domain, data]) => {
+        domainDepths[domain] = data.depth_score
+      })
+
+      return {
+        success: true,
+        data: {
+          levelProgress: profileData?.level_progress || 0,
+          consciousnessLevel: profileData?.consciousness_level || 1,
+          domainDepths
+        }
+      }
+    } catch (error) {
+      console.error('获取树生长数据失败:', error)
+      return { success: false, error: '获取树生长数据失败' }
+    }
+  }
 }
 
 const consciousnessTreeAPI = new ConsciousnessTreeAPI()

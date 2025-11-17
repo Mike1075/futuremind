@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import consciousnessTreeAPI from '@/lib/api/consciousness-tree'
+import type { DomainScores } from '@/lib/api/consciousness-tree'
 
 // ============================================================================
 // 类型定义（完全基于旧代码）

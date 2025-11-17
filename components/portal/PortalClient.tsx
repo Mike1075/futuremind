@@ -17,6 +17,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { usePortalCourses } from '@/lib/hooks/usePortalCourses'
+import { DynamicConsciousnessTreeV3 } from '@/components/ui/dynamic-consciousness-tree-v3'
 
 interface PortalClientProps {
   userId: string
@@ -280,13 +281,10 @@ export function PortalClient({
                 <TreePine className="w-6 h-6 text-green-400 mr-3" />
                 <h3 className="text-lg font-semibold text-white">意识进化树</h3>
               </div>
-              <div className="relative h-80 w-full bg-gradient-to-b from-white/5 to-white/10 rounded-lg mb-4">
-                <Image
-                  src="/images/consciousness-tree-preview.png"
-                  alt="意识进化树预览"
-                  fill
-                  className="object-contain opacity-80"
-                  sizes="(max-width: 768px) 100vw, 33vw"
+              <div className="relative h-80 w-full bg-black rounded-lg mb-4 overflow-hidden">
+                <DynamicConsciousnessTreeV3
+                  loadFromDatabase={true}
+                  className="w-full h-full"
                 />
               </div>
 
