@@ -43,11 +43,11 @@ interface PBLCourseViewProps {
   }
 }
 
-// 项目图标映射 - 为12个伊卡洛斯项目提供默认图标
+// 项目图标映射 - 为11个伊卡洛斯项目提供默认图标
 const PROJECT_ICONS: Record<number, string> = {
-  1: '🐾', 2: '🐱', 3: '🐶', 4: '🌍',
-  5: '🌱', 6: '🐜', 7: '💧', 8: '🗺️',
-  9: '🎨', 10: '👁️', 11: '🎲', 12: '🤝'
+  1: '🐾', 2: '🐱', 3: '🐶',
+  4: '🌱', 5: '🐜', 6: '💧', 7: '🗺️',
+  8: '🎨', 9: '👁️', 10: '🎲', 11: '🤝'
 }
 
 export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
@@ -135,11 +135,11 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
     }
   }
 
-  // 获取伊卡洛斯系统的12个项目
+  // 获取伊卡洛斯系统的11个项目
   const icarusProjects = allProjects
     .filter(p => p.project_visibility === 'system')
     .sort((a, b) => a.sequence_number - b.sequence_number)
-    .slice(0, 12)
+    .slice(0, 11)
 
   if (loading) {
     return (
@@ -327,9 +327,9 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
             {(() => {
               // 固定的模块结构（与管理后台一致）
               const FIXED_MODULES = [
-                { id: 1, name: '模块1：观察与感知', range: [1, 2, 3, 4], icon: '🌱', gradient: 'from-emerald-500 to-teal-500', description: '通过观察和感知开始你的探索之旅' },
-                { id: 2, name: '模块2：量子与意识', range: [5, 6, 7, 8], icon: '🔬', gradient: 'from-blue-500 to-cyan-500', description: '深入量子世界，探索意识的奥秘' },
-                { id: 3, name: '模块3：集体意识', range: [9, 10, 11, 12], icon: '🌐', gradient: 'from-purple-500 to-pink-500', description: '研究集体意识的力量和影响' }
+                { id: 1, name: '模块一：无形的纽带', range: [1, 2, 3], icon: '🌱', gradient: 'from-emerald-500 to-teal-500', description: '通过观察和感知开始你的探索之旅' },
+                { id: 2, name: '模块二：无形的地图', range: [4, 5, 6, 7], icon: '🔬', gradient: 'from-blue-500 to-cyan-500', description: '深入量子世界，探索意识的奥秘' },
+                { id: 3, name: '模块三：延展的心灵', range: [8, 9, 10, 11], icon: '🌐', gradient: 'from-purple-500 to-pink-500', description: '研究集体意识的力量和影响' }
               ]
 
               // 难度颜色配置 - 简洁的边框颜色
@@ -368,8 +368,8 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
                       <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent" />
                     </div>
 
-                    {/* 项目网格 - 干净简洁的卡片 */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* 项目网格 - 干净简洁的卡片，根据项目数量调整列数 */}
+                    <div className={`grid grid-cols-1 md:grid-cols-2 ${module.range.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
                       {module.range.map(seq => {
                         const project = getProjectBySequence(seq)
 

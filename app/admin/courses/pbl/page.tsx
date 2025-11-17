@@ -28,9 +28,9 @@ interface PBLProject {
 }
 
 const FIXED_MODULES = [
-  { id: 1, name: '模块一：无形的纽带', range: [1, 2, 3, 4] },
-  { id: 2, name: '模块二：无形的地图', range: [5, 6, 7, 8] },
-  { id: 3, name: '模块三：延展的心灵', range: [9, 10, 11, 12] }
+  { id: 1, name: '模块一：无形的纽带', range: [1, 2, 3] },
+  { id: 2, name: '模块二：无形的地图', range: [4, 5, 6, 7] },
+  { id: 3, name: '模块三：延展的心灵', range: [8, 9, 10, 11] }
 ]
 
 const DIFFICULTY_LABELS = {
