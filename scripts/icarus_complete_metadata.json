@@ -1,0 +1,2257 @@
+{
+  "course_system": "icarus",
+  "system_id": "9da7c347-fe63-4c81-81e1-df576bcd2e6c",
+  "total_projects": 11,
+  "total_weeks": 92,
+  "projects": [
+    {
+      "sequence_number": 1,
+      "module": "模块一",
+      "title": "第一阶段：宠物侦探 (The Pet Detectives)",
+      "icon": "PawPrint",
+      "color": "purple",
+      "week_plan": [
+        {
+          "week": 1,
+          "theme": "成为观察家",
+          "days": "Days 1-7",
+          "goals": [
+            "激发兴趣，建立科学观察的基本概念，并制作完成核心研究工具——《第六感日记》。成功记录至少三次“主人回家”事件。"
+          ],
+          "activities": [
+            {
+              "day": "1",
+              "title": "项目启动：杰提的神秘故事 (Project Kick-off: The Mystery of Jaytee)",
+              "duration": "约30分钟",
+              "description": "(任务时长：约30分钟)"
+            },
+            {
+              "day": "2-4",
+              "title": "任务准备：制作你的《第六感日记》(Mission Prep: Crafting Your 'Sixth Sense Diary')",
+              "duration": "约45分钟，可在3天内完成",
+              "description": "(任务时长：约45分钟，可在3天内完成)"
+            },
+            {
+              "day": "5-7",
+              "title": "开始调查：记录前三次回家事件 (The Investigation Begins: First Three Entries)",
+              "duration": "每天约15分钟观察，可在3天内完成",
+              "description": "(任务时长：每天约15分钟观察，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "theme": "采访证人与数据魔法",
+          "days": "Days 8-14",
+          "goals": [
+            "学习侦探的另一项重要技能——采访“证人”（家人），以收集更多维度的信息。同时，学习将零散的“线索”（日记记录）通过盖亚的“数据魔法”变成直观的图表，初步分析宠物的“超能力”模式。"
+          ],
+          "activities": [
+            {
+              "day": "8-10",
+              "title": "侦探技巧：学习如何采访“证人” (Detective Skill: How to Interview a Witness)",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            },
+            {
+              "day": "11-12",
+              "title": "数据魔法：让你的线索“开口说话” (Data Magic: Making Your Clues Speak)",
+              "duration": "约30分钟，可在2天内完成",
+              "description": "(任务时长：约30分钟，可在2天内完成)"
+            },
+            {
+              "day": "13-14",
+              "title": "继续调查：积累更多的证据！ (Keep Investigating: Gather More Evidence!)",
+              "duration": "每天约15分钟观察",
+              "description": "(任务时长：每天约15分钟观察)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "设计你的心灵游戏",
+          "days": "Days 15-21",
+          "goals": [
+            "完成从“被动观察家”到“主动实验设计师”的身份转变。设计并执行一个简单的、非语言的“心灵游戏”，尝试主动用“意念”与宠物沟通，并严谨地记录实验过程与结果。"
+          ],
+          "activities": [
+            {
+              "day": "15-16",
+              "title": "实验设计课：从观察到提问 (Experiment Design Class: From Observing to Asking)",
+              "duration": "约45分钟，可在2天内完成",
+              "description": "(任务时长：约45分钟，可在2天内完成)"
+            },
+            {
+              "day": "17-20",
+              "title": "执行与记录：进行三次心灵游戏 (Execution & Recording: Three Rounds of the Mind Game)",
+              "duration": "每天约20分钟，可在4天内完成",
+              "description": "(任务时长：每天约20分钟，可在4天内完成)"
+            },
+            {
+              "day": "21",
+              "title": "本周复盘：分享你的第一次实验 (Weekly Review: Sharing Your First Experiment)",
+              "duration": "约20分钟",
+              "description": "(任务时长：约20分钟)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "成果展示与全球报告会",
+          "days": "Days 22-28",
+          "goals": [
+            "整合前三周的所有观察日记、采访记录和实验数据，制作一份属于自己的、图文并茂的《宠物第六感观察报告》。同时，准备一个简短的演讲，在全球在线“宠物侦探报告会”上，向世界各地的同伴们分享你的发现和故事。"
+          ],
+          "activities": [
+            {
+              "day": "22-24",
+              "title": "整合线索：制作你的最终报告 (Synthesizing Clues: Creating Your Final Report)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "25-26",
+              "title": "演讲练习：准备你的3分钟分享 (Presentation Practice: Preparing Your 3-Minute Share)",
+              "duration": "约45分钟，可在2天内完成",
+              "description": "(任务时长：约45分钟，可在2天内完成)"
+            },
+            {
+              "day": "27-28",
+              "title": "终极时刻：全球报告会与项目结业 (The Final Moment: Global Conference & Graduation)",
+              "duration": "报告会约60分钟",
+              "description": "(任务时长：报告会约60分钟)"
+            }
+          ]
+        }
+      ],
+      "target_age": "6-10岁",
+      "core_goal": "培养孩子们的细致观察力、同理心、以及基础的数据记录习惯。让他们在与宠物的日常互动中，埋下科学探究和超越纯物质世界观的种子。"
+    },
+    {
+      "sequence_number": 2,
+      "module": "模块一",
+      "title": "第二阶段：杰提计划 (The Jaytee Project) - 《薛定谔的猫砂盆：测试意念的非定域性》",
+      "icon": "Microscope",
+      "color": "blue",
+      "week_plan": [
+        {
+          "week": 2,
+          "theme": "成为实验建筑师",
+          "days": "Days 8-14",
+          "goals": [
+            "学习科学实验设计的核心原则——变量控制、随机化、盲法与数据记录。基于上周提出的研究问题，设计出一套完整的、可以在自己家庭环境中执行的原创实验方案。"
+          ],
+          "activities": [
+            {
+              "day": "8-9",
+              "title": "科学方法论入门（上）：控制你的“变量” (Scientific Methodology 101 (Part 1): Controlling Your Variables)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "10-12",
+              "title": "科学方法论入门（下）：随机、双盲与量子骰子 (Scientific Methodology 101 (Part 2): Randomization, Double-Blind & The Quantum Die)",
+              "duration": "约75分钟，可在3天内完成",
+              "description": "(任务时长：约75分钟，可在3天内完成)"
+            },
+            {
+              "day": "13-14",
+              "title": "撰写你的实验方案 (Writing Your Experimental Protocol)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "扬帆起航——首次数据航行",
+          "days": "Days 15-21",
+          "goals": [
+            "将上周设计的实验方案付诸实践。成功完成至少两次完整的实验数据收集，包括视频录制、时间点标记和数据上传。学习如何应对实验过程中可能出现的各种意外状况。"
+          ],
+          "activities": [
+            {
+              "day": "15",
+              "title": "出航前检查：设备调试与场地布置 (Pre-voyage Check: Equipment & Site Setup)",
+              "duration": "约45分钟",
+              "description": "(任务时长：约45分钟)"
+            }
+          ]
+        },
+        {
+          "week": 1,
+          "theme": "打破常规——当科学遇到“不可能”",
+          "days": "Days 1-7",
+          "goals": [
+            "从“宠物有第六感吗？”的现象层面，深入到“这种‘感应’的本质是什么？”的理论层面。通过案例学习和批判性思维训练，理解常规科学解释的局限性，并正式引入“心灵感应”作为一种需要被严谨检验的科学假说。"
+          ],
+          "activities": [
+            {
+              "day": "1-2",
+              "title": "案例深度分析：杰提实验的背后 (Case Deep Dive: Behind the Jaytee Experiments)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "3-5",
+              "title": "理论武装：什么是“非定域性”？ (Theoretical Toolkit: What is 'Non-Locality'?)",
+              "duration": "约75分钟，可在3天内完成",
+              "description": "(任务时长：约75分钟，可在3天内完成)"
+            },
+            {
+              "day": "6-7",
+              "title": "提出你的研究问题 (Formulating Your Research Question)",
+              "duration": "约30分钟，可在2天内完成",
+              "description": "(任务时长：约30分钟，可在2天内完成)"
+            },
+            {
+              "day": "16-18",
+              "title": "第一次试航：完成首次完整实验 (Maiden Voyage: Completing the First Full Experiment)",
+              "duration": "实验本身根据你的方案进行，记录和上传约30分钟，可在3天内选择一天完成",
+              "description": "(任务时长：实验本身根据你的方案进行，记录和上传约30分钟，可在3天内选择一天完成)"
+            },
+            {
+              "day": "19-21",
+              "title": "第二次远航：重复实验与问题解决 (Second Voyage: Repetition & Troubleshooting)",
+              "duration": "实验本身根据你的方案进行，记录和上传约30分钟，可在3天内选择一天完成",
+              "description": "(任务时长：实验本身根据你的方案进行，记录和上传约30分钟，可在3天内选择一天完成)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "深入航行与初步发现",
+          "days": "Days 22-28",
+          "goals": [
+            "至少再完成两次完整的实验数据收集，使总数据量达到4次或以上。接收并学习解读盖亚提供的第一份《初步数据分析报告》，将抽象的数据与具体的宠物行为联系起来，并记录下自己的初步洞察。"
+          ],
+          "activities": [
+            {
+              "day": "22-25",
+              "title": "第三次与第四次数据航行 (Third & Fourth Data Voyages)",
+              "duration": "每次实验根据方案进行，记录和上传约30分钟。可在4天内选择两天完成",
+              "description": "(任务时长：每次实验根据方案进行，记录和上传约30分钟。可在4天内选择两天完成)"
+            },
+            {
+              "day": "26-27",
+              "title": "接收情报：解读你的第一份数据报告 (Receiving Intel: Interpreting Your First Data Report)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "28",
+              "title": "本周复盘：数据与直觉 (Weekly Review: Data vs. Intuition)",
+              "duration": "约20分钟",
+              "description": "(任务时长：约20分钟)"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "theme": "统计学之眼——巧合还是信号？",
+          "days": "Days 29-35",
+          "goals": [
+            "至少再完成两次完整的实验数据收集，使总数据量达到6次或以上。学习基础的统计学概念，特别是“P值”的意义，并开始运用它来评估你的实验结果是否具有统计学上的显著性。"
+          ],
+          "activities": [
+            {
+              "day": "29-32",
+              "title": "第五次与第六次数据航行 (Fifth & Sixth Data Voyages)",
+              "duration": "每次实验根据方案进行，记录和上传约30分钟。可在4天内选择两天完成",
+              "description": "(任务时长：每次实验根据方案进行，记录和上传约30分钟。可在4天内选择两天完成)"
+            },
+            {
+              "day": "33-34",
+              "title": "统计学入门：P值的力量 (Statistics 101: The Power of the P-value)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "35",
+              "title": "接收第二份报告与本周复盘 (Receiving Report #2 & Weekly Review)",
+              "duration": "约30分钟",
+              "description": "(任务时长：约30分钟)"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "theme": "论文的骨架——从数据到论证",
+          "days": "Days 36-42",
+          "goals": [
+            "完成最后的两次实验数据收集，使总数据量达到8次，为最终分析奠定坚实基础。学习科学论文的基本结构（引言、方法、结果、讨论），并开始撰写自己项目报告的核心部分——“方法”和“结果”的初稿。"
+          ],
+          "activities": [
+            {
+              "day": "36-39",
+              "title": "最后的航行：第七次与第八次数据收集 (The Final Voyages: Data Collection #7 & #8)",
+              "duration": "每次实验根据方案进行，记录和上传约30分钟。可在4天内选择两天完成",
+              "description": "(任务时长：每次实验根据方案进行，记录和上传约30分钟。可在4天内选择两天完成)"
+            },
+            {
+              "day": "40-41",
+              "title": "科学写作入门：论文的四大支柱 (Scientific Writing 101: The Four Pillars of a Paper)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "42",
+              "title": "动笔实践：撰写“方法”与“结果”初稿 (Writing Practice: Drafting 'Methods' & 'Results')",
+              "duration": "约45分钟",
+              "description": "(任务时长：约45分钟)"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "theme": "赋予发现以灵魂——引言与讨论",
+          "days": "Days 43-49",
+          "goals": [
+            "学习并完成科学论文中最具思想性的两个部分——“引言”（Introduction）和“讨论”（Discussion）的撰写。将上周完成的“方法”和“结果”部分与之整合，形成一份完整的《研究报告》初稿。"
+          ],
+          "activities": [
+            {
+              "day": "43-45",
+              "title": "撰写“引言”：我们为何出发？ (Writing the 'Introduction': Why Did We Start?)",
+              "duration": "约75分钟，可在3天内完成",
+              "description": "(任务时长：约75分钟，可在3天内完成)"
+            },
+            {
+              "day": "46-48",
+              "title": "撰写“讨论”：你的发现意味着什么？ (Writing the 'Discussion': What Does It All Mean?)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "49",
+              "title": "整合与成稿：你的第一篇完整论文 (Assembly & First Draft: Your First Complete Paper)",
+              "duration": "约30分钟",
+              "description": "(任务时长：约30分钟)"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "theme": "成果发表——你的声音，世界的回响",
+          "days": "Days 50-56",
+          "goals": [
+            "根据反馈修改和润色你的研究报告，完成最终定稿。准备一个精炼、有力的5分钟项目成果演讲。在全球青年研究员论坛上进行在线发表，与来自世界各地的同伴交流你的发现，并获得“伊卡洛斯计划-青年研究员”认证。"
+          ],
+          "activities": [
+            {
+              "day": "50-52",
+              "title": "精雕细琢：润色你的最终报告 (Polishing the Gem: Finalizing Your Report)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "53-54",
+              "title": "准备你的“TED”演讲 (Preparing Your 'TED' Talk)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "55-56",
+              "title": "高光时刻：全球论坛与结业认证 (Highlight Moment: Global Forum & Certification)",
+              "duration": "论坛约90分钟",
+              "description": "(任务时长：论坛约90分钟)"
+            }
+          ]
+        }
+      ],
+      "target_age": "11-15岁",
+      "core_goal": "引入严谨的科学方法论（随机化、盲法、对照），引导学员设计并执行一个初步的原创性实验，开始挑战经典的因果律观念，探索“意念”作为独立变量的可能性。"
+    },
+    {
+      "sequence_number": 3,
+      "module": "模块一",
+      "title": "第三阶段：贝尔不等式与生命系统 (Bell's Inequality & Living Systems)",
+      "icon": "Atom",
+      "color": "indigo",
+      "week_plan": [
+        {
+          "week": 1,
+          "theme": "爱因斯坦的“噩梦”——定域实在论与EPR佯谬",
+          "days": "Days 1-7",
+          "goals": [
+            "理解20世纪物理学最核心的一场思想论战。掌握“定域性”和“实在性”这两个基本概念，并能清晰地阐述爱因斯坦等人提出的EPR佯谬为何对当时的量子力学构成了巨大的挑战。"
+          ],
+          "activities": [
+            {
+              "day": "1-3",
+              "title": "物理学的基石：什么是“定域实在论”？ (The Bedrock of Physics: What is 'Local Realism'?)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "4-7",
+              "title": "EPR佯谬：爱因斯坦的“幽灵般的超距作用” (The EPR Paradox: Einstein's 'Spooky Action at a Distance')",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "theme": "贝尔的“审判”——将哲学问题转化为可检验的数学",
+          "days": "Days 8-14",
+          "goals": [
+            "概念性地理解贝尔定理（Bell's Theorem）的革命性意义。明白贝尔不等式是如何为“定域实在论”设下一个数学“陷阱”的，并理解为什么实验结果违反了这个不等式，就意味着爱因斯坦的世界观可能是错误的。"
+          ],
+          "activities": [
+            {
+              "day": "8-10",
+              "title": "贝尔定理的核心思想：关联性的“经典上限” (The Core Idea of Bell's Theorem: The 'Classical Limit' of Correlation)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "11-14",
+              "title": "审判日：量子力学的预测与实验验证 (Judgment Day: Quantum Mechanics' Prediction & The Experimental Verdict)",
+              "duration": "约90分钟，可在4天内完成",
+              "description": "(任务时长：约90分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "思想的迁徙——构建生物版的“贝尔实验”",
+          "days": "Days 15-21",
+          "goals": [
+            "学习如何进行类比推理和模型构建。将物理学中“纠缠光子对”的贝尔实验模型，类比到“主人-宠物”系统上，定义出生物学版本的“测量”、“设置”和“结果”，并进行第一次初步的、概念性的实验设计。"
+          ],
+          "activities": [
+            {
+              "day": "15-17",
+              "title": "类比的艺术：从光子到生命体 (The Art of Analogy: From Photons to Living Beings)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "18-21",
+              "title": "绘制蓝图：你的第一个思想实验方案 (Blueprint: Your First Thought Experiment Protocol)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "从理想到现实——设计一个“足够好”的实验",
+          "days": "Days 22-28",
+          "goals": [
+            "学习“理想实验”与“现实实验”之间的差异，分析上周设计的思想实验在现实中执行的主要障碍。通过权衡与创新，设计一个“简化但核心思想不变”的、具有初步可操作性的真实生物贝尔实验方案。"
+          ],
+          "activities": [
+            {
+              "day": "22-24",
+              "title": "现实的挑战：我们的思想实验有哪些障碍？ (The Reality Check: Obstacles for Our Thought Experiment)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "25-28",
+              "title": "“足够好”的设计：一个可行的简化方案 (A 'Good Enough' Design: A Feasible Simplified Protocol)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "theme": "同行评审与模拟演练——为真实实验做准备",
+          "days": "Days 29-35",
+          "goals": [
+            "学习并参与科学界的“同行评审”过程，通过相互评估方案来发现并修正设计中的潜在问题。同时，进行一次不涉及宠物的“干运行”（Dry Run）模拟演练，以测试技术流程、设备同步和数据记录的可靠性。"
+          ],
+          "activities": [
+            {
+              "day": "29-31",
+              "title": "科学的“磨刀石”：参与同行评审 (The Sharpening Stone of Science: Engaging in Peer Review)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "32-35",
+              "title": "“干运行”：第一次无宠物模拟演练 (The 'Dry Run': First Simulation Without the Pet)",
+              "duration": "约75分钟，可在4天内完成",
+              "description": "(任务时长：约75分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "theme": "真实数据的召唤——启动你的生物贝尔实验",
+          "days": "Days 36-42",
+          "goals": [
+            "正式启动你的“简化版生物贝尔实验”。与你的宠物伙伴合作，成功完成至少10次完整的试验（Trials），并建立起一套标准化的数据记录和视频归档流程。这是数据积累阶段的开端。"
+          ],
+          "activities": [
+            {
+              "day": "36",
+              "title": "最终方案锁定与伦理承诺 (Final Protocol Lock-in & Ethical Commitment)",
+              "duration": "约30分钟",
+              "description": "(任务时长：约30分钟)"
+            },
+            {
+              "day": "37-42",
+              "title": "数据收集周期 I：完成前10次试验 (Data Collection Cycle I: Completing the First 10 Trials)",
+              "duration": "可在6天内，选择2-3个合适的时间段完成，每次时长约30-45分钟",
+              "description": "(任务时长：可在6天内，选择2-3个合适的时间段完成，每次时长约30-45分钟)"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "theme": "数据的积累与模式的微光",
+          "days": "Days 43-49",
+          "goals": [
+            "继续进行高强度的数据收集，本周目标是再完成至少15次完整的试验（Trials），使总数据量达到25次或以上。同时，学习“中期数据快照”的概念，并接收第一份不揭示具体答案的、纯粹模式化的数据反馈，开始训练从宏观统计中寻找趋势的“数据直觉”。"
+          ],
+          "activities": [
+            {
+              "day": "43-47",
+              "title": "数据收集周期 II：突破25次试验大关 (Data Collection Cycle II: Breaking the 25 Trials Barrier)",
+              "duration": "可在5天内，选择2-4个合适的时间段完成，每次时长约30-45分钟",
+              "description": "(任务时长：可在5天内，选择2-4个合适的时间段完成，每次时长约30-45分钟)"
+            },
+            {
+              "day": "48-49",
+              "title": "中期数据快照：第一次窥见模式 (Mid-term Data Snapshot: A First Glimpse of the Pattern)",
+              "duration": "约45分钟，可在2天内完成",
+              "description": "(任务时长：约45分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "theme": "元数据的力量——寻找隐藏的影响因素",
+          "days": "Days 50-56",
+          "goals": [
+            "继续完成至少15次完整的试验，使总数据量达到40次或以上。学习“元数据”的概念，并开始在实验日志中系统地记录可能影响实验结果的“情境变量”，为更深层次的分析做准备。"
+          ],
+          "activities": [
+            {
+              "day": "50-54",
+              "title": "数据收集周期 III：向40次大关迈进 (Data Collection Cycle III: Pushing Towards 40 Trials)",
+              "duration": "可在5天内，选择2-4个合适的时间段完成，每次时长约30-45分钟",
+              "description": "(任务时长：可在5天内，选择2-4个合适的时间段完成，每次时长约30-45分钟)"
+            },
+            {
+              "day": "55-56",
+              "title": "元数据入门：记录实验的“情境” (Intro to Metadata: Recording the 'Context' of the Experiment)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 9,
+          "theme": "交叉分析——在数据中寻找数据的关联",
+          "days": "Days 57-63",
+          "goals": [
+            "继续完成至少15次完整的试验，使总数据量达到55次或以上。在每一次实验中，都严谨地记录《实验情境元数据记录表》。接收并学习解读一份包含了“元数据交叉分析”的深度数据报告，尝试发现哪些情境因素可能会让你的实验结果变得更好或更差。"
+          ],
+          "activities": [
+            {
+              "day": "57-61",
+              "title": "数据收集周期 IV：带着“元数据之眼”的观察 (Data Collection Cycle IV: Observing with 'Metadata Eyes')",
+              "duration": "可在5天内，选择2-4个合适的时间段完成，每次时长约45分钟",
+              "description": "(任务时长：可在5天内，选择2-4个合适的时间段完成，每次时长约45分钟)"
+            },
+            {
+              "day": "62-63",
+              "title": "深度数据报告：什么是“交叉分析”？ (In-depth Data Report: What is 'Cross-Analysis'?)",
+              "duration": "约75分钟，可在2天内完成",
+              "description": "(任务时长：约75分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 10,
+          "theme": "效应量——信号有多强烈？",
+          "days": "Days 64-70",
+          "goals": [
+            "完成最后的20次试验，使总数据量达到75次或以上。学习并理解“效应量”（Effect Size）的概念，将其与“P值”进行区分。接收包含效应量分析的最终数据报告，并学习如何更全面、更精确地描述你的研究发现。"
+          ],
+          "activities": [
+            {
+              "day": "64-68",
+              "title": "数据收集终极冲刺：迈向75次大关 (Final Data Sprint: Reaching the 75 Trials Milestone)",
+              "duration": "可在5天内，选择3-5个合适的时间段完成，每次时长约30-45分钟",
+              "description": "(任务时长：可在5天内，选择3-5个合适的时间段完成，每次时长约30-45分钟)"
+            },
+            {
+              "day": "69-70",
+              "title": "超越P值：什么是“效应量”？ (Beyond the P-value: What is 'Effect Size'?)",
+              "duration": "约75分钟，可在2天内完成",
+              "description": "(任务时长：约75分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 11,
+          "theme": "论文的铸造——整合所有模块，构建完整论述",
+          "days": "Days 71-77",
+          "goals": [
+            "整合之前撰写的所有初稿（引言、方法、结果、讨论），并根据最终的数据分析报告进行全面更新和修订。完成一份逻辑连贯、数据支撑有力的完整研究论文初稿，为后续的精修和同行评审做准备。"
+          ],
+          "activities": [
+            {
+              "day": "71-73",
+              "title": "重访与更新：“方法”与“结果”的最终版 (Revisiting & Updating: The Final 'Methods' & 'Results')",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "74-77",
+              "title": "升华与思辨：完成“引言”与“讨论”的最终版 (Synthesizing & Arguing: The Final 'Introduction' & 'Discussion')",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 12,
+          "theme": "画龙点睛——摘要、格式与最终发表准备",
+          "days": "Days 78-84",
+          "goals": [
+            "学习并完成科学论文的“门面”——摘要（Abstract）的写作。按照标准的学术格式规范全文，并完成一份准备公开发表的、完美的最终版研究论文。同时，开始将论文的核心内容转化为演讲稿的要点。"
+          ],
+          "activities": [
+            {
+              "day": "78-80",
+              "title": "摘要的艺术：300字浓缩你的宇宙 (The Art of the Abstract: Your Universe in 300 Words)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "81-82",
+              "title": "专业的“着装”：学术格式规范 (Professional Attire: Academic Formatting)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "83-84",
+              "title": "从论文到演讲：提炼你的核心故事 (From Paper to Presentation: Distilling Your Core Story)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 13,
+          "theme": "从文字到声音——打造你的学术演讲",
+          "days": "Days 85-91",
+          "goals": [
+            "将上周完成的演讲大纲，扩展成一份详细、流畅、口语化的演讲稿。制作一个简洁、专业的演示文稿（PPT）。进行至少两次初步的口头演讲练习，并录制一次音频样本进行自我评估。"
+          ],
+          "activities": [
+            {
+              "day": "85-87",
+              "title": "撰写演讲稿：像讲故事一样说科学 (Crafting the Script: Telling Science Like a Story)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "88-89",
+              "title": "视觉的语言：制作你的演示文稿 (The Language of Vision: Creating Your Presentation)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "90-91",
+              "title": "第一次彩排：录制你的演讲音频 (First Rehearsal: Recording Your Audio)",
+              "duration": "约45分钟，可在2天内完成",
+              "description": "(任务时长：约45分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 14,
+          "theme": "模拟发表会——在同伴面前的预演",
+          "days": "Days 92-98",
+          "goals": [
+            "在一个小组范围内，进行一次模拟的在线项目发表会。每一位学员都将进行一次完整的计时演讲，并作为“同行评议员”为其他组员的演讲提供建设性的反馈。根据收到的反馈，对自己的演讲稿和PPT进行最后的调整。"
+          ],
+          "activities": [
+            {
+              "day": "92-95",
+              "title": "小组模拟发表会：展示与反馈 (Group Simulation: Presentation & Feedback)",
+              "duration": "约120分钟，可在4天内选择一个固定时间段进行",
+              "description": "(任务时长：约120分钟，可在4天内选择一个固定时间段进行)"
+            },
+            {
+              "day": "96-98",
+              "title": "最后冲刺：根据反馈迭代你的演讲 (Final Sprint: Iterating Your Presentation Based on Feedback)",
+              "duration": "约75分钟，可在3天内完成",
+              "description": "(任务时长：约75分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 15,
+          "theme": "意义的追寻——你的研究与科学的未来",
+          "days": "Days 99-105",
+          "goals": [
+            "进行一次深度的项目复盘与哲学反思，思考你的研究发现（无论结果如何）对科学、社会以及你个人世界观的长远意义。撰写一份深刻的“研究员个人陈述”（Researcher's Personal Statement），作为你“伊卡洛斯档案”的永久性卷首语。"
+          ],
+          "activities": [
+            {
+              "day": "99-102",
+              "title": "哲学圆桌会：如果这是真的，世界会怎样？ (The Philosophical Roundtable: If This Were True, What Then?)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            },
+            {
+              "day": "103-105",
+              "title": "撰写你的“研究员个人陈述” (Writing Your Researcher's Personal Statement)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 16,
+          "theme": "星辰大海——在全球论坛上发表你的宇宙观",
+          "days": "Days 106-112",
+          "goals": [
+            "在“伊卡洛斯计划全球青年研究员论坛”上，进行一次自信、流畅、有力的口头发表。与其他项目成员深入交流，并获得“伊卡洛斯计划-前沿研究员”的最终认证。完成项目复盘，将个人档案永久封存，并正式成为“伊卡洛斯”社区的一员。"
+          ],
+          "activities": [
+            {
+              "day": "106-108",
+              "title": "最后的彩排与心理准备 (Final Rehearsal & Mental Preparation)",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            },
+            {
+              "day": "109-110",
+              "title": "高光时刻：全球青年研究员论坛 (Highlight Moment: The Global Young Researchers' Forum)",
+              "duration": "论坛本身约120-180分钟，可在2天内选择一场参加",
+              "description": "(任务时长：论坛本身约120-180分钟，可在2天内选择一场参加)"
+            },
+            {
+              "day": "111-112",
+              "title": "封存档案与新的启航 (Archiving & The New Beginning)",
+              "duration": "约30分钟，可在2天内完成",
+              "description": "(任务时长：约30分钟，可在2天内完成)"
+            }
+          ]
+        }
+      ],
+      "core_goal": "深入理解量子力学中“非定域性”的实验验证基础——贝尔不等式。挑战性地将这一物理学中最深刻的思想工具，应用于设计一个（思想或可执行的）生物学实验方案，以区分生命系统间的连接是经典的“隐藏变量”还是量子的“非定域纠缠”。"
+    },
+    {
+      "sequence_number": 4,
+      "module": "模块二",
+      "title": "第四阶段：植物的悄悄话 (The Plant Whisperers)",
+      "icon": "Sprout",
+      "color": "green",
+      "week_plan": [
+        {
+          "week": 1,
+          "theme": "播种希望与爱的种子",
+          "days": "Days 1-7",
+          "goals": [
+            "理解“对照实验”的基本概念。亲手种植两盆完全相同的植物，并将它们命名和分组。制作一份专门的《植物观察日记》，并开始对植物进行差异化的“爱的关注”。"
+          ],
+          "activities": [
+            {
+              "day": "1-2",
+              "title": "新的任务：植物能“听”到我们的爱吗？ (New Mission: Can Plants 'Hear' Our Love?)",
+              "duration": "约45分钟，可在2天内完成",
+              "description": "(任务时长：约45分钟，可在2天内完成)"
+            },
+            {
+              "day": "3-5",
+              "title": "实验的基石：什么是“对照组”？ (The Cornerstone: What is a 'Control Group'?)",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            },
+            {
+              "day": "6-7",
+              "title": "播种与命名：实验正式开始！ (Planting & Naming: The Experiment Begins!)",
+              "duration": "约45分钟，可在2天内完成",
+              "description": "(任务时长：约45分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "theme": "爱的“灌溉”与数据的萌芽",
+          "days": "Days 8-14",
+          "goals": [
+            "建立每日观察、测量和记录的固定习惯。系统地对“实验组”植物进行充满爱意的互动，对“对照组”植物进行标准化的必要照料。成功完成第一周的《植物观察日记》，并捕捉到植物从种子到萌芽的珍贵瞬间。"
+          ],
+          "activities": [
+            {
+              "day": "8-14",
+              "title": "每日守护者任务 (The Daily Guardian's Tasks)",
+              "duration": "每天约10-15分钟",
+              "description": "(任务时长：每天约10-15分钟)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "看见生长——绘制你的第一条生命曲线",
+          "days": "Days 15-21",
+          "goals": [
+            "继续坚持每日的观察、测量、记录和差异化互动。学习“生长曲线”的概念，并将本周收集到的“身高”数据，亲手绘制成一张能够直观对比两株植物生长趋势的曲线图。"
+          ],
+          "activities": [
+            {
+              "day": "15-20",
+              "title": "每日守护者任务（进阶版） (The Daily Guardian's Tasks - Advanced)",
+              "duration": "每天约15分钟",
+              "description": "(任务时长：每天约15分钟)"
+            },
+            {
+              "day": "21",
+              "title": "数据可视化：绘制你的第一条生长曲线 (Data Visualization: Plotting Your First Growth Curve)",
+              "duration": "约45分钟",
+              "description": "(任务时长：约45分钟)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "收获的季节——分享你与植物的秘密",
+          "days": "Days 22-28",
+          "goals": [
+            "整合所有观察日记、照片和生长曲线图，完成一份图文并茂、充满个人感悟的《植物生长观察报告》。准备并录制一个简短的分享视频，在全球“小小守护者论坛”上，向世界各地的同伴们展示你的研究成果。"
+          ],
+          "activities": [
+            {
+              "day": "22-25",
+              "title": "成果汇集：撰写你的《植物生长观察报告》 (Harvesting Results: Crafting Your Plant Growth Report)",
+              "duration": "约90分钟，可在4天内完成",
+              "description": "(任务时长：约90分钟，可在4天内完成)"
+            },
+            {
+              "day": "26-28",
+              "title": "分享你的故事：录制“守护者”视频 (Sharing Your Story: Recording Your 'Guardian' Video)",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            }
+          ]
+        }
+      ],
+      "target_age": "6-10岁",
+      "core_goal": "将对“无形连接”的探索从动物扩展到植物。通过一个简单的对照实验，培养孩子们的责任心、耐心和基础的实验思维（对照组概念），并引导他们思考人类的“意念”和“爱”是否可能成为影响其他生命生长的“养分”。"
+    },
+    {
+      "sequence_number": 5,
+      "module": "模块二",
+      "title": "第一阶段：远程蚁巢 (The Phantom Hive)",
+      "icon": "Bug",
+      "color": "amber",
+      "week_plan": [
+        {
+          "week": 1,
+          "theme": "进入“超个体”的世界",
+          "days": "Days 1-7",
+          "goals": [
+            "理解“超个体”的概念，认识到社会性昆虫群落（如蚁巢、蜂巢）本身可以被视为一个单一的、分散式的“生物”。学习蚂蚁社会的基本结构和信息交流方式，并提出本项目的核心研究问题。"
+          ],
+          "activities": [
+            {
+              "day": "1-3",
+              "title": "认知跃迁：一个蚁巢，一个“生物”？ (Cognitive Leap: One Colony, One 'Organism'?)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "4-7",
+              "title": "蚂蚁社会学入门与项目问题确立 (Intro to Myrmecology & Formulating the Question)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "theme": "构建“分离舱”——你的蚂蚁生态缸",
+          "days": "Days 8-14",
+          "goals": [
+            "学习和了解人工饲养蚂蚁的基本知识和设备。亲手设计并制作（或组装）一个模块化的、可分割的“双子蚁巢”生态缸。成功引入一个初始的蚂蚁群落，并确保它们在新家中稳定下来。"
+          ],
+          "activities": [
+            {
+              "day": "8-10",
+              "title": "蚂蚁的“空间站”：模块化蚁巢的设计 (The Ants' 'Space Station': Designing a Modular Nest)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "11-14",
+              "title": "“殖民者”入驻：迎接你的蚂蚁群落 (The Colonists Arrive: Welcoming Your Ant Colony)",
+              "duration": "约120分钟动手操作，及后续每日5分钟观察，可在4天内完成",
+              "description": "(任务时长：约120分钟动手操作，及后续每日5分钟观察，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "基线期——一个蚁巢的“童年”",
+          "days": "Days 15-21",
+          "goals": [
+            "建立规律的饲养和观察习惯。在巢穴A和B保持连通的状态下，持续观察并详细记录蚂蚁群落的日常行为，特别是它们挖掘隧道的模式和巢室的分布。使用“描摹法”为蚁巢的隧道系统绘制第一份“建筑蓝图”。"
+          ],
+          "activities": [
+            {
+              "day": "15-20",
+              "title": "每日观察任务：蚁巢的“城市规划” (Daily Observation: The Colony's 'Urban Planning')",
+              "duration": "每天约15-20分钟",
+              "description": "(任务时长：每天约15-20分钟)"
+            },
+            {
+              "day": "21",
+              "title": "绘制“基线蓝图”：蚁巢的第一次“CT扫描” (Plotting the Baseline Blueprint: The Colony's First 'CT Scan')",
+              "duration": "约60分钟",
+              "description": "(任务时长：约60分钟)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "时间的刻度——观察蚁巢的“生长”",
+          "days": "Days 22-28",
+          "goals": [
+            "继续进行第二周的基线期观察与记录，确保蚁巢在连通状态下健康、稳定地发展。在本周末，绘制出第二份“建筑蓝图”，并学习如何通过叠加对比法，分析蚁巢隧道系统在一周内的“生长”方向和模式。"
+          ],
+          "activities": [
+            {
+              "day": "22-27",
+              "title": "每日观察任务：见证城市的扩张 (Daily Observation: Witnessing the City's Expansion)",
+              "duration": "每天约15-20分钟",
+              "description": "(任务时长：每天约15-20分钟)"
+            },
+            {
+              "day": "28",
+              "title": "“生长”的可视化：叠加你的建筑蓝图 (Visualizing Growth: Overlaying Your Blueprints)",
+              "duration": "约75分钟",
+              "description": "(任务时长：约75分钟)"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "theme": "分离前夜——最终基线与行动预案",
+          "days": "Days 29-35",
+          "goals": [
+            "完成最后一周的基线期观察与记录。绘制第三份、也是最终的“基线蓝图 V3.0”，并完成一个包含三周数据的“蚁巢生长动态分析”。详细规划下周“分离操作”的具体步骤和应急预案。"
+          ],
+          "activities": [
+            {
+              "day": "29-34",
+              "title": "每日观察任务：暴风雨前的宁静 (Daily Observation: The Calm Before the Storm)",
+              "duration": "每天约15-20分钟",
+              "description": "(任务时长：每天约15-20分钟)"
+            },
+            {
+              "day": "35",
+              "title": "最终蓝图与“分离”行动预案 (The Final Blueprint & The 'Separation' Protocol)",
+              "duration": "约90分钟",
+              "description": "(任务时长：约90分钟)"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "theme": "大分离——两个身体，一个“灵魂”？",
+          "days": "Days 36-42",
+          "goals": [
+            "严格按照上周制定的《分离操作预案》，成功将“双子蚁巢”一分为二。开始第一周的对照观察期，重点观察分离后两个子群落的即时反应和后续的筑巢行为。绘制出分离后的第一份“双子蓝图”，并进行初步的对比分析。"
+          ],
+          "activities": [
+            {
+              "day": "36",
+              "title": "行动日：执行“分离操作” (Action Day: Executing the 'Separation Protocol')",
+              "duration": "约30分钟操作 + 持续观察",
+              "description": "(任务时长：约30分钟操作 + 持续观察)"
+            },
+            {
+              "day": "37-41",
+              "title": "对照观察期 I：寻找“幽灵”般的协同 (Control Period I: Searching for the 'Phantom' Synergy)",
+              "duration": "每天约20-30分钟",
+              "description": "(任务时长：每天约20-30分钟)"
+            },
+            {
+              "day": "42",
+              "title": "分离后的第一张“双子蓝图” (The First 'Twin Blueprint' Post-Separation)",
+              "duration": "约75分钟",
+              "description": "(任务时长：约75分钟)"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "theme": "寻找“镜像”——对称性与信息熵",
+          "days": "Days 43-49",
+          "goals": [
+            "继续进行第二周的对照观察期记录。绘制出分离后的第二份“双子蓝图”（A2 和 B2），并学习一种新的分析方法——将巢穴B的蓝图进行镜像翻转后与巢穴A进行对比，以检验两个群落在筑巢策略上是否存在“镜像对称性”。"
+          ],
+          "activities": [
+            {
+              "day": "43-48",
+              "title": "对照观察期 II：模式的演化 (Control Period II: The Evolution of Patterns)",
+              "duration": "每天约20-30分钟",
+              "description": "(任务时长：每天约20-30分钟)"
+            },
+            {
+              "day": "49",
+              "title": "镜像的审判：对称性分析 (The Mirror Test: Symmetry Analysis)",
+              "duration": "约90分钟",
+              "description": "(任务时长：约90分钟)"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "theme": "最终的蓝图——结论与新的谜题",
+          "days": "Days 50-56",
+          "goals": [
+            "完成最后一周的对照观察期记录，绘制最终的“双子蓝图”（A3 和 B3）。整合从基线期到分离期的所有蓝图，进行一次全面的动态演化分析。最终，完成并提交一份包含所有数据、图表、分析和反思的、完整的《关于蚁巢群体协同性的非定域性探究报告》。"
+          ],
+          "activities": [
+            {
+              "day": "50-54",
+              "title": "最后的守望：对照观察期 III (Final Watch: Control Period III)",
+              "duration": "每天约20-30分钟",
+              "description": "(任务时长：每天约20-30分钟)"
+            },
+            {
+              "day": "55-56",
+              "title": "最后的审判：整合、分析与报告撰写 (The Final Verdict: Integration, Analysis & Report Writing)",
+              "duration": "约180分钟，可在2天内完成",
+              "description": "(任务时长：约180分钟，可在2天内完成)"
+            }
+          ]
+        }
+      ],
+      "target_age": "11-15岁",
+      "core_goal": "引入“超个体”和“形态场”的概念，探索社会性昆虫群体的整体性与协同机制。通过设计并执行一个物理分割蚁巢的对照实验，初步检验群体组织性是否依赖于一种超越已知感官的、类似场的连接。"
+    },
+    {
+      "sequence_number": 6,
+      "module": "模块二",
+      "title": "第二阶段：记忆的水实验 (The Water Memory Experiment)",
+      "icon": "Droplet",
+      "color": "cyan",
+      "week_plan": [
+        {
+          "week": 1,
+          "theme": "踏入“禁区”——“水记忆”的科学争议史",
+          "days": "Days 1-7",
+          "goals": [
+            "了解“水记忆”假说的起源（顺势疗法）及其在科学史上的著名争议事件（本韦尼斯特事件）。学习并能够阐述支持和反对该假说的主要科学论据，并理解为何这个想法在传统化学框架下是“不可能的”，但在量子场论等前沿物理学视角下，又似乎“并非完全不可能”。"
+          ],
+          "activities": [
+            {
+              "day": "1-3",
+              "title": "历史的漩涡：从顺势疗法到“本韦尼斯特事件” (Vortex of History: From Homeopathy to the 'Benveniste Affair')",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "4-7",
+              "title": "理论的交锋：为何“不可能”？为何又“可能”？ (The Theoretical Clash: Why 'Impossible'? And Why 'Maybe'?)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "theme": "铸造“无懈可击”的盾牌——终极双盲设计",
+          "days": "Days 8-14",
+          "goals": [
+            "理解为何在“水记忆”这类争议性研究中，实验设计的严谨性压倒一切。学习并设计一个“终极双盲”（Triple-Blind）的实验流程，以彻底杜绝“实验者效应”和主观偏见。选择并确定用于检验“水信息”的“生物指示剂”。"
+          ],
+          "activities": [
+            {
+              "day": "8-10",
+              "title": "为何要“终极”双盲？——对抗“实验者效应” (Why 'Ultimate' Blinding? - Combating the 'Experimenter Effect')",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "11-14",
+              "title": "选择你的“传感器”：生物指示剂 (Choosing Your 'Sensor': The Bio-indicator)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "制定“最高法典”——你的最终实验方案",
+          "days": "Days 15-21",
+          "goals": [
+            "撰写一份详尽无遗的《“水记忆”生物指示剂检验方案》。这份方案需要精确定义每一个操作步骤、每一个数据记录标准和每一个盲法执行细节，确保在接下来的实验中，所有操作都具有最高水平的标准化和可重复性。"
+          ],
+          "activities": [
+            {
+              "day": "15-17",
+              "title": "第一章：实验材料与“信息水”的制备 (Chapter 1: Materials & Preparation of 'Informed Water')",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "18-21",
+              "title": "第二、三章：实验执行与数据记录SOP (Chapters 2 & 3: SOP for Execution & Data Recording)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "第一轮次——在盲法中播种与观察",
+          "days": "Days 22-28",
+          "goals": [
+            "与你的“制备者”（实验员A）合作，完成第一批“双盲”水样的制备与交接。严格遵循你制定的SOP，完成第一轮次（Run 1）的所有实验操作，包括播种、培养和在关键时间点（24h, 48h, 72h）的数据记录。将所有原始数据进行标准化归档。"
+          ],
+          "activities": [
+            {
+              "day": "22-23",
+              "title": "“密钥”的封存：制备与交接第一批水样 (Key in the Vault: Preparing & Handing Over Run 1 Samples)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "24-28",
+              "title": "执行！第一轮次的播种、培养与记录 (Execute! Seeding, Cultivating & Recording for Run 1)",
+              "duration": "Day 24约需60分钟操作，Day 25-28每天约需20分钟记录",
+              "description": "(任务时长：Day 24约需60分钟操作，Day 25-28每天约需20分钟记录)"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "theme": "重复的试炼——可重复性与随机波动",
+          "days": "Days 29-35",
+          "goals": [
+            "成功完成第二轮次（Run 2）的全部实验操作和数据记录。学习“可重复性”（Reproducibility）在科学中的核心地位，并初步理解“随机波动”（Random Fluctuation）的概念。将两轮次的原始数据进行初步的、不揭盲的宏观对比。"
+          ],
+          "activities": [
+            {
+              "day": "29-30",
+              "title": "“双盲引擎”再启动：制备第二批水样 (Re-engaging the Blinding Engine: Preparing Run 2 Samples)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "31-35",
+              "title": "执行第二轮次：在重复中寻找不变 (Executing Run 2: Seeking Patterns in Repetition)",
+              "duration": "Day 31约需60分钟操作，Day 32-35每天约需20分钟记录",
+              "description": "(任务时长：Day 31约需60分钟操作，Day 32-35每天约需20分钟记录)"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "theme": "三重证据——元分析的曙光",
+          "days": "Days 36-42",
+          "goals": [
+            "成功完成第三轮次（Run 3）的全部实验操作和数据记录，完成整个数据收集阶段。学习“元分析”的初步概念，理解为何整合多个独立实验的结果，比任何单一实验的结果都更具说服力。"
+          ],
+          "activities": [
+            {
+              "day": "36-37",
+              "title": "终极盲盒：制备第三批水样 (The Final Blind Box: Preparing Run 3 Samples)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "38-42",
+              "title": "最后的执行：在重复中铸造结论 (Final Execution: Forging Conclusions in Repetition)",
+              "duration": "Day 38约需60分钟操作，Day 39-42每天约需20分钟记录",
+              "description": "(任务时长：Day 38约需60分钟操作，Day 39-42每天约需20分钟记录)"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "theme": "揭盲时刻——当所有数据指向……",
+          "days": "Days 43-49",
+          "goals": [
+            "学习并执行“揭盲”程序，将三轮次的盲法数据与“密钥”进行匹配。接收并学习解读包含了“元分析”结果的《最终综合数据报告》。基于这份报告，完成你论文核心部分——“结果”的撰写。"
+          ],
+          "activities": [
+            {
+              "day": "43-45",
+              "title": "“密钥”的开启：执行揭盲程序 (Unsealing the 'Key': The Unblinding Protocol)",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            },
+            {
+              "day": "46-49",
+              "title": "最终的审判：解读《综合数据报告》 (The Final Verdict: Interpreting the Grand Report)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "theme": "在争议中发声——撰写你的引言与讨论",
+          "days": "Days 50-56",
+          "goals": [
+            "基于你的最终数据和结论，撰写一份逻辑严密、论证有力的“引言”和“讨论”章节。将你的研究定位在“水记忆”争议的宏大背景下，诚实地分析你工作的局限性，并提出具有前瞻性的未来研究方向。"
+          ],
+          "activities": [
+            {
+              "day": "50-53",
+              "title": "重构开篇：“引言”的最终打磨 (Reframing the Beginning: Finalizing the 'Introduction')",
+              "duration": "约90分钟，可在4天内完成",
+              "description": "(任务时长：约90分钟，可在4天内完成)"
+            },
+            {
+              "day": "54-56",
+              "title": "撰写“讨论”：在科学的边界上起舞 (Writing the 'Discussion': Dancing on the Edge of Science)",
+              "duration": "约120分钟，可在3天内完成",
+              "description": "(任务时长：约120分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 9,
+          "theme": "成果的封装——从手稿到学术论文",
+          "days": "Days 57-63",
+          "goals": [
+            "将之前完成的所有章节（引言、方法、结果、讨论）以及新撰写的摘要，整合成一份结构完整、逻辑连贯的最终研究论文。学习并应用标准的学术格式规范，对全文进行排版、图表处理和参考文献标注，完成一份达到“可提交”标准的学术作品。"
+          ],
+          "activities": [
+            {
+              "day": "57-59",
+              "title": "“总装”：整合你的完整论述 (The Final Assembly: Integrating Your Complete Argument)",
+              "duration": "约75分钟，可在3天内完成",
+              "description": "(任务时长：约75分钟，可在3天内完成)"
+            },
+            {
+              "day": "60-63",
+              "title": "精装修：学术格式与图表规范 (The Finishing Touches: Formatting & Figure Finalization)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 10,
+          "theme": "故事的讲述者——构建你的学术演讲",
+          "days": "Days 64-70",
+          "goals": [
+            "学习学术演讲的核心原则和叙事技巧。基于最终的论文，设计并完成一个结构完整、视觉清晰的演示文稿（PPT）。撰写一份与PPT相匹配的、口语化的、有时长控制的演讲稿初稿。"
+          ],
+          "activities": [
+            {
+              "day": "64-66",
+              "title": "演讲的“剧本”：从论文到故事线 (The 'Screenplay': From Paper to Storyline)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "67-70",
+              "title": "视觉的锤炼：PPT设计与讲稿撰写 (Visual Refinement: PPT Design & Script Writing)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 11,
+          "theme": "预演与磨砺——在同行面前的彩排",
+          "days": "Days 71-77",
+          "goals": [
+            "在一个小组范围内，进行一次模拟的在线项目发表会。每一位学员都将进行一次完整的计时演讲。作为“同行评议员”，为其他组员的演讲提供具体、有建设性的反馈。根据收到的反馈，对自己的演讲稿和PPT进行最终的调整，完成“可发表”的最终版演讲材料。"
+          ],
+          "activities": [
+            {
+              "day": "71-74",
+              "title": "小组模拟发表会：展示你的成果 (Group Simulation: Presenting Your Work)",
+              "duration": "约120分钟，可在4天内选择一个固定时间段进行",
+              "description": "(任务时长：约120分钟，可在4天内选择一个固定时间段进行)"
+            },
+            {
+              "day": "75-77",
+              "title": "终极迭代：打造你的最终版演讲 (The Final Iteration: Crafting Your Definitive Presentation)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 12,
+          "theme": "星辰大海——在全球论坛上发表你的宇宙观",
+          "days": "Days 78-84",
+          "goals": [
+            "在“伊卡洛斯计划全球青年研究员论坛”上，进行一次自信、流畅、有力的口头发表。与其他项目成员深入交流，并获得“伊卡洛斯计划-前沿研究员”的最终认证。完成项目复盘，将个人档案永久封存，并正式成为“伊卡洛斯”社区的一员。"
+          ],
+          "activities": [
+            {
+              "day": "78-80",
+              "title": "最后的宁静：心理建设与最终彩排 (The Final Calm: Mental Prep & Final Walk-through)",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            },
+            {
+              "day": "81-82",
+              "title": "高光时刻：全球青年研究员论坛 (Highlight Moment: The Global Young Researchers' Forum)",
+              "duration": "论坛本身约120-180分钟，可在2天内选择一场参加",
+              "description": "(任务时长：论坛本身约120-180分钟，可在2天内选择一场参加)"
+            },
+            {
+              "day": "83-84",
+              "title": "封存档案与新的启航 (Archiving & The New Beginning)",
+              "duration": "约30分钟，可在2天内完成",
+              "description": "(任务时长：约30分钟，可在2天内完成)"
+            }
+          ]
+        }
+      ],
+      "core_goal": "深入探索备受争议的“水记忆”假说。通过学习相关的科学史、正反方论据，并设计一个极其严谨的、基于生物指示剂（如鱼群行为）的双盲实验，来亲手检验“场”或“信息”是否可以被水这样的介质“储存”和“携带”。"
+    },
+    {
+      "sequence_number": 7,
+      "module": "模块二",
+      "title": "第三阶段：意识地理学 (Consciousness Cartography)",
+      "icon": "MapPin",
+      "color": "teal",
+      "week_plan": [
+        {
+          "week": 1,
+          "theme": "城市有“灵魂”吗？——内在感知的唤醒",
+          "days": "Days 1-7",
+          "goals": [
+            "理解“地方精神”（Genus Loci）和“形态场”在地理空间层面的应用。学习并实践基础的“内在感知”或“正念行走”技巧，校准并提升自己作为“人体传感器”的灵敏度。"
+          ],
+          "activities": [
+            {
+              "day": "1-3",
+              "title": "理论的基石：从集体无意识到“地方精神” (The Theoretical Bedrock: From Collective Unconscious to Genus Loci)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "4-7",
+              "title": "唤醒“传感器”：内在感知与正念行走训练 (Awakening the Sensor: Inner-Sensing & Mindful Walking Practice)",
+              "duration": "每天15-20分钟的练习",
+              "description": "(任务时长：每天15-20分钟的练习)"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "theme": "工具的语言——学习标记你的“内在天气”",
+          "days": "Days 8-14",
+          "goals": [
+            "熟悉并掌握“伊卡洛斯地图”（Icarus Map）App的核心功能。学习一套标准化的“内在感觉”分类与量化方法。通过在两个对比鲜明的“测试点”进行首次数据标记，校准自己的打分尺度，并完成第一次数据上传。"
+          ],
+          "activities": [
+            {
+              "day": "8-10",
+              "title": "App入门：伊卡洛斯地图使用指南 (App Tutorial: Your Guide to Icarus Map)",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            },
+            {
+              "day": "11-14",
+              "title": "校准你的“标尺”：第一次实地数据采集 (Calibrating Your 'Ruler': First Field Data Collection)",
+              "duration": "约90-120分钟，可在4天内完成",
+              "description": "(任务时长：约90-120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "自由探索——绘制你所在区域的“热力图”",
+          "days": "Days 15-21",
+          "goals": [
+            "开始进行系统性的、自由的实地数据采集。在本周内，完成至少10个不同地点的“内在天气”标记，并开始有意识地选择具有不同“能量”特征的地点。通过盖亚的“个人热力图”功能，初步将自己采集的数据点可视化。"
+          ],
+          "activities": [
+            {
+              "day": "15-20",
+              "title": "绘图师的远征：采集你的前10个数据点 (The Cartographer's Expedition: Collecting Your First 10 Data Points)",
+              "duration": "可在6天内自由安排，建议分为2-3次“探索之旅”完成",
+              "description": "(任务时长：可在6天内自由安排，建议分为2-3次“探索之旅”完成)"
+            },
+            {
+              "day": "21",
+              "title": "你的第一张“情绪热力图” (Your First 'Emotional Heatmap')",
+              "duration": "约60分钟",
+              "description": "(任务时长：约60分钟)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "集体智慧的涌现——解读你城市的“灵魂地图”",
+          "days": "Days 22-28",
+          "goals": [
+            "继续完成至少10个新的数据点采集，扩大个人地图的覆盖范围。解锁并学习解读“集体意识地图”，通过数据叠加，观察在你所在的城市中，哪些地点的“能量/情绪”特征获得了最多绘图师的“共识”。"
+          ],
+          "activities": [
+            {
+              "day": "22-26",
+              "title": "绘图师的远征 II：拓展你的疆域 (The Cartographer's Expedition II: Expanding Your Territory)",
+              "duration": "可在5天内自由安排，建议分为2-3次“探索之旅”完成",
+              "description": "(任务时长：可在5天内自由安排，建议分为2-3次“探索之旅”完成)"
+            },
+            {
+              "day": "27-28",
+              "title": "解锁集体地图：当“我”成为“我们” (Unlocking the Collective Map: When 'I' Becomes 'We')",
+              "duration": "约75分钟",
+              "description": "(任务时长：约75分钟)"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "theme": "验证与深耕——与集体智慧的“对话”",
+          "days": "Days 29-35",
+          "goals": [
+            "学习并实践“验证性探索”的研究方法。根据集体意识地图上显示的“热点”或“争议点”，选择2-3个目标地点进行深度实地感知和数据标记。通过与集体数据的“对话”，深化对城市空间复杂性的理解。"
+          ],
+          "activities": [
+            {
+              "day": "29-30",
+              "title": "制定你的“验证性远征”计划 (Planning Your 'Verification Expedition')",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "31-35",
+              "title": "实地验证：在“热点”与“争议点”的深潜 (Field Verification: Deep Dive into Hotspots & Contested Zones)",
+              "duration": "可在5天内自由安排完成2-3次实地探索",
+              "description": "(任务时长：可在5天内自由安排完成2-3次实地探索)"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "theme": "洞察的提炼——从个人笔记到核心主题",
+          "days": "Days 36-42",
+          "goals": [
+            "完成最后阶段的至少5个数据点采集，使个人总数据点达到25个以上。系统性地回顾和整理自己所有的“个人笔记”，学习“主题分析法”（Thematic Analysis）的初步概念，并从中提炼出2-3个关于你所在城市“意识场”的核心主题或反复出现的模式。"
+          ],
+          "activities": [
+            {
+              "day": "36-39",
+              "title": "最后的远征：查漏补缺与深度感知 (The Final Expedition: Filling the Gaps & Deep Sensing)",
+              "duration": "可在4天内自由安排完成",
+              "description": "(任务时长：可在4天内自由安排完成)"
+            },
+            {
+              "day": "40-42",
+              "title": "思想的炼金术：提炼你的核心洞察 (The Alchemy of Thought: Distilling Your Core Insights)",
+              "duration": "约120分钟，可在3天内完成",
+              "description": "(任务时长：约120分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "theme": "报告的构建——讲述你城市的“灵魂故事”",
+          "days": "Days 43-49",
+          "goals": [
+            "学习并实践“探索性研究报告”的写作结构。整合你所有的个人数据、集体地图分析以及上周提炼的核心主题，完成一份图文并茂、逻辑清晰的《城市意识场初步探测报告》的完整初稿。"
+          ],
+          "activities": [
+            {
+              "day": "43-46",
+              "title": "从洞察到论述：撰写报告的核心章节 (From Insights to Argument: Writing the Core Chapters)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            },
+            {
+              "day": "47-49",
+              "title": "总结与反思：撰写结论与个人陈述 (Conclusion & Reflection: Writing the Final Chapters)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "theme": "云端展览馆——共创我们时代的“心灵地图”",
+          "days": "Days 50-56",
+          "goals": [
+            "将最终的研究报告，转化为一种适合线上展示的、可视化的“虚拟海报”（Virtual Poster）。参与一场别开生面的“全球城市意识地图线上展览会”，以“策展人”的身份介绍自己的发现，并与其他绘图师进行深度交流。获得“伊卡洛斯计划-意识绘图师”的最终认证。"
+          ],
+          "activities": [
+            {
+              "day": "50-53",
+              "title": "从报告到海报：设计你的“线上展位” (From Report to Poster: Designing Your 'Virtual Booth')",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            },
+            {
+              "day": "54-56",
+              "title": "开幕日：全球城市意识地图线上展览会 (Opening Day: The Global Consciousness Cartography Exhibition)",
+              "duration": "展览会本身约90分钟，可在3天内选择一场参加",
+              "description": "(任务时长：展览会本身约90分钟，可在3天内选择一场参加)"
+            }
+          ]
+        }
+      ],
+      "core_goal": "引入“形态场”、“集体无意识”和“地方精神”（Genus Loci）的概念。通过一个集体参与的、基于移动应用的“地理情绪标记”项目，尝试将特定地理空间的“能量质感”或“信息场”进行数据化和可视化，绘制出属于自己城市的第一张“情绪地图”或“意识地图”。"
+    },
+    {
+      "sequence_number": 8,
+      "module": "模块三",
+      "title": "第四阶段：情绪的颜色 (The Color of Emotions)",
+      "icon": "Palette",
+      "color": "pink",
+      "week_plan": [
+        {
+          "week": 1,
+          "theme": "秘密的语言——学习感受情绪",
+          "days": "Days 1-7",
+          "goals": [
+            "引入“非言语情绪感知”的概念，激发学员的兴趣。学习并亲手制作本次实验的核心工具——“情绪闪卡”。理解并掌握实验的基本规则，并与家人完成第一次充满乐趣的“心灵感应”练习。"
+          ],
+          "activities": [
+            {
+              "day": "1-2",
+              "title": "一个新“超能力”：你也能“读心”吗？ (A New 'Superpower': Can You 'Read' Minds?)",
+              "duration": "约30分钟，可在2天内完成",
+              "description": "(任务时长：约30分钟，可在2天内完成)"
+            },
+            {
+              "day": "3-5",
+              "title": "制作你的“情绪工具箱” (Crafting Your 'Emotion Toolkit')",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            },
+            {
+              "day": "6-7",
+              "title": "第一次“传心”练习 (The First 'Mind-Link' Practice)",
+              "duration": "约30分钟，可在2天内完成",
+              "description": "(任务时长：约30分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "theme": "信号还是噪音？——当科学遇上“运气”",
+          "days": "Days 8-14",
+          "goals": [
+            "进行更多轮次的“传心”游戏，积累足够的数据量。学习基础的概率概念，特别是“随机概率基线”，并计算出在我们的实验中“瞎猜”的正确率应该是多少。将自己的实际正确率与概率基线进行对比，做出初步的科学判断。"
+          ],
+          "activities": [
+            {
+              "day": "8-11",
+              "title": "数据大作战：完成50次“传心”挑战 (The Data Challenge: Completing 50 'Mind-Link' Trials)",
+              "duration": "可在4天内，分为2-3次完成，每次约20-30分钟",
+              "description": "(任务时长：可在4天内，分为2-3次完成，每次约20-30分钟)"
+            },
+            {
+              "day": "12-14",
+              "title": "科学的标尺：你的表现比“瞎猜”好吗？ (The Scientific Ruler: Are You Better Than a 'Random Guess'?)",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "颜色的解码——你对哪种情绪最敏感？",
+          "days": "Days 15-21",
+          "goals": [
+            "学习“分类数据分析”的方法。对你的50次（或更多）实验数据进行分类统计，分别计算出你对“开心”、“伤心”、“生气”、“平静”这四种情绪的“接收”正确率。将分析结果用一张“情绪雷达图”进行可视化，并开始撰写最终报告的核心部分。"
+          ],
+          "activities": [
+            {
+              "day": "15-18",
+              "title": "数据深潜：分类统计你的“情绪天线” (Deep Data Dive: Categorizing Your 'Emotion Antenna')",
+              "duration": "约75分钟，可在4天内完成",
+              "description": "(任务时长：约75分钟，可在4天内完成)"
+            },
+            {
+              "day": "19-21",
+              "title": "数据的艺术：绘制你的“情绪雷达图” (The Art of Data: Plotting Your 'Emotion Radar')",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "分享的色彩——讲述你的“心灵感应”故事",
+          "days": "Days 22-28",
+          "goals": [
+            "整合所有实验数据、图表和分析，完成一份图文并茂的《我的“情绪天线”测试报告》。录制一个1-2分钟的短视频，生动地讲述你本次探索中最有趣的发现。获得“伊卡洛斯计划-心灵探险家”认证，为本次旅程画上圆满的句号。"
+          ],
+          "activities": [
+            {
+              "day": "22-25",
+              "title": "最终报告的创作 (Crafting the Final Report)",
+              "duration": "约90分钟，可在4天内完成",
+              "description": "(任务时长：约90分钟，可在4天内完成)"
+            },
+            {
+              "day": "26-28",
+              "title": "在镜头前分享：录制你的“探险家”视频 (Sharing on Camera: Recording Your 'Explorer' Video)",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            }
+          ]
+        }
+      ],
+      "target_age": "6-10岁",
+      "core_goal": "通过一个简单的、游戏化的“心灵感应”实验，引导孩子们探索人与人之间非言语的情绪感知能力。学习并实践基础的实验规则（排除感官干扰），并使用“情绪日记”进行初步的数据记录和分析。"
+    },
+    {
+      "sequence_number": 9,
+      "module": "模块三",
+      "title": "第一阶段：跨越距离的凝视 (Gaze Across the Distance)",
+      "icon": "Eye",
+      "color": "violet",
+      "week_plan": [
+        {
+          "week": 1,
+          "theme": "看不见的眼睛——“被凝视感”的科学挑战",
+          "days": "Days 1-7",
+          "goals": [
+            "了解“被凝视感”的历史、文化普遍性及其在科学上引发的争议。学习并能够阐述支持和反对该现象的“微妙感官线索”假说，并基于此设计一个能够初步排除这些线索的本地实验方案。"
+          ],
+          "activities": [
+            {
+              "day": "1-3",
+              "title": "你背后有“眼睛”吗？ (Do You Have 'Eyes' in the Back of Your Head?)",
+              "duration": "约75分钟，可在3天内完成",
+              "description": "(任务时长：约75分钟，可在3天内完成)"
+            },
+            {
+              "day": "4-7",
+              "title": "设计你的“本地屏蔽”实验方案 (Designing Your 'Local Shielding' Protocol)",
+              "duration": "约100分钟，可在4天内完成",
+              "description": "(任务时长：约100分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "theme": "本地测试——你的“后脑雷达”有多灵敏？",
+          "days": "Days 8-14",
+          "goals": [
+            "与你的实验伙伴合作，严格按照上周制定的实验方案，完成至少两轮（即2 x 20 = 40次试验）的“本地被凝视感”测试。学习并应用“分类数据分析”方法，分别计算在“凝视”和“不凝视”两种条件下，你的猜测正确率，并与50%的随机基线进行比较。"
+          ],
+          "activities": [
+            {
+              "day": "8-12",
+              "title": "执行！第一、二轮本地实验 (Execution! Run 1 & 2 of the Local Experiment)",
+              "duration": "可在5天内，分两次完成，每次约30-45分钟",
+              "description": "(任务时长：可在5天内，分两次完成，每次约30-45分钟)"
+            },
+            {
+              "day": "13-14",
+              "title": "数据分析：你的“信号”与“噪音” (Data Analysis: Your 'Signal' & 'Noise')",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "心灵的“量子隧道”？——远程凝视实验设计与执行",
+          "days": "Days 15-21",
+          "goals": [
+            "学习并设计一个“远程凝视”实验方案，利用视频通话等工具实现凝视者与被试者的完全物理隔离。执行至少两轮（40次试验）的远程凝视测试，并对数据进行与上周相同的分类分析，以检验“被凝视感”是否在排除了所有本地感官线索后依然存在。"
+          ],
+          "activities": [
+            {
+              "day": "15-17",
+              "title": "斩断所有“线索”：远程实验方案设计 (Severing All 'Clues': Designing the Remote Protocol)",
+              "duration": "约75分钟，可在3天内完成",
+              "description": "(任务时长：约75分钟，可在3天内完成)"
+            },
+            {
+              "day": "18-21",
+              "title": "执行远程测试：你的感知能“穿墙”吗？ (Remote Testing: Can Your Senses 'Go Through Walls'?)",
+              "duration": "可在4天内，分两次完成，每次约45-60分钟",
+              "description": "(任务时长：可在4天内，分两次完成，每次约45-60分钟)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "交叉验证——你的“雷达”对所有人都灵敏吗？",
+          "days": "Days 22-28",
+          "goals": [
+            "与至少一位新的实验伙伴合作，完成**至少两轮（40次试验）**的远程凝视测试。学习“交叉验证”在科学研究中的重要性。将新伙伴的数据与之前的数据进行对比，初步分析“被凝视感”效应是否存在个体差异（即，是否与特定的“凝视者”或“被试者”有关）。"
+          ],
+          "activities": [
+            {
+              "day": "22-23",
+              "title": "科学的“防火墙”：交叉验证的重要性 (The Firewall of Science: The Importance of Cross-Validation)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            },
+            {
+              "day": "24-28",
+              "title": "执行交叉验证：在新组合中寻找信号 (Executing Cross-Validation: Searching for Signals in a New Pair)",
+              "duration": "可在5天内，分两次完成，每次约45-60分钟",
+              "description": "(任务时长：可在5天内，分两次完成，每次约45-60分钟)"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "theme": "数据的整合与故事的讲述",
+          "days": "Days 29-35",
+          "goals": [
+            "完成最后两轮（40次试验）的远程凝视测试，使个人作为“被试者”的总试验次数达到至少80次。学习并开始撰写最终研究报告的“引言”和“方法”部分，将你的探索历程进行系统性的书面总结。"
+          ],
+          "activities": [
+            {
+              "day": "29-32",
+              "title": "最后的冲刺：完成80次试验的数据积累 (The Final Sprint: Accumulating 80 Trials of Data)",
+              "duration": "可在4天内，分两次完成，每次约45-60分钟",
+              "description": "(任务时长：可在4天内，分两次完成，每次约45-60分钟)"
+            },
+            {
+              "day": "33-35",
+              "title": "构建你的科学故事：撰写“引言”与“方法” (Building Your Scientific Narrative: Writing the 'Introduction' & 'Methods')",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "theme": "最终的判决——你的发现与世界的共鸣",
+          "days": "Days 36-42",
+          "goals": [
+            "对全部80次（或更多）的试验数据进行最终的、全面的统计分析。完成研究报告的“结果”和“讨论”部分，并整合为一份完整的最终报告。准备并录制一个3-5分钟的最终成果分享视频，在全球“青年研究员论坛”上发表，并获得项目认证。"
+          ],
+          "activities": [
+            {
+              "day": "36-38",
+              "title": "最终的数据审判：整合、分析与呈现 (The Final Data Verdict: Integrating, Analyzing & Presenting)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "39-42",
+              "title": "最后的思考与分享：完成论文并录制你的“TED时刻” (Final Reflections & Sharing: Completing the Paper & Recording Your 'TED Moment')",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        }
+      ],
+      "target_age": "11-15岁",
+      "core_goal": "深入探索“被凝-视感”（The Sense of Being Stared At）这一普遍的人类体验。通过设计并执行一个使用现代科技（如视频通话）进行物理隔离的、严格随机化的双盲实验，来检验“被凝视感”是否是一种超越了已知感官的、非定域性的感知能力。"
+    },
+    {
+      "sequence_number": 10,
+      "module": "模块三",
+      "title": "第二阶段：意念撼动概率 (Mind Over Randomness)",
+      "icon": "Dices",
+      "color": "orange",
+      "week_plan": [
+        {
+          "week": 1,
+          "theme": "掷骰子的上帝——随机性与意识的战场",
+          "days": "Days 1-7",
+          "goals": [
+            "理解“真随机”与“伪随机”的核心区别，并认识到“量子随机性”作为宇宙底层“纯粹偶然性”的来源。了解意念影响随机数（PK）研究的历史背景（PEAR实验室）及其深刻的哲学挑战。"
+          ],
+          "activities": [
+            {
+              "day": "1-3",
+              "title": "宇宙的“硬币”：什么是“真随机”？ (The Universe's Coin: What is 'True Randomness'?)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "4-7",
+              "title": "普林斯顿的“幽灵”：PEAR实验室的传奇 (The 'Ghost' of Princeton: The Legend of the PEAR Lab)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "theme": "设计你的“心灵之手”——意念实验方案",
+          "days": "Days 8-14",
+          "goals": [
+            "学习并设计一个包含“高意念”、“低意念”和“基线”三种条件的、严格随机化的个人实验方案。熟悉并测试“伊卡洛斯-RNG”App的操作界面和数据记录功能。完成一份详尽的、可执行的个人研究计划。"
+          ],
+          "activities": [
+            {
+              "day": "8-11",
+              "title": "PEAR的传承：构建你的三模式实验 (Inheriting PEAR: Building Your 3-Mode Experiment)",
+              "duration": "约100分钟，可在4天内完成",
+              "description": "(任务时长：约100分钟，可在4天内完成)"
+            },
+            {
+              "day": "12-14",
+              "title": "熟悉你的“武器”：“伊卡洛斯-RNG”App测试 (Familiarizing Your 'Weapon': The Icarus-RNG App Test)",
+              "duration": "约60分钟，可在3天内完成",
+              "description": "(任务时长：约60分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "马拉松的起点——数据积累与心态校准",
+          "days": "Days 15-21",
+          "goals": [
+            "正式开始系统性的数据收集。在本周内，完成至少100轮（Runs），即300次独立的试验（Trials）。学习并实践如何在重复性极高的实验中，保持一致的操作标准和稳定的内在状态。"
+          ],
+          "activities": [
+            {
+              "day": "15-20",
+              "title": "第一阶段冲刺：完成你的前100轮 (Phase 1 Sprint: Completing Your First 100 Runs)",
+              "duration": "可在6天内完成，建议每天完成15-20轮",
+              "description": "(任务时长：可在6天内完成，建议每天完成15-20轮)"
+            },
+            {
+              "day": "21",
+              "title": "第一次数据快照：观察“累积偏差图” (First Data Snapshot: Observing the 'Cumulative Deviation' Chart)",
+              "duration": "约45分钟",
+              "description": "(任务时长：约45分钟)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "内在的“变量”——你的状态如何影响结果？",
+          "days": "Days 22-28",
+          "goals": [
+            "继续高强度的数据收集，在本周内再完成至少150轮（Runs），使总轮次达到250轮或以上。引入并开始系统记录《实验者状态日志》，将“元数据”分析应用于RNG实验，探索个人身心状态与实验数据偏差之间的可能关联。"
+          ],
+          "activities": [
+            {
+              "day": "22-27",
+              "title": "第二阶段冲刺：向250轮迈进 (Phase 2 Sprint: Pushing Towards 250 Runs)",
+              "duration": "可在6天内完成，建议每天完成25轮",
+              "description": "(任务时长：可在6天内完成，建议每天完成25轮)"
+            },
+            {
+              "day": "28",
+              "title": "引入“元数据”：撰写你的《实验者状态日志》 (Introducing Metadata: Your 'Operator State Log')",
+              "duration": "约60分钟",
+              "description": "(任务时长：约60分钟)"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "theme": "情感的“燃料”——意念背后的力量",
+          "days": "Days 29-35",
+          "goals": [
+            "继续高强度的数据收集，在本周内再完成至少150轮（Runs），使总轮次达到400轮或以上。引入“情感目标”作为新的意念策略，并与常规的“抽象指令”进行对比，探索情感卷入是否能成为增强效应的“燃料”。"
+          ],
+          "activities": [
+            {
+              "day": "29-33",
+              "title": "第三阶段冲刺：情感驱动的数据收集 (Phase 3 Sprint: Emotion-driven Data Collection)",
+              "duration": "可在5天内完成，建议每天完成30轮",
+              "description": "(任务时长：可在5天内完成，建议每天完成30轮)"
+            },
+            {
+              "day": "34-35",
+              "title": "数据的对比：意志 vs. 情感 (Data Comparison: Will vs. Emotion)",
+              "duration": "约75分钟，可在2天内完成",
+              "description": "(任务时长：约75分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "theme": "中期复盘——在数据之海中绘制航图",
+          "days": "Days 36-42",
+          "goals": [
+            "暂停大规模数据收集，将重心转向数据分析和论文框架搭建。接收并深入解读一份包含全部400轮数据的《中期综合数据报告》。学习并开始撰写你最终论文的“引言”和“方法”部分，为你的发现之旅构建一个清晰的叙事起点。"
+          ],
+          "activities": [
+            {
+              "day": "36-39",
+              "title": "数据的沉淀：解读你的400轮综合报告 (Data Distillation: Interpreting Your 400-Run Comprehensive Report)",
+              "duration": "约90分钟，可在4天内完成",
+              "description": "(任务时长：约90分钟，可在4天内完成)"
+            },
+            {
+              "day": "40-42",
+              "title": "构建故事的起点：撰写“引言”与“方法” (Building the Narrative's Origin: Writing the 'Introduction' & 'Methods')",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "theme": "穿越“高原期”——新奇效应与实验疲劳",
+          "days": "Days 43-49",
+          "goals": [
+            "继续进行大规模数据收集，在本周内再完成至少200轮（Runs），使总轮次达到600轮或以上。学习并反思“新奇效应”（Novelty Effect）和“实验疲劳”（Experiment Fatigue）对微弱效应实验的潜在影响，并有意识地调整心态和策略来应对。"
+          ],
+          "activities": [
+            {
+              "day": "43-48",
+              "title": "第四阶段冲刺：向600轮大关挺进 (Phase 4 Sprint: Pushing Towards 600 Runs)",
+              "duration": "可在6天内完成，建议每天完成约30-35轮",
+              "description": "(任务时长：可在6天内完成，建议每天完成约30-35轮)"
+            },
+            {
+              "day": "49",
+              "title": "数据的脉搏：观察“高原期”或“突破期” (The Pulse of Data: Observing the 'Plateau' or 'Breakthrough')",
+              "duration": "约45分钟",
+              "description": "(任务时长：约45分钟)"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "theme": "终极冲刺与成果梳理",
+          "days": "Days 50-56",
+          "goals": [
+            "完成最后的200轮（Runs）数据收集，使总轮次达到800轮或以上。接收最终的数据分析报告。基于全部数据和过程中的所有洞察，完成研究报告中最为关键的“结果”和“讨论”部分的初稿撰写。"
+          ],
+          "activities": [
+            {
+              "day": "50-54",
+              "title": "最后的“举重”：向800轮大关冲刺 (The Final 'Lift': Sprinting to 800 Runs)",
+              "duration": "可在5天内完成，建议每天完成40轮",
+              "description": "(任务时长：可在5天内完成，建议每天完成40轮)"
+            },
+            {
+              "day": "55-56",
+              "title": "最终的“开奖”：撰写“结果”与“讨论” (The Final 'Reveal': Writing the 'Results' & 'Discussion')",
+              "duration": "约120分钟，可在2天内完成",
+              "description": "(任务时长：约120分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 9,
+          "theme": "成果的封装与转化——从论文到演讲",
+          "days": "Days 57-63",
+          "goals": [
+            "整合之前撰写的所有章节，完成一份结构完整、逻辑连贯的最终研究论文初稿。学习并撰写一份高度凝练的“摘要”（Abstract）。基于最终论文，开始设计并构思一个时长5-7分钟的最终成果演讲的故事线和演示文稿（PPT）大纲。"
+          ],
+          "activities": [
+            {
+              "day": "57-59",
+              "title": "最终的“总装”：整合你的完整论文 (The Final Assembly: Integrating Your Complete Paper)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "60-63",
+              "title": "思想的浓缩与转化：从论文到演讲 (The Condensation & Transformation: From Paper to Presentation)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 10,
+          "theme": "发表与回响——在世界舞台上分享你的发现",
+          "days": "Days 64-70",
+          "goals": [
+            "根据上周的大纲，完成最终演示文稿（PPT）的制作和演讲稿的撰写与演练。在全球青年研究员论坛上，进行一次自信、流畅、有力的最终成果发表。完成项目复盘与个人档案封存，并获得“伊卡洛斯计划-概率探索者”的最终认证。"
+          ],
+          "activities": [
+            {
+              "day": "64-67",
+              "title": "最后的磨砺：演讲定稿与彩排 (The Final Polish: Finalizing & Rehearsing Your Presentation)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            },
+            {
+              "day": "68-70",
+              "title": "高光时刻：全球论坛发表与项目结业 (Highlight Moment: Global Forum Presentation & Project Completion)",
+              "duration": "论坛本身约90-120分钟",
+              "description": "(任务时长：论坛本身约90-120分钟)"
+            }
+          ]
+        }
+      ],
+      "target_age": "16-18岁",
+      "core_goal": "复现并升级经典的PEAR实验室及全球意识项目的核心实验。通过设计并执行一个基于“真随机数生成器”（RNG）的、严格对照的意念影响实验，来检验人类的个体或集体意念，是否能对纯粹的物理概率事件产生微小但统计显著的影响。"
+    },
+    {
+      "sequence_number": 11,
+      "module": "模块三",
+      "title": "第三阶段：幻肢与纠缠 (Phantom Limbs & Entanglement)",
+      "icon": "Waves",
+      "color": "rose",
+      "week_plan": [
+        {
+          "week": 1,
+          "theme": "“幽灵”之舞——幻肢现象与大脑的“地图”",
+          "days": "Days 1-7",
+          "goals": [
+            "深入了解“幻肢”（Phantom Limb）现象的临床表现、普遍性及其带来的痛苦。学习神经科学中关于“身体地图”（Body Map）的主流理论解释（如大脑皮层重塑），并能清晰地阐述为何这些经典理论仍无法完全解释幻肢的所有奇特属性。"
+          ],
+          "activities": [
+            {
+              "day": "1-4",
+              "title": "当身体的一部分“活”在虚空中 (When a Part of the Body 'Lives' in the Void)",
+              "duration": "约100分钟，可在4天内完成",
+              "description": "(任务时长：约100分钟，可在4天内完成)"
+            },
+            {
+              "day": "5-7",
+              "title": "挑战“大脑中心论”：经典理论的“裂缝” (Challenging Neuro-centricism: The 'Cracks' in the Classic Theory)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "theme": "伦理的深渊——在探索之前，我们首先是“人”",
+          "days": "Days 8-14",
+          "goals": [
+            "学习并深入探讨与人体组织和个人体验相关的科学研究伦理原则。阅读并分析关于“幻肢与被截断肢体”的民俗学/人类学资料，理解其背后深刻的文化和心理意义。最终，为我们未来的思想实验，起草一份严格的、以“尊重”和“无伤害”为最高原则的《研究伦-理框架》。"
+          ],
+          "activities": [
+            {
+              "day": "8-10",
+              "title": "科学的“紧箍咒”：研究伦理的核心原则 (The 'Golden Headband' of Science: Core Principles of Research Ethics)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "11-14",
+              "title": "“幽灵”的民俗学：身体完整性的文化意义 (The Folklore of the Phantom: The Cultural Meaning of Bodily Integrity)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "theme": "思想的“手术刀”——构建终极思想实验",
+          "days": "Days 15-21",
+          "goals": [
+            "借鉴“生物贝尔实验”的逻辑框架，设计一个专门用于检验“幻肢”与“分离肢体”之间是否存在非定域性连接的思想实验方案。该方案需要包含清晰的“测量设置”与“结果”定义，并严格遵循上周制定的伦理框架。"
+          ],
+          "activities": [
+            {
+              "day": "15-18",
+              "title": "设计你的“量子连接”探测器 (Designing Your 'Quantum Connection' Detector)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            },
+            {
+              "day": "19-21",
+              "title": "撰写你的思想实验方案 (Writing Your Thought Experiment Protocol)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "theme": "从思想实验到现实路径——伦理与可行性的交汇",
+          "days": "Days 22-28",
+          "goals": [
+            "对上周设计的思想实验方案进行严格的“可行性与伦理”双重审查，识别出其在现实中执行的主要障碍。通过头脑风暴，设计一个或多个更具现实可行性的“简化版”或“替代版”实验方案。进行一次关于“科学隐喻”的哲学反思。"
+          ],
+          "activities": [
+            {
+              "day": "22-25",
+              "title": "“现实审查”：我们的思想实验，现实吗？ (The Reality Check: Is Our Thought Experiment Feasible?)",
+              "duration": "约100分钟，可在4天内完成",
+              "description": "(任务时长：约100分钟，可在4天内完成)"
+            },
+            {
+              "day": "26-28",
+              "title": "寻找“代理变量”：设计可行的替代方案 (Seeking 'Proxies': Designing Feasible Alternatives)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "theme": "方案的铸造——为“照片纠缠”实验制定SOP",
+          "days": "Days 29-35",
+          "goals": [
+            "将“照片纠缠”这一替代方案，细化成一份包含所有操作细节、数据记录标准和伦理考量的标准化操作规程（SOP）。设计一个用于招募志愿者的“知情同意书”草案，并完成一份完整的、准备接受“同行评审”的研究计划书。"
+          ],
+          "activities": [
+            {
+              "day": "29-32",
+              "title": "精确的蓝图：“照片纠缠”实验SOP撰写 (The Precise Blueprint: Writing the SOP for the 'Photo Entanglement' Experiment)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            },
+            {
+              "day": "33-35",
+              "title": "伦理的契约：起草“知情同意书” (The Ethical Contract: Drafting the 'Informed Consent' Form)",
+              "duration": "约75分钟，可在3天内完成",
+              "description": "(任务时长：约75分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "theme": "压力测试——方案的同行评审与技术预演",
+          "days": "Days 36-42",
+          "goals": [
+            "参与一次针对“照片纠缠”实验方案的深度同行评审，从逻辑、技术和伦理等多个维度，发现并修正设计中的潜在漏洞。进行一次不涉及真人的“技术干运行”（Technical Dry Run），以确保数据同步、随机化程序和生理信号记录等技术流程的顺畅无误。"
+          ],
+          "activities": [
+            {
+              "day": "36-39",
+              "title": "思想的“对撞机”：方案的同行评审 (The 'Collider' of Ideas: Peer Review of the Protocol)",
+              "duration": "约100分钟，可在4天内完成",
+              "description": "(任务时长：约100分钟，可在4天内完成)"
+            },
+            {
+              "day": "40-42",
+              "title": "技术的“彩排”：进行一次“干运行” (The Technical Rehearsal: Performing a 'Dry Run')",
+              "duration": "约75分钟，可在3天内完成",
+              "description": "(任务时长：约75分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "theme": "思想的铸剑——撰写你的最终研究论文",
+          "days": "Days 43-49",
+          "goals": [
+            "完成《关于检验身体部分间非定域性连接的思想实验方案及伦理框架》这份核心研究论文的全部章节撰写，包括引言、方法、预期结果与分析、讨论、以及伦理框架附录，形成一份逻辑自洽、思想深刻的完整学术作品。"
+          ],
+          "activities": [
+            {
+              "day": "43-46",
+              "title": "论文核心的构建：方法、预期结果与讨论 (Building the Core: Methods, Expected Results & Discussion)",
+              "duration": "约150分钟，可在4天内完成",
+              "description": "(任务时长：约150分钟，可在4天内完成)"
+            },
+            {
+              "day": "47-49",
+              "title": "最后的拼图：完成引言、摘要与伦理附录 (The Final Pieces: Completing the Intro, Abstract & Ethical Appendix)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "theme": "思想的对撞机——论文的同行评审",
+          "days": "Days 50-56",
+          "goals": [
+            "参与一次结构化的、针对“思想实验论文”的线上同行评审会。作为“评审人”，学习如何从逻辑严谨性、思想创新性和伦理审慎性等多个维度，对同伴的学术作品提供深刻、有建设性的反馈。作为“作者”，学习如何接收、理解和回应来自同行的批判性意见。"
+          ],
+          "activities": [
+            {
+              "day": "50-54",
+              "title": "成为“守门人”：评审你的同行之作 (Becoming the 'Gatekeeper': Reviewing Your Peers' Work)",
+              "duration": "约150分钟，可在5天内完成",
+              "description": "(任务时长：约150分钟，可在5天内完成)"
+            },
+            {
+              "day": "55-56",
+              "title": "吸收与反思：面对同行的“镜子” (Absorption & Reflection: Facing the Peer's Mirror)",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 9,
+          "theme": "思想的淬炼——最终论文的定稿",
+          "days": "Days 57-63",
+          "goals": [
+            "根据上周制定的《论文修订计划》，对你的研究论文进行一次全面的、深入的修改和润色。完成包括内容、逻辑、语言和格式在内的所有最终调整，提交一份“可发表”级别的最终版《关于检验身体部分间非定域性连接的思想实验方案及伦理框架》研究论文。"
+          ],
+          "activities": [
+            {
+              "day": "57-61",
+              "title": "最后的雕琢：执行你的修订计划 (The Final Carving: Executing Your Revision Plan)",
+              "duration": "约150分钟，可在5天内完成",
+              "description": "(任务时长：约150分钟，可在5天内完成)"
+            },
+            {
+              "day": "62-63",
+              "title": "反思你的“学术之旅” (Reflecting on Your 'Academic Journey')",
+              "duration": "约60分钟，可在2天内完成",
+              "description": "(任务时长：约60分钟，可在2天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 10,
+          "theme": "思想的“布道”——构建你的哲学演讲",
+          "days": "Days 64-70",
+          "goals": [
+            "学习并掌握“思想实验”类学术演讲的独特叙事技巧。基于最终的论文，设计并完成一个结构完整、视觉简洁、充满哲学思辨的演示文稿（PPT）。撰写一份与PPT相匹配的、口语化的、有时长控制的演讲稿初稿。"
+          ],
+          "activities": [
+            {
+              "day": "64-66",
+              "title": "从论证到启示：设计你的演讲故事线 (From Argument to Revelation: Designing Your Presentation Storyline)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            },
+            {
+              "day": "67-70",
+              "title": "视觉的极简主义：PPT与讲稿的艺术 (The Art of Minimalism: PPT & Script)",
+              "duration": "约120分钟，可在4天内完成",
+              "description": "(任务时长：约120分钟，可在4天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 11,
+          "theme": "思想的“声演”——在镜头前成为哲学家",
+          "days": "Days 71-77",
+          "goals": [
+            "进行多轮次的个人演讲彩排，重点练习如何驾驭一场“思想实验”演讲的独特节奏和气场。通过录制并回看自己的演讲视频，对语调、停顿、眼神交流和时间控制进行精细的自我评估与迭代优化。最终完成一次高质量的、接近最终发表水平的个人彩排录像。"
+          ],
+          "activities": [
+            {
+              "day": "71-74",
+              "title": "第一次“哲学布道”：录制你的V1.0演讲 (First 'Philosophical Sermon': Recording Your V1.0 Presentation)",
+              "duration": "约90分钟，可在4天内完成",
+              "description": "(任务时长：约90分钟，可在4天内完成)"
+            },
+            {
+              "day": "75-77",
+              "title": "“灵魂”的镜子：深度自我评估与迭代 (The Mirror of the 'Soul': In-depth Self-Evaluation & Iteration)",
+              "duration": "约90分钟，可在3天内完成",
+              "description": "(任务时长：约90分钟，可在3天内完成)"
+            }
+          ]
+        },
+        {
+          "week": 12,
+          "theme": "思想的回响——在全球研讨会上分享你的宇宙观",
+          "days": "Days 78-84",
+          "goals": [
+            "在一个小组范围内，进行一次模拟的“博士生预答辩”，接收并整合最终的同行反馈。在全球“前沿思想研讨会”上，进行一次自信、深刻、富有启发性的最终成果发表。完成项目复盘与个人档案封存，并获得“伊卡洛斯计划-理论探索者”的最终认证。"
+          ],
+          "activities": [
+            {
+              "day": "78-80",
+              "title": "最后的“预答辩”：小组模拟发表会 (The Final 'Pre-Defense': Group Simulation)",
+              "duration": "约120分钟，可在3天内完成",
+              "description": "(任务时长：约120分钟，可在3天内完成)"
+            },
+            {
+              "day": "81-84",
+              "title": "加冕时刻：全球研讨会与结业认证 (Coronation: The Global Symposium & Certification)",
+              "duration": "研讨会本身约90-120分钟",
+              "description": "(任务时长：研讨会本身约90-120分钟)"
+            }
+          ]
+        }
+      ],
+      "core_goal": "深入探索“幻肢”现象及其对“身心二元论”和“大脑中心论”的挑战。将“量子纠缠”的非定域性思想，创造性地应用于构建一个旨在检验“身体部分”之间是否存在超距连接的思想实验方案。本项目高度重视伦理思辨。"
+    }
+  ]
+}

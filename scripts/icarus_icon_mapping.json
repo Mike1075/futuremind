@@ -1,0 +1,105 @@
+{
+  "iconSystem": {
+    "description": "伊卡洛斯计划11个项目的差异化图标系统",
+    "modules": [
+      {
+        "module": "模块一：无形的纽带 (The Unseen Leash)",
+        "theme": "人与动物的神秘连接",
+        "moduleIcon": "Heart",
+        "projects": [
+          {
+            "sequence": 1,
+            "title": "第一阶段：宠物侦探",
+            "icon": "PawPrint",
+            "iconReason": "宠物足迹，代表观察和探索宠物的第六感",
+            "color": "purple"
+          },
+          {
+            "sequence": 2,
+            "title": "第二阶段：杰提计划",
+            "icon": "Microscope",
+            "iconReason": "显微镜代表科学实验和深入研究",
+            "color": "blue"
+          },
+          {
+            "sequence": 3,
+            "title": "第三阶段：贝尔不等式与生命系统",
+            "icon": "Atom",
+            "iconReason": "原子代表量子物理和深层科学原理",
+            "color": "indigo"
+          }
+        ]
+      },
+      {
+        "module": "模块二：无形的地图 (The Unseen Map)",
+        "theme": "探索自然界的隐秘联系",
+        "moduleIcon": "Map",
+        "projects": [
+          {
+            "sequence": 4,
+            "title": "第一阶段：植物的悄悄话",
+            "icon": "Sprout",
+            "iconReason": "幼苗代表植物生长和意识",
+            "color": "green"
+          },
+          {
+            "sequence": 5,
+            "title": "第二阶段：远程蚁巢",
+            "icon": "Bug",
+            "iconReason": "昆虫代表蚂蚁群体意识研究",
+            "color": "amber"
+          },
+          {
+            "sequence": 6,
+            "title": "第三阶段：记忆的水实验",
+            "icon": "Droplet",
+            "iconReason": "水滴代表水的记忆实验",
+            "color": "cyan"
+          },
+          {
+            "sequence": 7,
+            "title": "第四阶段：意识地理学",
+            "icon": "MapPin",
+            "iconReason": "地图标记代表意识的空间映射",
+            "color": "teal"
+          }
+        ]
+      },
+      {
+        "module": "模块三：延展的心灵 (The Extended Mind)",
+        "theme": "探索人类意识的边界",
+        "moduleIcon": "Brain",
+        "projects": [
+          {
+            "sequence": 8,
+            "title": "第一阶段：情绪的颜色",
+            "icon": "Palette",
+            "iconReason": "调色板代表情绪与颜色的关联",
+            "color": "pink"
+          },
+          {
+            "sequence": 9,
+            "title": "第二阶段：跨越距离的凝视",
+            "icon": "Eye",
+            "iconReason": "眼睛代表凝视和远距离感知",
+            "color": "violet"
+          },
+          {
+            "sequence": 10,
+            "title": "第三阶段：意念撼动概率",
+            "icon": "Dices",
+            "iconReason": "骰子代表概率和随机性",
+            "color": "orange"
+          },
+          {
+            "sequence": 11,
+            "title": "第四阶段：幻肢与纠缠",
+            "icon": "Waves",
+            "iconReason": "波纹代表纠缠和延展的感知",
+            "color": "rose"
+          }
+        ]
+      }
+    ]
+  }
+}

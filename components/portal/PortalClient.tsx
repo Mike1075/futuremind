@@ -14,7 +14,8 @@ import {
   Globe,
   Rocket,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Atom
 } from 'lucide-react'
 import { usePortalCourses } from '@/lib/hooks/usePortalCourses'
 
@@ -52,7 +53,7 @@ export function PortalClient({
         return Globe
       case 'icarus':
       case 'pbl':
-        return Rocket
+        return Atom  // 原子图标代表科学探索和实验精神
       default:
         return BookOpen
     }

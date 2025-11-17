@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Edit, Save, X, Trash2, Plus, Users, UsersRound } from 'lucide-react'
+import {
+  ArrowLeft, Edit, Save, X, Trash2, Plus, Users, UsersRound,
+  PawPrint, Microscope, Atom, Sprout, Bug, Droplet, MapPin,
+  Palette, Eye, Dices, Waves, TreePine
+} from 'lucide-react'
 
 interface PBLProject {
   id: string
@@ -38,6 +42,26 @@ const DIFFICULTY_LABELS = {
   option_b: { label: '选项B', color: 'from-blue-500 to-cyan-500', icon: '🌿' },
   option_c: { label: '选项C', color: 'from-purple-500 to-pink-500', icon: '🌳' },
   option_d: { label: '选项D', color: 'from-orange-500 to-red-500', icon: '🌲' }
+}
+
+// 伊卡洛斯11个项目的差异化图标映射（基于sequence_number）
+const ICARUS_PROJECT_ICONS: Record<number, any> = {
+  1: PawPrint,      // 宠物侦探
+  2: Microscope,    // 杰提计划
+  3: Atom,          // 贝尔不等式
+  4: Sprout,        // 植物的悄悄话
+  5: Bug,           // 远程蚁巢
+  6: Droplet,       // 记忆的水实验
+  7: MapPin,        // 意识地理学
+  8: Palette,       // 情绪的颜色
+  9: Eye,           // 跨越距离的凝视
+  10: Dices,        // 意念撼动概率
+  11: Waves         // 幻肢与纠缠
+}
+
+// 获取项目图标（根据sequence_number）
+const getProjectIcon = (sequenceNumber: number) => {
+  return ICARUS_PROJECT_ICONS[sequenceNumber] || TreePine
 }
 
 export default function IcarusAdminPage() {
@@ -499,6 +523,7 @@ export default function IcarusAdminPage() {
                     const project = getProjectBySequence(seq)
                     const difficulty = project?.subtitle as keyof typeof DIFFICULTY_LABELS || 'option_a'
                     const diffConfig = DIFFICULTY_LABELS[difficulty] || DIFFICULTY_LABELS.option_a
+                    const ProjectIcon = getProjectIcon(seq) // 获取对应的图标组件
 
                     return (
                       <motion.div
@@ -509,13 +534,21 @@ export default function IcarusAdminPage() {
                       >
                         <div className="bg-black/90 p-6 rounded-lg h-full">
                           <div className="flex items-center justify-between mb-3">
-                            <span className="text-3xl">{diffConfig.icon}</span>
+                            {/* 使用Lucide图标代替emoji */}
+                            <div className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg">
+                              <ProjectIcon className="w-6 h-6 text-white" />
+                            </div>
                             <span className="text-xs text-white/60">{project?.estimated_duration || 0}天</span>
                           </div>
                           <h3 className="text-sm font-bold text-white mb-2">{diffConfig.label}</h3>
                           <p className="text-xs text-white/80 line-clamp-2">
                             {project?.title || '未创建'}
                           </p>
+                          {project && Array.isArray(project.week_plan) && (
+                            <div className="mt-3 text-xs text-purple-300">
+                              {project.week_plan.length} 周计划
+                            </div>
+                          )}
                           {project && (
                             <div className="mt-4 flex items-center gap-2">
                               <button className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1">
