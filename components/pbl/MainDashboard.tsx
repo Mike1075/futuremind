@@ -119,10 +119,7 @@ export function MainDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="text-center">
-          <Sparkles className="w-12 h-12 text-primary-500 animate-pulse mx-auto mb-4" />
-          <p className="text-cosmic-400">加载中...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
       </div>
     )
   }

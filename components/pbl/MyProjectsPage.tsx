@@ -95,10 +95,7 @@ export function MyProjectsPage({ user, isGuest, onProjectSelect }: MyProjectsPag
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <BookOpen className="w-16 h-16 text-cosmic-500 mx-auto mb-4 animate-pulse" />
-          <p className="text-cosmic-300">加载我的项目中...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
       </div>
     )
   }

@@ -377,8 +377,8 @@ export function InviteModal({ onClose }: InviteModalProps) {
                 <div>
                   <label className="block text-xs font-medium text-zinc-400 mb-1">选择组织</label>
                   {isLoadingSourceOrgs ? (
-                    <div className="flex items-center gap-2 text-zinc-500 text-sm">
-                      <Loader2 className="h-4 w-4 animate-spin" /> 加载中...
+                    <div className="flex justify-center py-2">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                     </div>
                   ) : sourceOrganizations.length === 0 ? (
                     <div className="text-zinc-500 text-sm">你尚未加入任何组织，无法从组织成员中选择。</div>
@@ -477,8 +477,8 @@ export function InviteModal({ onClose }: InviteModalProps) {
                 选择{invitationType === 'organization' ? '组织' : '项目'}
               </label>
               {isLoadingTargets ? (
-                <div className="flex items-center gap-2 text-zinc-500 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin" /> 加载中...
+                <div className="flex justify-center py-2">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                 </div>
               ) : currentTargets.length === 0 ? (
                 <div className="text-zinc-500 text-sm">

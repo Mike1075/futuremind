@@ -157,8 +157,8 @@ export default function ConversationManager({
           {/* 对话列表 */}
           <div className="flex-1 overflow-y-auto max-h-96">
             {isLoading ? (
-              <div className="p-8 text-center text-gray-500">
-                加载中...
+              <div className="p-8 flex justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
               </div>
             ) : conversations.length === 0 ? (
               <div className="p-8 text-center text-gray-500">

@@ -310,9 +310,8 @@ export function FloatingChatBot({
               {/* Projects List */}
               <div className="flex-1 overflow-y-auto p-4">
                 {isLoadingProjects ? (
-                  <div className="flex items-center gap-2 text-zinc-500 text-sm py-4">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    加载中...
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                   </div>
                 ) : userProjects.length === 0 ? (
                   <div className="text-center py-8">
