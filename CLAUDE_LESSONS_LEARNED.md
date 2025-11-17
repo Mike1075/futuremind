@@ -31,7 +31,44 @@
 
 ## 📋 错误记录
 
-### ❌ 错误 #1: 分批提交相互依赖的文件 (2025-01-XX)
+### ❌ 错误 #1: 导入了组件但忘记提交组件文件 (2025-01-17 - 第2次)
+
+**错误描述**：
+- `app/tree-preview/page.tsx` 导入了 `LottieTreeRenderer` 组件
+- 组件文件 `components/ui/lottie-tree-renderer.tsx` 存在于本地
+- 组件依赖的动画文件 `public/animations/growing-plant.json` 也存在
+- **但这两个文件都没有提交到 git**
+- **导致**：Vercel构建失败，报错 `Module not found: Can't resolve '@/components/ui/lottie-tree-renderer'`
+
+**根本原因**：
+- **又犯了同样的错误！** 修改页面导入组件，但忘记提交组件文件
+- 没有检查 `git status` 中的 untracked files
+- 没有意识到新组件及其依赖都需要提交
+
+**正确做法**：
+```bash
+# 1. 检查 untracked files
+git status
+
+# 2. 查找所有导入的新组件
+grep -r "import.*from '@/components" app/tree-preview/
+
+# 3. 检查这些组件是否存在于 untracked files 中
+# 4. 同时提交组件文件及其所有依赖
+git add components/ui/lottie-tree-renderer.tsx \
+        public/animations/growing-plant.json \
+        app/tree-preview/page.tsx
+```
+
+**教训**：
+- ✅ **修改页面添加导入时，必须检查新导入的组件是否已提交**
+- ✅ **新组件的所有依赖（JSON、图片、CSS等）也必须一起提交**
+- ✅ 提交前运行 `git status` 检查 untracked files
+- ✅ 使用 `Grep` 搜索所有 import 语句，确保导入的文件都已提交
+
+---
+
+### ❌ 错误 #2: 分批提交相互依赖的文件 (2025-01-17 - 第1次)
 
 **错误描述**：
 - 添加了新的API方法 `getTreeGrowthData()` 到 `lib/api/consciousness-tree.ts`
