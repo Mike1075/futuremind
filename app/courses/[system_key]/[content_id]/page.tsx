@@ -66,6 +66,18 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     'reading'
   )
 
+  // 检查作业分数（用于控制"下一个"按钮）
+  const { data: submission } = await supabase
+    .from('submissions')
+    .select('ai_score')
+    .eq('user_id', user.id)
+    .eq('content_id', contentId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  const hasPassedAssignment = submission?.ai_score ? submission.ai_score >= 60 : false
+
   // PBL项目使用专属详情页
   if (content.content_type === 'icarus') {
     // 检查用户是否已选择此项目
@@ -315,7 +327,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
               borderColor="border-purple-500/30"
               defaultOpen={false}
             >
-              {formatCourseText(content.deep_interpretation)}
+              {formatCourseText(content.deep_interpretation, { addBorderToAll: true })}
             </CollapsibleSection>
           )}
 
@@ -515,15 +527,24 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
           )}
 
           {nextContent ? (
-            <Link
-              href={`/courses/${systemKey}/${nextContent.id}`}
-              className="flex items-center text-gray-400 hover:text-white transition-colors"
-            >
-              下一个
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+            hasPassedAssignment ? (
+              <Link
+                href={`/courses/${systemKey}/${nextContent.id}`}
+                className="flex items-center text-gray-400 hover:text-white transition-colors"
+              >
+                下一个
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            ) : (
+              <div className="flex items-center text-gray-600 cursor-not-allowed" title="需要完成作业并获得60分以上才能解锁下一课">
+                下一个
+                <svg className="w-5 h-5 ml-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+            )
           ) : (
             <div></div>
           )}
