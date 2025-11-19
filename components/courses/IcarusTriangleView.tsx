@@ -33,31 +33,36 @@ const TRIANGLE_POINTS = [
   { x: 85, y: 75 },   // 右下
 ]
 
-// 根据项目数量计算子节点位置
+// 根据项目数量计算子节点位置 - 围绕主节点等距离圆形分布
 const getSubNodePositions = (count: number, centerX: number, centerY: number, radius: number) => {
   const positions = []
+  const angleStep = 360 / count  // 等分圆周
 
-  if (count === 3) {
-    // 三角形布局
-    for (let i = 0; i < 3; i++) {
-      const angle = (i * 120 - 90) * (Math.PI / 180)  // 从顶部开始
-      positions.push({
-        x: centerX + radius * Math.cos(angle),
-        y: centerY + radius * Math.sin(angle),
-      })
-    }
-  } else if (count === 4) {
-    // 正方形布局
-    for (let i = 0; i < 4; i++) {
-      const angle = (i * 90 - 135) * (Math.PI / 180)  // 从左上开始
-      positions.push({
-        x: centerX + radius * Math.cos(angle),
-        y: centerY + radius * Math.sin(angle),
-      })
-    }
+  for (let i = 0; i < count; i++) {
+    // 从顶部（-90度）开始，顺时针分布
+    const angle = (i * angleStep - 90) * (Math.PI / 180)
+    positions.push({
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle),
+    })
   }
 
   return positions
+}
+
+// 生成波浪路径
+const generateWavePath = (x1: number, y1: number, x2: number, y2: number) => {
+  const midX = (x1 + x2) / 2
+  const midY = (y1 + y2) / 2
+  const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+  const waveHeight = distance * 0.1  // 波浪高度为距离的10%
+
+  // 垂直于连线的方向
+  const angle = Math.atan2(y2 - y1, x2 - x1) + Math.PI / 2
+  const controlX = midX + waveHeight * Math.cos(angle)
+  const controlY = midY + waveHeight * Math.sin(angle)
+
+  return `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`
 }
 
 export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
@@ -133,11 +138,11 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
           {modules.map((module, index) => {
             const point = TRIANGLE_POINTS[index]
             const isActive = activeModule === module.id
-            const subRadius = 20  // 子节点距离中心的半径（百分比）
+            const subRadius = 18  // 子节点距离中心的半径（百分比）
 
             return (
               <div key={module.id}>
-                {/* 主圆形节点 */}
+                {/* 主圆形节点 - 缩小并移除图标 */}
                 <motion.div
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -151,27 +156,39 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                   className="cursor-pointer group"
                   onClick={() => handleModuleClick(module.id)}
                 >
-                  {/* 光晕效果 */}
-                  <div
-                    className={`absolute inset-0 rounded-full blur-2xl transition-all duration-500 ${
-                      isActive ? 'opacity-100 scale-150' : 'opacity-60 scale-125 group-hover:opacity-100 group-hover:scale-150'
-                    }`}
+                  {/* 光晕效果 - 增强 */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full blur-2xl"
                     style={{
                       background: `linear-gradient(135deg, ${module.gradient})`,
+                    }}
+                    animate={{
+                      opacity: isActive ? [0.8, 1, 0.8] : [0.4, 0.6, 0.4],
+                      scale: isActive ? [1.3, 1.5, 1.3] : [1.1, 1.2, 1.1],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
                     }}
                   />
 
-                  {/* 主圆形 */}
+                  {/* 主圆形 - 缩小到80px */}
                   <motion.div
-                    className="relative w-32 h-32 rounded-full flex flex-col items-center justify-center text-white shadow-2xl transition-all"
+                    className="relative w-20 h-20 rounded-full flex items-center justify-center text-white shadow-2xl transition-all"
                     style={{
                       background: `linear-gradient(135deg, ${module.gradient})`,
-                      border: isActive ? '4px solid rgba(255,255,255,0.6)' : '4px solid rgba(255,255,255,0.3)',
+                      border: isActive ? '3px solid rgba(255,255,255,0.8)' : '3px solid rgba(255,255,255,0.4)',
+                      boxShadow: `0 0 ${isActive ? '30px' : '20px'} rgba(99, 102, 241, 0.5)`,
                     }}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{
+                      scale: 1.2,
+                      rotate: 360,
+                      boxShadow: '0 0 40px rgba(99, 102, 241, 0.8)',
+                    }}
+                    whileTap={{ scale: 0.9 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <div className="text-5xl mb-2">{module.icon}</div>
                     <div className="text-4xl font-bold">{module.id}</div>
                   </motion.div>
 
@@ -187,6 +204,58 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                 <AnimatePresence>
                   {isActive && (
                     <>
+                      {/* SVG容器 - 用于绘制波浪线 */}
+                      <svg
+                        className="absolute pointer-events-none"
+                        style={{
+                          left: 0,
+                          top: 0,
+                          width: '100%',
+                          height: '100%',
+                        }}
+                      >
+                        <defs>
+                          {/* 发光滤镜 */}
+                          <filter id="glow">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge>
+                              <feMergeNode in="coloredBlur"/>
+                              <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                          </filter>
+                        </defs>
+                        {module.projects.map((project, projectIndex) => {
+                          const positions = getSubNodePositions(module.projects.length, point.x, point.y, subRadius)
+                          const pos = positions[projectIndex]
+                          const pathData = generateWavePath(point.x, point.y, pos.x, pos.y)
+
+                          return (
+                            <motion.path
+                              key={`line-${project.id}`}
+                              d={pathData}
+                              fill="none"
+                              stroke="url(#gradient)"
+                              strokeWidth="2"
+                              filter="url(#glow)"
+                              initial={{ pathLength: 0, opacity: 0 }}
+                              animate={{ pathLength: 1, opacity: 1 }}
+                              exit={{ pathLength: 0, opacity: 0 }}
+                              transition={{
+                                delay: projectIndex * 0.1,
+                                duration: 0.6,
+                              }}
+                            />
+                          )
+                        })}
+                        {/* 渐变定义 */}
+                        <defs>
+                          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor={module.gradient.split(', ')[0]} stopOpacity="0.8" />
+                            <stop offset="100%" stopColor={module.gradient.split(', ')[1]} stopOpacity="0.8" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+
                       {module.projects.map((project, projectIndex) => {
                         const letter = String.fromCharCode(65 + projectIndex)  // A, B, C, D
                         const positions = getSubNodePositions(module.projects.length, point.x, point.y, subRadius)
@@ -195,14 +264,12 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         return (
                           <motion.div
                             key={project.id}
-                            initial={{ scale: 0, opacity: 0, x: 0, y: 0 }}
+                            initial={{ scale: 0, opacity: 0 }}
                             animate={{
                               scale: 1,
                               opacity: 1,
-                              x: (pos.x - point.x) + '%',
-                              y: (pos.y - point.y) + '%',
                             }}
-                            exit={{ scale: 0, opacity: 0, x: 0, y: 0 }}
+                            exit={{ scale: 0, opacity: 0 }}
                             transition={{
                               delay: projectIndex * 0.1,
                               type: 'spring',
@@ -211,57 +278,63 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             }}
                             style={{
                               position: 'absolute',
-                              left: `${point.x}%`,
-                              top: `${point.y}%`,
+                              left: `${pos.x}%`,
+                              top: `${pos.y}%`,
                               transform: 'translate(-50%, -50%)',
                             }}
-                            className="cursor-pointer group"
+                            className="cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation()
                               setSelectedProject(project)
                             }}
                           >
-                            {/* 连接线 */}
+                            {/* 子圆形节点 - 炫酷效果 */}
                             <motion.div
-                              className="absolute inset-0 pointer-events-none"
-                              initial={{ pathLength: 0 }}
-                              animate={{ pathLength: 1 }}
-                              transition={{ delay: projectIndex * 0.1 + 0.2, duration: 0.5 }}
+                              className="relative"
+                              whileHover={{ scale: 1.3 }}
+                              whileTap={{ scale: 0.85 }}
                             >
-                              <svg
-                                className="absolute"
+                              {/* 外层发光圆环 */}
+                              <motion.div
+                                className="absolute inset-0 rounded-full"
                                 style={{
-                                  width: '200%',
-                                  height: '200%',
-                                  left: '-50%',
-                                  top: '-50%',
+                                  background: `linear-gradient(135deg, ${module.gradient})`,
+                                  filter: 'blur(10px)',
+                                }}
+                                animate={{
+                                  scale: [1, 1.2, 1],
+                                  opacity: [0.5, 0.8, 0.5],
+                                }}
+                                transition={{
+                                  duration: 2,
+                                  repeat: Infinity,
+                                  ease: "easeInOut",
+                                }}
+                              />
+
+                              {/* 主节点 */}
+                              <motion.div
+                                className="relative w-16 h-16 rounded-full flex items-center justify-center text-white shadow-2xl"
+                                style={{
+                                  background: `linear-gradient(135deg, ${module.gradient})`,
+                                  border: selectedProject?.id === project.id
+                                    ? '3px solid rgba(255,255,255,1)'
+                                    : '3px solid rgba(255,255,255,0.5)',
+                                  boxShadow: '0 0 20px rgba(99, 102, 241, 0.6)',
+                                }}
+                                whileHover={{
+                                  boxShadow: '0 0 30px rgba(99, 102, 241, 1)',
+                                  rotate: [0, 10, -10, 0],
+                                }}
+                                transition={{
+                                  rotate: {
+                                    duration: 0.5,
+                                    ease: "easeInOut",
+                                  }
                                 }}
                               >
-                                <motion.line
-                                  x1="50%"
-                                  y1="50%"
-                                  x2={`${50 - (pos.x - point.x) / subRadius * 50}%`}
-                                  y2={`${50 - (pos.y - point.y) / subRadius * 50}%`}
-                                  stroke="rgba(99, 102, 241, 0.5)"
-                                  strokeWidth="2"
-                                  strokeDasharray="5,5"
-                                />
-                              </svg>
-                            </motion.div>
-
-                            {/* 子圆形节点 */}
-                            <motion.div
-                              className="relative w-20 h-20 rounded-full flex items-center justify-center text-white shadow-xl transition-all"
-                              style={{
-                                background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
-                                border: selectedProject?.id === project.id
-                                  ? '3px solid rgba(255,255,255,0.8)'
-                                  : '3px solid rgba(255,255,255,0.4)',
-                              }}
-                              whileHover={{ scale: 1.2 }}
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              <span className="text-3xl font-bold">{letter}</span>
+                                <span className="text-2xl font-bold">{letter}</span>
+                              </motion.div>
                             </motion.div>
                           </motion.div>
                         )
