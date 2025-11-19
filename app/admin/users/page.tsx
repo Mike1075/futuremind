@@ -187,7 +187,16 @@ export default function UsersManagementPage() {
 
       if (error) throw error
 
+      // 立即更新本地状态
+      setAllUsers(prevUsers =>
+        prevUsers.map(user =>
+          user.id === userId ? { ...user, role: newRole } : user
+        )
+      )
+
       alert('✅ 角色修改成功')
+
+      // 后台重新获取数据以确保同步
       await fetchAllUsers()
     } catch (error) {
       console.error('修改角色失败:', error)
