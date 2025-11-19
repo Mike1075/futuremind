@@ -5,8 +5,8 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 
 interface CollapsibleSectionProps {
   title: string
-  icon: React.ReactNode
-  iconColor: string
+  icon?: React.ReactNode
+  iconColor?: string
   bgColor: string
   borderColor: string
   children: React.ReactNode
@@ -41,10 +41,12 @@ export function CollapsibleSection({
         className={`w-full flex items-center justify-between p-4 rounded-t-xl ${bgColor} ${borderColor} border-2 hover:opacity-90 transition-all duration-200 group`}
       >
         <div className="flex items-center gap-3">
-          {/* 图标 */}
-          <div className={`${iconColor} group-hover:scale-110 transition-transform duration-200`}>
-            {icon}
-          </div>
+          {/* 图标 - 仅在提供时显示 */}
+          {icon && (
+            <div className={`${iconColor} group-hover:scale-110 transition-transform duration-200`}>
+              {icon}
+            </div>
+          )}
 
           {/* 标题 */}
           <h2 className="text-lg font-semibold text-white">
