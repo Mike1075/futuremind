@@ -68,7 +68,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 
   // 检查作业分数（用于控制"下一个"按钮）
   const { data: submission } = await supabase
-    .from('submissions')
+    .from('user_submissions')
     .select('ai_score')
     .eq('user_id', user.id)
     .eq('content_id', contentId)
