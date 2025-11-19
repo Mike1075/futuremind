@@ -7,6 +7,9 @@ import { ProgressService } from '@/lib/services/progress.service'
 import { PBLProjectDetail } from '@/components/courses/PBLProjectDetail'
 import { EarthContentWrapperV2 } from './EarthContentWrapperV2'
 import { CourseContentClient } from './CourseContentClient'
+import { CollapsibleSection } from '@/components/courses/CollapsibleSection'
+import { formatCourseText } from '@/lib/utils/text-formatter'
+import { BookOpen, Brain, Sparkles, Target } from 'lucide-react'
 
 // Resource 类型定义（对应 course_contents.resources 的结构）
 interface Resource {
@@ -291,52 +294,60 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     // Listening课程
     if (structureType === 'daily_sequential' && content.deep_interpretation) {
       return (
-        <div className="space-y-8">
+        <div className="space-y-4">
           {/* 课程资源 */}
           {renderResources()}
 
           {content.original_text && (
-            <section>
-              <h2 className="text-xl font-semibold mb-4 text-blue-400">原文摘录</h2>
-              <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
-                <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
-                  {content.original_text}
-                </p>
-              </div>
-            </section>
+            <CollapsibleSection
+              title="原文摘录"
+              icon={<BookOpen className="w-5 h-5" />}
+              iconColor="text-blue-400"
+              bgColor="bg-blue-500/10"
+              borderColor="border-blue-500/30"
+              defaultOpen={false}
+            >
+              {formatCourseText(content.original_text)}
+            </CollapsibleSection>
           )}
 
           {content.deep_interpretation && (
-            <section>
-              <h2 className="text-xl font-semibold mb-4 text-purple-400">深度解读</h2>
-              <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
-                <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
-                  {content.deep_interpretation}
-                </p>
-              </div>
-            </section>
+            <CollapsibleSection
+              title="深度解读"
+              icon={<Brain className="w-5 h-5" />}
+              iconColor="text-purple-400"
+              bgColor="bg-purple-500/10"
+              borderColor="border-purple-500/30"
+              defaultOpen={true}
+            >
+              {formatCourseText(content.deep_interpretation)}
+            </CollapsibleSection>
           )}
 
           {content.meditation_guide && (
-            <section>
-              <h2 className="text-xl font-semibold mb-4 text-green-400">冥想练习与引导</h2>
-              <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
-                <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
-                  {content.meditation_guide}
-                </p>
-              </div>
-            </section>
+            <CollapsibleSection
+              title="冥想指示"
+              icon={<Sparkles className="w-5 h-5" />}
+              iconColor="text-green-400"
+              bgColor="bg-green-500/10"
+              borderColor="border-green-500/30"
+              defaultOpen={false}
+            >
+              {formatCourseText(content.meditation_guide)}
+            </CollapsibleSection>
           )}
 
           {content.life_practice && (
-            <section>
-              <h2 className="text-xl font-semibold mb-4 text-yellow-400">生活中的小练习</h2>
-              <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
-                <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
-                  {content.life_practice}
-                </p>
-              </div>
-            </section>
+            <CollapsibleSection
+              title="生活中的体悟"
+              icon={<Target className="w-5 h-5" />}
+              iconColor="text-yellow-400"
+              bgColor="bg-yellow-500/10"
+              borderColor="border-yellow-500/30"
+              defaultOpen={false}
+            >
+              {formatCourseText(content.life_practice)}
+            </CollapsibleSection>
           )}
         </div>
       )
