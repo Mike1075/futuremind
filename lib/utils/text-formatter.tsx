@@ -12,8 +12,8 @@ interface FormatOptions {
  * - 移除重复的标题行（🧘 冥想练习: 和 🌱 生活实践:）
  * - 智能分段和层级标题
  * - 清理多余空行
- * - 添加适当的段落间距
- * - 智能emoji装饰
+ * - 段落结尾添加emoji装饰
+ * - 标题不添加emoji
  */
 export function formatCourseText(
   text: string | null | undefined,
@@ -33,7 +33,10 @@ export function formatCourseText(
   // 4. 移除第一行如果是重复的标题（🧘 冥想练习:xxx 或 🌱 生活实践:xxx）
   formatted = formatted.replace(/^[🧘🌱]\s*[^:：]+[:：][^\n]*\n\n?/, '')
 
-  // 5. 将文本分段
+  // 5. 智能分段：将过长的段落按句子分段
+  formatted = smartParagraphSplit(formatted)
+
+  // 6. 将文本分段
   const paragraphs = formatted.split('\n\n')
 
   return (
@@ -43,46 +46,46 @@ export function formatCourseText(
         if (!trimmed) return null
 
         // 一级标题（如"准备阶段"、"聆听练习"、"结束阶段"）
-        // 特征：短文本（<15字），独立一行，无标点或只有冒号
+        // 标题不添加emoji
         if (
           trimmed.length < 15 &&
           !trimmed.includes('\n') &&
           !trimmed.match(/[。，！？、；"""''（）《》【】]/) &&
-          !trimmed.match(/^[*\-•\d]/)  // 不是列表或编号
+          !trimmed.match(/^[*\-•\d]/)
         ) {
           return (
-            <h3 key={index} className="text-xl font-bold text-purple-300 mt-8 mb-4 flex items-center gap-2">
-              <span className="opacity-60">{getRandomDecorativeEmoji()}</span>
-              <span>{trimmed.replace(/[:：]$/, '')}</span>
+            <h3 key={index} className="text-xl font-bold text-purple-300 mt-8 mb-4">
+              {trimmed.replace(/[:：]$/, '')}
             </h3>
           )
         }
 
         // 二级标题（如"1. xxx"开头但文本较短）
+        // 标题不添加emoji
         const numberedTitleMatch = trimmed.match(/^(\d+\.)\s*(.{1,30})$/)
         if (numberedTitleMatch && !trimmed.includes('\n')) {
           return (
-            <h4 key={index} className="text-lg font-semibold text-purple-200 mt-6 mb-3 flex items-center gap-2">
-              <span>{numberedTitleMatch[1]}</span>
+            <h4 key={index} className="text-lg font-semibold text-purple-200 mt-6 mb-3">
+              <span className="mr-2">{numberedTitleMatch[1]}</span>
               <span>{numberedTitleMatch[2]}</span>
-              <span className="opacity-50 text-base">{getRandomDecorativeEmoji()}</span>
             </h4>
           )
         }
 
-        // 小标题（如"时机:xxx"、"练习方法:"）- 以冒号结尾的短文本
+        // 小标题（如"时机:xxx"、"练习方法:"）
+        // 标题不添加emoji，内容另起一行且结尾加emoji
         const subtitleMatch = trimmed.match(/^([^:：\n]{2,20})[:：]\s*([\s\S]*)$/)
         if (subtitleMatch && subtitleMatch[1].length < 20) {
           const [, title, content] = subtitleMatch
           return (
             <div key={index} className="mt-4">
-              <h5 className="text-base font-semibold text-purple-100 mb-2 flex items-center gap-2">
-                <span className="opacity-60 text-sm">{getRandomDecorativeEmoji()}</span>
-                <span>{title}</span>
+              <h5 className="text-base font-semibold text-purple-100 mb-2">
+                {title}
               </h5>
               {content && (
                 <div className="text-gray-300 leading-relaxed ml-6">
                   {formatInlineText(content)}
+                  {content.length > 40 && <span className="ml-2 opacity-60 text-sm">{getRandomDecorativeEmoji()}</span>}
                 </div>
               )}
             </div>
@@ -107,16 +110,44 @@ export function formatCourseText(
         }
 
         // 编号段落（如"1. xxxxx一大段文字"）
+        // 编号分行显示，段落结尾加emoji
         const numberedParaMatch = trimmed.match(/^(\d+\.)\s+([\s\S]+)$/)
         if (numberedParaMatch) {
+          // 如果编号段落包含多行，按行分割
+          const content = numberedParaMatch[2]
+          const hasMultipleLines = content.includes('\n')
+
+          if (hasMultipleLines) {
+            const lines = content.split('\n').filter(line => line.trim())
+            return (
+              <div key={index} className={`${options.addBorderToAll ? 'border-l-4 border-purple-400 pl-4 py-2 bg-purple-500/5' : ''}`}>
+                <div className="flex items-start gap-3">
+                  <span className="text-purple-300 font-semibold mt-0.5 flex-shrink-0">
+                    {numberedParaMatch[1]}
+                  </span>
+                  <div className="flex-1 space-y-2">
+                    {lines.map((line, i) => (
+                      <p key={i} className="text-gray-300 leading-relaxed">
+                        {formatInlineText(line)}
+                        {i === lines.length - 1 && line.length > 40 && (
+                          <span className="ml-2 opacity-60 text-sm">{getRandomDecorativeEmoji()}</span>
+                        )}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
           return (
             <div key={index} className={`flex items-start gap-3 ${options.addBorderToAll ? 'border-l-4 border-purple-400 pl-4 py-2 bg-purple-500/5' : ''}`}>
               <span className="text-purple-300 font-semibold mt-0.5 flex-shrink-0">
                 {numberedParaMatch[1]}
               </span>
               <p className="flex-1 text-gray-300 leading-relaxed">
-                {formatInlineText(numberedParaMatch[2])}
-                <span className="ml-2 opacity-50 text-sm">{getRandomDecorativeEmoji()}</span>
+                {formatInlineText(content)}
+                {content.length > 40 && <span className="ml-2 opacity-60 text-sm">{getRandomDecorativeEmoji()}</span>}
               </p>
             </div>
           )
@@ -128,13 +159,14 @@ export function formatCourseText(
             <blockquote key={index} className="border-l-4 border-purple-400 pl-4 py-3 bg-purple-500/5 rounded-r-lg">
               <p className="text-gray-300 italic leading-relaxed">
                 {formatInlineText(trimmed)}
+                {trimmed.length > 40 && <span className="ml-2 opacity-60 text-sm">{getRandomDecorativeEmoji()}</span>}
               </p>
             </blockquote>
           )
         }
 
-        // 普通段落
-        const isShortParagraph = trimmed.length < 80
+        // 普通段落 - 较长段落结尾添加emoji
+        const isLongParagraph = trimmed.length > 40
 
         return (
           <p
@@ -143,21 +175,50 @@ export function formatCourseText(
               options.addBorderToAll
                 ? 'border-l-4 border-purple-400 pl-4 py-2 bg-purple-500/5'
                 : ''
-            } ${isShortParagraph ? 'flex items-start gap-2' : ''}`}
+            }`}
           >
-            {isShortParagraph && (
-              <span className="text-sm mt-0.5 flex-shrink-0 opacity-50">
-                {getRandomDecorativeEmoji()}
-              </span>
-            )}
-            <span className={isShortParagraph ? 'flex-1' : ''}>
-              {formatInlineText(trimmed)}
-            </span>
+            {formatInlineText(trimmed)}
+            {isLongParagraph && <span className="ml-2 opacity-60 text-sm">{getRandomDecorativeEmoji()}</span>}
           </p>
         )
       })}
     </div>
   )
+}
+
+/**
+ * 智能分段：将过长的段落按句子分段
+ */
+function smartParagraphSplit(text: string): string {
+  const paragraphs = text.split('\n\n')
+  const result: string[] = []
+
+  for (const para of paragraphs) {
+    // 如果段落超过200字且包含多个句子，尝试分段
+    if (para.length > 200 && (para.match(/[。！？]/g) || []).length > 1) {
+      // 按句子分割
+      const sentences = para.split(/([。！？])/g)
+      let currentPara = ''
+
+      for (let i = 0; i < sentences.length; i++) {
+        currentPara += sentences[i]
+
+        // 如果是标点符号且累积长度超过100字，分段
+        if ((sentences[i] === '。' || sentences[i] === '！' || sentences[i] === '？') && currentPara.length > 100) {
+          result.push(currentPara.trim())
+          currentPara = ''
+        }
+      }
+
+      if (currentPara.trim()) {
+        result.push(currentPara.trim())
+      }
+    } else {
+      result.push(para)
+    }
+  }
+
+  return result.join('\n\n')
 }
 
 /**
