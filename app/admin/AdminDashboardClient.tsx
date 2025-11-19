@@ -83,17 +83,17 @@ export default function AdminDashboardClient() {
     }
   }, [isMounted])
 
-  // 根据角色生成卡片（新架构：校长3个，老师2个）
+  // 根据角色生成卡片（新架构：校长2个，老师1个）
   useEffect(() => {
     const cards = []
 
-    // 校长专属：教师管理
+    // 校长专属：人员管理
     if (userRole === 'principal') {
       cards.push({
-        title: '教师管理',
-        description: '管理教师账号，查看教师活动',
-        href: '/admin/teachers',
-        icon: UserCheck,
+        title: '人员管理',
+        description: '管理校长、教师、学员，设置角色权限',
+        href: '/admin/users',
+        icon: Users,
         gradient: 'from-emerald-500 via-teal-500 to-cyan-500'
       })
     }
@@ -106,15 +106,6 @@ export default function AdminDashboardClient() {
         href: '/admin/courses',
         icon: BookOpen,
         gradient: 'from-purple-500 via-pink-500 to-rose-500'
-      })
-
-      // 校长和老师共有：学员管理
-      cards.push({
-        title: '学员管理',
-        description: '查看学员信息、选课情况、分组管理',
-        href: '/admin/students',
-        icon: Users,
-        gradient: 'from-blue-500 via-cyan-500 to-teal-500'
       })
     }
 

@@ -39,10 +39,10 @@ export const TREE_STAGE_SCALING: Record<TreeStage, TreeScaling> = {
   // 阶段1: 种子期 (Seed, 0-20%)
   // ====================================
   seed: {
-    // 树干：完全不显示
-    trunkWidth: 0,
-    trunkLength: 0,
-    trunkOpacity: 0,
+    // 树干：极细的芽尖（让用户能看到生命迹象）
+    trunkWidth: 0.02,         // 2%宽度（极细，但可见）
+    trunkLength: 0.03,        // 3%高度（刚刚冒头）
+    trunkOpacity: 0.5,        // 50%透明度（若隐若现）
 
     // 根系：1-2根极细的根须（放大显示）
     rootWidth: 0.2,           // 20%粗细（相对放大，因为会整体缩放）
@@ -71,10 +71,10 @@ export const TREE_STAGE_SCALING: Record<TreeStage, TreeScaling> = {
   // 阶段2: 发芽期 (Sprout, 20-40%)
   // ====================================
   sprout: {
-    // 树干：极细的茎
-    trunkWidth: 0.05,         // 5%宽度
-    trunkLength: 0.08,        // 8%高度
-    trunkOpacity: 0.6,        // 稍微淡一点
+    // 树干：细茎（加强可见度）
+    trunkWidth: 0.08,         // 8%宽度（从5%提升到8%）
+    trunkLength: 0.12,        // 12%高度（从8%提升到12%）
+    trunkOpacity: 0.75,       // 75%透明度（从60%提升）
 
     // 根系：2-3根细根
     rootWidth: 0.1,           // 10%粗细
@@ -103,10 +103,10 @@ export const TREE_STAGE_SCALING: Record<TreeStage, TreeScaling> = {
   // 阶段3: 幼苗期 (Seedling, 40-60%)
   // ====================================
   seedling: {
-    // 树干：细茎
-    trunkWidth: 0.08,         // 8%宽度
-    trunkLength: 0.12,        // 12%高度
-    trunkOpacity: 0.85,
+    // 树干：明显的细茎（加强可见度）
+    trunkWidth: 0.15,         // 15%宽度（从8%提升）
+    trunkLength: 0.18,        // 18%高度（从12%提升）
+    trunkOpacity: 0.9,        // 90%透明度（从85%提升）
 
     // 根系：3-4根主根
     rootWidth: 0.15,          // 15%粗细

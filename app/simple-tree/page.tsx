@@ -15,6 +15,9 @@ export default function SimpleTreePage() {
   const supabase = createClient()
   const [showGaiaDialog, setShowGaiaDialog] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [useMockMode, setUseMockMode] = useState(true) // 默认启用Mock模式用于测试
+  const [testLevel, setTestLevel] = useState(4)
+  const [testProgress, setTestProgress] = useState(65)
 
   // 确保只在客户端渲染
   useEffect(() => {
@@ -125,8 +128,108 @@ export default function SimpleTreePage() {
 
       {/* 意识树主体内容 */}
       <div className="relative z-10 w-full" style={{ height: 'calc(100vh - 80px)' }}>
-        <DatabaseConsciousnessRoots />
+        <DatabaseConsciousnessRoots
+          mockMode={useMockMode}
+          mockLevel={testLevel}
+          mockProgress={testProgress}
+          mockDomains={{
+            self_awareness: 0.7,
+            life_sciences: 0.6,
+            universal_laws: 0.65,
+            creative_expression: 0.8,
+            social_connection: 0.75
+          }}
+        />
       </div>
+
+      {/* 测试控制面板 */}
+      {useMockMode && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="fixed bottom-8 left-8 bg-black/80 backdrop-blur-md border border-white/20 rounded-lg p-4 shadow-lg z-50 space-y-3"
+        >
+          <div className="text-green-400 font-semibold text-sm mb-2">🧪 测试模式</div>
+
+          {/* 等级选择 */}
+          <div>
+            <label className="text-white text-xs block mb-1">等级 (Level {testLevel})</label>
+            <input
+              type="range"
+              min="1"
+              max="7"
+              value={testLevel}
+              onChange={(e) => setTestLevel(parseInt(e.target.value))}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>L1🔴</span><span>L2🟠</span><span>L3🟡</span><span>L4🟢</span>
+              <span>L5🔵</span><span>L6🔵</span><span>L7🟣</span>
+            </div>
+          </div>
+
+          {/* 进度选择 */}
+          <div>
+            <label className="text-white text-xs block mb-1">进度 ({testProgress}%)</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={testProgress}
+              onChange={(e) => setTestProgress(parseInt(e.target.value))}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>种子</span><span>发芽</span><span>幼苗</span><span>小树</span><span>大树</span>
+            </div>
+          </div>
+
+          {/* 快捷测试按钮 */}
+          <div className="grid grid-cols-5 gap-1 mt-2">
+            <button
+              onClick={() => { setTestLevel(1); setTestProgress(10) }}
+              className="text-xs px-2 py-1 bg-red-600/30 hover:bg-red-600/50 text-white rounded"
+            >种子🌰</button>
+            <button
+              onClick={() => { setTestLevel(2); setTestProgress(30) }}
+              className="text-xs px-2 py-1 bg-orange-600/30 hover:bg-orange-600/50 text-white rounded"
+            >发芽🌱</button>
+            <button
+              onClick={() => { setTestLevel(3); setTestProgress(50) }}
+              className="text-xs px-2 py-1 bg-yellow-600/30 hover:bg-yellow-600/50 text-white rounded"
+            >幼苗🌿</button>
+            <button
+              onClick={() => { setTestLevel(5); setTestProgress(70) }}
+              className="text-xs px-2 py-1 bg-cyan-600/30 hover:bg-cyan-600/50 text-white rounded"
+            >小树🌲</button>
+            <button
+              onClick={() => { setTestLevel(7); setTestProgress(90) }}
+              className="text-xs px-2 py-1 bg-purple-600/30 hover:bg-purple-600/50 text-white rounded"
+            >大树🌳</button>
+          </div>
+
+          <button
+            onClick={() => setUseMockMode(false)}
+            className="w-full text-xs px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded mt-2"
+          >
+            切换到真实数据
+          </button>
+        </motion.div>
+      )}
+
+      {/* Mock Mode Toggle (when disabled) */}
+      {!useMockMode && (
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          onClick={() => setUseMockMode(true)}
+          className="fixed bottom-8 left-8 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg shadow-lg transition-all duration-300 z-50"
+        >
+          🔒 切换到测试模式
+        </motion.button>
+      )}
 
       {/* Fruits Overlay */}
       <FruitsOverlay />

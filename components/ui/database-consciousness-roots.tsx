@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback, useState } from "react"
 import consciousnessTreeAPI, { ConsciousnessTreeView } from '@/lib/api/consciousness-tree'
 import { createClient } from '@/lib/supabase/client'
 import { getTreeStage, getTreeScaling, type TreeStage } from '@/lib/consciousness/tree-stage-config'
+import { getLevelHue } from '@/lib/consciousness-config'
 
 // Mock mode props interface
 interface MockModeProps {
@@ -114,21 +115,7 @@ export function DatabaseConsciousnessRoots({
     return score // 已经是0-1范围的正确值
   }
 
-  // 根据意识等级返回基础色调
-  const getLevelBaseHue = (level: number): number => {
-    const levelHues: Record<number, number> = {
-      1: 110,  // 初醒者 - 嫩绿色 (新生、发芽)
-      2: 150,  // 探索者 - 青绿色 (成长)
-      3: 180,  // 觉察者 - 蓝绿色 (清明)
-      4: 220,  // 实践者 - 蓝色 (沉稳)
-      5: 280,  // 贤者 - 紫色 (智慧)
-      6: 320,  // 智者 - 紫红色 (深邃)
-      7: 40,   // 觉醒者 - 金色 (觉悟)
-    }
-    return levelHues[level] || levelHues[1]
-  }
-
-  // 注：保留旧的3形态系统用于向后兼容，但实际使用新的5阶段系统
+  // 注：使用新的7脉轮颜色系统（红橙黄绿青蓝紫）
 
   // 加载意识树视图数据
   useEffect(() => {
@@ -383,7 +370,7 @@ export function DatabaseConsciousnessRoots({
       branches: [],
       start,
       coeff: start.y / (height - 100),
-      teinte: getLevelBaseHue(consciousnessLevel), // 使用基于等级的颜色
+      teinte: getLevelHue(consciousnessLevel), // 使用7脉轮颜色系统
       index: 0,
       // 根据阶段调整分支概率
       proba1: baseProbability,
@@ -392,32 +379,34 @@ export function DatabaseConsciousnessRoots({
       proba4: baseProbability * 0.6,
     }
 
-    // 种子期：完全没有树干，只有根系
-    if (scaling.trunkWidth === 0) {
-      console.log(`🌰 种子期：不创建树干，仅显示根系`)
-      return tree
-    }
-
-    // 其他阶段：根据阶段创建主干/茎
+    // 创建主干/茎（所有阶段都创建，包括种子期的极细芽尖）
     const baseTrunkWidth = 25 * Math.sqrt(start.y / height)
-    const trunk: Branch = {
-      position: { ...start },
-      stw: baseTrunkWidth * scaling.trunkWidth * trunkThickness, // 应用阶段缩放
-      gen: 1,
-      alive: true,
-      age: 0,
-      angle: random(-0.15, 0.15),
-      speed: createVector(random(-0.3, 0.3), +3.2),
-      index: 0,
-      maxlife: maxlife * scaling.trunkLength * 2, // 根据阶段调整长度
-      proba1: tree.proba1,
-      proba2: tree.proba2,
-      proba3: tree.proba3,
-      proba4: tree.proba4,
-      deviation: 0.65,
-    }
+    const trunkWidth = baseTrunkWidth * scaling.trunkWidth * trunkThickness
 
-    tree.branches.push(trunk)
+    // 即使是种子期（trunkWidth很小），也要尝试创建树干
+    if (trunkWidth > 0.1) { // 只要不是完全为0，就创建
+      const trunk: Branch = {
+        position: { ...start },
+        stw: trunkWidth, // 应用阶段缩放
+        gen: 1,
+        alive: true,
+        age: 0,
+        angle: 0, // 树干垂直向上
+        speed: createVector(0, -3.2), // ✅ 修复：负的Y速度 = 向上生长
+        index: 0,
+        maxlife: maxlife * scaling.trunkLength * 2, // 根据阶段调整长度
+        proba1: tree.proba1,
+        proba2: tree.proba2,
+        proba3: tree.proba3,
+        proba4: tree.proba4,
+        deviation: 0.65,
+      }
+
+      tree.branches.push(trunk)
+      console.log(`🌱 创建树干: 阶段=${getTreeStage(levelProgress)}, 宽度=${trunkWidth.toFixed(2)}, 长度=${trunk.maxlife.toFixed(0)}`)
+    } else {
+      console.log(`⚠️ 树干过细未创建: trunkWidth=${trunkWidth.toFixed(3)}`)
+    }
     return tree
   }, [trunkThickness, consciousnessLevel, levelProgress])
 
@@ -428,7 +417,8 @@ export function DatabaseConsciousnessRoots({
     gen: number,
     index: number,
     tree: Tree,
-    fixedMaxlife?: number // 新增参数：固定长度
+    fixedMaxlife?: number, // 固定长度
+    isRoot?: boolean // ✅ 新增参数：是否为根系（根系向下，树枝向上）
   ): Branch => ({
     position: { ...start },
     stw,
@@ -436,7 +426,7 @@ export function DatabaseConsciousnessRoots({
     alive: true,
     age: 0,
     angle,
-    speed: createVector(0, +3.2), // ROOT CHANGE: DOWN instead of UP
+    speed: createVector(0, isRoot ? +3.2 : -3.2), // ✅ 修复：根系向下，树枝向上
     index,
     maxlife: fixedMaxlife || maxlife * 0.8, // 统一生命周期，减少随机性
     proba1: tree.proba1,
@@ -519,7 +509,8 @@ export function DatabaseConsciousnessRoots({
       2, // Second generation
       tree.index++,
       tree,
-      maxlife * 0.7 * scaling.rootLength // 应用根长度缩放
+      maxlife * 0.7 * scaling.rootLength, // 应用根长度缩放
+      true // ✅ isRoot: 根系向下生长
     )
 
     // 不设置domainColor，让根系也使用等级颜色
@@ -569,7 +560,8 @@ export function DatabaseConsciousnessRoots({
         2, // Second generation
         tree.index++,
         tree,
-        maxlife * 0.7 // 统一初始长度，适中不会太短或太长
+        maxlife * 0.7, // 统一初始长度，适中不会太短或太长
+        true // ✅ isRoot: 根系向下生长
       )
 
       domainBranch.domainColor = currentDomain.color
@@ -645,7 +637,8 @@ export function DatabaseConsciousnessRoots({
         tree,
         isMainBranchCreation
           ? maxlife * 1.2  // 统一主分支生命
-          : maxlife * 0.9  // 统一普通分支生命
+          : maxlife * 0.9, // 统一普通分支生命
+        true // ✅ isRoot: 根系向下生长
       )
 
       // UNIFIED PARAMETER SETTING: 统一化参数设置
