@@ -71,7 +71,7 @@ export function formatCourseText(
         }
 
         // 小标题（如"时机:xxx"、"练习方法:"）- 以冒号结尾的短文本
-        const subtitleMatch = trimmed.match(/^([^:：\n]{2,20})[:：]\s*(.*)$/s)
+        const subtitleMatch = trimmed.match(/^([^:：\n]{2,20})[:：]\s*([\s\S]*)$/)
         if (subtitleMatch && subtitleMatch[1].length < 20) {
           const [, title, content] = subtitleMatch
           return (
@@ -107,7 +107,7 @@ export function formatCourseText(
         }
 
         // 编号段落（如"1. xxxxx一大段文字"）
-        const numberedParaMatch = trimmed.match(/^(\d+\.)\s+(.+)$/s)
+        const numberedParaMatch = trimmed.match(/^(\d+\.)\s+([\s\S]+)$/)
         if (numberedParaMatch) {
           return (
             <div key={index} className={`flex items-start gap-3 ${options.addBorderToAll ? 'border-l-4 border-purple-400 pl-4 py-2 bg-purple-500/5' : ''}`}>
