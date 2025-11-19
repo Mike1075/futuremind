@@ -79,47 +79,61 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
       {/* 星空背景 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(100)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-white rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              opacity: Math.random() * 0.7 + 0.3,
-            }}
-            animate={{
-              opacity: [Math.random() * 0.3 + 0.2, Math.random() * 0.8 + 0.2, Math.random() * 0.3 + 0.2],
-              scale: [1, 1.5, 1],
-            }}
-            transition={{
-              duration: Math.random() * 3 + 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-        {/* 彩色星星 */}
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={`color-${i}`}
-            className="absolute w-1.5 h-1.5 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              background: COURSE_COLORS[Math.floor(Math.random() * COURSE_COLORS.length)].from,
-            }}
-            animate={{
-              opacity: [0.3, 0.8, 0.3],
-              scale: [1, 1.8, 1],
-            }}
-            transition={{
-              duration: Math.random() * 4 + 3,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
+        {[...Array(100)].map((_, i) => {
+          const randomColors = () => {
+            const colors = ['#FFFFFF', '#E0E7FF', '#DBEAFE', '#FCE7F3', '#FEF3C7', '#D1FAE5']
+            return colors[Math.floor(Math.random() * colors.length)]
+          }
+
+          return (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                opacity: Math.random() * 0.7 + 0.3,
+              }}
+              animate={{
+                opacity: [Math.random() * 0.3 + 0.2, Math.random() * 0.8 + 0.2, Math.random() * 0.3 + 0.2],
+                scale: [1, 1.5, 1],
+                background: [randomColors(), randomColors(), randomColors()],
+              }}
+              transition={{
+                duration: Math.random() * 3 + 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+          )
+        })}
+        {/* 彩色星星 - 颜色随机变化 */}
+        {[...Array(20)].map((_, i) => {
+          const randomCourseColor = () => {
+            return COURSE_COLORS[Math.floor(Math.random() * COURSE_COLORS.length)].from
+          }
+
+          return (
+            <motion.div
+              key={`color-${i}`}
+              className="absolute w-1.5 h-1.5 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                opacity: [0.3, 0.8, 0.3],
+                scale: [1, 1.8, 1],
+                background: [randomCourseColor(), randomCourseColor(), randomCourseColor()],
+              }}
+              transition={{
+                duration: Math.random() * 4 + 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+          )
+        })}
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
