@@ -93,6 +93,7 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     // 创建分数映射（取最高分）
     const scoreMap = new Map<string, number>()
     submissions?.forEach(sub => {
+      if (!sub.course_content_id) return  // 跳过空值
       const existingScore = scoreMap.get(sub.course_content_id) || 0
       if (sub.score && sub.score > existingScore) {
         scoreMap.set(sub.course_content_id, sub.score)
