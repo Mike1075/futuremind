@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { IcarusTriangleView } from './IcarusTriangleView'
 
 interface Project {
   id: string
@@ -142,6 +143,34 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
     .sort((a, b) => a.sequence_number - b.sequence_number)
     .slice(0, 11)
 
+  // 准备模块数据
+  const MODULES = [
+    {
+      id: 1,
+      name: '模块一：无形的纽带',
+      projectCount: 3,
+      projects: icarusProjects.filter(p => p.sequence_number >= 1 && p.sequence_number <= 3),
+      gradient: '#10B981, #14B8A6',  // emerald to teal
+      icon: '🌱'
+    },
+    {
+      id: 2,
+      name: '模块二：无形的地图',
+      projectCount: 4,
+      projects: icarusProjects.filter(p => p.sequence_number >= 4 && p.sequence_number <= 7),
+      gradient: '#3B82F6, #06B6D4',  // blue to cyan
+      icon: '🔬'
+    },
+    {
+      id: 3,
+      name: '模块三：延展的心灵',
+      projectCount: 4,
+      projects: icarusProjects.filter(p => p.sequence_number >= 8 && p.sequence_number <= 11),
+      gradient: '#8B5CF6, #EC4899',  // purple to pink
+      icon: '🌐'
+    }
+  ]
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -150,7 +179,11 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
     )
   }
 
-  return (
+  // 使用新的三角形视图
+  return <IcarusTriangleView modules={MODULES} />
+
+  // 以下是旧的界面代码（已弃用）
+  /* return (
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* 返回按钮 */}
@@ -527,5 +560,5 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
         </div>
       )}
     </div>
-  )
+  ) */
 }
