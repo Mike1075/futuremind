@@ -11,10 +11,10 @@ interface UserProfile {
   full_name: string | null
   email: string
   avatar_url: string | null
-  role: string
-  consciousness_level: number
-  composite_score: number
-  created_at: string
+  role: string | null
+  consciousness_level: number | null
+  composite_score: number | null
+  created_at: string | null
 }
 
 const ROLE_CONFIG = {
@@ -161,7 +161,7 @@ export default function UsersManagementPage() {
     // 角色分组
     const principals = filtered.filter(u => u.role === 'principal')
     const teachers = filtered.filter(u => u.role === 'teacher')
-    const students = filtered.filter(u => u.role === 'student' || !u.role)
+    const students = filtered.filter(u => u.role === 'student' || !u.role || u.role === null)
 
     // 标签页过滤
     if (selectedTab === 'principal') filtered = principals
@@ -426,7 +426,8 @@ export default function UsersManagementPage() {
               </thead>
               <tbody className="divide-y divide-white/10">
                 {filteredUsers.map((user) => {
-                  const roleConfig = ROLE_CONFIG[user.role as keyof typeof ROLE_CONFIG] || ROLE_CONFIG.student
+                  const userRole = (user.role || 'student') as keyof typeof ROLE_CONFIG
+                  const roleConfig = ROLE_CONFIG[userRole] || ROLE_CONFIG.student
                   const Icon = roleConfig.icon
 
                   return (
@@ -453,9 +454,9 @@ export default function UsersManagementPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {user.role === 'student' || !user.role ? (
                           <div className="text-sm">
-                            <span className="text-purple-400 font-semibold">L{user.consciousness_level}</span>
+                            <span className="text-purple-400 font-semibold">L{user.consciousness_level ?? 1}</span>
                             <span className="text-gray-400 mx-2">·</span>
-                            <span className="text-cyan-400">{user.composite_score.toFixed(2)}</span>
+                            <span className="text-cyan-400">{(user.composite_score ?? 0).toFixed(2)}</span>
                           </div>
                         ) : (
                           <span className="text-gray-500">-</span>
@@ -463,13 +464,13 @@ export default function UsersManagementPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-400">
-                          {new Date(user.created_at).toLocaleDateString('zh-CN')}
+                          {user.created_at ? new Date(user.created_at).toLocaleDateString('zh-CN') : '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <select
-                          value={user.role}
-                          onChange={(e) => handleChangeRole(user.id, user.full_name || user.email, user.role, e.target.value)}
+                          value={user.role || 'student'}
+                          onChange={(e) => handleChangeRole(user.id, user.full_name || user.email, user.role || 'student', e.target.value)}
                           className="px-3 py-1 text-sm bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
                           style={{ colorScheme: 'dark' }}
                         >
