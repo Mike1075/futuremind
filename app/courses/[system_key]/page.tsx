@@ -6,6 +6,7 @@ import { CourseService } from '@/lib/services/course.service'
 import { ProgressService } from '@/lib/services/progress.service'
 import { PBLCourseView } from '@/components/courses/PBLCourseView'
 import { EarthCourseView } from '@/components/courses/EarthCourseView'
+import { ListeningCourseView } from '@/components/courses/ListeningCourseView'
 import type { CourseContent } from '@/lib/supabase/database.types'
 
 // ✅ 性能优化：启用30秒缓存，大幅提升页面加载速度
@@ -78,7 +79,18 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     )
   }
 
-  // 继续使用已经获取的progressMap和completionMap处理倾听课程和每日课程
+  // 聆听课程使用曲线路径专属视图
+  if (systemKey === 'listening') {
+    return (
+      <ListeningCourseView
+        courseSystem={courseSystem}
+        contents={contents}
+        completionMap={completionMap}
+      />
+    )
+  }
+
+  // 继续使用已经获取的progressMap和completionMap处理每日课程
 
   // 计算完成百分比
   const totalContents = contents.length
