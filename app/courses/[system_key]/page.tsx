@@ -81,11 +81,30 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
 
   // 聆听课程使用曲线路径专属视图
   if (systemKey === 'listening') {
+    // 获取用户的作业分数
+    const { data: submissions } = await supabase
+      .from('user_submissions')
+      .select('course_content_id, score')
+      .eq('user_id', user.id)
+      .in('course_content_id', contentIds)
+      .eq('status', 'approved')
+      .order('submitted_at', { ascending: false })
+
+    // 创建分数映射（取最高分）
+    const scoreMap = new Map<string, number>()
+    submissions?.forEach(sub => {
+      const existingScore = scoreMap.get(sub.course_content_id) || 0
+      if (sub.score && sub.score > existingScore) {
+        scoreMap.set(sub.course_content_id, sub.score)
+      }
+    })
+
     return (
       <ListeningCourseView
         courseSystem={courseSystem}
         contents={contents}
         completionMap={completionMap}
+        scoreMap={scoreMap}
       />
     )
   }

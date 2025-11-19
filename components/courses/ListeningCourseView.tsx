@@ -8,6 +8,7 @@ interface ListeningCourseViewProps {
   courseSystem: CourseSystem
   contents: CourseContent[]
   completionMap: Map<string, boolean>
+  scoreMap: Map<string, number>  // 新增：存储每个课程的得分
 }
 
 // 14天课程的色彩配置（基于七脉轮+彩虹色谱）
@@ -28,25 +29,25 @@ const COURSE_COLORS = [
   { from: '#FF69B4', to: '#FFB6D9', name: '粉' },      // Day 14 - 粉色（回归爱）
 ]
 
-// 曲线路径节点位置（百分比）
+// 曲线路径节点位置（百分比）- 耳朵轮廓形状
 const PATH_POINTS = [
-  { x: 10, y: 5 },    // Day 1
-  { x: 25, y: 15 },   // Day 2
-  { x: 40, y: 10 },   // Day 3
-  { x: 55, y: 20 },   // Day 4
-  { x: 70, y: 15 },   // Day 5
-  { x: 85, y: 25 },   // Day 6
-  { x: 90, y: 40 },   // Day 7
-  { x: 80, y: 50 },   // Day 8
-  { x: 65, y: 45 },   // Day 9
-  { x: 50, y: 55 },   // Day 10
-  { x: 35, y: 50 },   // Day 11
-  { x: 20, y: 60 },   // Day 12
-  { x: 15, y: 75 },   // Day 13
-  { x: 30, y: 85 },   // Day 14
+  { x: 30, y: 10 },   // Day 1 - 耳朵顶部
+  { x: 45, y: 8 },    // Day 2 - 顶部向右
+  { x: 60, y: 12 },   // Day 3 - 开始向下弯曲
+  { x: 72, y: 20 },   // Day 4 - 外耳轮上部
+  { x: 80, y: 32 },   // Day 5 - 外耳轮中上
+  { x: 85, y: 45 },   // Day 6 - 外耳轮中部（最右侧）
+  { x: 83, y: 58 },   // Day 7 - 外耳轮中下
+  { x: 78, y: 68 },   // Day 8 - 开始向耳垂
+  { x: 70, y: 76 },   // Day 9 - 接近耳垂
+  { x: 58, y: 82 },   // Day 10 - 耳垂顶部
+  { x: 45, y: 85 },   // Day 11 - 耳垂底部（最低点）
+  { x: 32, y: 80 },   // Day 12 - 耳垂左侧，开始向上
+  { x: 25, y: 68 },   // Day 13 - 内耳轮
+  { x: 22, y: 52 },   // Day 14 - 内耳轮向上
 ]
 
-export function ListeningCourseView({ courseSystem, contents, completionMap }: ListeningCourseViewProps) {
+export function ListeningCourseView({ courseSystem, contents, completionMap, scoreMap }: ListeningCourseViewProps) {
   // 生成SVG曲线路径
   const generatePath = () => {
     if (PATH_POINTS.length < 2) return ''
@@ -74,8 +75,53 @@ export function ListeningCourseView({ courseSystem, contents, completionMap }: L
   const progressPercentage = Math.round((completedCount / contents.length) * 100)
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* 星空背景 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(100)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              opacity: Math.random() * 0.7 + 0.3,
+            }}
+            animate={{
+              opacity: [Math.random() * 0.3 + 0.2, Math.random() * 0.8 + 0.2, Math.random() * 0.3 + 0.2],
+              scale: [1, 1.5, 1],
+            }}
+            transition={{
+              duration: Math.random() * 3 + 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+        {/* 彩色星星 */}
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={`color-${i}`}
+            className="absolute w-1.5 h-1.5 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              background: COURSE_COLORS[Math.floor(Math.random() * COURSE_COLORS.length)].from,
+            }}
+            animate={{
+              opacity: [0.3, 0.8, 0.3],
+              scale: [1, 1.8, 1],
+            }}
+            transition={{
+              duration: Math.random() * 4 + 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
         {/* 返回按钮 */}
         <Link
           href="/portal"
@@ -172,6 +218,8 @@ export function ListeningCourseView({ courseSystem, contents, completionMap }: L
             {contents.map((content, index) => {
               const isCompleted = completionMap.get(content.id) === true
               const isUnlocked = index === 0 || completionMap.get(contents[index - 1]?.id) === true
+              const score = scoreMap.get(content.id) || 0
+              const isPassed = score >= 60  // 及格标准
               const point = PATH_POINTS[index]
               const color = COURSE_COLORS[index]
               const dayNumber = index + 1
@@ -197,6 +245,26 @@ export function ListeningCourseView({ courseSystem, contents, completionMap }: L
                         whileTap={{ scale: 0.95 }}
                         className="relative cursor-pointer"
                       >
+                        {/* 旋转彩色圆环（仅及格节点） */}
+                        {isPassed && (
+                          <motion.div
+                            className="absolute inset-0 rounded-full"
+                            style={{
+                              background: `conic-gradient(from 0deg, ${color.from}, ${color.to}, ${COURSE_COLORS[(index + 1) % COURSE_COLORS.length].from}, ${color.from})`,
+                              transform: 'scale(1.3)',
+                              filter: 'blur(2px)',
+                            }}
+                            animate={{
+                              rotate: 360,
+                            }}
+                            transition={{
+                              duration: 4,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
+                          />
+                        )}
+
                         {/* 光晕效果 */}
                         <div
                           className="absolute inset-0 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity"
@@ -213,22 +281,22 @@ export function ListeningCourseView({ courseSystem, contents, completionMap }: L
                             background: isCompleted
                               ? `linear-gradient(135deg, ${color.from}, ${color.to})`
                               : `linear-gradient(135deg, ${color.from}AA, ${color.to}AA)`,
-                            border: isCompleted ? '4px solid rgba(255,255,255,0.3)' : '4px solid rgba(255,255,255,0.1)',
+                            border: isPassed
+                              ? '4px solid rgba(255,255,255,0.5)'
+                              : isCompleted
+                                ? '4px solid rgba(255,255,255,0.3)'
+                                : '4px solid rgba(255,255,255,0.1)',
                           }}
                         >
-                          {isCompleted ? (
-                            <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            <span>{dayNumber}</span>
-                          )}
+                          {/* 始终显示数字 */}
+                          <span>{dayNumber}</span>
                         </div>
 
                         {/* 标题 */}
                         <div className="absolute top-full mt-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
                           <div className="bg-gray-900/90 backdrop-blur-sm border border-gray-700 rounded-lg px-3 py-1.5 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity shadow-xl">
                             {content.title}
+                            {isPassed && <span className="ml-2 text-green-400">✓ {score}分</span>}
                           </div>
                         </div>
                       </motion.div>
