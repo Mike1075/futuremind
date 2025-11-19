@@ -68,6 +68,7 @@ const generateWavePath = (x1: number, y1: number, x2: number, y2: number) => {
 export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
   const [activeModule, setActiveModule] = useState<number | null>(null)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [hoveredModule, setHoveredModule] = useState<number | null>(null)
 
   const handleModuleClick = (moduleId: number) => {
     if (activeModule === moduleId) {
@@ -134,6 +135,83 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
 
         {/* 三角形布局区域 */}
         <div className="relative w-full" style={{ height: '70vh', minHeight: '600px' }}>
+          {/* 圆形轨道 - 连接三个模块 */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+            <defs>
+              {/* 轨道渐变 */}
+              <linearGradient id="orbitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#10B981" stopOpacity="0.3" />
+                <stop offset="50%" stopColor="#3B82F6" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.3" />
+              </linearGradient>
+              {/* 发光滤镜 */}
+              <filter id="orbitGlow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            {/* 计算圆心和半径 - 基于三个顶点 */}
+            {(() => {
+              // 三角形重心作为圆心
+              const centerX = (TRIANGLE_POINTS[0].x + TRIANGLE_POINTS[1].x + TRIANGLE_POINTS[2].x) / 3
+              const centerY = (TRIANGLE_POINTS[0].y + TRIANGLE_POINTS[1].y + TRIANGLE_POINTS[2].y) / 3
+              // 计算半径（到第一个点的距离）
+              const radius = Math.sqrt(
+                Math.pow((TRIANGLE_POINTS[0].x - centerX), 2) +
+                Math.pow((TRIANGLE_POINTS[0].y - centerY), 2)
+              )
+
+              return (
+                <>
+                  {/* 圆形轨道 */}
+                  <motion.circle
+                    cx={`${centerX}%`}
+                    cy={`${centerY}%`}
+                    r={`${radius}%`}
+                    fill="none"
+                    stroke="url(#orbitGradient)"
+                    strokeWidth="2"
+                    strokeDasharray="10 5"
+                    filter="url(#orbitGlow)"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{
+                      pathLength: 1,
+                      opacity: [0.4, 0.7, 0.4],
+                      rotate: 360
+                    }}
+                    transition={{
+                      pathLength: { duration: 2 },
+                      opacity: { duration: 3, repeat: Infinity },
+                      rotate: { duration: 20, repeat: Infinity, ease: "linear" }
+                    }}
+                    style={{ transformOrigin: `${centerX}% ${centerY}%` }}
+                  />
+                  {/* 内圈轨道 */}
+                  <motion.circle
+                    cx={`${centerX}%`}
+                    cy={`${centerY}%`}
+                    r={`${radius * 0.95}%`}
+                    fill="none"
+                    stroke="url(#orbitGradient)"
+                    strokeWidth="1"
+                    strokeDasharray="5 3"
+                    opacity="0.2"
+                    animate={{
+                      rotate: -360
+                    }}
+                    transition={{
+                      rotate: { duration: 30, repeat: Infinity, ease: "linear" }
+                    }}
+                    style={{ transformOrigin: `${centerX}% ${centerY}%` }}
+                  />
+                </>
+              )
+            })()}
+          </svg>
+
           {/* 主节点 - 3个模块 */}
           {modules.map((module, index) => {
             const point = TRIANGLE_POINTS[index]
@@ -152,9 +230,12 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                     left: `${point.x}%`,
                     top: `${point.y}%`,
                     transform: 'translate(-50%, -50%)',
+                    zIndex: 10,
                   }}
                   className="cursor-pointer group"
                   onClick={() => handleModuleClick(module.id)}
+                  onMouseEnter={() => setHoveredModule(module.id)}
+                  onMouseLeave={() => setHoveredModule(null)}
                 >
                   {/* 光晕效果 - 增强 */}
                   <motion.div
@@ -163,11 +244,11 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       background: `linear-gradient(135deg, ${module.gradient})`,
                     }}
                     animate={{
-                      opacity: isActive ? [0.8, 1, 0.8] : [0.4, 0.6, 0.4],
-                      scale: isActive ? [1.3, 1.5, 1.3] : [1.1, 1.2, 1.1],
+                      opacity: hoveredModule === module.id ? [0.8, 1, 0.8] : isActive ? [0.8, 1, 0.8] : [0.4, 0.6, 0.4],
+                      scale: hoveredModule === module.id ? [1.5, 1.8, 1.5] : isActive ? [1.3, 1.5, 1.3] : [1.1, 1.2, 1.1],
                     }}
                     transition={{
-                      duration: 2,
+                      duration: hoveredModule === module.id ? 1 : 2,
                       repeat: Infinity,
                       ease: "easeInOut",
                     }}
@@ -182,9 +263,9 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       boxShadow: `0 0 ${isActive ? '30px' : '20px'} rgba(99, 102, 241, 0.5)`,
                     }}
                     whileHover={{
-                      scale: 1.2,
+                      scale: 1.3,
                       rotate: 360,
-                      boxShadow: '0 0 40px rgba(99, 102, 241, 0.8)',
+                      boxShadow: '0 0 50px rgba(99, 102, 241, 1)',
                     }}
                     whileTap={{ scale: 0.9 }}
                     transition={{ duration: 0.3 }}
@@ -192,12 +273,23 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                     <div className="text-4xl font-bold">{module.id}</div>
                   </motion.div>
 
-                  {/* 模块名称 */}
-                  <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                    <div className="bg-gray-900/90 backdrop-blur-sm border border-gray-700 rounded-lg px-4 py-2 text-sm font-medium">
-                      {module.name}
-                    </div>
-                  </div>
+                  {/* 悬停时显示模块名称标签 */}
+                  <AnimatePresence>
+                    {hoveredModule === module.id && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 10, y: 10 }}
+                        animate={{ opacity: 1, x: 20, y: 20 }}
+                        exit={{ opacity: 0, x: 10, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-0 left-full ml-4 pointer-events-none whitespace-nowrap"
+                        style={{ zIndex: 50 }}
+                      >
+                        <div className="bg-gray-900/95 backdrop-blur-sm border-2 border-purple-500/50 rounded-lg px-4 py-2 text-sm font-medium shadow-xl">
+                          {module.name}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
 
                 {/* 子节点 - 项目阶段 */}

@@ -45,7 +45,7 @@ const PATH_POINTS = [
   { x: 40, y: 84 },   // Day 11 - 耳垂底部（最低点）
   { x: 32, y: 78 },   // Day 12 - 耳垂内侧，开始向上
   { x: 28, y: 66 },   // Day 13 - 内耳轮下部
-  { x: 30, y: 52 },   // Day 14 - 耳洞勾回（向右勾）
+  { x: 26, y: 56 },   // Day 14 - 耳洞勾回（向左下勾，形成耳洞钩子）
 ]
 
 export function ListeningCourseView({ courseSystem, contents, completionMap, scoreMap }: ListeningCourseViewProps) {
@@ -181,9 +181,10 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
             <path
               d={generatePath()}
               fill="none"
-              stroke="rgba(75, 85, 99, 0.3)"
-              strokeWidth="0.3"
-              strokeDasharray="1 1"
+              stroke="rgba(75, 85, 99, 0.4)"
+              strokeWidth="0.4"
+              strokeDasharray="2 2"
+              strokeLinecap="round"
             />
 
             {/* 已完成路径（渐变色） */}
