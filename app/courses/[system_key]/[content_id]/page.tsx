@@ -69,14 +69,14 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
   // 检查作业分数（用于控制"下一个"按钮）
   const { data: submission } = await supabase
     .from('user_submissions')
-    .select('ai_score')
+    .select('score')
     .eq('user_id', user.id)
-    .eq('content_id', contentId)
+    .eq('course_content_id', contentId)
     .order('created_at', { ascending: false })
     .limit(1)
     .single()
 
-  const hasPassedAssignment = submission?.ai_score ? submission.ai_score >= 60 : false
+  const hasPassedAssignment = submission?.score ? submission.score >= 60 : false
 
   // PBL项目使用专属详情页
   if (content.content_type === 'icarus') {
