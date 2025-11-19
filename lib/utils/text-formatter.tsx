@@ -94,10 +94,16 @@ export function formatCourseText(text: string | null | undefined): React.ReactNo
           )
         }
 
-        // 普通段落
+        // 普通段落 - 为短段落添加装饰emoji
+        const isShortParagraph = paragraph.trim().length > 0 && paragraph.trim().length < 100
+        const decorativeEmoji = isShortParagraph ? getRandomDecorativeEmoji() : null
+
         return (
-          <p key={index} className="text-gray-300 leading-relaxed">
-            {formatInlineText(paragraph)}
+          <p key={index} className="text-gray-300 leading-relaxed flex items-start gap-2">
+            {decorativeEmoji && (
+              <span className="text-lg mt-0.5 flex-shrink-0 opacity-60">{decorativeEmoji}</span>
+            )}
+            <span className="flex-1">{formatInlineText(paragraph)}</span>
           </p>
         )
       })}
@@ -147,6 +153,19 @@ function formatInlineText(text: string): React.ReactNode {
       </span>
     )
   })
+}
+
+/**
+ * 获取随机装饰emoji
+ */
+function getRandomDecorativeEmoji(): string {
+  const decorativeEmojis = [
+    '✨', '💫', '🌟', '⭐', '🌸', '🌺', '🌼', '🌻',
+    '🍀', '🌿', '🌱', '🌾', '💮', '🏵️', '🌷', '🌹',
+    '🦋', '🐚', '💎', '🔮', '🎐', '🎋', '🎍', '🎑',
+    '🍃', '🌊', '☘️', '🌴', '🎨', '🎭', '🎪', '🎯'
+  ]
+  return decorativeEmojis[Math.floor(Math.random() * decorativeEmojis.length)]
 }
 
 /**
