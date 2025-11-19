@@ -300,7 +300,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 
           {content.original_text && (
             <CollapsibleSection
-              title="原文摘录"
+              title="📖 原文摘录"
               icon={<BookOpen className="w-5 h-5" />}
               iconColor="text-blue-400"
               bgColor="bg-blue-500/10"
@@ -313,12 +313,12 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 
           {content.deep_interpretation && (
             <CollapsibleSection
-              title="深度解读"
+              title="🔍 深度解读"
               icon={<Brain className="w-5 h-5" />}
               iconColor="text-purple-400"
               bgColor="bg-purple-500/10"
               borderColor="border-purple-500/30"
-              defaultOpen={true}
+              defaultOpen={false}
             >
               {formatCourseText(content.deep_interpretation)}
             </CollapsibleSection>
@@ -326,7 +326,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 
           {content.meditation_guide && (
             <CollapsibleSection
-              title="冥想指示"
+              title="🧘 冥想练习"
               icon={<Sparkles className="w-5 h-5" />}
               iconColor="text-green-400"
               bgColor="bg-green-500/10"
@@ -339,7 +339,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 
           {content.life_practice && (
             <CollapsibleSection
-              title="生活中的体悟"
+              title="🌱 生活实践"
               icon={<Target className="w-5 h-5" />}
               iconColor="text-yellow-400"
               bgColor="bg-yellow-500/10"
