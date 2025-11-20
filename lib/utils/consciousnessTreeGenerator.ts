@@ -176,7 +176,7 @@ export const generateConsciousnessTree = (
       const py = y1 + (y2 - y1) * t + jitter
 
       // 通过增大粒子尺寸实现主干粗壮，而不是增加粒子数量
-      addParticle(px, py, type, width / 3) // 增大尺寸倍数
+      addParticle(px, py, type, width / 1.2) // 从width/3改为width/1.2，让主干更粗
     }
   }
 

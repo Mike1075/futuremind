@@ -13,7 +13,7 @@ export interface TreeTechParams extends TreeParams {}
 // 默认生长数据（测试模式使用固定值）
 const DEFAULT_GROWTH_DATA = {
   roots: { growth_value: 50, is_solid: true },
-  trunk: { growth_value: 60, is_solid: true },
+  trunk: { growth_value: 20, is_solid: true },  // 从60改为20，保持暗红色
   branches: { growth_value: 70, is_solid: true },
   leaves: { growth_value: 80, is_solid: true },
   fruits: { growth_value: 40, is_solid: false },
