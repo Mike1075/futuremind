@@ -28,6 +28,8 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
   const router = useRouter()
   const [isEvaluating, setIsEvaluating] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [analysisData, setAnalysisData] = useState<any>(null)
+  const [showAnalysis, setShowAnalysis] = useState(false)
 
   const isAdmin = userRole && ['principal', 'teacher'].includes(userRole)
 
@@ -64,7 +66,9 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
       const data = await response.json()
 
       if (data.success) {
-        setMessage({ type: 'success', text: '✅ 真实计算完成！请刷新页面查看真实数据' })
+        setMessage({ type: 'success', text: '✅ 真实计算完成！查看下方AI分析详情' })
+        setAnalysisData(data.analysis)
+        setShowAnalysis(true)
       } else {
         setMessage({ type: 'error', text: data.error || '计算失败' })
       }
@@ -272,6 +276,76 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
                     <Sparkles className={`w-5 h-5 ${isEvaluating ? 'animate-spin' : ''}`} />
                     {isEvaluating ? '计算中...' : '✨ 真实计算（调用AI）'}
                   </button>
+
+                  {/* AI分析结果展示 */}
+                  {analysisData && showAnalysis && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="bg-black/40 rounded-lg p-4 border border-green-500/30"
+                    >
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="text-sm font-semibold text-green-400">📊 AI分析详情</h4>
+                        <button
+                          onClick={() => setShowAnalysis(false)}
+                          className="text-xs text-gray-400 hover:text-white"
+                        >
+                          ✕ 关闭
+                        </button>
+                      </div>
+
+                      {/* 数据来源 */}
+                      <div className="mb-4">
+                        <p className="text-xs font-semibold text-blue-300 mb-2">📈 数据来源</p>
+                        <div className="bg-black/30 rounded p-3 text-xs space-y-1 text-gray-300">
+                          <div>在线时长: {analysisData.dataSource.behaviorStats.totalOnlineMinutes} 分钟</div>
+                          <div>登录次数: {analysisData.dataSource.behaviorStats.totalLogins} 次</div>
+                          <div>对话轮次: {analysisData.dataSource.behaviorStats.totalConversationTurns} 轮</div>
+                          <div>作业提交: {analysisData.dataSource.behaviorStats.totalSubmissions} 份（冥想 {analysisData.dataSource.behaviorStats.meditationCount} 份）</div>
+                          <div>平均分数: {analysisData.dataSource.behaviorStats.avgScore} 分</div>
+                          <div>活跃项目: {analysisData.dataSource.projectStats.activeProjects} 个</div>
+                          <div>完成项目: {analysisData.dataSource.projectStats.completedProjects} 个</div>
+                        </div>
+                      </div>
+
+                      {/* AI整体评估 */}
+                      <div className="mb-4">
+                        <p className="text-xs font-semibold text-yellow-300 mb-2">🤖 AI整体评估</p>
+                        <div className="bg-black/30 rounded p-3 text-xs text-gray-300">
+                          {analysisData.aiEvaluation.overall_summary}
+                        </div>
+                      </div>
+
+                      {/* 各部位详细评估 */}
+                      <div>
+                        <p className="text-xs font-semibold text-purple-300 mb-2">🌳 各部位详细评估</p>
+                        <div className="space-y-3">
+                          {analysisData.aiEvaluation.parts.map((part: any, index: number) => (
+                            <div key={index} className="bg-black/30 rounded p-3">
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <h5 className="text-xs font-semibold text-white">{part.name}</h5>
+                                  <p className="text-[10px] text-gray-500">{part.description}</p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-bold text-yellow-400">{part.growth_value}</div>
+                                  <div className={`text-[10px] ${part.is_solid ? 'text-green-400' : 'text-red-400'}`}>
+                                    {part.is_solid ? '✓ 稳固' : '✗ 虚浮'}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-[10px] text-gray-400 mb-1">
+                                <strong className="text-blue-300">AI评分理由:</strong> {part.ai_reasoning}
+                              </div>
+                              <div className="text-[10px] text-gray-400">
+                                <strong className="text-orange-300">虚实判断:</strong> {part.solidity_reasoning}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
 
                   {/* 技术参数控制（实时更新） */}
                   <div className="space-y-4 pt-4 border-t border-white/10">

@@ -141,11 +141,16 @@ ${recentMessages.map((m: any, i: number) => `${i + 1}. ${m.isGaia ? '[Gaia]' : '
 请以JSON格式返回，格式如下：
 {
   "roots_growth": 数字,
+  "roots_reasoning": "根系评分理由（为什么给这个分数，基于哪些数据）",
   "trunk_growth": 数字,
+  "trunk_reasoning": "树干评分理由",
   "branches_growth": 数字,
+  "branches_reasoning": "枝干评分理由",
   "leaves_growth": 数字,
+  "leaves_reasoning": "树叶评分理由",
   "fruits_growth": 数字,
-  "reasoning": "简要评估理由（100字内）"
+  "fruits_reasoning": "果实评分理由",
+  "overall_summary": "整体评估总结（100字内）"
 }`
 
     // ========== 3. 调用OpenAI API评估 ==========
@@ -255,12 +260,108 @@ ${recentMessages.map((m: any, i: number) => `${i + 1}. ${m.isGaia ? '[Gaia]' : '
 
     console.log('[评估完成] 意识树已更新:', treeView)
 
+    // 构建虚实判断理由
+    const solidityReasonings = {
+      roots: roots_solid
+        ? `根系稳固（growth≥30: ${growthScores.roots_growth}）`
+        : `根系虚浮（growth<30: ${growthScores.roots_growth}，需加强知识深度）`,
+      trunk: trunk_solid
+        ? `树干稳固（根系稳固 且 growth≥30: ${growthScores.trunk_growth}）`
+        : !roots_solid
+          ? `树干虚浮（根系虚浮，基础不稳）`
+          : `树干虚浮（growth<30: ${growthScores.trunk_growth}，需加强坚持）`,
+      branches: branches_solid
+        ? `枝干稳固（树干稳固 且 growth≥30: ${growthScores.branches_growth}）`
+        : !trunk_solid
+          ? `枝干虚浮（树干虚浮，依赖未满足）`
+          : `枝干虚浮（growth<30: ${growthScores.branches_growth}，需拓展探索）`,
+      leaves: leaves_solid
+        ? `树叶稳固（growth≥30: ${growthScores.leaves_growth}）`
+        : `树叶虚浮（growth<30: ${growthScores.leaves_growth}，需深化洞见）`,
+      fruits: fruits_solid
+        ? `果实稳固（枝干稳固 且 growth≥40: ${growthScores.fruits_growth}）`
+        : !branches_solid
+          ? `果实虚浮（枝干虚浮，依赖未满足）`
+          : `果实虚浮（growth<40: ${growthScores.fruits_growth}，需提升产出）`,
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         user_id,
         tree_view: treeView,
-        ai_reasoning: growthScores.reasoning,
+
+        // 详细分析数据（管理员可见）
+        analysis: {
+          // 数据源
+          dataSource: {
+            behaviorStats: {
+              totalOnlineMinutes,
+              totalLogins,
+              totalConversationTurns,
+              totalSubmissions,
+              meditationCount,
+              avgScore: parseFloat(avgScore.toFixed(1)),
+            },
+            projectStats: {
+              activeProjects,
+              completedProjects,
+              avgCompletion: parseFloat(avgCompletion.toFixed(1)),
+            },
+            conversationSample: recentMessages.length,
+          },
+
+          // AI评估结果
+          aiEvaluation: {
+            overall_summary: growthScores.overall_summary || '无',
+            parts: [
+              {
+                name: '根系 (Roots)',
+                description: '知识获取、深度理解',
+                growth_value: growthScores.roots_growth,
+                is_solid: roots_solid,
+                ai_reasoning: growthScores.roots_reasoning || '无详细理由',
+                solidity_reasoning: solidityReasonings.roots,
+              },
+              {
+                name: '树干 (Trunk)',
+                description: '内在稳态、坚持',
+                growth_value: growthScores.trunk_growth,
+                is_solid: trunk_solid,
+                ai_reasoning: growthScores.trunk_reasoning || '无详细理由',
+                solidity_reasoning: solidityReasonings.trunk,
+              },
+              {
+                name: '枝干 (Branches)',
+                description: '探索广度',
+                growth_value: growthScores.branches_growth,
+                is_solid: branches_solid,
+                ai_reasoning: growthScores.branches_reasoning || '无详细理由',
+                solidity_reasoning: solidityReasonings.branches,
+              },
+              {
+                name: '树叶 (Leaves)',
+                description: '洞见产出',
+                growth_value: growthScores.leaves_growth,
+                is_solid: leaves_solid,
+                ai_reasoning: growthScores.leaves_reasoning || '无详细理由',
+                solidity_reasoning: solidityReasonings.leaves,
+              },
+              {
+                name: '果实 (Fruits)',
+                description: '创造产出',
+                growth_value: growthScores.fruits_growth,
+                is_solid: fruits_solid,
+                ai_reasoning: growthScores.fruits_reasoning || '无详细理由',
+                solidity_reasoning: solidityReasonings.fruits,
+              },
+            ],
+          },
+
+          // AI原始响应（用于调试）
+          aiRawResponse: aiContent,
+        },
+
         timestamp: new Date().toISOString(),
       }),
       {
