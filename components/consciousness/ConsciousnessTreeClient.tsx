@@ -96,23 +96,21 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
       {/* 主内容 */}
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 左侧：意识树可视化（增加高度，添加滚动） */}
+          {/* 左侧：意识树可视化 */}
           <div className="lg:col-span-2">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
             >
-              <div className="relative h-[1200px] w-full bg-black rounded-lg overflow-auto">
-                <div className="h-[2000px] w-full">
-                  <ConsciousnessTreeView userId={userId} techParams={techParams} />
-                </div>
+              <div className="relative h-[800px] w-full bg-black rounded-lg">
+                <ConsciousnessTreeView userId={userId} techParams={techParams} />
               </div>
             </motion.div>
           </div>
 
           {/* 右侧：控制面板 */}
-          <div className="space-y-6 max-h-[1200px] overflow-y-auto pr-2">
+          <div className="space-y-6 max-h-[800px] overflow-y-auto pr-2">
             {/* 系统消息 */}
             {message && (
               <motion.div
@@ -143,13 +141,90 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
               </p>
             </motion.div>
 
-            {/* 说明卡片 */}
+            {/* 参数说明卡片 */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
             >
-              <h3 className="text-lg font-semibold mb-4 text-red-400">意识树说明</h3>
+              <h3 className="text-lg font-semibold mb-4 text-yellow-400">📖 参数说明</h3>
+              <div className="space-y-4 text-xs text-gray-300">
+                <div>
+                  <strong className="text-white">递归深度 (Depth)</strong>
+                  <p className="mt-1">控制树的分支层级。值越大，分支越多越密集。</p>
+                  <p className="text-gray-500">• 1-5: 稀疏的树 | 10: 自然树 | 14: 超密集</p>
+                </div>
+
+                <div>
+                  <strong className="text-white">分支角度 (Branch Angle)</strong>
+                  <p className="mt-1">控制左右分支的夹角。</p>
+                  <p className="text-gray-500">• 0°: 垂直生长 | 25°: 自然平衡 | 90°: 水平展开</p>
+                </div>
+
+                <div>
+                  <strong className="text-white">长度衰减 (Length Decay)</strong>
+                  <p className="mt-1">子分支相对父分支的长度比例。</p>
+                  <p className="text-gray-500">• 0.5: 快速收缩 | 0.75: 均衡 | 0.9: 延伸型</p>
+                </div>
+
+                <div>
+                  <strong className="text-white">主干长度 (Trunk Length)</strong>
+                  <p className="mt-1">主干的初始长度，影响整体树的尺寸。</p>
+                  <p className="text-gray-500">• 50: 矮树 | 120: 标准 | 200: 高大树</p>
+                </div>
+
+                <div>
+                  <strong className="text-white">主干宽度 (Trunk Width)</strong>
+                  <p className="mt-1">主干的粗细程度。</p>
+                  <p className="text-gray-500">• 1-10: 细树 | 12: 标准 | 30: 粗壮古树</p>
+                </div>
+
+                <div>
+                  <strong className="text-white">根深度 (Root Depth)</strong>
+                  <p className="mt-1">根系的递归层级，控制根的分叉层数。</p>
+                  <p className="text-gray-500">• 0: 无根 | 6: 适中 | 10: 深层根系</p>
+                </div>
+
+                <div>
+                  <strong className="text-white">根展开角度 (Root Spread)</strong>
+                  <p className="mt-1">根系分叉的角度范围。</p>
+                  <p className="text-gray-500">• 0°: 垂直向下 | 30°: 自然 | 90°: 横向扩散</p>
+                </div>
+
+                <div>
+                  <strong className="text-white">粒子大小 (Particle Size)</strong>
+                  <p className="mt-1">组成树的每个粒子的基础半径。</p>
+                  <p className="text-gray-500">• 0.5: 精细 | 2: 标准 | 5: 粗糙</p>
+                </div>
+
+                <div>
+                  <strong className="text-white">发光强度 (Glow Intensity)</strong>
+                  <p className="mt-1">控制粒子的透明度和发光效果。</p>
+                  <p className="text-gray-500">• 0: 完全透明 | 0.5: 半透明 | 1: 不透明</p>
+                </div>
+
+                <div>
+                  <strong className="text-white">叶子密度 (Leaf Density)</strong>
+                  <p className="mt-1">在外层分支生成叶子的概率。</p>
+                  <p className="text-gray-500">• 0: 无叶子 | 0.5: 适中 | 1: 浓密</p>
+                </div>
+
+                <div>
+                  <strong className="text-white">果实概率 (Fruit Probability)</strong>
+                  <p className="mt-1">在最外层分支生成果实的概率。</p>
+                  <p className="text-gray-500">• 0: 无果实 | 0.05: 稀疏 | 0.5: 硕果累累</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* 意识树含义卡片 */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-gradient-to-br from-red-600/10 to-orange-600/10 backdrop-blur-sm rounded-2xl p-6 border border-red-400/30"
+            >
+              <h3 className="text-lg font-semibold mb-4 text-red-400">🌳 意识树象征</h3>
               <div className="space-y-3 text-sm text-gray-300">
                 <div><strong className="text-white">根系：</strong>知识获取、深度理解</div>
                 <div><strong className="text-white">树干：</strong>内在稳态、坚持</div>
@@ -391,36 +466,76 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
       {/* 自定义滑块样式 */}
       <style jsx global>{`
-        .slider-yellow::-webkit-slider-thumb {
+        /* 黄色滑块样式 */
+        .slider-yellow {
+          -webkit-appearance: none;
           appearance: none;
-          width: 16px;
-          height: 16px;
+          height: 12px;
+          border-radius: 6px;
+          background: linear-gradient(to right, #1f2937 0%, #facc15 100%);
+          outline: none;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+
+        .slider-yellow:hover {
+          opacity: 0.9;
+        }
+
+        .slider-yellow::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 24px;
+          height: 24px;
           border-radius: 50%;
           background: #facc15;
-          cursor: pointer;
-          box-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+          cursor: grab;
+          box-shadow: 0 0 12px rgba(250, 204, 21, 0.6), 0 2px 4px rgba(0, 0, 0, 0.3);
+          border: 2px solid #fff;
+          transition: all 0.2s;
+        }
+
+        .slider-yellow::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+          box-shadow: 0 0 16px rgba(250, 204, 21, 0.8), 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .slider-yellow::-webkit-slider-thumb:active {
+          cursor: grabbing;
+          transform: scale(1.05);
         }
 
         .slider-yellow::-moz-range-thumb {
-          width: 16px;
-          height: 16px;
+          width: 24px;
+          height: 24px;
           border-radius: 50%;
           background: #facc15;
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+          cursor: grab;
+          border: 2px solid #fff;
+          box-shadow: 0 0 12px rgba(250, 204, 21, 0.6), 0 2px 4px rgba(0, 0, 0, 0.3);
+          transition: all 0.2s;
+        }
+
+        .slider-yellow::-moz-range-thumb:hover {
+          transform: scale(1.1);
+          box-shadow: 0 0 16px rgba(250, 204, 21, 0.8), 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .slider-yellow::-moz-range-thumb:active {
+          cursor: grabbing;
+          transform: scale(1.05);
         }
 
         .slider-yellow::-webkit-slider-track {
           background: linear-gradient(to right, #1f2937 0%, #facc15 100%);
-          height: 8px;
-          border-radius: 4px;
+          height: 12px;
+          border-radius: 6px;
         }
 
         .slider-yellow::-moz-range-track {
           background: linear-gradient(to right, #1f2937 0%, #facc15 100%);
-          height: 8px;
-          border-radius: 4px;
+          height: 12px;
+          border-radius: 6px;
         }
       `}</style>
     </div>

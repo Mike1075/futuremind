@@ -167,15 +167,20 @@ export const generateConsciousnessTree = (
     type: 'root' | 'trunk' | 'branch'
   ) => {
     const dist = Math.hypot(x2 - x1, y2 - y1)
-    const steps = Math.max(dist / (particleSize * 0.8), 5)
+    const steps = Math.max(dist / (particleSize * 0.5), 8) // 增加粒子密度
 
     for (let i = 0; i <= steps; i++) {
       const t = i / steps
-      const jitter = (Math.random() - 0.5) * width
-      const px = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 2
-      const py = y1 + (y2 - y1) * t + jitter
+      // 根据宽度添加多层粒子，让主干更粗壮
+      const layers = Math.max(1, Math.floor(width / 3))
 
-      addParticle(px, py, type, width / 5)
+      for (let layer = 0; layer < layers; layer++) {
+        const jitter = (Math.random() - 0.5) * width
+        const px = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 2
+        const py = y1 + (y2 - y1) * t + jitter
+
+        addParticle(px, py, type, width / 4) // 增大粒子尺寸
+      }
     }
   }
 
