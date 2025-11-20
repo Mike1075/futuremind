@@ -347,10 +347,22 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                     </motion.div>
                   </motion.div>
 
-                {/* 子节点容器 - 跟随父节点公转 */}
+                {/* 子节点容器 - 以父节点为中心，跟随公转 */}
                 <AnimatePresence>
                   {isActive && (
                     <motion.div
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{
+                        opacity: 1,
+                        scale: 1,
+                        rotate: 360, // 跟随父节点公转
+                      }}
+                      exit={{ opacity: 0, scale: 0 }}
+                      transition={{
+                        opacity: { duration: 0.3 },
+                        scale: { duration: 0.3 },
+                        rotate: { duration: 30, repeat: Infinity, ease: "linear" }
+                      }}
                       className="absolute"
                       style={{
                         left: '50%',
@@ -359,27 +371,34 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         height: 0,
                         zIndex: 15,
                       }}
-                      animate={{
-                        // 跟随公转
-                        rotate: 360,
-                      }}
-                      transition={{
-                        duration: 30,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
                     >
-                      {/* SVG - 绘制连接线 */}
-                      <svg
-                        className="absolute pointer-events-none"
+                      {/* 子节点定位容器 - 和父节点重合 */}
+                      <motion.div
                         style={{
-                          left: `calc(${nodeX}vmin - 200px)`,
-                          top: `calc(${nodeY}vmin - 200px)`,
-                          width: '400px',
-                          height: '400px',
-                          overflow: 'visible',
+                          position: 'absolute',
+                          left: `${nodeX}vmin`,
+                          top: `${nodeY}vmin`,
+                          width: 0,
+                          height: 0,
+                        }}
+                        animate={{
+                          rotate: -360, // 反向旋转保持子节点正立
+                        }}
+                        transition={{
+                          rotate: { duration: 30, repeat: Infinity, ease: "linear" },
                         }}
                       >
+                        {/* SVG - 绘制连接线 */}
+                        <svg
+                          className="absolute pointer-events-none"
+                          style={{
+                            left: '-200px',
+                            top: '-200px',
+                            width: '400px',
+                            height: '400px',
+                            overflow: 'visible',
+                          }}
+                        >
                         <defs>
                           <filter id={`glow-${module.id}`}>
                             <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
@@ -493,8 +512,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             }}
                             style={{
                               position: 'absolute',
-                              left: `calc(${nodeX}vmin + ${xOffset}px)`,
-                              top: `calc(${nodeY}vmin + ${yOffset}px)`,
+                              left: `${xOffset}px`,
+                              top: `${yOffset}px`,
                               transform: 'translate(-50%, -50%)',
                             }}
                             className="cursor-pointer"
@@ -554,6 +573,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           </motion.div>
                         )
                       })}
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>
