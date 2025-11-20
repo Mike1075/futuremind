@@ -335,8 +335,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               <div
                                 className="bg-gray-900/95 backdrop-blur-sm border-2 rounded-lg px-3 py-1 text-xs font-medium shadow-xl"
                                 style={{
-                                  // 标签头（左端）指向圆心：标签沿着径向方向
-                                  transform: `rotate(${angle}deg)`,
+                                  // 标签头（左端）指向圆心：需要旋转180+angle度
+                                  transform: `rotate(${angle + 180}deg)`,
                                   transformOrigin: '0 50%',
                                   borderColor: currentColors[0],
                                 }}
@@ -397,22 +397,41 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           </linearGradient>
                         </defs>
                         {module.projects.map((project, projectIndex) => {
-                          // 计算子节点相对位置（像素）
+                          // 计算当前节点和下一个节点的位置，绘制它们之间的连接线
                           const count = module.projects.length
-                          let subAngle
+                          const nextIndex = (projectIndex + 1) % count
+
+                          // 当前节点角度
+                          let subAngle1
                           if (count === 3) {
-                            subAngle = projectIndex * 120 - 90
+                            subAngle1 = projectIndex * 120 - 90
                           } else if (count === 4) {
-                            subAngle = projectIndex * 90 - 90
+                            subAngle1 = projectIndex * 90 - 90
                           } else {
-                            subAngle = (projectIndex * 360 / count) - 90
+                            subAngle1 = (projectIndex * 360 / count) - 90
                           }
 
-                          const subRadiusPx = 50  // 缩小到50px，形成更紧凑的三角形/正方形
-                          const x1 = 200  // 中心点
-                          const y1 = 200
-                          const x2 = 200 + subRadiusPx * Math.cos(subAngle * Math.PI / 180)
-                          const y2 = 200 + subRadiusPx * Math.sin(subAngle * Math.PI / 180)
+                          // 下一个节点角度
+                          let subAngle2
+                          if (count === 3) {
+                            subAngle2 = nextIndex * 120 - 90
+                          } else if (count === 4) {
+                            subAngle2 = nextIndex * 90 - 90
+                          } else {
+                            subAngle2 = (nextIndex * 360 / count) - 90
+                          }
+
+                          const subRadiusPx = 50  // 50px半径
+                          const centerX = 200
+                          const centerY = 200
+
+                          // 当前节点坐标
+                          const x1 = centerX + subRadiusPx * Math.cos(subAngle1 * Math.PI / 180)
+                          const y1 = centerY + subRadiusPx * Math.sin(subAngle1 * Math.PI / 180)
+
+                          // 下一个节点坐标
+                          const x2 = centerX + subRadiusPx * Math.cos(subAngle2 * Math.PI / 180)
+                          const y2 = centerY + subRadiusPx * Math.sin(subAngle2 * Math.PI / 180)
 
                           const progress = project.progress || 0
                           const strokeDasharray = progress >= 80 ? "0" : "5 5"
