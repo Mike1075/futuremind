@@ -154,7 +154,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
         </Link>
 
         {/* 圆形布局区域 */}
-        <div className="relative w-full" style={{ height: '80vh', minHeight: '700px' }}>
+        <div className="relative w-full pb-20" style={{ minHeight: '100vh' }}>
           {/* 圆心标题 */}
           <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none" style={{ zIndex: 5 }}>
             <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
@@ -222,54 +222,49 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
             const currentColors = MODULE_COLORS[index] || MODULE_COLORS[0]
             const gradientString = `${currentColors[0]}, ${currentColors[1]}`
 
+            // 计算节点在圆周上的精确位置（使用vh单位）
+            const radiusVh = 38  // 圆的半径（vh）
+            const angleRad = (angle - 90) * Math.PI / 180
+            const nodeX = radiusVh * Math.cos(angleRad)
+            const nodeY = radiusVh * Math.sin(angleRad)
+
             return (
               <div key={module.id}>
-                {/* 主圆形节点 - 在圆周上公转 */}
+                {/* 公转容器 - 定位在屏幕中心 */}
                 <motion.div
                   initial={{ scale: 1, opacity: 1 }}
                   animate={{
                     scale: 1,
                     opacity: 1,
+                    rotate: 360, // 公转
                   }}
-                  transition={{ duration: 0 }}
+                  transition={{
+                    scale: { duration: 0 },
+                    opacity: { duration: 0 },
+                    rotate: { duration: 30, repeat: Infinity, ease: "linear" }
+                  }}
                   style={{
                     position: 'absolute',
                     left: '50%',
-                    top: '50%',
+                    top: '50vh',
+                    width: 0,
+                    height: 0,
                     zIndex: isActive ? 20 : 10,
                   }}
                 >
-                  {/* 公转容器 */}
+                  {/* 节点 - 从中心向外延伸，圆心在圆周上 */}
                   <motion.div
-                    animate={{
-                      rotate: 360, // 公转
-                    }}
-                    transition={{
-                      duration: 30, // 30秒一圈公转
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
                     style={{
                       position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      width: '100%',
-                      height: '100%',
+                      left: `${nodeX}vh`,
+                      top: `${nodeY}vh`,
+                      transform: 'translate(-50%, -50%)',
                     }}
+                    className="cursor-pointer group"
+                    onClick={() => handleModuleClick(module.id)}
+                    onMouseEnter={() => setHoveredModule(module.id)}
+                    onMouseLeave={() => setHoveredModule(null)}
                   >
-                    {/* 节点定位在圆周上 - 圆心精确在圆周线上 */}
-                    <motion.div
-                      style={{
-                        position: 'absolute',
-                        left: `calc(50% + ${radius * Math.cos((angle - 90) * Math.PI / 180)}%)`,
-                        top: `calc(50% + ${radius * Math.sin((angle - 90) * Math.PI / 180)}%)`,
-                        transform: 'translate(-50%, -50%)',
-                      }}
-                      className="cursor-pointer group"
-                      onClick={() => handleModuleClick(module.id)}
-                      onMouseEnter={() => setHoveredModule(module.id)}
-                      onMouseLeave={() => setHoveredModule(null)}
-                    >
                       {/* 光晕效果 */}
                       <motion.div
                         className="absolute inset-0 rounded-full blur-2xl"
@@ -314,7 +309,6 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       <motion.div
                         className="absolute pointer-events-none whitespace-nowrap"
                         style={{
-                          // 计算标签位置：从节点中心向外延伸
                           left: '50%',
                           top: '50%',
                           transformOrigin: '0 50%',
@@ -322,9 +316,9 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         animate={{
                           // 反向旋转抵消公转，保持标签朝向正确
                           rotate: -360,
-                          // 标签指向圆心的反方向（从圆心指向外）
-                          x: `${Math.cos((angle - 90) * Math.PI / 180) * 60}px`,
-                          y: `${Math.sin((angle - 90) * Math.PI / 180) * 60}px`,
+                          // 标签从节点向外延伸60px
+                          x: `${Math.cos(angleRad) * 60}px`,
+                          y: `${Math.sin(angleRad) * 60}px`,
                         }}
                         transition={{
                           rotate: { duration: 30, repeat: Infinity, ease: "linear" },
@@ -344,16 +338,15 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       </motion.div>
                     </motion.div>
                   </motion.div>
-                </motion.div>
 
-                {/* 子节点容器 - 相对于父节点定位 */}
+                {/* 子节点容器 - 跟随父节点公转 */}
                 <AnimatePresence>
                   {isActive && (
                     <motion.div
                       className="absolute"
                       style={{
                         left: '50%',
-                        top: '50%',
+                        top: '50vh',
                         width: 0,
                         height: 0,
                         zIndex: 15,
@@ -372,8 +365,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       <svg
                         className="absolute pointer-events-none"
                         style={{
-                          left: `calc(${radius * Math.cos((angle - 90) * Math.PI / 180)}% - 200px)`,
-                          top: `calc(${radius * Math.sin((angle - 90) * Math.PI / 180)}% - 200px)`,
+                          left: `calc(${nodeX}vh - 200px)`,
+                          top: `calc(${nodeY}vh - 200px)`,
                           width: '400px',
                           height: '400px',
                           overflow: 'visible',
@@ -473,8 +466,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             }}
                             style={{
                               position: 'absolute',
-                              left: `calc(${radius * Math.cos((angle - 90) * Math.PI / 180)}% + ${xOffset}px)`,
-                              top: `calc(${radius * Math.sin((angle - 90) * Math.PI / 180)}% + ${yOffset}px)`,
+                              left: `calc(${nodeX}vh + ${xOffset}px)`,
+                              top: `calc(${nodeY}vh + ${yOffset}px)`,
                               transform: 'translate(-50%, -50%)',
                             }}
                             className="cursor-pointer"
