@@ -6,10 +6,12 @@ import {
   TreeParams,
   TreeGrowthData,
 } from '@/lib/utils/consciousnessTreeGenerator'
+import { TreeTechParams } from './ConsciousnessTreeView'
 
 interface ConsciousnessTreeCanvasProps {
   growthData: TreeGrowthData
   params?: Partial<TreeParams>
+  techParams?: TreeTechParams
 }
 
 // 默认参数（经典红色能量树）
@@ -22,11 +24,12 @@ const DEFAULT_PARAMS: TreeParams = {
   rootDepth: 6,
   rootSpread: 30,
   particleSize: 2,
+  glowIntensity: 0.5,
   leafDensity: 0.5,
   fruitProbability: 0.08,
 }
 
-export function ConsciousnessTreeCanvas({ growthData, params }: ConsciousnessTreeCanvasProps) {
+export function ConsciousnessTreeCanvas({ growthData, params, techParams }: ConsciousnessTreeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -50,8 +53,8 @@ export function ConsciousnessTreeCanvas({ growthData, params }: ConsciousnessTre
       // 设置发光效果
       ctx.globalCompositeOperation = 'lighter'
 
-      // 合并参数
-      const mergedParams = { ...DEFAULT_PARAMS, ...params }
+      // 合并参数：默认参数 < params < techParams
+      const mergedParams = { ...DEFAULT_PARAMS, ...params, ...techParams }
 
       // 生成并绘制树
       const particles = generateConsciousnessTree(
@@ -82,7 +85,7 @@ export function ConsciousnessTreeCanvas({ growthData, params }: ConsciousnessTre
     resize()
 
     return () => window.removeEventListener('resize', resize)
-  }, [growthData, params])
+  }, [growthData, params, techParams])
 
   return (
     <canvas

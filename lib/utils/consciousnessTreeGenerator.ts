@@ -31,6 +31,7 @@ export interface TreeParams {
   rootDepth: number // 根深度
   rootSpread: number // 根展开角度
   particleSize: number // 粒子大小
+  glowIntensity: number // 发光强度 (0-1)
   leafDensity: number // 叶子密度
   fruitProbability: number // 果实概率
 }
@@ -48,7 +49,8 @@ const random = (min: number, max: number) => Math.random() * (max - min) + min
 const getColor = (
   type: 'root' | 'trunk' | 'branch' | 'leaf' | 'fruit',
   growthValue: number,
-  isSolid: boolean
+  isSolid: boolean,
+  glowIntensity: number = 0.5
 ): string => {
   // 归一化成长值 0-1
   const normalized = Math.min(100, Math.max(0, growthValue)) / 100
@@ -90,8 +92,9 @@ const getColor = (
   const lightness = baseLightness + normalized * (72 - baseLightness)
   const saturation = baseSaturation + normalized * (100 - baseSaturation)
 
-  // 虚实状态控制透明度
-  const alpha = isSolid ? 0.9 : 0.3
+  // 虚实状态和发光强度共同控制透明度
+  const baseAlpha = isSolid ? 0.9 : 0.3
+  const alpha = baseAlpha * glowIntensity
 
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
 }
@@ -116,6 +119,7 @@ export const generateConsciousnessTree = (
     rootDepth,
     rootSpread,
     particleSize,
+    glowIntensity,
     leafDensity,
     fruitProbability,
   } = params
@@ -132,20 +136,20 @@ export const generateConsciousnessTree = (
 
     switch (type) {
       case 'root':
-        color = getColor('root', growthData.roots.growth_value, growthData.roots.is_solid)
+        color = getColor('root', growthData.roots.growth_value, growthData.roots.is_solid, glowIntensity)
         break
       case 'trunk':
-        color = getColor('trunk', growthData.trunk.growth_value, growthData.trunk.is_solid)
+        color = getColor('trunk', growthData.trunk.growth_value, growthData.trunk.is_solid, glowIntensity)
         break
       case 'branch':
-        color = getColor('branch', growthData.branches.growth_value, growthData.branches.is_solid)
+        color = getColor('branch', growthData.branches.growth_value, growthData.branches.is_solid, glowIntensity)
         break
       case 'leaf':
-        color = getColor('leaf', growthData.leaves.growth_value, growthData.leaves.is_solid)
+        color = getColor('leaf', growthData.leaves.growth_value, growthData.leaves.is_solid, glowIntensity)
         size *= 1.5
         break
       case 'fruit':
-        color = getColor('fruit', growthData.fruits.growth_value, growthData.fruits.is_solid)
+        color = getColor('fruit', growthData.fruits.growth_value, growthData.fruits.is_solid, glowIntensity)
         size *= 3
         break
     }

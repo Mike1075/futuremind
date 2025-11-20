@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { ConsciousnessTreeView } from './ConsciousnessTreeView'
+import { ConsciousnessTreeView, TreeTechParams } from './ConsciousnessTreeView'
 import { ArrowLeft, RefreshCw, Save } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -17,18 +17,32 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
   const [isEvaluating, setIsEvaluating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [key, setKey] = useState(0) // 用于强制刷新ConsciousnessTreeView
-
-  // 5个部位的成长值状态
-  const [growthValues, setGrowthValues] = useState({
-    roots: 0,
-    trunk: 0,
-    branches: 0,
-    leaves: 0,
-    fruits: 0
-  })
 
   const isAdmin = userRole && ['principal', 'teacher'].includes(userRole)
+
+  // 技术参数状态（实时调整）
+  const [techParams, setTechParams] = useState<TreeTechParams>({
+    depth: 10,
+    branchAngle: 25,
+    lengthDecay: 0.75,
+    trunkLength: 120,
+    trunkWidth: 12,
+    rootDepth: 6,
+    rootSpread: 30,
+    particleSize: 2,
+    glowIntensity: 0.5,
+    leafDensity: 0.5,
+    fruitProbability: 0.05,
+  })
+
+  // 5个部位的成长值状态（用于保存到数据库）
+  const [growthValues, setGrowthValues] = useState({
+    roots: 14,
+    trunk: 47,
+    branches: 26,
+    leaves: 28,
+    fruits: 20
+  })
 
   // 加载当前意识树数据
   useEffect(() => {
@@ -81,7 +95,6 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
       if (data.success) {
         setMessage({ type: 'success', text: '评估成功！意识树已更新' })
         await loadTreeData()
-        setKey(prev => prev + 1) // 强制刷新树
       } else {
         setMessage({ type: 'error', text: data.error || '评估失败' })
       }
@@ -93,8 +106,8 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
     }
   }
 
-  // 保存手动调整的成长值（管理员功能）
-  const handleSave = async () => {
+  // 保存成长值到数据库
+  const handleSaveGrowthValues = async () => {
     if (!isAdmin) return
 
     try {
@@ -103,7 +116,6 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
       const supabase = createClient()
 
-      // 构建完整的意识树数据
       const treeView = {
         roots: { growth_value: growthValues.roots, is_solid: growthValues.roots >= 30 },
         trunk: { growth_value: growthValues.trunk, is_solid: growthValues.trunk >= 30 },
@@ -121,7 +133,6 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
       if (error) throw error
 
       setMessage({ type: 'success', text: '保存成功！' })
-      setKey(prev => prev + 1) // 强制刷新树
     } catch (error) {
       console.error('保存失败:', error)
       setMessage({ type: 'error', text: '保存失败' })
@@ -130,8 +141,13 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
     }
   }
 
-  // 滑块改变处理
-  const handleSliderChange = (part: keyof typeof growthValues, value: number) => {
+  // 技术参数改变处理（实时更新）
+  const handleTechParamChange = (param: keyof TreeTechParams, value: number) => {
+    setTechParams(prev => ({ ...prev, [param]: value }))
+  }
+
+  // 成长值改变处理
+  const handleGrowthValueChange = (part: keyof typeof growthValues, value: number) => {
     setGrowthValues(prev => ({ ...prev, [part]: value }))
   }
 
@@ -163,21 +179,23 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
       {/* 主内容 */}
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 左侧：意识树可视化 */}
+          {/* 左侧：意识树可视化（增加高度，添加滚动） */}
           <div className="lg:col-span-2">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
             >
-              <div className="relative h-[600px] w-full bg-black rounded-lg overflow-hidden">
-                <ConsciousnessTreeView key={key} userId={userId} />
+              <div className="relative h-[1200px] w-full bg-black rounded-lg overflow-auto">
+                <div className="h-[2000px] w-full">
+                  <ConsciousnessTreeView userId={userId} techParams={techParams} />
+                </div>
               </div>
             </motion.div>
           </div>
 
           {/* 右侧：控制面板 */}
-          <div className="space-y-6 max-h-[700px] overflow-y-auto pr-2">
+          <div className="space-y-6 max-h-[1200px] overflow-y-auto pr-2">
             {/* 系统消息 */}
             {message && (
               <motion.div
@@ -201,25 +219,15 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
             >
               <h3 className="text-lg font-semibold mb-4 text-red-400">意识树说明</h3>
               <div className="space-y-3 text-sm text-gray-300">
-                <div>
-                  <strong className="text-white">根系：</strong>知识获取、深度理解
-                </div>
-                <div>
-                  <strong className="text-white">树干：</strong>内在稳态、坚持
-                </div>
-                <div>
-                  <strong className="text-white">枝干：</strong>探索广度
-                </div>
-                <div>
-                  <strong className="text-white">树叶：</strong>洞见产出
-                </div>
-                <div>
-                  <strong className="text-white">果实：</strong>创造产出
-                </div>
+                <div><strong className="text-white">根系：</strong>知识获取、深度理解</div>
+                <div><strong className="text-white">树干：</strong>内在稳态、坚持</div>
+                <div><strong className="text-white">枝干：</strong>探索广度</div>
+                <div><strong className="text-white">树叶：</strong>洞见产出</div>
+                <div><strong className="text-white">果实：</strong>创造产出</div>
               </div>
             </motion.div>
 
-            {/* 控制滑块面板（仅管理员可见） */}
+            {/* 控制面板（仅管理员可见） */}
             {isAdmin && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -231,7 +239,7 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
                   🔧 管理员控制面板
                 </h3>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* AI评估按钮 */}
                   <button
                     onClick={handleEvaluate}
@@ -242,105 +250,244 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
                     {isEvaluating ? '评估中...' : '触发AI评估'}
                   </button>
 
-                  {/* 成长值控制滑块 */}
+                  {/* 成长值控制 */}
                   <div className="space-y-4 pt-4 border-t border-white/10">
-                    <p className="text-sm font-semibold text-gray-300">手动调整成长值</p>
+                    <p className="text-sm font-semibold text-gray-300">成长值控制（保存到数据库）</p>
 
-                    {/* 根系滑块 */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm text-gray-400">根系 (Roots)</label>
-                        <span className="text-sm font-mono text-red-400">{growthValues.roots}</span>
+                    {Object.entries({
+                      roots: '根系',
+                      trunk: '树干',
+                      branches: '枝干',
+                      leaves: '树叶',
+                      fruits: '果实'
+                    }).map(([key, label]) => (
+                      <div key={key}>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-sm text-gray-400">{label}</label>
+                          <span className="text-sm font-mono text-red-400">
+                            {growthValues[key as keyof typeof growthValues]}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={growthValues[key as keyof typeof growthValues]}
+                          onChange={(e) => handleGrowthValueChange(key as keyof typeof growthValues, parseInt(e.target.value))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-red"
+                        />
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={growthValues.roots}
-                        onChange={(e) => handleSliderChange('roots', parseInt(e.target.value))}
-                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-red"
-                      />
-                    </div>
+                    ))}
 
-                    {/* 树干滑块 */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm text-gray-400">树干 (Trunk)</label>
-                        <span className="text-sm font-mono text-red-400">{growthValues.trunk}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={growthValues.trunk}
-                        onChange={(e) => handleSliderChange('trunk', parseInt(e.target.value))}
-                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-red"
-                      />
-                    </div>
-
-                    {/* 枝干滑块 */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm text-gray-400">枝干 (Branches)</label>
-                        <span className="text-sm font-mono text-red-400">{growthValues.branches}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={growthValues.branches}
-                        onChange={(e) => handleSliderChange('branches', parseInt(e.target.value))}
-                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-red"
-                      />
-                    </div>
-
-                    {/* 树叶滑块 */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm text-gray-400">树叶 (Leaves)</label>
-                        <span className="text-sm font-mono text-red-400">{growthValues.leaves}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={growthValues.leaves}
-                        onChange={(e) => handleSliderChange('leaves', parseInt(e.target.value))}
-                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-red"
-                      />
-                    </div>
-
-                    {/* 果实滑块 */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm text-gray-400">果实 (Fruits)</label>
-                        <span className="text-sm font-mono text-red-400">{growthValues.fruits}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={growthValues.fruits}
-                        onChange={(e) => handleSliderChange('fruits', parseInt(e.target.value))}
-                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-red"
-                      />
-                    </div>
-
-                    {/* 保存按钮 */}
                     <button
-                      onClick={handleSave}
+                      onClick={handleSaveGrowthValues}
                       disabled={isSaving}
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600/30 hover:bg-green-600/40 disabled:bg-gray-600/30 rounded-lg border border-green-500/50 transition-all mt-4"
                     >
                       <Save className={`w-5 h-5 ${isSaving ? 'animate-pulse' : ''}`} />
-                      {isSaving ? '保存中...' : '保存更改'}
+                      {isSaving ? '保存中...' : '保存成长值到数据库'}
                     </button>
+                  </div>
+
+                  {/* 技术参数控制（实时更新，不需要保存） */}
+                  <div className="space-y-4 pt-4 border-t border-white/10">
+                    <p className="text-sm font-semibold text-yellow-300">⚡ 技术参数（实时调整）</p>
+
+                    {/* 递归深度 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">递归深度 (Depth)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.depth}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="14"
+                        step="1"
+                        value={techParams.depth}
+                        onChange={(e) => handleTechParamChange('depth', parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
+
+                    {/* 分支角度 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">分支角度 (Branch Angle)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.branchAngle}°</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="90"
+                        step="1"
+                        value={techParams.branchAngle}
+                        onChange={(e) => handleTechParamChange('branchAngle', parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
+
+                    {/* 长度衰减 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">长度衰减 (Length Decay)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.lengthDecay.toFixed(2)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="0.9"
+                        step="0.01"
+                        value={techParams.lengthDecay}
+                        onChange={(e) => handleTechParamChange('lengthDecay', parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
+
+                    {/* 主干长度 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">主干长度 (Trunk Length)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.trunkLength}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="50"
+                        max="200"
+                        step="1"
+                        value={techParams.trunkLength}
+                        onChange={(e) => handleTechParamChange('trunkLength', parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
+
+                    {/* 主干宽度 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">主干宽度 (Trunk Width)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.trunkWidth}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="30"
+                        step="1"
+                        value={techParams.trunkWidth}
+                        onChange={(e) => handleTechParamChange('trunkWidth', parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
+
+                    {/* 根深度 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">根深度 (Root Depth)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.rootDepth}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        step="1"
+                        value={techParams.rootDepth}
+                        onChange={(e) => handleTechParamChange('rootDepth', parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
+
+                    {/* 根展开角度 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">根展开角度 (Root Spread)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.rootSpread}°</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="90"
+                        step="1"
+                        value={techParams.rootSpread}
+                        onChange={(e) => handleTechParamChange('rootSpread', parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
+
+                    {/* 粒子大小 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">粒子大小 (Particle Size)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.particleSize.toFixed(1)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="5"
+                        step="0.1"
+                        value={techParams.particleSize}
+                        onChange={(e) => handleTechParamChange('particleSize', parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
+
+                    {/* 发光强度 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">发光强度 (Glow Intensity)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.glowIntensity.toFixed(2)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={techParams.glowIntensity}
+                        onChange={(e) => handleTechParamChange('glowIntensity', parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
+
+                    {/* 叶子密度 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">叶子密度 (Leaf Density)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.leafDensity.toFixed(2)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={techParams.leafDensity}
+                        onChange={(e) => handleTechParamChange('leafDensity', parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
+
+                    {/* 果实概率 */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-gray-400">果实概率 (Fruit Probability)</label>
+                        <span className="text-sm font-mono text-yellow-400">{techParams.fruitProbability.toFixed(2)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="0.5"
+                        step="0.01"
+                        value={techParams.fruitProbability}
+                        onChange={(e) => handleTechParamChange('fruitProbability', parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div className="mt-4 p-3 bg-black/30 rounded-lg">
                   <p className="text-xs text-gray-400">
-                    ⚠️ 调整滑块后点击"保存更改"生效
+                    ⚡ 黄色技术参数实时生效，无需保存
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    💾 红色成长值需要点击保存按钮
                   </p>
                 </div>
               </motion.div>
@@ -379,6 +526,38 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
         .slider-red::-moz-range-track {
           background: linear-gradient(to right, #1f2937 0%, #ef4444 100%);
+          height: 8px;
+          border-radius: 4px;
+        }
+
+        .slider-yellow::-webkit-slider-thumb {
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #facc15;
+          cursor: pointer;
+          box-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+        }
+
+        .slider-yellow::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #facc15;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+        }
+
+        .slider-yellow::-webkit-slider-track {
+          background: linear-gradient(to right, #1f2937 0%, #facc15 100%);
+          height: 8px;
+          border-radius: 4px;
+        }
+
+        .slider-yellow::-moz-range-track {
+          background: linear-gradient(to right, #1f2937 0%, #facc15 100%);
           height: 8px;
           border-radius: 4px;
         }

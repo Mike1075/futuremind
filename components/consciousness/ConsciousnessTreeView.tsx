@@ -5,9 +5,24 @@ import { ConsciousnessTreeCanvas } from './ConsciousnessTreeCanvas'
 import { TreeGrowthData } from '@/lib/utils/consciousnessTreeGenerator'
 import { createClient } from '@/lib/supabase/client'
 
+export interface TreeTechParams {
+  depth: number
+  branchAngle: number
+  lengthDecay: number
+  trunkLength: number
+  trunkWidth: number
+  rootDepth: number
+  rootSpread: number
+  particleSize: number
+  glowIntensity: number
+  leafDensity: number
+  fruitProbability: number
+}
+
 interface ConsciousnessTreeViewProps {
   userId: string
   isPreview?: boolean  // 预览模式（隐藏调试信息）
+  techParams?: TreeTechParams  // 技术参数（实时调整）
 }
 
 // 默认初始数据（全为0）
@@ -19,14 +34,14 @@ const INITIAL_GROWTH_DATA: TreeGrowthData = {
   fruits: { growth_value: 0, is_solid: false },
 }
 
-export function ConsciousnessTreeView({ userId, isPreview = false }: ConsciousnessTreeViewProps) {
+export function ConsciousnessTreeView({ userId, isPreview = false, techParams }: ConsciousnessTreeViewProps) {
   const [growthData, setGrowthData] = useState<TreeGrowthData>(INITIAL_GROWTH_DATA)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     loadTreeData()
-  }, [userId])
+  }, [userId, techParams]) // 当techParams改变时重新渲染
 
   const loadTreeData = async () => {
     try {
@@ -95,7 +110,7 @@ export function ConsciousnessTreeView({ userId, isPreview = false }: Consciousne
 
   return (
     <div className="w-full h-full relative">
-      <ConsciousnessTreeCanvas growthData={growthData} />
+      <ConsciousnessTreeCanvas growthData={growthData} techParams={techParams} />
 
       {/* 树的状态信息（仅在非预览模式显示） */}
       {!isPreview && (
