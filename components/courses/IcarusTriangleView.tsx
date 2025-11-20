@@ -220,7 +220,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
           {/* 主节点 - 3个模块在圆周上公转和自转 */}
           {modules.map((module, index) => {
             const isActive = activeModule === module.id
-            const subRadius = 12  // 缩小子节点距离中心的半径
+            const subRadiusVmin = 12  // 子节点距离父节点中心的半径（vmin单位）
             const angle = index * 120 // 三等分：0度、120度、240度
             const currentColors = MODULE_COLORS[index] || MODULE_COLORS[0]
             const gradientString = `${currentColors[0]}, ${currentColors[1]}`
@@ -306,7 +306,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         <div className="text-4xl font-bold">{module.id}</div>
                       </motion.div>
 
-                      {/* 模块名称标签 - 仅在hover时显示，固定在节点外半圆径向延伸点 */}
+                      {/* 模块名称标签 - 仅在hover时显示，沿径向延伸 */}
                       <AnimatePresence>
                         {hoveredModule === module.id && (
                           <motion.div
@@ -314,37 +314,53 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
                             transition={{ duration: 0.2 }}
-                            className="absolute pointer-events-none whitespace-nowrap"
+                            className="absolute pointer-events-none"
                             style={{
-                              left: '50%',
+                              left: '50%',  // 节点中心
                               top: '50%',
+                              width: 0,
+                              height: 0,
                             }}
                           >
-                            <motion.div
-                              animate={{
-                                // 反向旋转抵消公转，保持标签水平
-                                ...(!shouldPause && { rotate: -360 })
-                              }}
-                              transition={{
-                                rotate: { duration: 120, repeat: Infinity, ease: "linear" }
-                              }}
+                            {/* 径向延伸容器 - 旋转到节点角度 */}
+                            <div
                               style={{
-                                // 标签沿径向方向延伸，头部固定在节点外侧
-                                // 节点半径40px + 间隔15px = 55px
-                                // 根据节点角度计算径向偏移
-                                transform: `rotate(${angle}deg) translateY(-55px) rotate(-${angle}deg) translateX(-50%)`,
-                                transformOrigin: 'center bottom',
+                                position: 'absolute',
+                                left: 0,
+                                top: 0,
+                                width: 0,
+                                height: 0,
+                                transform: `rotate(${angle}deg)`,
+                                transformOrigin: '0 0',
                               }}
                             >
-                              <div
-                                className="bg-gray-900/95 backdrop-blur-sm border-2 rounded-lg px-3 py-1 text-xs font-medium shadow-xl"
+                              {/* 标签 - 头部固定在节点外侧，沿径向向外延伸 */}
+                              <motion.div
+                                animate={{
+                                  // 反向旋转抵消公转，保持标签水平
+                                  ...(!shouldPause && { rotate: -360 })
+                                }}
+                                transition={{
+                                  rotate: { duration: 120, repeat: Infinity, ease: "linear" }
+                                }}
                                 style={{
-                                  borderColor: currentColors[0],
+                                  position: 'absolute',
+                                  left: '55px',  // 节点半径40px + 间隔15px
+                                  top: 0,
+                                  transform: `rotate(-${angle}deg) translateY(-50%)`,  // 反向旋转让内容水平，并垂直居中
+                                  transformOrigin: 'left center',  // 以左边（头部）为固定点
                                 }}
                               >
-                                {module.name}
-                              </div>
-                            </motion.div>
+                                <div
+                                  className="bg-gray-900/95 backdrop-blur-sm border-2 rounded-lg px-3 py-1 text-xs font-medium shadow-xl whitespace-nowrap"
+                                  style={{
+                                    borderColor: currentColors[0],
+                                  }}
+                                >
+                                  {module.name}
+                                </div>
+                              </motion.div>
+                            </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -385,16 +401,17 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         <svg
                           className="absolute pointer-events-none"
                           style={{
-                            left: '-200px',
-                            top: '-200px',
-                            width: '400px',
-                            height: '400px',
+                            left: `${-subRadiusVmin * 1.5}vmin`,
+                            top: `${-subRadiusVmin * 1.5}vmin`,
+                            width: `${subRadiusVmin * 3}vmin`,
+                            height: `${subRadiusVmin * 3}vmin`,
                             overflow: 'visible',
                           }}
+                          viewBox={`0 0 ${subRadiusVmin * 3} ${subRadiusVmin * 3}`}
                         >
                         <defs>
                           <filter id={`glow-${module.id}`}>
-                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                            <feGaussianBlur stdDeviation="0.3" result="coloredBlur"/>
                             <feMerge>
                               <feMergeNode in="coloredBlur"/>
                               <feMergeNode in="SourceGraphic"/>
@@ -430,23 +447,23 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             subAngle2 = (nextIndex * 360 / count) - 90
                           }
 
-                          const subRadiusPx = 100  // 100px半径，显示在外围
-                          const centerX = 200
-                          const centerY = 200
+                          // SVG 中心点和半径（使用 viewBox 单位）
+                          const centerX = subRadiusVmin * 1.5
+                          const centerY = subRadiusVmin * 1.5
 
                           // 当前节点坐标
-                          const x1 = centerX + subRadiusPx * Math.cos(subAngle1 * Math.PI / 180)
-                          const y1 = centerY + subRadiusPx * Math.sin(subAngle1 * Math.PI / 180)
+                          const x1 = centerX + subRadiusVmin * Math.cos(subAngle1 * Math.PI / 180)
+                          const y1 = centerY + subRadiusVmin * Math.sin(subAngle1 * Math.PI / 180)
 
                           // 下一个节点坐标
-                          const x2 = centerX + subRadiusPx * Math.cos(subAngle2 * Math.PI / 180)
-                          const y2 = centerY + subRadiusPx * Math.sin(subAngle2 * Math.PI / 180)
+                          const x2 = centerX + subRadiusVmin * Math.cos(subAngle2 * Math.PI / 180)
+                          const y2 = centerY + subRadiusVmin * Math.sin(subAngle2 * Math.PI / 180)
 
                           // 根据边连接的两个项目的完成状态判断线型：两个都完成=实线，否则=虚线
                           const currentProject = module.projects[projectIndex]
                           const nextProject = module.projects[nextIndex]
                           const bothCompleted = currentProject.is_completed && nextProject.is_completed
-                          const strokeDasharray = bothCompleted ? "0" : "5 5"
+                          const strokeDasharray = bothCompleted ? "0" : "0.8 0.8"
 
                           return (
                             <motion.line
@@ -456,7 +473,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               x2={x2}
                               y2={y2}
                               stroke={`url(#gradient-${module.id})`}
-                              strokeWidth="2"
+                              strokeWidth="0.3"
                               strokeDasharray={strokeDasharray}
                               filter={`url(#glow-${module.id})`}
                               initial={{ pathLength: 0, opacity: 0 }}
@@ -486,9 +503,9 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           subAngle = (projectIndex * 360 / count) - 90
                         }
 
-                        const subRadiusPx = 100  // 100px半径，显示在外围
-                        const xOffset = subRadiusPx * Math.cos(subAngle * Math.PI / 180)
-                        const yOffset = subRadiusPx * Math.sin(subAngle * Math.PI / 180)
+                        // 使用 vmin 单位计算偏移，确保与容器坐标系统一致
+                        const xOffset = subRadiusVmin * Math.cos(subAngle * Math.PI / 180)
+                        const yOffset = subRadiusVmin * Math.sin(subAngle * Math.PI / 180)
 
                         return (
                           <motion.div
@@ -510,8 +527,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             }}
                             style={{
                               position: 'absolute',
-                              left: `${xOffset}px`,
-                              top: `${yOffset}px`,
+                              left: `${xOffset}vmin`,
+                              top: `${yOffset}vmin`,
                               transform: 'translate(-50%, -50%)',
                             }}
                             className="cursor-pointer"
