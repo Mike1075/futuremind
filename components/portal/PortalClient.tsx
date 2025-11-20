@@ -282,33 +282,29 @@ export function PortalClient({
                 <TreePine className="w-6 h-6 text-red-400 mr-3" />
                 <h3 className="text-lg font-semibold text-white">意识进化树</h3>
               </div>
-              <div className="relative h-80 w-full bg-black rounded-lg mb-4 overflow-hidden">
-                <ConsciousnessTreeView userId={userId} />
+              <div className="relative h-64 w-full bg-black rounded-lg mb-4 overflow-hidden">
+                <ConsciousnessTreeView userId={userId} isPreview={true} />
               </div>
 
               {/* 成长数据 */}
               <div className="bg-white/5 rounded-lg p-4 mb-4">
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-400">意识成长值</span>
-                  <span className="text-lg font-bold text-green-400">{initialConsciousnessGrowth}</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-green-400 to-emerald-400 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((initialConsciousnessGrowth / 1000) * 100, 100)}%` }}
-                  ></div>
+                  <span className="text-lg font-bold text-red-400">
+                    等级1：探索者 ({initialConsciousnessGrowth})
+                  </span>
                 </div>
               </div>
 
               <button
-                onClick={() => router.push('/simple-tree')}
-                className="w-full flex items-center justify-center p-3 bg-gradient-to-r from-green-600/20 to-blue-600/20 hover:from-green-600/30 hover:to-blue-600/30 rounded-lg border border-green-500/30 transition-all duration-300 group"
+                onClick={() => router.push('/consciousness-tree')}
+                className="w-full flex items-center justify-center p-3 bg-gradient-to-r from-red-600/20 to-orange-600/20 hover:from-red-600/30 hover:to-orange-600/30 rounded-lg border border-red-500/30 transition-all duration-300 group"
               >
-                <TreePine className="w-5 h-5 text-green-400 mr-2 group-hover:text-green-300 transition-colors" />
-                <span className="text-green-300 group-hover:text-green-200 transition-colors font-medium">
+                <TreePine className="w-5 h-5 text-red-400 mr-2 group-hover:text-red-300 transition-colors" />
+                <span className="text-red-300 group-hover:text-red-200 transition-colors font-medium">
                   查看完整意识树
                 </span>
-                <ChevronRight className="w-4 h-4 ml-2 text-green-400 group-hover:text-green-300 transition-colors" />
+                <ChevronRight className="w-4 h-4 ml-2 text-red-400 group-hover:text-red-300 transition-colors" />
               </button>
             </motion.div>
           </div>

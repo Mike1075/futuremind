@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 
 interface ConsciousnessTreeViewProps {
   userId: string
+  isPreview?: boolean  // 预览模式（隐藏调试信息）
 }
 
 // 默认初始数据（全为0）
@@ -18,7 +19,7 @@ const INITIAL_GROWTH_DATA: TreeGrowthData = {
   fruits: { growth_value: 0, is_solid: false },
 }
 
-export function ConsciousnessTreeView({ userId }: ConsciousnessTreeViewProps) {
+export function ConsciousnessTreeView({ userId, isPreview = false }: ConsciousnessTreeViewProps) {
   const [growthData, setGrowthData] = useState<TreeGrowthData>(INITIAL_GROWTH_DATA)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -96,15 +97,17 @@ export function ConsciousnessTreeView({ userId }: ConsciousnessTreeViewProps) {
     <div className="w-full h-full relative">
       <ConsciousnessTreeCanvas growthData={growthData} />
 
-      {/* 树的状态信息（可选，调试用） */}
-      <div className="absolute top-4 left-4 bg-black/80 text-white p-4 rounded-lg text-xs space-y-1">
-        <div className="font-bold mb-2 text-red-400">意识树生长数据</div>
-        <div>根系: {growthData.roots.growth_value}% {growthData.roots.is_solid ? '✓' : '虚'}</div>
-        <div>树干: {growthData.trunk.growth_value}% {growthData.trunk.is_solid ? '✓' : '虚'}</div>
-        <div>枝干: {growthData.branches.growth_value}% {growthData.branches.is_solid ? '✓' : '虚'}</div>
-        <div>树叶: {growthData.leaves.growth_value}% {growthData.leaves.is_solid ? '✓' : '虚'}</div>
-        <div>果实: {growthData.fruits.growth_value}% {growthData.fruits.is_solid ? '✓' : '虚'}</div>
-      </div>
+      {/* 树的状态信息（仅在非预览模式显示） */}
+      {!isPreview && (
+        <div className="absolute top-4 left-4 bg-black/80 text-white p-4 rounded-lg text-xs space-y-1">
+          <div className="font-bold mb-2 text-red-400">意识树生长数据</div>
+          <div>根系: {growthData.roots.growth_value}% {growthData.roots.is_solid ? '✓' : '虚'}</div>
+          <div>树干: {growthData.trunk.growth_value}% {growthData.trunk.is_solid ? '✓' : '虚'}</div>
+          <div>枝干: {growthData.branches.growth_value}% {growthData.branches.is_solid ? '✓' : '虚'}</div>
+          <div>树叶: {growthData.leaves.growth_value}% {growthData.leaves.is_solid ? '✓' : '虚'}</div>
+          <div>果实: {growthData.fruits.growth_value}% {growthData.fruits.is_solid ? '✓' : '虚'}</div>
+        </div>
+      )}
     </div>
   )
 }
