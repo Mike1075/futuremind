@@ -349,16 +349,14 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         )}
                       </AnimatePresence>
                     </motion.div>
-                  </motion.div>
 
-                {/* 子节点容器 - 以父节点为中心，跟随公转 */}
-                {isActive && (
+                  {/* 子节点容器 - 以父节点为中心，跟随公转 */}
+                  {isActive && (
                   <motion.div
                     initial={false}  // 不使用initial动画，直接继承当前状态
                     animate={{
                       opacity: 1,
                       scale: 1,
-                      rotate: 0, // 始终保持在当前位置，不独立旋转（跟随父节点）
                     }}
                     transition={{
                       opacity: { duration: 0.3 },
@@ -366,19 +364,19 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                     }}
                     className="absolute"
                     style={{
-                      left: '50%',
-                      top: '50%',
+                      left: `${nodeX}vmin`,
+                      top: `${nodeY}vmin`,
                       width: 0,
                       height: 0,
                       zIndex: 15,
                     }}
                   >
-                      {/* 子节点定位容器 - 和父节点重合 */}
+                      {/* 子节点定位容器 - 反向旋转保持子节点正立 */}
                       <motion.div
                         style={{
                           position: 'absolute',
-                          left: `${nodeX}vmin`,
-                          top: `${nodeY}vmin`,
+                          left: 0,
+                          top: 0,
                           width: 0,
                           height: 0,
                         }}
@@ -579,6 +577,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       </motion.div>
                     </motion.div>
                   )}
+                </motion.div>
               </div>
             )
           })}
