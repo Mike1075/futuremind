@@ -1,675 +1,195 @@
-# 意识树统一设计方案（主文档）
 
-**文档版本**: v4.0
-**创建时间**: 2025-11-19
-**状态**: 最新版 - Canvas 2D代码绘制方案
-**核心理念**: 7脉轮颜色 + 8阶段成长 + Canvas 2D实时绘制
+--- START OF FILE CONSCIOUSNESS_TREE_MASTER_DESIGN.md ---
 
----
+意识树 (Tree of Consciousness) 统一设计方案
 
-## 📚 文档说明
+文档版本: v5.0 (Final Master)
+更新时间: 2025-11-20
+核心定义: 用户内在意识成长的可视化数字孪生
+技术核心: Canvas 2D 分形算法 + AI 边缘计算 + Supabase 数据驱动
 
-本文档整合了以下旧版设计文档的内容：
-- ~~CONSCIOUSNESS_TREE_VISUALIZATION_DESIGN.md~~ （Three.js方案）
-- ~~CONSCIOUSNESS_LEVEL_SYSTEM_DESIGN.md~~ （旧颜色方案）
-- ~~CONSCIOUSNESS_GROWTH_SYSTEM_DESIGN.md~~ （升级机制）
-- ~~REALISTIC_TREE_GROWTH_DESIGN.md~~ （5阶段设计）
-- ~~TREE_VISUALIZATION_HELP_REQUEST.md~~ （Canvas求助）
+🌟 一、 核心理念：你的内在宇宙
 
-**最新方案**：使用Canvas 2D原生API代码绘制，实现实时动态的意识树可视化
+“意识进化树” 是未来心灵学院教育生态中最核心的视觉符号。它不是一个简单的进度条或等级徽章，而是学员内在世界的外化。
 
-### 📁 参考图文件
+这棵树不长在泥土里，而是由光和能量构成，生长在深邃的宇宙星图背景中。它精准地反映了每一个灵魂独一无二的旅程——它的美丽不在于完美的对称，而在于其真实的形态。
 
-**位置**: `D:\CursorWork\FutureMindInstitute\readme\意识树参考图\`
+设计哲学
 
-**形态参考图**（7张苹果树生长阶段，提供树形结构参考）：
-- `1.种子初始生根.png` - 种子在土壤中，细小的根系向下延伸
-- `2.发芽.jpg` - 种子裂开，主根向下，茎向上钻出地面
-- `3.两片子叶.jpg` - 两片圆润的子叶展开，根系分叉
-- `3.小苗.png` - 多片真叶长出，树干明显增高
-- `4.小树.png` - 树干分支，叶子增多，根系发达
-- `5.开花.png` - 树冠丰满，花朵点缀
-- `6.结果.png` - 硕果累累，树形成熟
-- `7.参天大树.png` - 完全成熟的树，树冠宽广，根系庞大如树冠镜像
+内在驱动：树的生长不靠“刷分”，而靠真实的探索（根）、内省（干）、洞见（枝/叶）和创造（果）。
 
-**风格参考图**（2张宇宙能量树，提供视觉风格参考）：
-- `风格参考图1.png` - 蓝色发光的宇宙树，强烈的光效和粒子
-- `风格参考图2.png` - 蓝色能量树，展示树的神秘感和灵性特质
+有机生长：树可以长得“畸形”但必须自然。可能有极深的根但树干细小，也可能硕果累累但枝叶稀疏。一切皆由数据决定。
 
-**重要说明**：
-- 形态参考图提供**树的结构、比例、分支方式**（参考图是绿色苹果树，代码实现时需改为对应脉轮颜色）
-- 风格参考图提供**发光效果、粒子、宇宙感**的视觉风格
-- 代码绘制需结合两者：真实的树形态 + 宇宙能量风格
+虚实相生：成长遵循自然法则，下层基础决定上层建筑的“虚实状态”。
 
----
+🎨 二、 视觉与形态设计
+1. 整体风格
 
-## 🎨 一、7脉轮颜色系统（新方案）
+材质：融合生物美学与分形艺术。树由粒子构成，带有呼吸感的动态光效。
 
-### 颜色对应关系
+背景：用户探索过的知识节点构成的星图。
 
-```
-红色(海底轮) → 橙色(脐轮) → 黄色(太阳神经丛) → 绿色(心轮) →
-青色(喉轮) → 蓝色(眉心轮) → 紫色(顶轮)
+2. 关键部位重构 (视觉更新)
+部位	对应隐喻	视觉形态定义
+根系 (Roots)	探索的广度与深度	发光的能量脉络。向下延伸至星空深处，汲取知识养分。
+树干 (Trunk)	觉察与定力	树的主轴。类似于光束凝聚的实体，带有像年轮般的能量纹理。
+枝条 (Branches)	思考的路径	分形生长的骨架。连接主干与果实，承载能量的流动。
+叶 (Leaves)	洞见与感知	能量晕 / 星云带 (Nebula Trails)。<br>❌ 移除传统叶片粒子。<br>✅ 改为沿着枝条流动的虚散光晕，像包裹枝条的辉光，代表灵感的流动。颜色较暗，半透明。
+果实 (Fruits)	创造与贡献	聚变恒星点 (Condensed Stars)。<br>❌ 移除花朵设计。<br>✅ 位于枝条末端或分叉点的高密度光点。核心亮白/金，边缘带对应脉轮颜色的光晕。
+🌈 三、 7脉轮颜色系统
 
-对应可见光光谱：🔴🟠🟡🟢🔵🟣
-```
+树的整体色调随用户的意识等级 (Consciousness Level) 发生改变，象征能量频率的提升。
 
-### 完整颜色配置
+等级	名称	脉轮 (Chakra)	主色调 (HEX)	视觉特征
+Level 1	沉睡者	海底轮 (Root)	🔴 #DC2626	深红/暗红，厚重，生存能量
+Level 2	觉醒者	脐轮 (Sacral)	🟠 #EA580C	橙色，流动，创造力萌芽
+Level 3	探索者	太阳神经丛	🟡 #EAB308	金黄，明亮，意志与力量
+Level 4	实践者	心轮 (Heart)	🟢 #16A34A	翠绿，治愈，爱与连接
+Level 5	洞察者	喉轮 (Throat)	🔵 #06B6D4	青色/天蓝，清晰，表达
+Level 6	先锋者	眉心轮 (Third Eye)	🟦 #2563EB	靛蓝，深邃，直觉与洞见
+Level 7	引领者	顶轮 (Crown)	🟣 #9333EA	紫色/白光，神圣，合一
 
-```typescript
-export const CONSCIOUSNESS_LEVEL_COLORS = {
-  level_1: {
-    name: '沉睡者 (The Sleeper)',
-    chakra: '海底轮 (Root Chakra)',
-    element: '土',
-    theme: 'red',
-    colors: {
-      darkest: '#450A0A',    // 黑红色 (0-20% progress)
-      dark: '#991B1B',       // 暗红色 (21-40%)
-      primary: '#DC2626',    // 正红色 (41-70%)
-      light: '#F87171',      // 亮红色 (71-90%)
-      lightest: '#FCA5A5',   // 浅红色 (91-100%)
-      accent: '#FFA500'      // 金色点缀（所有等级通用）
-    }
-  },
-  level_2: {
-    name: '觉醒者 (The Awakened)',
-    chakra: '脐轮 (Sacral Chakra)',
-    element: '水',
-    theme: 'orange',
-    colors: {
-      darkest: '#7C2D12',
-      dark: '#C2410C',
-      primary: '#EA580C',
-      light: '#FB923C',
-      lightest: '#FDBA74',
-      accent: '#FFA500'
-    }
-  },
-  level_3: {
-    name: '探索者 (The Explorer)',
-    chakra: '太阳神经丛 (Solar Plexus Chakra)',
-    element: '火',
-    theme: 'yellow',
-    colors: {
-      darkest: '#713F12',
-      dark: '#CA8A04',
-      primary: '#EAB308',
-      light: '#FACC15',
-      lightest: '#FDE047',
-      accent: '#FFA500'
-    }
-  },
-  level_4: {
-    name: '实践者 (The Practitioner)',
-    chakra: '心轮 (Heart Chakra)',
-    element: '气',
-    theme: 'green',
-    colors: {
-      darkest: '#14532D',
-      dark: '#15803D',
-      primary: '#16A34A',
-      light: '#4ADE80',
-      lightest: '#86EFAC',
-      accent: '#FFA500'
-    }
-  },
-  level_5: {
-    name: '洞察者 (The Insightful)',
-    chakra: '喉轮 (Throat Chakra)',
-    element: '以太',
-    theme: 'cyan',
-    colors: {
-      darkest: '#164E63',
-      dark: '#0891B2',
-      primary: '#06B6D4',
-      light: '#22D3EE',
-      lightest: '#67E8F9',
-      accent: '#FFA500'
-    }
-  },
-  level_6: {
-    name: '先锋者 (The Pioneer)',
-    chakra: '眉心轮 (Third Eye Chakra)',
-    element: '光',
-    theme: 'blue',
-    colors: {
-      darkest: '#1E3A8A',
-      dark: '#1D4ED8',
-      primary: '#2563EB',
-      light: '#60A5FA',
-      lightest: '#93C5FD',
-      accent: '#FFA500'
-    }
-  },
-  level_7: {
-    name: '引领者 (The Leader)',
-    chakra: '顶轮 (Crown Chakra)',
-    element: '意识',
-    theme: 'purple',
-    colors: {
-      darkest: '#581C87',
-      dark: '#7E22CE',
-      primary: '#9333EA',
-      light: '#C084FC',
-      lightest: '#E9D5FF',
-      accent: '#FFA500'
-    }
-  }
+注意：树的颜色不是单一的，而是以主色调为基准的渐变色系（包含暗部、高光、粒子辉光）。
+
+⚙️ 四、 核心生长机制 (逻辑需求)
+
+这是本设计的核心。树的生长不是线性的，而是基于AI分析和依赖关系的有机过程。
+
+1. AI 驱动的生长计算 (Edge Function)
+
+触发机制：用户在线时的行为（点击、阅读、提交作业、冥想）会被实时记录入库，但不会即时改变树的形态。
+
+计算时机：当用户离线后或定期（如每日凌晨），系统触发边缘函数（Edge Function）。
+
+AI 评估：AI 读取用户期间产生的所有数据，进行定性分析：
+
+“这个用户浏览了大量量子物理文章” -> 根系参数 (Root Strength) 增加。
+
+“这个用户坚持了7天冥想但没有看书” -> 树干参数 (Trunk Strength) 增加，但根系不变。
+
+“这个用户提交了一个PBL项目成果” -> 果实参数 (Fruit Richness) 增加。
+
+结果呈现：用户下次登录时，看到的是基于上次分析结果长出的“新树”。
+
+2. “虚实相生”的依赖法则 (Dependency Logic)
+
+为了体现自然规律，树的各个部位存在严格的依赖关系。下层基础决定上层是否“实心化”。
+
+状态定义：
+
+实线 (Solid)：能量充盈，稳固，明亮。
+
+虚线/幽灵态 (Dotted/Ghost)：潜能状态，暗淡，半透明，仅展示轮廓。
+
+依赖链条：
+
+根 (Root)：基础。只要有探索行为，根就是实的。
+
+干 (Trunk)：依赖根。
+
+判定：如果 AI 判定树干参数很高，但根系参数极低 -> 树干呈现为虚线。
+
+隐喻：没有知识积累的冥想是空中楼阁。
+
+枝/叶 (Branch/Nebula)：依赖干。
+
+判定：如果树干是虚线 -> 枝叶强制为虚线（即使参数很高）。
+
+果 (Fruit)：依赖枝。
+
+判定：果实必须长在枝条上。如果枝条是虚线 -> 果实也是虚影。
+
+形态自由度：
+
+只要满足依赖关系（下层是实线），上层可以自由生长。
+
+允许畸形：例如，一个用户知识极其渊博（根极深极广），但从不内省（树干很细），有很多灵感（枝叶繁茂）。树的样子就是：庞大的发光根系 + 一根细细的实线树干 + 巨大的树冠。这是允许的，且是真实的。
+
+3. 物理约束
+
+依附关系：果实（恒星点）只能生成在枝条的末端或分叉点，绝不允许悬浮在真空中。
+
+空间分布：枝叶（星云带）必须沿着分形算法生成的骨架分布。
+
+🏗️ 五、 技术实现概要
+1. 技术栈
+
+前端：React 19 + Vite
+
+渲染引擎：HTML5 Canvas 2D (原生API，保证性能)
+
+核心算法：递归分形树 (Recursive Fractal Tree) + 粒子系统
+
+后端/数据：Supabase (PostgreSQL + Edge Functions)
+
+2. 数据结构 (Profiles 表新增字段)
+code
+SQL
+download
+content_copy
+expand_less
+-- 用户意识树参数 (由AI计算后写入)
+ALTER TABLE profiles ADD COLUMN consciousness_tree_params JSONB;
+
+-- JSONB 结构示例
+{
+  "level": 3,                // 当前颜色等级 (1-7)
+  "growth_progress": 45,     // 当前等级进度 (0-100)
+  
+  // 形态参数 (0.0 - 1.0)
+  "root_strength": 0.8,      // 根系强度 (影响深度/广度)
+  "trunk_strength": 0.2,     // 树干强度 (影响粗细/高度)
+  "branch_richness": 0.9,    // 枝叶丰富度 (影响分叉/星云密度)
+  "fruit_count": 5,          // 果实数量 (整数)
+  
+  // 状态标记 (由AI根据依赖关系计算)
+  "is_trunk_solid": true,    // 树干是否实心
+  "is_branch_solid": true    // 枝条是否实心
 }
+3. 渲染逻辑流
 
-// 根据进度选择颜色
-export function getColorByProgress(level: number, progress: number): string {
-  const levelColors = CONSCIOUSNESS_LEVEL_COLORS[`level_${level}`].colors
+Load: 前端从 Supabase 读取 consciousness_tree_params。
 
-  if (progress < 20) return levelColors.darkest
-  if (progress < 40) return levelColors.dark
-  if (progress < 70) return levelColors.primary
-  if (progress < 90) return levelColors.light
-  return levelColors.lightest  // 91-100%, 即将升级，最亮
-}
-```
+Config: 根据 level 获取颜色配置 (Hex Codes)。
 
----
+Calculate:
 
-## 🌱 二、8阶段成长系统
+输入参数到分形算法。
 
-每个意识等级（Level 1-7）内部都经历8个清晰可见的阶段：
+生成几何路径（根、干、枝）。
 
-### 阶段定义
+判断 is_solid 属性，决定绘制 lineDash (虚线) 还是 solid (实线)。
 
-| 阶段 | 进度范围 | 英文名 | 视觉特征 | 用户行为 |
-|------|---------|--------|---------|---------|
-| 种子生根 | 0-12% | Seed Rooting | 地下根系生长，地上无树 | 刚注册，初步探索 |
-| 发芽 | 12-25% | Germination | 种子裂开，细芽破土 | 开始学习，建立习惯 |
-| 子叶萌发 | 25-37% | Cotyledon | 两片圆润子叶展开 | 初步学习，形成认知 |
-| 长出真叶 | 37-50% | True Leaves | 子叶退化，真叶生长，小树冠形成 | 深入探索，产生洞见 |
-| 小苗成长 | 50-62% | Sapling Growth | 树干增高，主枝分叉，叶子增多 | 稳定成长，积累经验 |
-| 小树形成 | 62-75% | Young Tree | 树形轮廓清晰，树冠扩展 | 持续成长，开始创造 |
-| 开花结果 | 75-87% | Flowering & Fruiting | 树冠开花，花朵转化为果实 | 创造成果，分享贡献 |
-| 枝叶繁茂 | 87-100% | Flourishing | 硕果累累，能量充盈，呼吸动画 | 接近升级，成果显著 |
+Render:
 
-### 升级机制
+层级 1: 绘制背景星空。
 
-```
-Level 1 (红色)
-├─ Seed 0-20%
-├─ Sprout 20-40%
-├─ Seedling 40-60%
-├─ Young 60-80%
-└─ Mature 80-100% → 升级！
-    ↓
-Level 2 (橙色)  ← 重新从Seed开始，但颜色变了！
-├─ Seed 0-20%
-├─ Sprout 20-40%
-...
-```
+层级 2: 绘制根 (实/虚)。
 
-**关键点**：
-- 每次升级后，`level_progress`重置为0
-- 树重新从种子开始生长
-- 但颜色升级到下一个脉轮颜色
-- 给用户"重生"的感觉，象征意识的螺旋式上升
+层级 3: 绘制干 (实/虚)。
 
----
+层级 4: 绘制枝 (实/虚)。
 
-## 🎨 三、技术方案：Canvas 2D代码绘制
+层级 5: 绘制“星云叶” (GlobalCompositeOperation = lighter)。
 
-### 为什么使用Canvas 2D代码绘制？
+层级 6: 在枝条末端绘制“恒星果” (高亮光圈)。
 
-**方案优势**：
-- ✅ 完全数据驱动，用户行为实时反映在树形态上
-- ✅ 无需预生成大量图片，节省存储空间
-- ✅ 可以实现平滑的生长动画和呼吸效果
-- ✅ 支持个性化参数（根系强度、枝叶丰富度、果实数量等）
-- ✅ 性能优秀，Canvas 2D渲染效率高
-- ✅ 代码可维护，易于调整和优化
+Animate: 添加微小的呼吸动画 (Scale/Opacity 波动)，让树看起来是活的。
 
-**核心设计原则**：
-1. **消除闪烁**：所有几何数据（根、枝、叶、果）一次性生成并缓存
-2. **自然树形**：主根+侧根结构，主枝系统，叶子沿枝分布
-3. **稳定渲染**：每帧只根据progress控制显示长度，不重新随机
-4. **8阶段清晰**：每个阶段形态差异明显，用户肉眼可见
+📝 六、 总结
 
-### 实现架构
+这棵意识树是我们平台的灵魂。它不仅是一个可视化的成就系统，更是一面镜子。
 
-```
-用户数据（Supabase）
-    ↓
-读取 consciousness_level (1-7)
-读取 level_progress (0-100)
-读取 用户特质参数 (rootStrength, branchRichness等)
-    ↓
-传入Canvas引擎 getTreeParams(progress)
-    ↓
-计算当前阶段的树参数（根长度、树干高度、叶子数量等）
-    ↓
-首次渲染时生成几何数据缓存（根系、主枝、叶子、果实锚点）
-    ↓
-每帧根据参数绘制树（Canvas 2D API）
-    ↓
-平滑动画过渡（requestAnimationFrame）
-```
+通过AI的智能分析与虚实相生的依赖逻辑，我们告诉用户：
 
-### 目录结构
+知识（根）是基础。
 
-```
-/public/tree-demo/
-  ├── index.html           # 测试页面（单独运行）
-  └── tree-engine.js       # Canvas绘制引擎（可集成到React）
+内省（干）是核心。
 
-/components/consciousness-tree/
-  ├── CanvasTreeRenderer.tsx    # React封装组件
-  └── tree-drawing-engine.ts    # 核心绘制逻辑（从tree-engine.js移植）
+没有根基的修行是虚幻的（虚线树干）。
 
-/lib/
-  └── consciousness-config.ts   # 颜色配置和工具函数
-```
+没有内省的知识无法转化为智慧的果实（虚线枝果）。
 
-### 核心数据结构
+这将引导用户在“未来心灵学院”中追求平衡、真实、扎实的生命成长。
 
-```javascript
-// 树状态（可从Supabase传入）
-const treeState = {
-  growthProgress: 0,              // 0-100，主进度
-
-  // 用户特质参数（从Supabase读取）
-  rootStrength: 0.7,              // 影响根数量和深度
-  trunkStrength: 0.7,             // 影响树干高度和粗细
-  branchRichness: 0.8,            // 影响叶子数量和树冠大小
-  fruitRichness: 0.5,             // 影响果实数量
-  balanceLeftRight: 0.5,          // 影响树干弯曲方向
-
-  // 缓存的几何数据（只生成一次，避免闪烁）
-  _rootSegments: null,            // 根系控制点
-  _branchSegments: null,          // 主枝控制点
-  _leafAnchors: null,             // 叶子固定位置
-  _fruitAnchors: null,            // 果实固定位置
-  _backgroundStars: null          // 背景星星
-}
-```
-
----
-
-## 📊 四、数据库设计
-
-### profiles 表新增字段
-
-```sql
-ALTER TABLE profiles
-ADD COLUMN IF NOT EXISTS total_experience_points INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS level_progress NUMERIC DEFAULT 0
-  CHECK (level_progress >= 0 AND level_progress <= 100);
-
--- consciousness_level 字段已存在，表示当前等级(1-7)
--- consciousness_tree_view 字段保留，存储详细的树数据（根系、树干、果实等）
-```
-
-### 计算逻辑
-
-```typescript
-// 根据total_exp计算consciousness_level
-function calculateLevel(totalExp: number): number {
-  if (totalExp < 500) return 1      // 红色
-  if (totalExp < 1500) return 2     // 橙色
-  if (totalExp < 3500) return 3     // 黄色
-  if (totalExp < 7000) return 4     // 绿色
-  if (totalExp < 12000) return 5    // 青色
-  if (totalExp < 20000) return 6    // 蓝色
-  return 7                          // 紫色
-}
-
-// 根据level_progress选择树的阶段
-function getTreeStage(progress: number): string {
-  if (progress < 20) return 'seed'
-  if (progress < 40) return 'sprout'
-  if (progress < 60) return 'seedling'
-  if (progress < 80) return 'young'
-  return 'mature'
-}
-
-// 完整的树图路径
-function getTreeImagePath(level: number, progress: number): string {
-  const stage = getTreeStage(progress)
-  return `/tree-images/level-${level}/${stage}.png`
-}
-```
-
----
-
-## 🔄 五、更新触发机制
-
-### 何时更新意识树？
-
-| 用户行为 | 获得EXP | 更新 level_progress | 更新 consciousness_tree_view |
-|---------|---------|-------------------|----------------------------|
-| 完成课程单元 | +10 | +5% | 根系延伸 |
-| 提交冥想日志 | +15 | +3% | 树干增粗 |
-| 与Gaia深度对话 | +20 | +4% | 添加叶子（洞见） |
-| 完成PBL项目 | +100 | +15% | 添加果实 |
-| 获得社区共鸣 | +5 | +2% | 果实成熟度+10% |
-
-### Edge Function示例
-
-```typescript
-// supabase/functions/update-consciousness-tree/index.ts
-import { createClient } from '@supabase/supabase-js'
-
-export async function updateTree(userId: string, action: string, metadata: any) {
-  const supabase = createClient(/* ... */)
-
-  // 1. 获取当前数据
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('total_experience_points, level_progress, consciousness_level')
-    .eq('id', userId)
-    .single()
-
-  let { total_experience_points, level_progress, consciousness_level } = profile
-
-  // 2. 根据行为增加EXP和进度
-  const rewards = {
-    'complete_course': { exp: 10, progress: 5 },
-    'submit_meditation': { exp: 15, progress: 3 },
-    'deep_dialogue': { exp: 20, progress: 4 },
-    'complete_pbl': { exp: 100, progress: 15 }
-  }
-
-  const reward = rewards[action]
-  total_experience_points += reward.exp
-  level_progress += reward.progress
-
-  // 3. 检查是否升级
-  const newLevel = calculateLevel(total_experience_points)
-  if (newLevel > consciousness_level) {
-    consciousness_level = newLevel
-    level_progress = 0  // 重置进度，重新从种子开始
-  }
-
-  // 4. 限制progress在0-100
-  if (level_progress > 100) level_progress = 100
-
-  // 5. 更新数据库
-  await supabase
-    .from('profiles')
-    .update({
-      total_experience_points,
-      level_progress,
-      consciousness_level
-    })
-    .eq('id', userId)
-
-  return { newLevel: consciousness_level, newProgress: level_progress }
-}
-```
-
----
-
-## 🎬 六、前端实现
-
-### React组件封装（Canvas版本）
-
-```typescript
-'use client'
-
-import { useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
-import { CONSCIOUSNESS_LEVEL_COLORS } from '@/lib/consciousness-config'
-import { TreeCanvasEngine } from '@/lib/consciousness-tree/tree-canvas-engine'
-
-interface ConsciousnessTreeDisplayProps {
-  level: number          // 1-7
-  progress: number       // 0-100
-  userName: string
-  // 用户特质参数（从Supabase读取）
-  rootStrength?: number
-  trunkStrength?: number
-  branchRichness?: number
-  fruitRichness?: number
-}
-
-export default function ConsciousnessTreeDisplay({
-  level,
-  progress,
-  userName,
-  rootStrength = 0.7,
-  trunkStrength = 0.7,
-  branchRichness = 0.8,
-  fruitRichness = 0.5
-}: ConsciousnessTreeDisplayProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const engineRef = useRef<TreeCanvasEngine | null>(null)
-
-  const levelConfig = CONSCIOUSNESS_LEVEL_COLORS[`level_${level}`]
-  const currentColor = levelConfig.colors.primary
-
-  // 初始化Canvas引擎
-  useEffect(() => {
-    if (!canvasRef.current) return
-
-    const engine = new TreeCanvasEngine(canvasRef.current, {
-      level,
-      colors: levelConfig.colors
-    })
-
-    engine.setTreeState({
-      growthProgress: progress,
-      rootStrength,
-      trunkStrength,
-      branchRichness,
-      fruitRichness
-    })
-
-    engine.start()
-    engineRef.current = engine
-
-    return () => {
-      engine.stop()
-    }
-  }, [level])
-
-  // 更新进度时平滑过渡
-  useEffect(() => {
-    if (engineRef.current) {
-      engineRef.current.animateToProgress(progress, 1000)
-    }
-  }, [progress])
-
-  // 更新用户特质参数
-  useEffect(() => {
-    if (engineRef.current) {
-      engineRef.current.updateTreeState({
-        rootStrength,
-        trunkStrength,
-        branchRichness,
-        fruitRichness
-      })
-    }
-  }, [rootStrength, trunkStrength, branchRichness, fruitRichness])
-
-  return (
-    <div className="relative w-full h-screen bg-black overflow-hidden">
-      {/* 主标题 */}
-      <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="absolute top-8 left-1/2 transform -translate-x-1/2 text-center z-10"
-      >
-        <h1 className="text-4xl font-bold" style={{ color: currentColor }}>
-          {userName}的意识之树
-        </h1>
-        <p className="text-gray-400 mt-2">
-          {levelConfig.name} · {levelConfig.chakra}
-        </p>
-        <div className="mt-4 flex items-center gap-4 justify-center">
-          <span className="text-white">等级进度</span>
-          <div className="w-64 h-2 bg-gray-700 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full"
-              style={{ backgroundColor: currentColor }}
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 1, ease: 'easeOut' }}
-            />
-          </div>
-          <span style={{ color: currentColor }}>{progress.toFixed(0)}%</span>
-        </div>
-      </motion.div>
-
-      {/* Canvas画布 */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={800}
-          className="rounded-lg shadow-2xl"
-          style={{
-            boxShadow: `0 0 50px ${currentColor}40`
-          }}
-        />
-      </div>
-
-      {/* 等级图例 */}
-      <div className="absolute bottom-8 left-8 bg-black/50 backdrop-blur-md p-6 rounded-lg text-white">
-        <h3 className="font-bold mb-4">7脉轮色彩对应</h3>
-        <div className="space-y-2 text-sm">
-          {Object.entries(CONSCIOUSNESS_LEVEL_COLORS).map(([key, config]) => {
-            const levelNum = parseInt(key.split('_')[1])
-            const isCurrentLevel = levelNum === level
-            return (
-              <div
-                key={key}
-                className={`flex items-center gap-3 ${isCurrentLevel ? 'font-bold' : 'opacity-60'}`}
-              >
-                <div
-                  className="w-6 h-6 rounded-full"
-                  style={{ backgroundColor: config.colors.primary }}
-                />
-                <span>{config.chakra} - {config.name}</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-```
-
-**关键点说明**：
-1. 使用 `useRef` 保持Canvas引擎实例
-2. 进度变化时调用 `animateToProgress` 实现平滑过渡
-3. 用户特质参数变化时实时更新树形态
-4. 组件卸载时停止渲染循环
-
----
-
-## 📋 七、实施计划（Canvas方案）
-
-### 第一步：测试和验证Canvas引擎
-
-1. 访问 `http://localhost:3000/tree-demo/index.html`
-2. 测试8个阶段的形态变化是否清晰
-3. 测试3种学员类型预设的形态差异
-4. 验证无闪烁、平滑动画
-
-**当前状态**：✅ 已完成，测试页面可用
-
-### 第二步：更新数据库
-
-```sql
--- 添加新字段
-ALTER TABLE profiles
-ADD COLUMN IF NOT EXISTS total_experience_points INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS level_progress NUMERIC DEFAULT 0
-  CHECK (level_progress >= 0 AND level_progress <= 100),
-ADD COLUMN IF NOT EXISTS root_strength NUMERIC DEFAULT 0.7,
-ADD COLUMN IF NOT EXISTS trunk_strength NUMERIC DEFAULT 0.7,
-ADD COLUMN IF NOT EXISTS branch_richness NUMERIC DEFAULT 0.8,
-ADD COLUMN IF NOT EXISTS fruit_richness NUMERIC DEFAULT 0.5;
-
--- consciousness_level 字段已存在(1-7)
-```
-
-### 第三步：将Canvas引擎移植到React
-
-1. 创建 `lib/consciousness-tree/tree-canvas-engine.ts`
-   - 从 `public/tree-demo/tree-engine.js` 移植核心代码
-   - 改为TypeScript类封装
-   - 添加 `start()`, `stop()`, `animateToProgress()` 方法
-
-2. 创建 `components/consciousness-tree/CanvasTreeRenderer.tsx`
-   - React封装组件
-   - 使用useRef管理Canvas引擎实例
-   - 监听props变化并更新树状态
-
-3. 创建 `lib/consciousness-config.ts`
-   - 导出 `CONSCIOUSNESS_LEVEL_COLORS` 配置
-   - 工具函数：`getColorByProgress`, `calculateLevel` 等
-
-### 第四步：集成到Portal页面
-
-```typescript
-// app/portal/page.tsx
-import { CanvasTreeRenderer } from '@/components/consciousness-tree'
-
-// 读取用户数据
-const { data: profile } = await supabase
-  .from('profiles')
-  .select('consciousness_level, level_progress, root_strength, ...')
-  .eq('id', userId)
-  .single()
-
-// 渲染树
-<CanvasTreeRenderer
-  level={profile.consciousness_level}
-  progress={profile.level_progress}
-  rootStrength={profile.root_strength}
-  trunkStrength={profile.trunk_strength}
-  branchRichness={profile.branch_richness}
-  fruitRichness={profile.fruit_richness}
-/>
-```
-
-### 第五步：实现更新逻辑
-
-- Edge Function: `update-consciousness-tree`
-- 在各个行为触发点调用更新（完成课程、提交冥想、PBL项目等）
-
----
-
-## 🎯 八、成功标准
-
-✅ **视觉效果**
-- 树的绘制自然、有机，具有真实树的形态
-- 主根+侧根结构明显，根系不闪烁
-- 5条主枝清晰可见，叶子沿枝条分布
-- 8个阶段形态差异明显，用户肉眼可见
-- 7种颜色清晰区分7个等级（Level 1-7）
-
-✅ **用户体验**
-- 用户行为实时反映在树形态上（根、枝、叶、果的变化）
-- 个性化参数影响树的独特形态
-- 升级时树从种子重新生长，有重生感
-- 进度变化有平滑过渡动画
-- 呼吸效果让树有生命感
-
-✅ **技术实现**
-- Canvas渲染流畅，60fps无卡顿
-- 几何数据缓存，完全消除闪烁
-- 数据驱动，易于从Supabase集成
-- React组件封装良好，易于复用
-- 代码结构清晰，便于维护和扩展
-
-✅ **性能指标**
-- 初次加载渲染时间 < 100ms
-- 进度变化动画流畅 (60fps)
-- 内存占用稳定（无泄漏）
-- 支持多个树同时渲染（如社区页面）
-
----
-
-**本文档是意识树系统的唯一权威设计文档 v4.0 - Canvas 2D实现方案**
-
-**测试页面**：`http://localhost:3000/tree-demo/index.html`
-**核心代码**：`/public/tree-demo/tree-engine.js`
+--- END OF FILE CONSCIOUSNESS_TREE_MASTER_DESIGN.md ---
