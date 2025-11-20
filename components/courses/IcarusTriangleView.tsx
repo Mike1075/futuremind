@@ -236,12 +236,14 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                   animate={{
                     scale: 1,
                     opacity: 1,
-                    rotate: 360, // 公转
+                    rotate: selectedProject ? 0 : 360, // 查看详情时停止公转
                   }}
                   transition={{
                     scale: { duration: 0 },
                     opacity: { duration: 0 },
-                    rotate: { duration: 30, repeat: Infinity, ease: "linear" }
+                    rotate: selectedProject
+                      ? { duration: 0.5, ease: "easeOut" }
+                      : { duration: 60, repeat: Infinity, ease: "linear" }
                   }}
                   style={{
                     position: 'absolute',
@@ -289,13 +291,13 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           boxShadow: `0 0 ${isActive ? '30px' : '20px'} ${currentColors[0]}80`,
                         }}
                         animate={{
-                          rotate: -360, // 自转（反方向抵消公转）
+                          rotate: selectedProject ? 0 : -360, // 自转（反方向抵消公转），查看详情时停止
                         }}
-                        transition={{
-                          duration: 30, // 与公转同步，保持数字正立
-                          repeat: Infinity,
-                          ease: "linear",
-                        }}
+                        transition={
+                          selectedProject
+                            ? { duration: 0.5, ease: "easeOut" }
+                            : { duration: 60, repeat: Infinity, ease: "linear" }
+                        }
                         whileHover={{
                           scale: 1.3,
                           boxShadow: `0 0 50px ${currentColors[0]}`,
@@ -305,7 +307,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         <div className="text-4xl font-bold">{module.id}</div>
                       </motion.div>
 
-                      {/* 模块名称标签 - 仅在hover时显示，固定在节点上方 */}
+                      {/* 模块名称标签 - 仅在hover时显示，固定在节点外半圆径向延伸点 */}
                       <AnimatePresence>
                         {hoveredModule === module.id && (
                           <motion.div
@@ -322,14 +324,19 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             <motion.div
                               animate={{
                                 // 反向旋转抵消公转，保持标签水平
-                                rotate: -360,
+                                rotate: selectedProject ? 0 : -360,
                               }}
                               transition={{
-                                rotate: { duration: 30, repeat: Infinity, ease: "linear" },
+                                rotate: selectedProject
+                                  ? { duration: 0.5, ease: "easeOut" }
+                                  : { duration: 60, repeat: Infinity, ease: "linear" },
                               }}
                               style={{
-                                // 标签固定在节点正上方外侧
-                                transform: `translate(-50%, -60px)`,
+                                // 标签沿径向方向延伸，头部固定在节点外侧
+                                // 节点半径40px + 间隔15px = 55px
+                                // 根据节点角度计算径向偏移
+                                transform: `rotate(${angle}deg) translateY(-55px) rotate(-${angle}deg) translateX(-50%)`,
+                                transformOrigin: 'center bottom',
                               }}
                             >
                               <div
@@ -355,13 +362,15 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       animate={{
                         opacity: 1,
                         scale: 1,
-                        rotate: 360, // 跟随父节点公转
+                        rotate: selectedProject ? 0 : 360, // 跟随父节点公转，查看详情时停止
                       }}
                       exit={{ opacity: 0, scale: 0 }}
                       transition={{
                         opacity: { duration: 0.3 },
                         scale: { duration: 0.3 },
-                        rotate: { duration: 30, repeat: Infinity, ease: "linear" }
+                        rotate: selectedProject
+                          ? { duration: 0.5, ease: "easeOut" }
+                          : { duration: 60, repeat: Infinity, ease: "linear" }
                       }}
                       className="absolute"
                       style={{
@@ -382,10 +391,12 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           height: 0,
                         }}
                         animate={{
-                          rotate: -360, // 反向旋转保持子节点正立
+                          rotate: selectedProject ? 0 : -360, // 反向旋转保持子节点正立，查看详情时停止
                         }}
                         transition={{
-                          rotate: { duration: 30, repeat: Infinity, ease: "linear" },
+                          rotate: selectedProject
+                            ? { duration: 0.5, ease: "easeOut" }
+                            : { duration: 60, repeat: Infinity, ease: "linear" },
                         }}
                       >
                         {/* SVG - 绘制连接线 */}
@@ -500,15 +511,19 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{
                               scale: 1,
-                              opacity: 1,
-                              rotate: -360,  // 反向旋转保持正立
+                              opacity: selectedProject?.id === project.id ? [1, 0.7, 1] : 1,  // 被选中时闪烁
+                              rotate: selectedProject ? 0 : -360,  // 反向旋转保持正立，查看详情时停止
                             }}
                             exit={{ scale: 0, opacity: 0 }}
                             transition={{
                               delay: projectIndex * 0.1,
                               scale: { type: 'spring', stiffness: 300, damping: 20 },
-                              opacity: { duration: 0.3 },
-                              rotate: { duration: 30, repeat: Infinity, ease: "linear" },
+                              opacity: selectedProject?.id === project.id
+                                ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }  // 慢速闪烁
+                                : { duration: 0.3 },
+                              rotate: selectedProject
+                                ? { duration: 0.5, ease: "easeOut" }
+                                : { duration: 60, repeat: Infinity, ease: "linear" },
                             }}
                             style={{
                               position: 'absolute',

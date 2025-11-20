@@ -58,7 +58,6 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
   const [allProjects, setAllProjects] = useState<Project[]>([])
   const [activeTab, setActiveTab] = useState<'my' | 'explore'>('explore')
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadData()
@@ -66,7 +65,7 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
 
   const loadData = async () => {
     try {
-      // 只加载公开项目，后台静默加载
+      // 后台静默加载，不阻塞UI渲染
       const allResponse = await fetch('/api/pbl/public-projects')
 
       if (allResponse.ok) {
@@ -75,8 +74,6 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
       }
     } catch (error) {
       console.error('Failed to load projects:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -161,15 +158,6 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
     }
   ]
 
-  // 数据加载中,显示加载状态
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-      </div>
-    )
-  }
-
-  // 渲染伊卡洛斯三角形视图
+  // 直接渲染伊卡洛斯三角形视图，数据在后台加载
   return <IcarusTriangleView modules={MODULES} />
 }
