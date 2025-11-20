@@ -58,9 +58,9 @@ const getSubNodePositions = (count: number, centerX: number, centerY: number, ra
       })
     }
   } else if (count === 4) {
-    // 正方形：从右上角开始，顺时针，对角线顶点
+    // 正方形：从右上角开始，顺时针，对角线顶点（45°, 135°, 225°, 315°）
     for (let i = 0; i < 4; i++) {
-      const angle = (i * 90 - 45) * (Math.PI / 180) // -45度让第一个点在右上角对角线
+      const angle = (45 + i * 90) * (Math.PI / 180) // A=45°(右上), B=135°(左上), C=225°(左下), D=315°(右下)
       positions.push({
         x: centerX + radius * Math.cos(angle),
         y: centerY + radius * Math.sin(angle),
@@ -415,7 +415,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           if (count === 3) {
                             subAngle1 = projectIndex * 120 - 90
                           } else if (count === 4) {
-                            subAngle1 = projectIndex * 90 - 45  // 对角线顶点
+                            subAngle1 = 45 + projectIndex * 90  // 对角线顶点：45°, 135°, 225°, 315°
                           } else {
                             subAngle1 = (projectIndex * 360 / count) - 90
                           }
@@ -425,7 +425,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           if (count === 3) {
                             subAngle2 = nextIndex * 120 - 90
                           } else if (count === 4) {
-                            subAngle2 = nextIndex * 90 - 45  // 对角线顶点
+                            subAngle2 = 45 + nextIndex * 90  // 对角线顶点：45°, 135°, 225°, 315°
                           } else {
                             subAngle2 = (nextIndex * 360 / count) - 90
                           }
@@ -442,8 +442,11 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           const x2 = centerX + subRadiusPx * Math.cos(subAngle2 * Math.PI / 180)
                           const y2 = centerY + subRadiusPx * Math.sin(subAngle2 * Math.PI / 180)
 
-                          // 根据项目是否已完成判断线型：已完成=实线，未完成=虚线
-                          const strokeDasharray = project.is_completed ? "0" : "5 5"
+                          // 根据边连接的两个项目的完成状态判断线型：两个都完成=实线，否则=虚线
+                          const currentProject = module.projects[projectIndex]
+                          const nextProject = module.projects[nextIndex]
+                          const bothCompleted = currentProject.is_completed && nextProject.is_completed
+                          const strokeDasharray = bothCompleted ? "0" : "5 5"
 
                           return (
                             <motion.line
@@ -478,7 +481,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         if (count === 3) {
                           subAngle = projectIndex * 120 - 90
                         } else if (count === 4) {
-                          subAngle = projectIndex * 90 - 45  // 对角线顶点
+                          subAngle = 45 + projectIndex * 90  // 对角线顶点：45°, 135°, 225°, 315°
                         } else {
                           subAngle = (projectIndex * 360 / count) - 90
                         }
