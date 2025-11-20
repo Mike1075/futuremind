@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useAnimation } from 'framer-motion'
 import Link from 'next/link'
 
 interface Project {
@@ -90,6 +90,9 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
   const [activeModule, setActiveModule] = useState<number | null>(null)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [hoveredModule, setHoveredModule] = useState<number | null>(null)
+
+  // 全局旋转控制 - 控制所有模块的公转和自转
+  const shouldPause = activeModule !== null || selectedProject !== null
 
   const handleModuleClick = (moduleId: number) => {
     if (activeModule === moduleId) {
@@ -232,18 +235,16 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
               <div key={module.id}>
                 {/* 公转容器 - 定位在屏幕中心 */}
                 <motion.div
-                  initial={{ scale: 1, opacity: 1 }}
+                  initial={{ scale: 1, opacity: 1, rotate: 0 }}
                   animate={{
                     scale: 1,
                     opacity: 1,
-                    rotate: (isActive || selectedProject) ? 0 : 360, // 点击数字或查看详情时停止公转
+                    ...(!shouldPause && { rotate: 360 })  // 暂停时不设置rotate，保持当前位置
                   }}
                   transition={{
                     scale: { duration: 0 },
                     opacity: { duration: 0 },
-                    rotate: (isActive || selectedProject)
-                      ? { duration: 1, ease: "easeOut" }  // 点击时暂停1秒
-                      : { duration: 120, repeat: Infinity, ease: "linear" }  // 转速再慢一倍
+                    rotate: { duration: 120, repeat: Infinity, ease: "linear" }
                   }}
                   style={{
                     position: 'absolute',
@@ -291,13 +292,11 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           boxShadow: `0 0 ${isActive ? '30px' : '20px'} ${currentColors[0]}80`,
                         }}
                         animate={{
-                          rotate: (isActive || selectedProject) ? 0 : -360, // 自转（反方向抵消公转），点击数字或查看详情时停止
+                          ...(!shouldPause && { rotate: -360 })  // 自转（反方向抵消公转），暂停时保持当前位置
                         }}
-                        transition={
-                          (isActive || selectedProject)
-                            ? { duration: 1, ease: "easeOut" }
-                            : { duration: 120, repeat: Infinity, ease: "linear" }
-                        }
+                        transition={{
+                          rotate: { duration: 120, repeat: Infinity, ease: "linear" }
+                        }}
                         whileHover={{
                           scale: 1.3,
                           boxShadow: `0 0 50px ${currentColors[0]}`,
@@ -324,12 +323,10 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             <motion.div
                               animate={{
                                 // 反向旋转抵消公转，保持标签水平
-                                rotate: (isActive || selectedProject) ? 0 : -360,
+                                ...(!shouldPause && { rotate: -360 })
                               }}
                               transition={{
-                                rotate: (isActive || selectedProject)
-                                  ? { duration: 1, ease: "easeOut" }
-                                  : { duration: 120, repeat: Infinity, ease: "linear" },
+                                rotate: { duration: 120, repeat: Infinity, ease: "linear" }
                               }}
                               style={{
                                 // 标签沿径向方向延伸，头部固定在节点外侧
@@ -386,12 +383,10 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           height: 0,
                         }}
                         animate={{
-                          rotate: (isActive || selectedProject) ? 0 : -360, // 反向旋转保持子节点正立，点击数字或查看详情时停止
+                          ...(!shouldPause && { rotate: -360 })  // 反向旋转保持子节点正立，暂停时保持当前位置
                         }}
                         transition={{
-                          rotate: (isActive || selectedProject)
-                            ? { duration: 1, ease: "easeOut" }
-                            : { duration: 120, repeat: Infinity, ease: "linear" },
+                          rotate: { duration: 120, repeat: Infinity, ease: "linear" }
                         }}
                       >
                         {/* SVG - 绘制连接线 */}
@@ -507,7 +502,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             animate={{
                               scale: 1,
                               opacity: selectedProject?.id === project.id ? [1, 0.7, 1] : 1,  // 被选中时闪烁
-                              rotate: (isActive || selectedProject) ? 0 : -360,  // 反向旋转保持正立，点击数字或查看详情时停止
+                              ...(!shouldPause && { rotate: -360 })  // 反向旋转保持正立，暂停时保持当前位置
                             }}
                             exit={{ scale: 0, opacity: 0 }}
                             transition={{
@@ -516,9 +511,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               opacity: selectedProject?.id === project.id
                                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }  // 慢速闪烁
                                 : { duration: 0.3 },
-                              rotate: (isActive || selectedProject)
-                                ? { duration: 1, ease: "easeOut" }
-                                : { duration: 120, repeat: Infinity, ease: "linear" },
+                              rotate: { duration: 120, repeat: Infinity, ease: "linear" }
                             }}
                             style={{
                               position: 'absolute',
