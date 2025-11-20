@@ -219,9 +219,9 @@ export const generateConsciousnessTree = (
     }
   }
 
-  // 生成树干
+  // 生成树干（调整起始位置让根部完整显示）
   const startX = width / 2
-  const startY = height * 0.8
+  const startY = height * 0.65  // 从0.8改为0.65，向上移动让根部有足够空间
 
   branch(startX, startY, trunkLength, 0, 1, depth, false)
 
