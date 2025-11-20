@@ -57,7 +57,15 @@ serve(async (req) => {
     const totalOnlineMinutes = behaviorStats?.reduce((sum, s) => sum + (s.total_online_minutes || 0), 0) || 0
     const totalLogins = behaviorStats?.reduce((sum, s) => sum + (s.login_count || 0), 0) || 0
     const totalConversationTurns = behaviorStats?.reduce((sum, s) => sum + (s.conversation_turns || 0), 0) || 0
-    const totalSubmissions = behaviorStats?.reduce((sum, s) => sum + (s.submissions_count || 0), 0) || 0
+
+    // 注意：user_behavior_stats表可能为空，直接从user_submissions查询总提交数
+    const { count: totalSubmissionsCount } = await supabase
+      .from('user_submissions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user_id)
+      .gte('submitted_at', thirtyDaysAgo.toISOString())
+
+    const totalSubmissions = totalSubmissionsCount || 0
 
     // 1.2 与Gaia的对话深度（最近20条消息）
     const { data: conversations } = await supabase
@@ -79,7 +87,11 @@ serve(async (req) => {
       .order('submitted_at', { ascending: false })
       .limit(10)
 
-    const meditationCount = submissions?.filter(s => s.submission_type === 'meditation_note').length || 0
+    // 冥想/反思作业（支持meditation_note和reflection类型）
+    const meditationCount = submissions?.filter(s =>
+      s.submission_type === 'meditation_note' || s.submission_type === 'reflection'
+    ).length || 0
+
     const avgScore = submissions?.length
       ? submissions.reduce((sum, s) => sum + (s.score || 0), 0) / submissions.length
       : 0
