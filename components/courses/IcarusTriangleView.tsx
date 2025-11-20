@@ -226,12 +226,12 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
               <div key={module.id}>
                 {/* 主圆形节点 - 在圆周上公转 */}
                 <motion.div
-                  initial={{ scale: 0, opacity: 0 }}
+                  initial={{ scale: 1, opacity: 1 }}
                   animate={{
                     scale: 1,
                     opacity: 1,
                   }}
-                  transition={{ delay: index * 0.2, type: 'spring' }}
+                  transition={{ duration: 0 }}
                   style={{
                     position: 'absolute',
                     left: '50%',

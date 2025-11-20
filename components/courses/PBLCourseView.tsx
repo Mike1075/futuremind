@@ -68,16 +68,8 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
     try {
       setLoading(true)
 
-      // 并行加载我的项目和所有公开项目
-      const [myResponse, allResponse] = await Promise.all([
-        fetch('/api/pbl/my-projects?status=active'),
-        fetch('/api/pbl/public-projects')
-      ])
-
-      if (myResponse.ok) {
-        const myData = await myResponse.json()
-        setMyProjects(myData.projects || [])
-      }
+      // 只加载公开项目，大幅提升加载速度
+      const allResponse = await fetch('/api/pbl/public-projects')
 
       if (allResponse.ok) {
         const allData = await allResponse.json()
@@ -174,7 +166,7 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500/30 border-t-purple-500"></div>
       </div>
     )
   }
