@@ -529,7 +529,6 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               position: 'absolute',
                               left: `${xOffset}vmin`,
                               top: `${yOffset}vmin`,
-                              transform: 'translate(-50%, -50%)',
                             }}
                             className="cursor-pointer"
                             onClick={(e) => {
@@ -537,54 +536,51 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               setSelectedProject(project)
                             }}
                           >
-                            {/* 子圆形节点 */}
-                            <motion.div
-                              className="relative"
-                              whileHover={{ scale: 1.3 }}
-                              whileTap={{ scale: 0.85 }}
+                            {/* 子圆形节点容器 - 使用 translate 居中 */}
+                            <div
+                              style={{
+                                position: 'relative',
+                                transform: 'translate(-50%, -50%)',
+                              }}
                             >
-                              {/* 外层发光圆环 */}
                               <motion.div
-                                className="absolute inset-0 rounded-full"
-                                style={{
-                                  background: `linear-gradient(135deg, ${gradientString})`,
-                                  filter: 'blur(10px)',
-                                }}
-                                animate={{
-                                  scale: [1, 1.2, 1],
-                                  opacity: [0.5, 0.8, 0.5],
-                                }}
-                                transition={{
-                                  duration: 2,
-                                  repeat: Infinity,
-                                  ease: "easeInOut",
-                                }}
-                              />
-
-                              {/* 主节点 */}
-                              <motion.div
-                                className="relative w-12 h-12 rounded-full flex items-center justify-center text-white shadow-2xl"
-                                style={{
-                                  background: `linear-gradient(135deg, ${gradientString})`,
-                                  border: selectedProject?.id === project.id
-                                    ? '2px solid rgba(255,255,255,1)'
-                                    : '2px solid rgba(255,255,255,0.5)',
-                                  boxShadow: `0 0 15px ${currentColors[0]}80`,
-                                }}
-                                whileHover={{
-                                  boxShadow: `0 0 25px ${currentColors[0]}`,
-                                  rotate: [0, 10, -10, 0],
-                                }}
-                                transition={{
-                                  rotate: {
-                                    duration: 0.5,
-                                    ease: "easeInOut",
-                                  }
-                                }}
+                                className="relative"
+                                whileHover={{ scale: 1.3 }}
+                                whileTap={{ scale: 0.85 }}
                               >
-                                <span className="text-xl font-bold">{letter}</span>
+                                {/* 外层发光圆环 */}
+                                <motion.div
+                                  className="absolute inset-0 rounded-full"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${gradientString})`,
+                                    filter: 'blur(10px)',
+                                  }}
+                                  animate={{
+                                    scale: [1, 1.2, 1],
+                                    opacity: [0.5, 0.8, 0.5],
+                                  }}
+                                  transition={{
+                                    duration: 2,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                  }}
+                                />
+
+                                {/* 主节点 */}
+                                <div
+                                  className="relative w-12 h-12 rounded-full flex items-center justify-center text-white shadow-2xl"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${gradientString})`,
+                                    border: selectedProject?.id === project.id
+                                      ? '2px solid rgba(255,255,255,1)'
+                                      : '2px solid rgba(255,255,255,0.5)',
+                                    boxShadow: `0 0 15px ${currentColors[0]}80`,
+                                  }}
+                                >
+                                  <span className="text-xl font-bold">{letter}</span>
+                                </div>
                               </motion.div>
-                            </motion.div>
+                            </div>
                           </motion.div>
                         )
                       })}
