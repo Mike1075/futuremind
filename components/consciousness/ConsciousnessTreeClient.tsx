@@ -1,10 +1,23 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { ConsciousnessTreeView, TreeTechParams } from './ConsciousnessTreeView'
+import { ConsciousnessTreeCanvas } from './ConsciousnessTreeCanvas'
+import { TreeParams } from '@/lib/utils/consciousnessTreeGenerator'
 import { ArrowLeft, Sparkles } from 'lucide-react'
+
+// 技术参数类型（与TreeParams一致）
+export interface TreeTechParams extends TreeParams {}
+
+// 默认生长数据（测试模式使用固定值）
+const DEFAULT_GROWTH_DATA = {
+  roots: { growth_value: 50, is_solid: true },
+  trunk: { growth_value: 60, is_solid: true },
+  branches: { growth_value: 70, is_solid: true },
+  leaves: { growth_value: 80, is_solid: true },
+  fruits: { growth_value: 40, is_solid: false },
+}
 
 interface ConsciousnessTreeClientProps {
   userId: string
@@ -32,9 +45,6 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
     leafDensity: 0.5,
     fruitProbability: 0.05,
   })
-
-  // 防抖定时器（暂未使用，Canvas已优化）
-  const debounceTimerRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // 手动触发AI真实计算
   const handleRealCalculation = async () => {
@@ -66,15 +76,10 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
     }
   }
 
-  // 技术参数改变处理（带防抖优化）
-  const handleTechParamChange = useCallback((param: keyof TreeTechParams, value: number) => {
-    // 立即更新显示值（不防抖）
+  // 技术参数改变处理（对标参考网站的简单方式）
+  const handleTechParamChange = (param: keyof TreeTechParams, value: number) => {
     setTechParams(prev => ({ ...prev, [param]: value }))
-
-    // 防抖：避免过于频繁的Canvas重绘
-    // 注意：这里不需要防抖，因为Canvas已经使用requestAnimationFrame优化
-    // setState本身就是批量更新的，React会自动优化
-  }, [])
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -112,7 +117,10 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
               className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
             >
               <div className="relative h-[800px] w-full bg-black rounded-lg">
-                <ConsciousnessTreeView userId={userId} techParams={techParams} />
+                <ConsciousnessTreeCanvas
+                  growthData={DEFAULT_GROWTH_DATA}
+                  techParams={techParams}
+                />
               </div>
             </motion.div>
           </div>

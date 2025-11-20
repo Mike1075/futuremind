@@ -1,17 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   generateConsciousnessTree,
   TreeParams,
   TreeGrowthData,
 } from '@/lib/utils/consciousnessTreeGenerator'
-import { TreeTechParams } from './ConsciousnessTreeView'
 
 interface ConsciousnessTreeCanvasProps {
   growthData: TreeGrowthData
-  params?: Partial<TreeParams>
-  techParams?: TreeTechParams
+  techParams?: Partial<TreeParams>
 }
 
 // 默认参数（经典红色能量树）
@@ -29,65 +27,52 @@ const DEFAULT_PARAMS: TreeParams = {
   fruitProbability: 0.08,
 }
 
-export function ConsciousnessTreeCanvas({ growthData, params, techParams }: ConsciousnessTreeCanvasProps) {
+export function ConsciousnessTreeCanvas({ growthData, techParams }: ConsciousnessTreeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animationFrameRef = useRef<number | undefined>(undefined)
-
-  // 使用useMemo缓存合并后的参数，避免不必要的重渲染
-  const mergedParams = useMemo(() => {
-    return { ...DEFAULT_PARAMS, ...params, ...techParams }
-  }, [params, techParams])
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
     const ctx = canvas.getContext('2d', {
-      alpha: false, // 禁用alpha通道，提升性能
+      alpha: false,
       willReadFrequently: false
     })
     if (!ctx) return
 
-    let isDrawing = false
+    // 直接合并参数（对标参考网站的简单方式）
+    const params = { ...DEFAULT_PARAMS, ...techParams }
 
     const draw = () => {
-      if (isDrawing) return
-      isDrawing = true
+      // 清空画布
+      ctx.fillStyle = '#000000'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // 使用requestAnimationFrame确保平滑渲染
-      animationFrameRef.current = requestAnimationFrame(() => {
-        // 清空画布（纯黑背景）
-        ctx.fillStyle = '#000000'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
+      // 设置发光效果
+      ctx.globalCompositeOperation = 'lighter'
 
-        // 设置发光效果
-        ctx.globalCompositeOperation = 'lighter'
+      // 生成并绘制树
+      const particles = generateConsciousnessTree(
+        params,
+        growthData,
+        canvas.width,
+        canvas.height
+      )
 
-        // 生成并绘制树
-        const particles = generateConsciousnessTree(
-          mergedParams,
-          growthData,
-          canvas.width,
-          canvas.height
-        )
+      // 绘制粒子
+      particles.forEach((p) => {
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        ctx.fillStyle = p.color
+        ctx.fill()
 
-        // 绘制每个粒子
-        particles.forEach((p) => {
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-          ctx.fillStyle = p.color
+        // 增强发光效果
+        if (p.color.includes('70%') || p.color.includes('72%')) {
+          ctx.shadowBlur = 15
+          ctx.shadowColor = p.color
           ctx.fill()
-
-          // 增强发光效果（高明度粒子）
-          if (p.color.includes('70%') || p.color.includes('72%')) {
-            ctx.shadowBlur = 15
-            ctx.shadowColor = p.color
-            ctx.fill()
-            ctx.shadowBlur = 0
-          }
-        })
-
-        isDrawing = false
+          ctx.shadowBlur = 0
+        }
       })
     }
 
@@ -102,11 +87,8 @@ export function ConsciousnessTreeCanvas({ growthData, params, techParams }: Cons
 
     return () => {
       window.removeEventListener('resize', resize)
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-      }
     }
-  }, [growthData, mergedParams])
+  }, [growthData, techParams])
 
   return (
     <canvas
