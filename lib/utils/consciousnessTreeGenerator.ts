@@ -157,7 +157,7 @@ export const generateConsciousnessTree = (
     particles.push({ x, y, size, color })
   }
 
-  // 绘制线条（粒子组成）
+  // 绘制线条（粒子组成）- 对标网站简单实现
   const drawLine = (
     x1: number,
     y1: number,
@@ -167,20 +167,16 @@ export const generateConsciousnessTree = (
     type: 'root' | 'trunk' | 'branch'
   ) => {
     const dist = Math.hypot(x2 - x1, y2 - y1)
-    const steps = Math.max(dist / (particleSize * 0.5), 8) // 增加粒子密度
+    const steps = Math.max(dist / (particleSize * 0.8), 5) // 对标网站的参数
 
     for (let i = 0; i <= steps; i++) {
       const t = i / steps
-      // 根据宽度添加多层粒子，让主干更粗壮
-      const layers = Math.max(1, Math.floor(width / 3))
+      const jitter = (Math.random() - 0.5) * width
+      const px = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 2
+      const py = y1 + (y2 - y1) * t + jitter
 
-      for (let layer = 0; layer < layers; layer++) {
-        const jitter = (Math.random() - 0.5) * width
-        const px = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 2
-        const py = y1 + (y2 - y1) * t + jitter
-
-        addParticle(px, py, type, width / 4) // 增大粒子尺寸
-      }
+      // 通过增大粒子尺寸实现主干粗壮，而不是增加粒子数量
+      addParticle(px, py, type, width / 3) // 增大尺寸倍数
     }
   }
 
