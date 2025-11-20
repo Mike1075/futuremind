@@ -51,8 +51,12 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
   // 手动触发AI真实计算
   const handleRealCalculation = async () => {
     try {
+      console.log('[真实计算] 开始调用Edge Function...')
       setIsEvaluating(true)
       setMessage(null)
+
+      console.log('[真实计算] 发送请求到:', 'https://lvjezsnwesyblnlkkirz.supabase.co/functions/v1/evaluate-consciousness-tree')
+      console.log('[真实计算] 用户ID:', userId)
 
       const response = await fetch('https://lvjezsnwesyblnlkkirz.supabase.co/functions/v1/evaluate-consciousness-tree', {
         method: 'POST',
@@ -63,19 +67,33 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
         body: JSON.stringify({ user_id: userId }),
       })
 
+      console.log('[真实计算] 响应状态:', response.status, response.statusText)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[真实计算] 请求失败，响应内容:', errorText)
+        setMessage({ type: 'error', text: `请求失败 (${response.status}): ${errorText.substring(0, 100)}` })
+        return
+      }
+
       const data = await response.json()
+      console.log('[真实计算] 响应数据:', data)
 
       if (data.success) {
+        console.log('[真实计算] 成功！分析数据:', data.analysis)
         setMessage({ type: 'success', text: '✅ 真实计算完成！查看下方AI分析详情' })
         setAnalysisData(data.analysis)
         setShowAnalysis(true)
       } else {
+        console.error('[真实计算] 失败:', data.error)
         setMessage({ type: 'error', text: data.error || '计算失败' })
       }
     } catch (error) {
-      console.error('真实计算失败:', error)
-      setMessage({ type: 'error', text: '网络错误' })
+      console.error('[真实计算] 发生异常:', error)
+      console.error('[真实计算] 错误详情:', error instanceof Error ? error.message : String(error))
+      setMessage({ type: 'error', text: `异常: ${error instanceof Error ? error.message : '未知错误'}` })
     } finally {
+      console.log('[真实计算] 完成，重置loading状态')
       setIsEvaluating(false)
     }
   }
