@@ -13,7 +13,7 @@ export interface TreeTechParams extends TreeParams {}
 // 默认生长数据（测试模式使用固定值）
 const DEFAULT_GROWTH_DATA = {
   roots: { growth_value: 50, is_solid: true },
-  trunk: { growth_value: 20, is_solid: true },  // 从60改为20，保持暗红色
+  trunk: { growth_value: 10, is_solid: true },  // 从20改为10，更深的暗红色
   branches: { growth_value: 70, is_solid: true },
   leaves: { growth_value: 80, is_solid: true },
   fruits: { growth_value: 40, is_solid: false },
@@ -41,7 +41,7 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
     rootDepth: 6,
     rootSpread: 30,
     particleSize: 2,
-    glowIntensity: 0.5,
+    glowIntensity: 0.4,  // 从0.5降到0.4，减少发光避免变白
     leafDensity: 0.5,
     fruitProbability: 0.05,
   })

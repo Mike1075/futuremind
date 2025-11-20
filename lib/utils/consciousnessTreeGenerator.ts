@@ -93,7 +93,7 @@ const getColor = (
   const saturation = baseSaturation + normalized * (100 - baseSaturation)
 
   // 虚实状态和发光强度共同控制透明度
-  const baseAlpha = isSolid ? 0.9 : 0.3
+  const baseAlpha = isSolid ? 0.5 : 0.3  // 从0.9降到0.5，避免粒子重叠变白
   const alpha = baseAlpha * glowIntensity
 
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
