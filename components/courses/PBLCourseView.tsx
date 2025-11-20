@@ -56,7 +56,6 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
   const router = useRouter()
   const [myProjects, setMyProjects] = useState<UserSelectedProject[]>([])
   const [allProjects, setAllProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'my' | 'explore'>('explore')
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
 
@@ -66,9 +65,7 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
 
   const loadData = async () => {
     try {
-      setLoading(true)
-
-      // 只加载公开项目，大幅提升加载速度
+      // 只加载公开项目，后台静默加载
       const allResponse = await fetch('/api/pbl/public-projects')
 
       if (allResponse.ok) {
@@ -77,8 +74,6 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
       }
     } catch (error) {
       console.error('Failed to load projects:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -163,14 +158,6 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
     }
   ]
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500/30 border-t-purple-500"></div>
-      </div>
-    )
-  }
-
-  // 使用新的三角形视图
+  // 直接渲染，无需等待加载完成
   return <IcarusTriangleView modules={MODULES} />
 }
