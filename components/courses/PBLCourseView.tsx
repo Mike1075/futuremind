@@ -21,6 +21,8 @@ interface Project {
   week_plan?: any[] | null
   participant_count?: number
   is_system?: boolean
+  is_completed?: boolean  // 用户是否完成该项目
+  progress?: number  // 项目进度 (0-100)
   creator?: {
     id: string
     username: string
@@ -65,12 +67,42 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
 
   const loadData = async () => {
     try {
-      // 后台静默加载，不阻塞UI渲染
-      const allResponse = await fetch('/api/pbl/public-projects')
+      // 并行加载所有项目和用户的项目数据
+      const [allResponse, myResponse] = await Promise.all([
+        fetch('/api/pbl/public-projects'),
+        fetch('/api/pbl/my-projects')
+      ])
 
       if (allResponse.ok) {
         const allData = await allResponse.json()
-        setAllProjects(allData.projects || [])
+        let projects = allData.projects || []
+
+        // 如果成功获取用户项目数据，合并完成状态
+        if (myResponse.ok) {
+          const myData = await myResponse.json()
+          const myProjectsData = myData.projects || []
+          setMyProjects(myProjectsData)
+
+          // 创建项目完成状态映射
+          const completionMap = new Map(
+            myProjectsData.map((mp: UserSelectedProject) => [
+              mp.course_contents.id,
+              {
+                is_completed: mp.status === 'completed' || mp.completion_percentage >= 100,
+                progress: mp.completion_percentage
+              }
+            ])
+          )
+
+          // 为所有项目添加完成状态
+          projects = projects.map((p: Project) => ({
+            ...p,
+            is_completed: completionMap.get(p.id)?.is_completed || false,
+            progress: completionMap.get(p.id)?.progress || 0
+          }))
+        }
+
+        setAllProjects(projects)
       }
     } catch (error) {
       console.error('Failed to load projects:', error)
