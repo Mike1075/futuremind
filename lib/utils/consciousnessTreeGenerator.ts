@@ -157,7 +157,7 @@ export const generateConsciousnessTree = (
     particles.push({ x, y, size, color })
   }
 
-  // 绘制线条（粒子组成）- 对标网站简单实现
+  // 绘制线条（粒子组成）- 正确实现：固定粒子大小，用数量控制粗细
   const drawLine = (
     x1: number,
     y1: number,
@@ -167,16 +167,25 @@ export const generateConsciousnessTree = (
     type: 'root' | 'trunk' | 'branch'
   ) => {
     const dist = Math.hypot(x2 - x1, y2 - y1)
-    const steps = Math.max(dist / (particleSize * 0.8), 5) // 对标网站的参数
+    const steps = Math.max(dist / (particleSize * 0.8), 5)
+
+    // 计算需要多少层粒子并列排布（根据宽度）
+    const layers = Math.max(1, Math.floor(width / particleSize))
 
     for (let i = 0; i <= steps; i++) {
       const t = i / steps
-      const jitter = (Math.random() - 0.5) * width
       const px = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 2
-      const py = y1 + (y2 - y1) * t + jitter
+      const baseY = y1 + (y2 - y1) * t
 
-      // 通过增大粒子尺寸实现主干粗壮，而不是增加粒子数量
-      addParticle(px, py, type, width / 1.2) // 从width/3改为width/1.2，让主干更粗
+      // 在width范围内均匀分布layers层粒子（并列不重叠）
+      for (let layer = 0; layer < layers; layer++) {
+        // 均匀分布：从-width/2到+width/2
+        const offset = (layer / Math.max(layers - 1, 1) - 0.5) * width
+        const py = baseY + offset
+
+        // 粒子大小固定为particleSize（不再乘以倍数）
+        addParticle(px, py, type, 1)
+      }
     }
   }
 
