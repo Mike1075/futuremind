@@ -220,7 +220,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
           {/* 主节点 - 3个模块在圆周上公转和自转 */}
           {modules.map((module, index) => {
             const isActive = activeModule === module.id
-            const subRadiusVmin = 12  // 子节点距离父节点中心的半径（vmin单位）
+            const subRadiusVmin = 10  // 子节点距离父节点中心的半径（vmin单位，约100px）
             const angle = index * 120 // 三等分：0度、120度、240度
             const currentColors = MODULE_COLORS[index] || MODULE_COLORS[0]
             const gradientString = `${currentColors[0]}, ${currentColors[1]}`
@@ -322,7 +322,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               height: 0,
                             }}
                           >
-                            {/* 径向延伸容器 - 旋转到节点角度 */}
+                            {/* 径向延伸容器 - 旋转到节点实际角度（angle - 90） */}
                             <div
                               style={{
                                 position: 'absolute',
@@ -330,7 +330,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                                 top: 0,
                                 width: 0,
                                 height: 0,
-                                transform: `rotate(${angle}deg)`,
+                                transform: `rotate(${angle - 90}deg)`,  // 使用实际节点角度
                                 transformOrigin: '0 0',
                               }}
                             >
@@ -345,9 +345,9 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                                 }}
                                 style={{
                                   position: 'absolute',
-                                  left: '55px',  // 节点半径40px + 间隔15px
+                                  left: '5.5vmin',  // 节点半径约4vmin(40px) + 间隔1.5vmin
                                   top: 0,
-                                  transform: `rotate(-${angle}deg) translateY(-50%)`,  // 反向旋转让内容水平，并垂直居中
+                                  transform: `rotate(-${angle - 90}deg) translateY(-50%)`,  // 反向旋转让内容水平，并垂直居中
                                   transformOrigin: 'left center',  // 以左边（头部）为固定点
                                 }}
                               >
