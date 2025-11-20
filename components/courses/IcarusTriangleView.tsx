@@ -106,7 +106,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
   const radius = 38 // 扩大半径到38%，让圆圈更大
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen bg-black text-white relative overflow-y-auto">
       {/* 星空背景 - 优化性能，减少星星数量 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(50)].map((_, i) => {
@@ -253,14 +253,16 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       position: 'absolute',
                       left: 0,
                       top: 0,
+                      width: '100%',
+                      height: '100%',
                     }}
                   >
-                    {/* 节点定位在圆周上 */}
+                    {/* 节点定位在圆周上 - 圆心精确在圆周线上 */}
                     <motion.div
                       style={{
                         position: 'absolute',
-                        left: `${radius * Math.cos((angle - 90) * Math.PI / 180) * 2}vh`,
-                        top: `${radius * Math.sin((angle - 90) * Math.PI / 180) * 2}vh`,
+                        left: `calc(50% + ${radius * Math.cos((angle - 90) * Math.PI / 180)}%)`,
+                        top: `calc(50% + ${radius * Math.sin((angle - 90) * Math.PI / 180)}%)`,
                         transform: 'translate(-50%, -50%)',
                       }}
                       className="cursor-pointer group"
@@ -308,80 +310,120 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         <div className="text-4xl font-bold">{module.id}</div>
                       </motion.div>
 
-                      {/* 悬停时显示模块名称标签 */}
-                      <AnimatePresence>
-                        {hoveredModule === module.id && (
-                          <motion.div
-                            initial={{ opacity: 0, x: 10, y: 10 }}
-                            animate={{ opacity: 1, x: 20, y: 20 }}
-                            exit={{ opacity: 0, x: 10, y: 10 }}
-                            transition={{ duration: 0.2 }}
-                            className="absolute top-0 left-full ml-4 pointer-events-none whitespace-nowrap"
-                            style={{ zIndex: 50 }}
-                          >
-                            <div className="bg-gray-900/95 backdrop-blur-sm border-2 border-purple-500/50 rounded-lg px-4 py-2 text-sm font-medium shadow-xl">
-                              {module.name}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      {/* 模块名称标签 - 始终显示，指向圆心反方向 */}
+                      <motion.div
+                        className="absolute pointer-events-none whitespace-nowrap"
+                        style={{
+                          // 计算标签位置：从节点中心向外延伸
+                          left: '50%',
+                          top: '50%',
+                          transformOrigin: '0 50%',
+                        }}
+                        animate={{
+                          // 反向旋转抵消公转，保持标签朝向正确
+                          rotate: -360,
+                          // 标签指向圆心的反方向（从圆心指向外）
+                          x: `${Math.cos((angle - 90) * Math.PI / 180) * 60}px`,
+                          y: `${Math.sin((angle - 90) * Math.PI / 180) * 60}px`,
+                        }}
+                        transition={{
+                          rotate: { duration: 30, repeat: Infinity, ease: "linear" },
+                          x: { duration: 0 },
+                          y: { duration: 0 },
+                        }}
+                      >
+                        <div
+                          className="bg-gray-900/95 backdrop-blur-sm border-2 border-purple-500/50 rounded-lg px-3 py-1 text-xs font-medium shadow-xl"
+                          style={{
+                            // 让文字开头指向圆心：旋转标签使其与半径方向一致
+                            transform: `rotate(${angle}deg)`,
+                          }}
+                        >
+                          {module.name}
+                        </div>
+                      </motion.div>
                     </motion.div>
                   </motion.div>
                 </motion.div>
 
-                {/* 子节点 - 项目阶段 */}
+                {/* 子节点容器 - 相对于父节点定位 */}
                 <AnimatePresence>
                   {isActive && (
-                    <>
-                      {/* SVG容器 - 用于绘制直线（虚线/实线） */}
+                    <motion.div
+                      className="absolute"
+                      style={{
+                        left: '50%',
+                        top: '50%',
+                        width: 0,
+                        height: 0,
+                        zIndex: 15,
+                      }}
+                      animate={{
+                        // 跟随公转
+                        rotate: 360,
+                      }}
+                      transition={{
+                        duration: 30,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                    >
+                      {/* SVG - 绘制连接线 */}
                       <svg
                         className="absolute pointer-events-none"
                         style={{
-                          left: 0,
-                          top: 0,
-                          width: '100%',
-                          height: '100%',
-                          zIndex: 5,
+                          left: `calc(${radius * Math.cos((angle - 90) * Math.PI / 180)}% - 200px)`,
+                          top: `calc(${radius * Math.sin((angle - 90) * Math.PI / 180)}% - 200px)`,
+                          width: '400px',
+                          height: '400px',
+                          overflow: 'visible',
                         }}
                       >
                         <defs>
-                          {/* 发光滤镜 */}
-                          <filter id="glow">
+                          <filter id={`glow-${module.id}`}>
                             <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
                             <feMerge>
                               <feMergeNode in="coloredBlur"/>
                               <feMergeNode in="SourceGraphic"/>
                             </feMerge>
                           </filter>
-                          {/* 渐变定义 */}
                           <linearGradient id={`gradient-${module.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stopColor={currentColors[0]} stopOpacity="0.8" />
                             <stop offset="100%" stopColor={currentColors[1]} stopOpacity="0.8" />
                           </linearGradient>
                         </defs>
                         {module.projects.map((project, projectIndex) => {
-                          // 计算主节点的屏幕位置
-                          const mainNodeX = 50 + radius * Math.cos((angle - 90) * Math.PI / 180) * 2
-                          const mainNodeY = 50 + radius * Math.sin((angle - 90) * Math.PI / 180) * 2
+                          // 计算子节点相对位置（像素）
+                          const count = module.projects.length
+                          let subAngle
+                          if (count === 3) {
+                            subAngle = projectIndex * 120 - 90
+                          } else if (count === 4) {
+                            subAngle = projectIndex * 90 - 90
+                          } else {
+                            subAngle = (projectIndex * 360 / count) - 90
+                          }
 
-                          // 计算子节点的相对位置
-                          const positions = getSubNodePositions(module.projects.length, mainNodeX, mainNodeY, subRadius)
-                          const pos = positions[projectIndex]
-                          const pathData = generateLinePath(mainNodeX, mainNodeY, pos.x, pos.y)
+                          const subRadiusPx = 80  // 缩小到80px
+                          const x1 = 200  // 中心点
+                          const y1 = 200
+                          const x2 = 200 + subRadiusPx * Math.cos(subAngle * Math.PI / 180)
+                          const y2 = 200 + subRadiusPx * Math.sin(subAngle * Math.PI / 180)
 
-                          // 根据项目进度决定实线或虚线：进度>=80%显示实线，否则显示虚线
                           const progress = project.progress || 0
                           const strokeDasharray = progress >= 80 ? "0" : "5 5"
 
                           return (
-                            <motion.path
+                            <motion.line
                               key={`line-${project.id}`}
-                              d={pathData}
-                              fill="none"
+                              x1={x1}
+                              y1={y1}
+                              x2={x2}
+                              y2={y2}
                               stroke={`url(#gradient-${module.id})`}
                               strokeWidth="2"
                               strokeDasharray={strokeDasharray}
-                              filter="url(#glow)"
+                              filter={`url(#glow-${module.id})`}
                               initial={{ pathLength: 0, opacity: 0 }}
                               animate={{ pathLength: 1, opacity: 0.8 }}
                               exit={{ pathLength: 0, opacity: 0 }}
@@ -394,16 +436,24 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         })}
                       </svg>
 
+                      {/* 子节点 */}
                       {module.projects.map((project, projectIndex) => {
-                        const letter = String.fromCharCode(65 + projectIndex)  // A, B, C, D
+                        const letter = String.fromCharCode(65 + projectIndex)
 
-                        // 计算主节点的屏幕位置
-                        const mainNodeX = 50 + radius * Math.cos((angle - 90) * Math.PI / 180) * 2
-                        const mainNodeY = 50 + radius * Math.sin((angle - 90) * Math.PI / 180) * 2
+                        // 计算子节点位置
+                        const count = module.projects.length
+                        let subAngle
+                        if (count === 3) {
+                          subAngle = projectIndex * 120 - 90
+                        } else if (count === 4) {
+                          subAngle = projectIndex * 90 - 90
+                        } else {
+                          subAngle = (projectIndex * 360 / count) - 90
+                        }
 
-                        // 计算子节点的位置
-                        const positions = getSubNodePositions(module.projects.length, mainNodeX, mainNodeY, subRadius)
-                        const pos = positions[projectIndex]
+                        const subRadiusPx = 80  // 80px半径
+                        const xOffset = subRadiusPx * Math.cos(subAngle * Math.PI / 180)
+                        const yOffset = subRadiusPx * Math.sin(subAngle * Math.PI / 180)
 
                         return (
                           <motion.div
@@ -412,20 +462,20 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             animate={{
                               scale: 1,
                               opacity: 1,
+                              rotate: -360,  // 反向旋转保持正立
                             }}
                             exit={{ scale: 0, opacity: 0 }}
                             transition={{
                               delay: projectIndex * 0.1,
-                              type: 'spring',
-                              stiffness: 300,
-                              damping: 20,
+                              scale: { type: 'spring', stiffness: 300, damping: 20 },
+                              opacity: { duration: 0.3 },
+                              rotate: { duration: 30, repeat: Infinity, ease: "linear" },
                             }}
                             style={{
                               position: 'absolute',
-                              left: `${pos.x}%`,
-                              top: `${pos.y}%`,
+                              left: `calc(${radius * Math.cos((angle - 90) * Math.PI / 180)}% + ${xOffset}px)`,
+                              top: `calc(${radius * Math.sin((angle - 90) * Math.PI / 180)}% + ${yOffset}px)`,
                               transform: 'translate(-50%, -50%)',
-                              zIndex: 15,
                             }}
                             className="cursor-pointer"
                             onClick={(e) => {
@@ -484,7 +534,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           </motion.div>
                         )
                       })}
-                    </>
+                    </motion.div>
                   )}
                 </AnimatePresence>
               </div>
