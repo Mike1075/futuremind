@@ -41,7 +41,7 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
 
   useEffect(() => {
     loadTreeData()
-  }, [userId, techParams]) // 当techParams改变时重新渲染
+  }, [userId]) // 只在userId改变时加载，techParams改变不触发
 
   const loadTreeData = async () => {
     try {

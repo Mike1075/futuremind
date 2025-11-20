@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { ConsciousnessTreeView, TreeTechParams } from './ConsciousnessTreeView'
-import { ArrowLeft, RefreshCw, Save } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { ArrowLeft, Sparkles } from 'lucide-react'
 
 interface ConsciousnessTreeClientProps {
   userId: string
@@ -15,12 +14,11 @@ interface ConsciousnessTreeClientProps {
 export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeClientProps) {
   const router = useRouter()
   const [isEvaluating, setIsEvaluating] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   const isAdmin = userRole && ['principal', 'teacher'].includes(userRole)
 
-  // 技术参数状态（实时调整）
+  // 技术参数状态（实时调整，测试模式）
   const [techParams, setTechParams] = useState<TreeTechParams>({
     depth: 10,
     branchAngle: 25,
@@ -35,48 +33,8 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
     fruitProbability: 0.05,
   })
 
-  // 5个部位的成长值状态（用于保存到数据库）
-  const [growthValues, setGrowthValues] = useState({
-    roots: 14,
-    trunk: 47,
-    branches: 26,
-    leaves: 28,
-    fruits: 20
-  })
-
-  // 加载当前意识树数据
-  useEffect(() => {
-    loadTreeData()
-  }, [userId])
-
-  const loadTreeData = async () => {
-    try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('consciousness_tree_view')
-        .eq('id', userId)
-        .single()
-
-      if (error) throw error
-
-      if (data?.consciousness_tree_view) {
-        const treeData = data.consciousness_tree_view as any
-        setGrowthValues({
-          roots: treeData?.roots?.growth_value ?? 0,
-          trunk: treeData?.trunk?.growth_value ?? 0,
-          branches: treeData?.branches?.growth_value ?? 0,
-          leaves: treeData?.leaves?.growth_value ?? 0,
-          fruits: treeData?.fruits?.growth_value ?? 0,
-        })
-      }
-    } catch (err) {
-      console.error('加载意识树数据失败:', err)
-    }
-  }
-
-  // 手动触发AI评估
-  const handleEvaluate = async () => {
+  // 手动触发AI真实计算
+  const handleRealCalculation = async () => {
     try {
       setIsEvaluating(true)
       setMessage(null)
@@ -93,62 +51,21 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
       const data = await response.json()
 
       if (data.success) {
-        setMessage({ type: 'success', text: '评估成功！意识树已更新' })
-        await loadTreeData()
+        setMessage({ type: 'success', text: '✅ 真实计算完成！请刷新页面查看真实数据' })
       } else {
-        setMessage({ type: 'error', text: data.error || '评估失败' })
+        setMessage({ type: 'error', text: data.error || '计算失败' })
       }
     } catch (error) {
-      console.error('评估失败:', error)
+      console.error('真实计算失败:', error)
       setMessage({ type: 'error', text: '网络错误' })
     } finally {
       setIsEvaluating(false)
     }
   }
 
-  // 保存成长值到数据库
-  const handleSaveGrowthValues = async () => {
-    if (!isAdmin) return
-
-    try {
-      setIsSaving(true)
-      setMessage(null)
-
-      const supabase = createClient()
-
-      const treeView = {
-        roots: { growth_value: growthValues.roots, is_solid: growthValues.roots >= 30 },
-        trunk: { growth_value: growthValues.trunk, is_solid: growthValues.trunk >= 30 },
-        branches: { growth_value: growthValues.branches, is_solid: growthValues.branches >= 30 },
-        leaves: { growth_value: growthValues.leaves, is_solid: growthValues.leaves >= 30 },
-        fruits: { growth_value: growthValues.fruits, is_solid: growthValues.fruits >= 40 },
-        last_updated: new Date().toISOString(),
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ consciousness_tree_view: treeView })
-        .eq('id', userId)
-
-      if (error) throw error
-
-      setMessage({ type: 'success', text: '保存成功！' })
-    } catch (error) {
-      console.error('保存失败:', error)
-      setMessage({ type: 'error', text: '保存失败' })
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
   // 技术参数改变处理（实时更新）
   const handleTechParamChange = (param: keyof TreeTechParams, value: number) => {
     setTechParams(prev => ({ ...prev, [param]: value }))
-  }
-
-  // 成长值改变处理
-  const handleGrowthValueChange = (part: keyof typeof growthValues, value: number) => {
-    setGrowthValues(prev => ({ ...prev, [part]: value }))
   }
 
   return (
@@ -211,6 +128,21 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
               </motion.div>
             )}
 
+            {/* 测试模式提示 */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-blue-500/10 backdrop-blur-sm rounded-2xl p-4 border border-blue-400/30"
+            >
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="text-2xl">🧪</span>
+                <h3 className="text-sm font-semibold text-blue-400">测试模式</h3>
+              </div>
+              <p className="text-xs text-gray-400">
+                当前为测试环境，调整参数实时生效。点击下方"真实计算"按钮才会调用AI计算真实数据。
+              </p>
+            </motion.div>
+
             {/* 说明卡片 */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -227,7 +159,7 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
               </div>
             </motion.div>
 
-            {/* 控制面板（仅管理员可见） */}
+            {/* 管理员功能 */}
             {isAdmin && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -240,56 +172,17 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
                 </h3>
 
                 <div className="space-y-6">
-                  {/* AI评估按钮 */}
+                  {/* AI真实计算按钮 */}
                   <button
-                    onClick={handleEvaluate}
+                    onClick={handleRealCalculation}
                     disabled={isEvaluating}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600/30 hover:bg-blue-600/40 disabled:bg-gray-600/30 rounded-lg border border-blue-500/50 transition-all"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600/30 to-pink-600/30 hover:from-purple-600/40 hover:to-pink-600/40 disabled:bg-gray-600/30 rounded-lg border border-purple-500/50 transition-all"
                   >
-                    <RefreshCw className={`w-5 h-5 ${isEvaluating ? 'animate-spin' : ''}`} />
-                    {isEvaluating ? '评估中...' : '触发AI评估'}
+                    <Sparkles className={`w-5 h-5 ${isEvaluating ? 'animate-spin' : ''}`} />
+                    {isEvaluating ? '计算中...' : '✨ 真实计算（调用AI）'}
                   </button>
 
-                  {/* 成长值控制 */}
-                  <div className="space-y-4 pt-4 border-t border-white/10">
-                    <p className="text-sm font-semibold text-gray-300">成长值控制（保存到数据库）</p>
-
-                    {Object.entries({
-                      roots: '根系',
-                      trunk: '树干',
-                      branches: '枝干',
-                      leaves: '树叶',
-                      fruits: '果实'
-                    }).map(([key, label]) => (
-                      <div key={key}>
-                        <div className="flex justify-between items-center mb-2">
-                          <label className="text-sm text-gray-400">{label}</label>
-                          <span className="text-sm font-mono text-red-400">
-                            {growthValues[key as keyof typeof growthValues]}
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={growthValues[key as keyof typeof growthValues]}
-                          onChange={(e) => handleGrowthValueChange(key as keyof typeof growthValues, parseInt(e.target.value))}
-                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-red"
-                        />
-                      </div>
-                    ))}
-
-                    <button
-                      onClick={handleSaveGrowthValues}
-                      disabled={isSaving}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600/30 hover:bg-green-600/40 disabled:bg-gray-600/30 rounded-lg border border-green-500/50 transition-all mt-4"
-                    >
-                      <Save className={`w-5 h-5 ${isSaving ? 'animate-pulse' : ''}`} />
-                      {isSaving ? '保存中...' : '保存成长值到数据库'}
-                    </button>
-                  </div>
-
-                  {/* 技术参数控制（实时更新，不需要保存） */}
+                  {/* 技术参数控制（实时更新） */}
                   <div className="space-y-4 pt-4 border-t border-white/10">
                     <p className="text-sm font-semibold text-yellow-300">⚡ 技术参数（实时调整）</p>
 
@@ -484,10 +377,10 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
                 <div className="mt-4 p-3 bg-black/30 rounded-lg">
                   <p className="text-xs text-gray-400">
-                    ⚡ 黄色技术参数实时生效，无需保存
+                    ⚡ 技术参数实时生效，无延迟
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    💾 红色成长值需要点击保存按钮
+                    ✨ 点击"真实计算"才会调用AI计算真实数据
                   </p>
                 </div>
               </motion.div>
@@ -498,38 +391,6 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
       {/* 自定义滑块样式 */}
       <style jsx global>{`
-        .slider-red::-webkit-slider-thumb {
-          appearance: none;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: #ef4444;
-          cursor: pointer;
-          box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
-        }
-
-        .slider-red::-moz-range-thumb {
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: #ef4444;
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
-        }
-
-        .slider-red::-webkit-slider-track {
-          background: linear-gradient(to right, #1f2937 0%, #ef4444 100%);
-          height: 8px;
-          border-radius: 4px;
-        }
-
-        .slider-red::-moz-range-track {
-          background: linear-gradient(to right, #1f2937 0%, #ef4444 100%);
-          height: 8px;
-          border-radius: 4px;
-        }
-
         .slider-yellow::-webkit-slider-thumb {
           appearance: none;
           width: 16px;
