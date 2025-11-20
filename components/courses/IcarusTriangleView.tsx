@@ -164,7 +164,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
           </div>
 
           {/* 圆形轨道 - 完整的圆 */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" style={{ zIndex: 0 }}>
             <defs>
               {/* 轨道渐变 */}
               <linearGradient id="orbitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -174,7 +174,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
               </linearGradient>
               {/* 发光滤镜 */}
               <filter id="orbitGlow">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feGaussianBlur stdDeviation="0.3" result="coloredBlur"/>
                 <feMerge>
                   <feMergeNode in="coloredBlur"/>
                   <feMergeNode in="SourceGraphic"/>
@@ -183,28 +183,28 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
             </defs>
             {/* 完整圆形轨道 */}
             <circle
-              cx={`${centerX}%`}
-              cy={`${centerY}%`}
-              r={`${radius}%`}
+              cx="50"
+              cy="50"
+              r="38"
               fill="none"
               stroke="url(#orbitGradient)"
-              strokeWidth="3"
+              strokeWidth="0.3"
               strokeDasharray="0"
               filter="url(#orbitGlow)"
               opacity="0.8"
             />
             {/* 内圈轨道装饰 */}
             <motion.circle
-              cx={`${centerX}%`}
-              cy={`${centerY}%`}
-              r={`${radius * 0.95}%`}
+              cx="50"
+              cy="50"
+              r="36"
               fill="none"
               stroke="url(#orbitGradient)"
-              strokeWidth="1"
-              strokeDasharray="8 4"
+              strokeWidth="0.1"
+              strokeDasharray="0.8 0.4"
               opacity="0.4"
               animate={{
-                strokeDashoffset: [0, -100]
+                strokeDashoffset: [0, -10]
               }}
               transition={{
                 duration: 20,
@@ -222,11 +222,11 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
             const currentColors = MODULE_COLORS[index] || MODULE_COLORS[0]
             const gradientString = `${currentColors[0]}, ${currentColors[1]}`
 
-            // 计算节点在圆周上的精确位置（使用vh单位）
-            const radiusVh = 38  // 圆的半径（vh）
+            // 计算节点在圆周上的精确位置（使用vmin单位，与SVG viewBox对应）
+            const radiusVmin = 38  // 圆的半径（vmin），对应SVG viewBox中的r="38"
             const angleRad = (angle - 90) * Math.PI / 180
-            const nodeX = radiusVh * Math.cos(angleRad)
-            const nodeY = radiusVh * Math.sin(angleRad)
+            const nodeX = radiusVmin * Math.cos(angleRad)
+            const nodeY = radiusVmin * Math.sin(angleRad)
 
             return (
               <div key={module.id}>
@@ -246,7 +246,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                   style={{
                     position: 'absolute',
                     left: '50%',
-                    top: '50vh',
+                    top: '50%',
                     width: 0,
                     height: 0,
                     zIndex: isActive ? 20 : 10,
@@ -256,8 +256,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                   <motion.div
                     style={{
                       position: 'absolute',
-                      left: `${nodeX}vh`,
-                      top: `${nodeY}vh`,
+                      left: `${nodeX}vmin`,
+                      top: `${nodeY}vmin`,
                       transform: 'translate(-50%, -50%)',
                     }}
                     className="cursor-pointer group"
@@ -305,37 +305,49 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         <div className="text-4xl font-bold">{module.id}</div>
                       </motion.div>
 
-                      {/* 模块名称标签 - 始终显示，指向圆心反方向 */}
-                      <motion.div
-                        className="absolute pointer-events-none whitespace-nowrap"
-                        style={{
-                          left: '50%',
-                          top: '50%',
-                          transformOrigin: '0 50%',
-                        }}
-                        animate={{
-                          // 反向旋转抵消公转，保持标签朝向正确
-                          rotate: -360,
-                          // 标签从节点向外延伸60px
-                          x: `${Math.cos(angleRad) * 60}px`,
-                          y: `${Math.sin(angleRad) * 60}px`,
-                        }}
-                        transition={{
-                          rotate: { duration: 30, repeat: Infinity, ease: "linear" },
-                          x: { duration: 0 },
-                          y: { duration: 0 },
-                        }}
-                      >
-                        <div
-                          className="bg-gray-900/95 backdrop-blur-sm border-2 border-purple-500/50 rounded-lg px-3 py-1 text-xs font-medium shadow-xl"
-                          style={{
-                            // 让文字开头指向圆心：旋转标签使其与半径方向一致
-                            transform: `rotate(${angle}deg)`,
-                          }}
-                        >
-                          {module.name}
-                        </div>
-                      </motion.div>
+                      {/* 模块名称标签 - 仅在hover时显示，标签头指向圆心 */}
+                      <AnimatePresence>
+                        {hoveredModule === module.id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute pointer-events-none whitespace-nowrap"
+                            style={{
+                              left: '50%',
+                              top: '50%',
+                              transformOrigin: '0 50%',
+                            }}
+                          >
+                            <motion.div
+                              animate={{
+                                // 反向旋转抵消公转，保持标签朝向正确
+                                rotate: -360,
+                                // 标签从节点向外延伸70px
+                                x: `${Math.cos(angleRad) * 70}px`,
+                                y: `${Math.sin(angleRad) * 70}px`,
+                              }}
+                              transition={{
+                                rotate: { duration: 30, repeat: Infinity, ease: "linear" },
+                                x: { duration: 0 },
+                                y: { duration: 0 },
+                              }}
+                            >
+                              <div
+                                className="bg-gray-900/95 backdrop-blur-sm border-2 rounded-lg px-3 py-1 text-xs font-medium shadow-xl"
+                                style={{
+                                  // 让标签头指向圆心：根据角度旋转标签
+                                  transform: `rotate(${angle}deg)`,
+                                  borderColor: currentColors[0],
+                                }}
+                              >
+                                {module.name}
+                              </div>
+                            </motion.div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </motion.div>
                   </motion.div>
 
@@ -346,7 +358,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       className="absolute"
                       style={{
                         left: '50%',
-                        top: '50vh',
+                        top: '50%',
                         width: 0,
                         height: 0,
                         zIndex: 15,
@@ -365,8 +377,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       <svg
                         className="absolute pointer-events-none"
                         style={{
-                          left: `calc(${nodeX}vh - 200px)`,
-                          top: `calc(${nodeY}vh - 200px)`,
+                          left: `calc(${nodeX}vmin - 200px)`,
+                          top: `calc(${nodeY}vmin - 200px)`,
                           width: '400px',
                           height: '400px',
                           overflow: 'visible',
@@ -466,8 +478,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             }}
                             style={{
                               position: 'absolute',
-                              left: `calc(${nodeX}vh + ${xOffset}px)`,
-                              top: `calc(${nodeY}vh + ${yOffset}px)`,
+                              left: `calc(${nodeX}vmin + ${xOffset}px)`,
+                              top: `calc(${nodeY}vmin + ${yOffset}px)`,
                               transform: 'translate(-50%, -50%)',
                             }}
                             className="cursor-pointer"
