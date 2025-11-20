@@ -42,9 +42,31 @@ export function ConsciousnessTreeView({ userId }: ConsciousnessTreeViewProps) {
       if (error) throw error
 
       if (data?.consciousness_tree_view) {
-        // 验证数据结构后设置
-        const treeData = data.consciousness_tree_view as unknown as TreeGrowthData
-        setGrowthData(treeData)
+        // 验证数据结构并与默认数据合并，确保所有字段都存在
+        const dbData = data.consciousness_tree_view as any
+        const mergedData: TreeGrowthData = {
+          roots: {
+            growth_value: dbData?.roots?.growth_value ?? 0,
+            is_solid: dbData?.roots?.is_solid ?? false
+          },
+          trunk: {
+            growth_value: dbData?.trunk?.growth_value ?? 0,
+            is_solid: dbData?.trunk?.is_solid ?? false
+          },
+          branches: {
+            growth_value: dbData?.branches?.growth_value ?? 0,
+            is_solid: dbData?.branches?.is_solid ?? false
+          },
+          leaves: {
+            growth_value: dbData?.leaves?.growth_value ?? 0,
+            is_solid: dbData?.leaves?.is_solid ?? false
+          },
+          fruits: {
+            growth_value: dbData?.fruits?.growth_value ?? 0,
+            is_solid: dbData?.fruits?.is_solid ?? false
+          },
+        }
+        setGrowthData(mergedData)
       }
     } catch (err) {
       console.error('加载意识树数据失败:', err)
