@@ -305,7 +305,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         <div className="text-4xl font-bold">{module.id}</div>
                       </motion.div>
 
-                      {/* 模块名称标签 - 仅在hover时显示，标签头朝向圆心 */}
+                      {/* 模块名称标签 - 仅在hover时显示，固定在节点上方 */}
                       <AnimatePresence>
                         {hoveredModule === module.id && (
                           <motion.div
@@ -321,23 +321,20 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           >
                             <motion.div
                               animate={{
-                                // 反向旋转抵消公转
+                                // 反向旋转抵消公转，保持标签水平
                                 rotate: -360,
                               }}
                               transition={{
                                 rotate: { duration: 30, repeat: Infinity, ease: "linear" },
                               }}
                               style={{
-                                // 标签从节点向外延伸，位置在圆心连线延长线上
-                                transform: `translate(${Math.cos(angleRad) * 70}px, ${Math.sin(angleRad) * 70}px)`,
+                                // 标签固定在节点正上方外侧
+                                transform: `translate(-50%, -60px)`,
                               }}
                             >
                               <div
                                 className="bg-gray-900/95 backdrop-blur-sm border-2 rounded-lg px-3 py-1 text-xs font-medium shadow-xl"
                                 style={{
-                                  // 标签头（左端）指向圆心：需要旋转180+angle度
-                                  transform: `rotate(${angle + 180}deg)`,
-                                  transformOrigin: '0 50%',
                                   borderColor: currentColors[0],
                                 }}
                               >
@@ -421,7 +418,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             subAngle2 = (nextIndex * 360 / count) - 90
                           }
 
-                          const subRadiusPx = 50  // 50px半径
+                          const subRadiusPx = 100  // 100px半径，显示在外围
                           const centerX = 200
                           const centerY = 200
 
@@ -433,8 +430,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           const x2 = centerX + subRadiusPx * Math.cos(subAngle2 * Math.PI / 180)
                           const y2 = centerY + subRadiusPx * Math.sin(subAngle2 * Math.PI / 180)
 
-                          const progress = project.progress || 0
-                          const strokeDasharray = progress >= 80 ? "0" : "5 5"
+                          // 根据项目是否已完成判断线型：已完成=实线，未完成=虚线
+                          const strokeDasharray = project.is_completed ? "0" : "5 5"
 
                           return (
                             <motion.line
@@ -474,7 +471,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           subAngle = (projectIndex * 360 / count) - 90
                         }
 
-                        const subRadiusPx = 50  // 50px半径，形成紧凑的等边三角形/正方形
+                        const subRadiusPx = 100  // 100px半径，显示在外围
                         const xOffset = subRadiusPx * Math.cos(subAngle * Math.PI / 180)
                         const yOffset = subRadiusPx * Math.sin(subAngle * Math.PI / 180)
 
