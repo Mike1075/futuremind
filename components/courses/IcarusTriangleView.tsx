@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 
@@ -11,6 +11,7 @@ interface Project {
   project_intro: string | null
   difficulty_level: string | null
   sequence_number: number
+  is_completed?: boolean  // 添加完成状态
 }
 
 interface Module {
@@ -26,49 +27,94 @@ interface IcarusTriangleViewProps {
   modules: Module[]
 }
 
-// 等边三角形顶点位置（百分比）
-const TRIANGLE_POINTS = [
-  { x: 50, y: 15 },   // 顶部
-  { x: 15, y: 75 },   // 左下
-  { x: 85, y: 75 },   // 右下
+// 彩色颜色池
+const COLORS = [
+  ['#10B981', '#14B8A6'],  // emerald to teal
+  ['#3B82F6', '#06B6D4'],  // blue to cyan
+  ['#8B5CF6', '#EC4899'],  // purple to pink
+  ['#F59E0B', '#EF4444'],  // amber to red
+  ['#10B981', '#3B82F6'],  // emerald to blue
+  ['#EC4899', '#F59E0B'],  // pink to amber
 ]
 
-// 根据项目数量计算子节点位置 - 围绕主节点等距离圆形分布
+// 计算圆周上的点位置
+const getCirclePosition = (angle: number, centerX: number, centerY: number, radius: number) => {
+  const radians = (angle - 90) * (Math.PI / 180) // -90度让0度从顶部开始
+  return {
+    x: centerX + radius * Math.cos(radians),
+    y: centerY + radius * Math.sin(radians),
+  }
+}
+
+// 根据项目数量计算子节点位置 - 等边三角形或正方形
 const getSubNodePositions = (count: number, centerX: number, centerY: number, radius: number) => {
   const positions = []
-  const angleStep = 360 / count  // 等分圆周
 
-  for (let i = 0; i < count; i++) {
-    // 从顶部（-90度）开始，顺时针分布
-    const angle = (i * angleStep - 90) * (Math.PI / 180)
-    positions.push({
-      x: centerX + radius * Math.cos(angle),
-      y: centerY + radius * Math.sin(angle),
-    })
+  if (count === 3) {
+    // 等边三角形：从顶部开始，顺时针
+    for (let i = 0; i < 3; i++) {
+      const angle = (i * 120 - 90) * (Math.PI / 180) // -90度让第一个点在顶部
+      positions.push({
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      })
+    }
+  } else if (count === 4) {
+    // 正方形：从顶部开始，顺时针
+    for (let i = 0; i < 4; i++) {
+      const angle = (i * 90 - 90) * (Math.PI / 180) // -90度让第一个点在顶部
+      positions.push({
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      })
+    }
+  } else {
+    // 默认圆形分布
+    const angleStep = 360 / count
+    for (let i = 0; i < count; i++) {
+      const angle = (i * angleStep - 90) * (Math.PI / 180)
+      positions.push({
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      })
+    }
   }
 
   return positions
 }
 
-// 生成波浪路径
-const generateWavePath = (x1: number, y1: number, x2: number, y2: number) => {
-  const midX = (x1 + x2) / 2
-  const midY = (y1 + y2) / 2
-  const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-  const waveHeight = distance * 0.1  // 波浪高度为距离的10%
-
-  // 垂直于连线的方向
-  const angle = Math.atan2(y2 - y1, x2 - x1) + Math.PI / 2
-  const controlX = midX + waveHeight * Math.cos(angle)
-  const controlY = midY + waveHeight * Math.sin(angle)
-
-  return `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`
+// 生成直线路径
+const generateLinePath = (x1: number, y1: number, x2: number, y2: number) => {
+  return `M ${x1} ${y1} L ${x2} ${y2}`
 }
 
 export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
   const [activeModule, setActiveModule] = useState<number | null>(null)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [hoveredModule, setHoveredModule] = useState<number | null>(null)
+  const [moduleColors, setModuleColors] = useState<Map<number, string[]>>(new Map())
+
+  // 初始化模块颜色
+  useEffect(() => {
+    const initialColors = new Map<number, string[]>()
+    modules.forEach(module => {
+      const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)]
+      initialColors.set(module.id, randomColor)
+    })
+    setModuleColors(initialColors)
+
+    // 每10秒更换一次颜色
+    const interval = setInterval(() => {
+      const newColors = new Map<number, string[]>()
+      modules.forEach(module => {
+        const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)]
+        newColors.set(module.id, randomColor)
+      })
+      setModuleColors(newColors)
+    }, 10000) // 10秒一圈，每圈换一次颜色
+
+    return () => clearInterval(interval)
+  }, [modules])
 
   const handleModuleClick = (moduleId: number) => {
     if (activeModule === moduleId) {
@@ -79,29 +125,41 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
     }
   }
 
+  // 计算圆心和半径
+  const centerX = 50
+  const centerY = 50
+  const radius = 30 // 半径为容器的30%
+
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      {/* 星空背景 - 随机变色 */}
+      {/* 星空背景 - 彩色随机，光芒明显 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(60)].map((_, i) => {
-          const randomColors = () => {
-            const colors = ['#FFFFFF', '#E0E7FF', '#DBEAFE', '#FCE7F3', '#FEF3C7', '#D1FAE5', '#F3E8FF']
-            return colors[Math.floor(Math.random() * colors.length)]
-          }
+        {[...Array(100)].map((_, i) => {
+          // 为每颗星星生成随机彩色
+          const starColors = ['#FF6B9D', '#C44569', '#00D2FF', '#3A7BD5', '#FFA751', '#FFE259', '#A8E6CF', '#DCEDC1', '#FFD3B6', '#FFAAA5']
+          const randomColor = starColors[Math.floor(Math.random() * starColors.length)]
+          const size = Math.random() * 3 + 1 // 1-4px
 
           return (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 rounded-full"
+              className="absolute rounded-full"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
-                opacity: Math.random() * 0.7 + 0.3,
+                width: `${size}px`,
+                height: `${size}px`,
+                backgroundColor: randomColor,
+                boxShadow: `0 0 ${size * 3}px ${size * 2}px ${randomColor}40`, // 增强光芒
               }}
               animate={{
-                opacity: [Math.random() * 0.3, Math.random() * 0.8, Math.random() * 0.3],
-                scale: [1, 1.5, 1],
-                background: [randomColors(), randomColors(), randomColors()],
+                opacity: [0.3, 1, 0.3],
+                scale: [1, 1.8, 1],
+                boxShadow: [
+                  `0 0 ${size * 3}px ${size * 2}px ${randomColor}40`,
+                  `0 0 ${size * 8}px ${size * 4}px ${randomColor}80`,
+                  `0 0 ${size * 3}px ${size * 2}px ${randomColor}40`,
+                ],
               }}
               transition={{
                 duration: Math.random() * 3 + 2,
@@ -133,170 +191,163 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
           <p className="text-gray-400 text-lg">探索现实的边界 · PBL项目体系</p>
         </div>
 
-        {/* 三角形布局区域 */}
+        {/* 圆形布局区域 */}
         <div className="relative w-full" style={{ height: '70vh', minHeight: '600px' }}>
-          {/* 圆形轨道 - 连接三个模块 */}
+          {/* 圆形轨道 - 完整的圆 */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
             <defs>
               {/* 轨道渐变 */}
               <linearGradient id="orbitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#10B981" stopOpacity="0.3" />
-                <stop offset="50%" stopColor="#3B82F6" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.3" />
+                <stop offset="0%" stopColor="#10B981" stopOpacity="0.5" />
+                <stop offset="50%" stopColor="#3B82F6" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.5" />
               </linearGradient>
               {/* 发光滤镜 */}
               <filter id="orbitGlow">
-                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
                 <feMerge>
                   <feMergeNode in="coloredBlur"/>
                   <feMergeNode in="SourceGraphic"/>
                 </feMerge>
               </filter>
             </defs>
-            {/* 计算圆心和半径 - 基于三个顶点 */}
-            {(() => {
-              // 三角形重心作为圆心
-              const centerX = (TRIANGLE_POINTS[0].x + TRIANGLE_POINTS[1].x + TRIANGLE_POINTS[2].x) / 3
-              const centerY = (TRIANGLE_POINTS[0].y + TRIANGLE_POINTS[1].y + TRIANGLE_POINTS[2].y) / 3
-              // 计算半径（到第一个点的距离）
-              const radius = Math.sqrt(
-                Math.pow((TRIANGLE_POINTS[0].x - centerX), 2) +
-                Math.pow((TRIANGLE_POINTS[0].y - centerY), 2)
-              )
-
-              return (
-                <>
-                  {/* 圆形轨道 */}
-                  <motion.circle
-                    cx={`${centerX}%`}
-                    cy={`${centerY}%`}
-                    r={`${radius}%`}
-                    fill="none"
-                    stroke="url(#orbitGradient)"
-                    strokeWidth="2"
-                    strokeDasharray="10 5"
-                    filter="url(#orbitGlow)"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{
-                      pathLength: 1,
-                      opacity: [0.4, 0.7, 0.4],
-                      rotate: 360
-                    }}
-                    transition={{
-                      pathLength: { duration: 2 },
-                      opacity: { duration: 3, repeat: Infinity },
-                      rotate: { duration: 20, repeat: Infinity, ease: "linear" }
-                    }}
-                    style={{ transformOrigin: `${centerX}% ${centerY}%` }}
-                  />
-                  {/* 内圈轨道 */}
-                  <motion.circle
-                    cx={`${centerX}%`}
-                    cy={`${centerY}%`}
-                    r={`${radius * 0.95}%`}
-                    fill="none"
-                    stroke="url(#orbitGradient)"
-                    strokeWidth="1"
-                    strokeDasharray="5 3"
-                    opacity="0.2"
-                    animate={{
-                      rotate: -360
-                    }}
-                    transition={{
-                      rotate: { duration: 30, repeat: Infinity, ease: "linear" }
-                    }}
-                    style={{ transformOrigin: `${centerX}% ${centerY}%` }}
-                  />
-                </>
-              )
-            })()}
+            {/* 完整圆形轨道 */}
+            <circle
+              cx={`${centerX}%`}
+              cy={`${centerY}%`}
+              r={`${radius}%`}
+              fill="none"
+              stroke="url(#orbitGradient)"
+              strokeWidth="3"
+              strokeDasharray="0"
+              filter="url(#orbitGlow)"
+              opacity="0.8"
+            />
+            {/* 内圈轨道装饰 */}
+            <motion.circle
+              cx={`${centerX}%`}
+              cy={`${centerY}%`}
+              r={`${radius * 0.95}%`}
+              fill="none"
+              stroke="url(#orbitGradient)"
+              strokeWidth="1"
+              strokeDasharray="8 4"
+              opacity="0.4"
+              animate={{
+                strokeDashoffset: [0, -100]
+              }}
+              transition={{
+                duration: 20,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            />
           </svg>
 
-          {/* 主节点 - 3个模块 */}
+          {/* 主节点 - 3个模块在圆周上运动 */}
           {modules.map((module, index) => {
-            const point = TRIANGLE_POINTS[index]
             const isActive = activeModule === module.id
             const subRadius = 18  // 子节点距离中心的半径（百分比）
+            const angle = index * 120 // 三等分：0度、120度、240度
+            const currentColors = moduleColors.get(module.id) || [module.gradient.split(', ')[0], module.gradient.split(', ')[1]]
+            const gradientString = `${currentColors[0]}, ${currentColors[1]}`
 
             return (
               <div key={module.id}>
-                {/* 主圆形节点 - 缩小并移除图标 */}
+                {/* 主圆形节点 - 在圆周上旋转 */}
                 <motion.div
                   initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
+                  animate={{
+                    scale: 1,
+                    opacity: 1,
+                  }}
                   transition={{ delay: index * 0.2, type: 'spring' }}
                   style={{
                     position: 'absolute',
-                    left: `${point.x}%`,
-                    top: `${point.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: 10,
+                    left: '50%',
+                    top: '50%',
+                    zIndex: isActive ? 20 : 10,
                   }}
-                  className="cursor-pointer group"
-                  onClick={() => handleModuleClick(module.id)}
-                  onMouseEnter={() => setHoveredModule(module.id)}
-                  onMouseLeave={() => setHoveredModule(null)}
                 >
-                  {/* 光晕效果 - 增强 */}
                   <motion.div
-                    className="absolute inset-0 rounded-full blur-2xl"
-                    style={{
-                      background: `linear-gradient(135deg, ${module.gradient})`,
-                    }}
                     animate={{
-                      opacity: hoveredModule === module.id ? [0.8, 1, 0.8] : isActive ? [0.8, 1, 0.8] : [0.4, 0.6, 0.4],
-                      scale: hoveredModule === module.id ? [1.5, 1.8, 1.5] : isActive ? [1.3, 1.5, 1.3] : [1.1, 1.2, 1.1],
+                      x: `${radius * Math.cos((angle - 90) * Math.PI / 180) * 2}vh`,
+                      y: `${radius * Math.sin((angle - 90) * Math.PI / 180) * 2}vh`,
+                      rotate: 360,
                     }}
                     transition={{
-                      duration: hoveredModule === module.id ? 1 : 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
+                      x: { duration: 0 },
+                      y: { duration: 0 },
+                      rotate: { duration: 10, repeat: Infinity, ease: "linear" }
                     }}
-                  />
-
-                  {/* 主圆形 - 缩小到80px */}
-                  <motion.div
-                    className="relative w-20 h-20 rounded-full flex items-center justify-center text-white shadow-2xl transition-all"
                     style={{
-                      background: `linear-gradient(135deg, ${module.gradient})`,
-                      border: isActive ? '3px solid rgba(255,255,255,0.8)' : '3px solid rgba(255,255,255,0.4)',
-                      boxShadow: `0 0 ${isActive ? '30px' : '20px'} rgba(99, 102, 241, 0.5)`,
+                      transform: 'translate(-50%, -50%)',
                     }}
-                    whileHover={{
-                      scale: 1.3,
-                      rotate: 360,
-                      boxShadow: '0 0 50px rgba(99, 102, 241, 1)',
-                    }}
-                    whileTap={{ scale: 0.9 }}
-                    transition={{ duration: 0.3 }}
+                    className="cursor-pointer group"
+                    onClick={() => handleModuleClick(module.id)}
+                    onMouseEnter={() => setHoveredModule(module.id)}
+                    onMouseLeave={() => setHoveredModule(null)}
                   >
-                    <div className="text-4xl font-bold">{module.id}</div>
-                  </motion.div>
+                    {/* 光晕效果 */}
+                    <motion.div
+                      className="absolute inset-0 rounded-full blur-2xl"
+                      style={{
+                        background: `linear-gradient(135deg, ${gradientString})`,
+                      }}
+                      animate={{
+                        opacity: hoveredModule === module.id ? [0.8, 1, 0.8] : isActive ? [0.8, 1, 0.8] : [0.4, 0.6, 0.4],
+                        scale: hoveredModule === module.id ? [1.5, 1.8, 1.5] : isActive ? [1.3, 1.5, 1.3] : [1.1, 1.2, 1.1],
+                      }}
+                      transition={{
+                        duration: hoveredModule === module.id ? 1 : 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
 
-                  {/* 悬停时显示模块名称标签 */}
-                  <AnimatePresence>
-                    {hoveredModule === module.id && (
-                      <motion.div
-                        initial={{ opacity: 0, x: 10, y: 10 }}
-                        animate={{ opacity: 1, x: 20, y: 20 }}
-                        exit={{ opacity: 0, x: 10, y: 10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute top-0 left-full ml-4 pointer-events-none whitespace-nowrap"
-                        style={{ zIndex: 50 }}
-                      >
-                        <div className="bg-gray-900/95 backdrop-blur-sm border-2 border-purple-500/50 rounded-lg px-4 py-2 text-sm font-medium shadow-xl">
-                          {module.name}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    {/* 主圆形 */}
+                    <motion.div
+                      className="relative w-20 h-20 rounded-full flex items-center justify-center text-white shadow-2xl"
+                      style={{
+                        background: `linear-gradient(135deg, ${gradientString})`,
+                        border: isActive ? '3px solid rgba(255,255,255,0.8)' : '3px solid rgba(255,255,255,0.4)',
+                        boxShadow: `0 0 ${isActive ? '30px' : '20px'} ${currentColors[0]}80`,
+                      }}
+                      whileHover={{
+                        scale: 1.3,
+                        boxShadow: `0 0 50px ${currentColors[0]}`,
+                      }}
+                      whileTap={{ scale: 0.9 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="text-4xl font-bold">{module.id}</div>
+                    </motion.div>
+
+                    {/* 悬停时显示模块名称标签 */}
+                    <AnimatePresence>
+                      {hoveredModule === module.id && (
+                        <motion.div
+                          initial={{ opacity: 0, x: 10, y: 10 }}
+                          animate={{ opacity: 1, x: 20, y: 20 }}
+                          exit={{ opacity: 0, x: 10, y: 10 }}
+                          transition={{ duration: 0.2 }}
+                          className="absolute top-0 left-full ml-4 pointer-events-none whitespace-nowrap"
+                          style={{ zIndex: 50 }}
+                        >
+                          <div className="bg-gray-900/95 backdrop-blur-sm border-2 border-purple-500/50 rounded-lg px-4 py-2 text-sm font-medium shadow-xl">
+                            {module.name}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
                 </motion.div>
 
                 {/* 子节点 - 项目阶段 */}
                 <AnimatePresence>
                   {isActive && (
                     <>
-                      {/* SVG容器 - 用于绘制波浪线 */}
+                      {/* SVG容器 - 用于绘制直线（虚线/实线） */}
                       <svg
                         className="absolute pointer-events-none"
                         style={{
@@ -304,33 +355,49 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           top: 0,
                           width: '100%',
                           height: '100%',
+                          zIndex: 5,
                         }}
                       >
                         <defs>
                           {/* 发光滤镜 */}
                           <filter id="glow">
-                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
                             <feMerge>
                               <feMergeNode in="coloredBlur"/>
                               <feMergeNode in="SourceGraphic"/>
                             </feMerge>
                           </filter>
+                          {/* 渐变定义 */}
+                          <linearGradient id={`gradient-${module.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor={currentColors[0]} stopOpacity="0.8" />
+                            <stop offset="100%" stopColor={currentColors[1]} stopOpacity="0.8" />
+                          </linearGradient>
                         </defs>
                         {module.projects.map((project, projectIndex) => {
-                          const positions = getSubNodePositions(module.projects.length, point.x, point.y, subRadius)
+                          // 计算主节点的屏幕位置
+                          const mainNodeX = 50 + radius * Math.cos((angle - 90) * Math.PI / 180) * 2
+                          const mainNodeY = 50 + radius * Math.sin((angle - 90) * Math.PI / 180) * 2
+
+                          // 计算子节点的相对位置
+                          const positions = getSubNodePositions(module.projects.length, mainNodeX, mainNodeY, subRadius)
                           const pos = positions[projectIndex]
-                          const pathData = generateWavePath(point.x, point.y, pos.x, pos.y)
+                          const pathData = generateLinePath(mainNodeX, mainNodeY, pos.x, pos.y)
+
+                          // 判断是否已完成（实线）或未完成（虚线）
+                          const isCompleted = project.is_completed || false
+                          const strokeDasharray = isCompleted ? "0" : "5 5"
 
                           return (
                             <motion.path
                               key={`line-${project.id}`}
                               d={pathData}
                               fill="none"
-                              stroke="url(#gradient)"
+                              stroke={`url(#gradient-${module.id})`}
                               strokeWidth="2"
+                              strokeDasharray={strokeDasharray}
                               filter="url(#glow)"
                               initial={{ pathLength: 0, opacity: 0 }}
-                              animate={{ pathLength: 1, opacity: 1 }}
+                              animate={{ pathLength: 1, opacity: 0.8 }}
                               exit={{ pathLength: 0, opacity: 0 }}
                               transition={{
                                 delay: projectIndex * 0.1,
@@ -339,18 +406,17 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             />
                           )
                         })}
-                        {/* 渐变定义 */}
-                        <defs>
-                          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor={module.gradient.split(', ')[0]} stopOpacity="0.8" />
-                            <stop offset="100%" stopColor={module.gradient.split(', ')[1]} stopOpacity="0.8" />
-                          </linearGradient>
-                        </defs>
                       </svg>
 
                       {module.projects.map((project, projectIndex) => {
                         const letter = String.fromCharCode(65 + projectIndex)  // A, B, C, D
-                        const positions = getSubNodePositions(module.projects.length, point.x, point.y, subRadius)
+
+                        // 计算主节点的屏幕位置
+                        const mainNodeX = 50 + radius * Math.cos((angle - 90) * Math.PI / 180) * 2
+                        const mainNodeY = 50 + radius * Math.sin((angle - 90) * Math.PI / 180) * 2
+
+                        // 计算子节点的位置
+                        const positions = getSubNodePositions(module.projects.length, mainNodeX, mainNodeY, subRadius)
                         const pos = positions[projectIndex]
 
                         return (
@@ -373,6 +439,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               left: `${pos.x}%`,
                               top: `${pos.y}%`,
                               transform: 'translate(-50%, -50%)',
+                              zIndex: 15,
                             }}
                             className="cursor-pointer"
                             onClick={(e) => {
@@ -380,7 +447,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               setSelectedProject(project)
                             }}
                           >
-                            {/* 子圆形节点 - 炫酷效果 */}
+                            {/* 子圆形节点 */}
                             <motion.div
                               className="relative"
                               whileHover={{ scale: 1.3 }}
@@ -390,7 +457,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               <motion.div
                                 className="absolute inset-0 rounded-full"
                                 style={{
-                                  background: `linear-gradient(135deg, ${module.gradient})`,
+                                  background: `linear-gradient(135deg, ${gradientString})`,
                                   filter: 'blur(10px)',
                                 }}
                                 animate={{
@@ -408,14 +475,14 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               <motion.div
                                 className="relative w-16 h-16 rounded-full flex items-center justify-center text-white shadow-2xl"
                                 style={{
-                                  background: `linear-gradient(135deg, ${module.gradient})`,
+                                  background: `linear-gradient(135deg, ${gradientString})`,
                                   border: selectedProject?.id === project.id
                                     ? '3px solid rgba(255,255,255,1)'
                                     : '3px solid rgba(255,255,255,0.5)',
-                                  boxShadow: '0 0 20px rgba(99, 102, 241, 0.6)',
+                                  boxShadow: `0 0 20px ${currentColors[0]}80`,
                                 }}
                                 whileHover={{
-                                  boxShadow: '0 0 30px rgba(99, 102, 241, 1)',
+                                  boxShadow: `0 0 30px ${currentColors[0]}`,
                                   rotate: [0, 10, -10, 0],
                                 }}
                                 transition={{
