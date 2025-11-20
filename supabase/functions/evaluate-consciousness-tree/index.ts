@@ -148,46 +148,63 @@ ${recentMessages.map((m: any, i: number) => `${i + 1}. ${m.isGaia ? '[Gaia]' : '
   "reasoning": "简要评估理由（100字内）"
 }`
 
-    // ========== 3. 调用Claude API评估 ==========
-    console.log('[AI评估] 调用Claude API...')
+    // ========== 3. 调用OpenAI API评估 ==========
+    console.log('[AI评估] 调用OpenAI API...')
 
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!anthropicApiKey) {
-      throw new Error('ANTHROPIC_API_KEY未配置')
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY未配置')
     }
 
-    const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`,
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }],
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: '你是一位专业的意识树评估专家。请严格按照JSON格式返回评估结果。'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000
       }),
     })
 
-    if (!anthropicResponse.ok) {
-      const errorText = await anthropicResponse.text()
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text()
       console.error('[AI评估失败]', errorText)
-      throw new Error('Claude API调用失败')
+      throw new Error('OpenAI API调用失败')
     }
 
-    const aiResult = await anthropicResponse.json()
-    const aiContent = aiResult.content[0]?.text || ''
+    const openaiData = await openaiResponse.json()
+    const aiContent = openaiData.choices[0].message.content
 
     console.log('[AI评估完成]', aiContent)
 
     // 解析AI返回的JSON
-    const jsonMatch = aiContent.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
+    let growthScores
+    try {
+      // 清理可能的Markdown代码块
+      let cleanedText = aiContent.trim()
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
+      } else if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
+      }
+      growthScores = JSON.parse(cleanedText)
+    } catch (parseError) {
+      console.error('❌ 解析AI返回的JSON失败:', parseError)
       throw new Error('AI返回格式无效')
     }
-
-    const growthScores = JSON.parse(jsonMatch[0])
 
     // ========== 4. 虚实依赖链逻辑 ==========
     // 根基不稳 → 树干虚 → 枝干虚 → 果实虚
