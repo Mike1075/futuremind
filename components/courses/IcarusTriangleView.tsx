@@ -371,20 +371,14 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       zIndex: 15,
                     }}
                   >
-                      {/* 子节点定位容器 - 反向旋转保持子节点正立 */}
-                      <motion.div
+                      {/* 子节点定位容器 - 不旋转，保持坐标系正常 */}
+                      <div
                         style={{
                           position: 'absolute',
                           left: 0,
                           top: 0,
                           width: 0,
                           height: 0,
-                        }}
-                        animate={{
-                          ...(!shouldPause && { rotate: -360 })  // 反向旋转保持子节点正立，暂停时保持当前位置
-                        }}
-                        transition={{
-                          rotate: { duration: 120, repeat: Infinity, ease: "linear" }
                         }}
                       >
                         {/* SVG - 绘制连接线 */}
@@ -574,7 +568,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           </motion.div>
                         )
                       })}
-                      </motion.div>
+                      </div>
                     </motion.div>
                   )}
                 </motion.div>
