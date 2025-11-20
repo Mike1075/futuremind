@@ -292,13 +292,15 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           boxShadow: `0 0 ${isActive ? '30px' : '20px'} ${currentColors[0]}80`,
                         }}
                         animate={{
+                          scale: isActive ? 0.7 : 1,  // 点击后缩小，让线条更清晰
                           ...(!shouldPause && { rotate: -360 })  // 自转（反方向抵消公转），暂停时保持当前位置
                         }}
                         transition={{
+                          scale: { duration: 0.3, type: 'spring', stiffness: 300, damping: 25 },
                           rotate: { duration: 120, repeat: Infinity, ease: "linear" }
                         }}
                         whileHover={{
-                          scale: 1.3,
+                          scale: isActive ? 0.85 : 1.3,  // hover时稍微放大一点
                           boxShadow: `0 0 50px ${currentColors[0]}`,
                         }}
                         whileTap={{ scale: 0.9 }}
@@ -463,7 +465,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           const currentProject = module.projects[projectIndex]
                           const nextProject = module.projects[nextIndex]
                           const bothCompleted = currentProject.is_completed && nextProject.is_completed
-                          const strokeDasharray = bothCompleted ? "0" : "0.8 0.8"
+                          // 虚线样式：1 0.5 表示 1单位实线 + 0.5单位间隔
+                          const strokeDasharray = bothCompleted ? "0" : "1 0.5"
 
                           return (
                             <motion.line
