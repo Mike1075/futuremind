@@ -305,7 +305,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                         <div className="text-4xl font-bold">{module.id}</div>
                       </motion.div>
 
-                      {/* 模块名称标签 - 仅在hover时显示，标签头指向圆心 */}
+                      {/* 模块名称标签 - 仅在hover时显示，标签头朝向圆心 */}
                       <AnimatePresence>
                         {hoveredModule === module.id && (
                           <motion.div
@@ -317,28 +317,27 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             style={{
                               left: '50%',
                               top: '50%',
-                              transformOrigin: '0 50%',
                             }}
                           >
                             <motion.div
                               animate={{
-                                // 反向旋转抵消公转，保持标签朝向正确
+                                // 反向旋转抵消公转
                                 rotate: -360,
-                                // 标签从节点向外延伸70px
-                                x: `${Math.cos(angleRad) * 70}px`,
-                                y: `${Math.sin(angleRad) * 70}px`,
                               }}
                               transition={{
                                 rotate: { duration: 30, repeat: Infinity, ease: "linear" },
-                                x: { duration: 0 },
-                                y: { duration: 0 },
+                              }}
+                              style={{
+                                // 标签从节点向外延伸，位置在圆心连线延长线上
+                                transform: `translate(${Math.cos(angleRad) * 70}px, ${Math.sin(angleRad) * 70}px)`,
                               }}
                             >
                               <div
                                 className="bg-gray-900/95 backdrop-blur-sm border-2 rounded-lg px-3 py-1 text-xs font-medium shadow-xl"
                                 style={{
-                                  // 让标签头指向圆心：根据角度旋转标签
+                                  // 标签头（左端）指向圆心：标签沿着径向方向
                                   transform: `rotate(${angle}deg)`,
+                                  transformOrigin: '0 50%',
                                   borderColor: currentColors[0],
                                 }}
                               >
@@ -409,7 +408,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             subAngle = (projectIndex * 360 / count) - 90
                           }
 
-                          const subRadiusPx = 80  // 缩小到80px
+                          const subRadiusPx = 50  // 缩小到50px，形成更紧凑的三角形/正方形
                           const x1 = 200  // 中心点
                           const y1 = 200
                           const x2 = 200 + subRadiusPx * Math.cos(subAngle * Math.PI / 180)
@@ -456,7 +455,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           subAngle = (projectIndex * 360 / count) - 90
                         }
 
-                        const subRadiusPx = 80  // 80px半径
+                        const subRadiusPx = 50  // 50px半径，形成紧凑的等边三角形/正方形
                         const xOffset = subRadiusPx * Math.cos(subAngle * Math.PI / 180)
                         const yOffset = subRadiusPx * Math.sin(subAngle * Math.PI / 180)
 
@@ -514,16 +513,16 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
 
                               {/* 主节点 */}
                               <motion.div
-                                className="relative w-16 h-16 rounded-full flex items-center justify-center text-white shadow-2xl"
+                                className="relative w-12 h-12 rounded-full flex items-center justify-center text-white shadow-2xl"
                                 style={{
                                   background: `linear-gradient(135deg, ${gradientString})`,
                                   border: selectedProject?.id === project.id
-                                    ? '3px solid rgba(255,255,255,1)'
-                                    : '3px solid rgba(255,255,255,0.5)',
-                                  boxShadow: `0 0 20px ${currentColors[0]}80`,
+                                    ? '2px solid rgba(255,255,255,1)'
+                                    : '2px solid rgba(255,255,255,0.5)',
+                                  boxShadow: `0 0 15px ${currentColors[0]}80`,
                                 }}
                                 whileHover={{
-                                  boxShadow: `0 0 30px ${currentColors[0]}`,
+                                  boxShadow: `0 0 25px ${currentColors[0]}`,
                                   rotate: [0, 10, -10, 0],
                                 }}
                                 transition={{
@@ -533,7 +532,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                                   }
                                 }}
                               >
-                                <span className="text-2xl font-bold">{letter}</span>
+                                <span className="text-xl font-bold">{letter}</span>
                               </motion.div>
                             </motion.div>
                           </motion.div>
