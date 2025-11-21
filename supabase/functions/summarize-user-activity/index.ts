@@ -331,7 +331,23 @@ async function summarizeDialogue(
     }),
   });
 
+  console.log(`[对话总结-OpenAI] HTTP状态码: ${response.status}`);
+
   const result = await response.json();
+  console.log(`[对话总结-OpenAI] 完整响应: ${JSON.stringify(result, null, 2)}`);
+
+  // 检查响应状态
+  if (!response.ok) {
+    console.error(`[对话总结-OpenAI错误] ${result.error?.message || JSON.stringify(result)}`);
+    return `无法生成总结: OpenAI API错误 (${response.status}) - ${result.error?.message || '未知错误'}`;
+  }
+
+  // 检查响应格式
+  if (!result.choices || !result.choices[0]) {
+    console.error(`[对话总结-OpenAI错误] 响应中没有choices数组: ${JSON.stringify(result)}`);
+    return "无法生成总结: API返回格式异常";
+  }
+
   return result.choices[0]?.message?.content || "无法生成总结";
 }
 
@@ -394,7 +410,23 @@ async function summarizeCoursework(
     }),
   });
 
+  console.log(`[作业总结-OpenAI] HTTP状态码: ${response.status}`);
+
   const result = await response.json();
+  console.log(`[作业总结-OpenAI] 完整响应: ${JSON.stringify(result, null, 2)}`);
+
+  // 检查响应状态
+  if (!response.ok) {
+    console.error(`[作业总结-OpenAI错误] ${result.error?.message || JSON.stringify(result)}`);
+    return `无法生成总结: OpenAI API错误 (${response.status}) - ${result.error?.message || '未知错误'}`;
+  }
+
+  // 检查响应格式
+  if (!result.choices || !result.choices[0]) {
+    console.error(`[作业总结-OpenAI错误] 响应中没有choices数组: ${JSON.stringify(result)}`);
+    return "无法生成总结: API返回格式异常";
+  }
+
   return result.choices[0]?.message?.content || "无法生成总结";
 }
 
@@ -459,6 +491,22 @@ async function summarizeProjects(
     }),
   });
 
+  console.log(`[项目总结-OpenAI] HTTP状态码: ${response.status}`);
+
   const result = await response.json();
+  console.log(`[项目总结-OpenAI] 完整响应: ${JSON.stringify(result, null, 2)}`);
+
+  // 检查响应状态
+  if (!response.ok) {
+    console.error(`[项目总结-OpenAI错误] ${result.error?.message || JSON.stringify(result)}`);
+    return `无法生成总结: OpenAI API错误 (${response.status}) - ${result.error?.message || '未知错误'}`;
+  }
+
+  // 检查响应格式
+  if (!result.choices || !result.choices[0]) {
+    console.error(`[项目总结-OpenAI错误] 响应中没有choices数组: ${JSON.stringify(result)}`);
+    return "无法生成总结: API返回格式异常";
+  }
+
   return result.choices[0]?.message?.content || "无法生成总结";
 }
