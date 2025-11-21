@@ -465,8 +465,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           const currentProject = module.projects[projectIndex]
                           const nextProject = module.projects[nextIndex]
                           const bothCompleted = currentProject.is_completed && nextProject.is_completed
-                          // 虚线样式：3 1.5 表示 3单位实线 + 1.5单位间隔（更明显的虚线效果）
-                          const strokeDasharray = bothCompleted ? "0" : "2 1.2"
+                          // 虚线样式：3 2 表示 3单位实线 + 2单位间隔（清晰的虚线效果）
+                          const strokeDasharray = bothCompleted ? "0" : "3 2"
 
                           return (
                             <motion.line
@@ -476,11 +476,11 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               x2={x2}
                               y2={y2}
                               stroke={`url(#gradient-${module.id})`}
-                              strokeWidth="0.4"
+                              strokeWidth="0.8"
                               strokeDasharray={strokeDasharray}
                               filter={`url(#glow-${module.id})`}
                               initial={{ pathLength: 0, opacity: 0 }}
-                              animate={{ pathLength: 1, opacity: 0.8 }}
+                              animate={{ pathLength: 1, opacity: 1 }}
                               exit={{ pathLength: 0, opacity: 0 }}
                               transition={{
                                 delay: projectIndex * 0.1,
