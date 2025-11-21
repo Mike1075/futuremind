@@ -679,15 +679,6 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                     </p>
                   </div>
 
-                  {/* 难度等级 */}
-                  {selectedProject.difficulty_level && (
-                    <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 border border-purple-500/50 rounded-lg">
-                      <span className="text-purple-400 text-sm font-medium">
-                        {selectedProject.difficulty_level}
-                      </span>
-                    </div>
-                  )}
-
                   {/* 查看详情按钮 */}
                   <Link
                     href={`/courses/icarus/${selectedProject.id}`}
