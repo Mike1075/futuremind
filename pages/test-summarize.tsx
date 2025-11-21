@@ -21,6 +21,7 @@ interface TestUser {
 export default function TestSummarizePage() {
   const [userId, setUserId] = useState('')
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>(['dialogue'])
+  const [forceFullRefresh, setForceFullRefresh] = useState(true)  // 默认开启测试模式
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
@@ -196,7 +197,8 @@ export default function TestSummarizePage() {
           },
           body: JSON.stringify({
             userId,
-            dimensions: selectedDimensions
+            dimensions: selectedDimensions,
+            forceFullRefresh
           })
         }
       )
@@ -393,6 +395,27 @@ export default function TestSummarizePage() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* 测试选项 */}
+            <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4 text-yellow-400">⚙️ 测试选项</h2>
+
+              <label className="flex items-start gap-3 p-4 rounded cursor-pointer transition-all border border-yellow-600/30 bg-yellow-900/10 hover:bg-yellow-900/20">
+                <input
+                  type="checkbox"
+                  checked={forceFullRefresh}
+                  onChange={(e) => setForceFullRefresh(e.target.checked)}
+                  className="mt-1 w-5 h-5 text-yellow-600 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold text-yellow-300">🔄 强制全量刷新（测试模式）</div>
+                  <div className="text-sm text-gray-400 mt-1">
+                    开启后忽略上次总结时间，重新计算所有数据。<br/>
+                    <strong className="text-yellow-400">建议测试时开启</strong>，正式使用时关闭以启用增量更新。
+                  </div>
+                </div>
+              </label>
             </div>
 
             {/* 操作按钮 */}

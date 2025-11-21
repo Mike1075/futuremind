@@ -8,6 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 interface SummarizationRequest {
   userId: string;
   dimensions?: ("dialogue" | "coursework" | "projects")[];
+  forceFullRefresh?: boolean;  // 测试模式：强制全量刷新，忽略last_summarized_at
 }
 
 /**
@@ -36,10 +37,10 @@ Deno.serve(async (req: Request) => {
 
   try {
     // 1. 解析请求
-    const { userId, dimensions = ["dialogue", "coursework", "projects"] }: SummarizationRequest =
+    const { userId, dimensions = ["dialogue", "coursework", "projects"], forceFullRefresh = false }: SummarizationRequest =
       await req.json();
 
-    console.log(`[开始总结] 用户ID: ${userId}, 维度: ${dimensions.join(", ")}`);
+    console.log(`[开始总结] 用户ID: ${userId}, 维度: ${dimensions.join(", ")}, 强制全量刷新: ${forceFullRefresh ? '是' : '否'}`);
 
     if (!userId) {
       return new Response(
@@ -71,7 +72,7 @@ Deno.serve(async (req: Request) => {
     // 5. 对话维度总结
     if (dimensions.includes("dialogue")) {
       console.log(`[对话维度] 开始处理...`);
-      const lastSummarized = courseSummaries.dialogue?.last_summarized_at || "1970-01-01";
+      const lastSummarized = forceFullRefresh ? "1970-01-01" : (courseSummaries.dialogue?.last_summarized_at || "1970-01-01");
 
       // 5.1 查询盖亚对话数据 (gaia_conversations)
       const { data: gaiaConversations } = await supabase
@@ -111,7 +112,7 @@ Deno.serve(async (req: Request) => {
     // 6. 作业维度总结
     if (dimensions.includes("coursework")) {
       console.log(`[作业维度] 开始处理...`);
-      const lastSummarized = courseSummaries.coursework?.last_summarized_at || "1970-01-01";
+      const lastSummarized = forceFullRefresh ? "1970-01-01" : (courseSummaries.coursework?.last_summarized_at || "1970-01-01");
 
       // 6.1 查询用户提交的作业
       const { data: submissions } = await supabase
@@ -160,7 +161,7 @@ Deno.serve(async (req: Request) => {
     // 7. 项目维度总结
     if (dimensions.includes("projects")) {
       console.log(`[项目维度] 开始处理...`);
-      const lastSummarized = courseSummaries.projects?.last_summarized_at || "1970-01-01";
+      const lastSummarized = forceFullRefresh ? "1970-01-01" : (courseSummaries.projects?.last_summarized_at || "1970-01-01");
 
       // 7.1 查询用户选择的项目
       const { data: selectedProjects } = await supabase
