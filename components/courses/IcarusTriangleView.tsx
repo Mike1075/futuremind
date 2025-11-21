@@ -494,8 +494,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           const currentCompleted = (currentProject.progress ?? 0) >= 60
                           const nextCompleted = (nextProject.progress ?? 0) >= 60
                           const bothCompleted = currentCompleted && nextCompleted
-                          // 虚线样式：2 2 表示 2单位实线 + 2单位间隔（更密集的虚线效果）
-                          const strokeDasharray = bothCompleted ? "0" : "2 2"
+                          // 虚线样式：1.5 1.5 表示 1.5单位实线 + 1.5单位间隔（非常密集的虚线效果）
+                          const strokeDasharray = bothCompleted ? "0" : "1.5 1.5"
 
                           // 🐛 调试日志：打印虚线计算详情
                           console.log(`[虚线调试] 模块${module.id} 连接线${projectIndex}→${nextIndex}:`, {
