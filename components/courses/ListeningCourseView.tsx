@@ -29,23 +29,23 @@ const COURSE_COLORS = [
   { from: '#FF69B4', to: '#FFB6D9', name: '粉' },      // Day 14 - 粉色（回归爱）
 ]
 
-// 曲线路径节点位置（百分比）- 完整耳朵轮廓（包含内部凹陷）
-// 参考真实耳朵形状，形成更自然的轮廓
+// 曲线路径节点位置（百分比）- 根据手绘参考图设计的耳朵轮廓
+// 完整的耳朵形状：外耳轮 + 耳垂 + 内耳凹陷
 const PATH_POINTS = [
-  { x: 38, y: 18 },   // Day 1 - 耳朵顶部起点
-  { x: 50, y: 12 },   // Day 2 - 外耳轮顶端（最高点）
-  { x: 64, y: 14 },   // Day 3 - 开始向外弯曲
-  { x: 76, y: 20 },   // Day 4 - 外耳轮向外扩展
-  { x: 84, y: 32 },   // Day 5 - 外耳轮中上部（最外侧点）
-  { x: 86, y: 48 },   // Day 6 - 外耳轮中部
-  { x: 82, y: 62 },   // Day 7 - 外耳轮中下部，开始向内收
-  { x: 74, y: 72 },   // Day 8 - 向耳垂过渡
-  { x: 62, y: 80 },   // Day 9 - 耳垂上部
-  { x: 48, y: 86 },   // Day 10 - 耳垂中部（最低点）
-  { x: 36, y: 84 },   // Day 11 - 耳垂内侧底部
-  { x: 28, y: 76 },   // Day 12 - 开始向内勾（耳甲腔入口）
-  { x: 24, y: 62 },   // Day 13 - 耳窝内部凹陷（向左内勾）
-  { x: 26, y: 48 },   // Day 14 - 耳窝顶部回勾（形成内耳轮，向回勾）
+  { x: 30, y: 25 },   // Day 1 - 左上起点
+  { x: 42, y: 15 },   // Day 2 - 向上弯曲
+  { x: 56, y: 10 },   // Day 3 - 外耳轮顶部（最高点）
+  { x: 70, y: 15 },   // Day 4 - 开始向右外侧
+  { x: 80, y: 25 },   // Day 5 - 外耳轮右上部
+  { x: 85, y: 40 },   // Day 6 - 外耳轮右中部（最右点）
+  { x: 84, y: 55 },   // Day 7 - 外耳轮右下部
+  { x: 78, y: 68 },   // Day 8 - 开始向耳垂过渡
+  { x: 68, y: 78 },   // Day 9 - 耳垂右侧
+  { x: 54, y: 85 },   // Day 10 - 耳垂底部（最低点）
+  { x: 40, y: 82 },   // Day 11 - 耳垂左侧
+  { x: 32, y: 72 },   // Day 12 - 耳垂向上，准备内勾
+  { x: 28, y: 58 },   // Day 13 - 向内凹陷（耳窝，向左勾进去）
+  { x: 30, y: 42 },   // Day 14 - 耳窝上部，回勾向上
 ]
 
 export function ListeningCourseView({ courseSystem, contents, completionMap, scoreMap }: ListeningCourseViewProps) {
@@ -202,8 +202,9 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
               const point = PATH_POINTS[index]
               const color = COURSE_COLORS[index]
 
-              // 如果前面的节点已完成，绘制到当前节点的路径
-              if (index > 0 && completionMap.get(contents[index - 1]?.id)) {
+              // 如果当前节点已完成，绘制从前一个节点到当前节点的路径
+              // 修复：改为检查当前节点是否完成，而不是前一个节点
+              if (index > 0 && isCompleted) {
                 const prevPoint = PATH_POINTS[index - 1]
                 const prevColor = COURSE_COLORS[index - 1]
 
@@ -219,7 +220,8 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                       d={`M ${prevPoint.x} ${prevPoint.y} C ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${prevPoint.y}, ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${point.y}, ${point.x} ${point.y}`}
                       fill="none"
                       stroke={`url(#grad-${index})`}
-                      strokeWidth="0.5"
+                      strokeWidth="0.8"
+                      strokeLinecap="round"
                       className="animate-pulse"
                     />
                   </g>
