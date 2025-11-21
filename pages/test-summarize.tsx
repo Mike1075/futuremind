@@ -26,6 +26,8 @@ export default function TestSummarizePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [testUsers, setTestUsers] = useState<TestUser[]>([])
+  const [treeEvalLoading, setTreeEvalLoading] = useState(false)
+  const [treeResult, setTreeResult] = useState<any>(null)
   const supabase = createClientComponentClient()
 
   // 添加日志
@@ -298,6 +300,95 @@ export default function TestSummarizePage() {
     addLog('info', `已选择用户: ${user.full_name} (${user.email})`)
   }
 
+  // 测试意识树评估
+  const testTreeEvaluation = async () => {
+    if (!userId) {
+      addLog('error', '请先选择一个测试用户')
+      return
+    }
+
+    setTreeEvalLoading(true)
+    setTreeResult(null)
+    addLog('info', '========== 意识树评估测试 ==========')
+    addLog('info', `用户ID: ${userId}`)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      addLog('info', '正在调用 evaluate-and-grow-tree Edge Function...')
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/evaluate-and-grow-tree`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({ userId })
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        addLog('error', `HTTP ${response.status}: ${errorData.error || '未知错误'}`)
+        return
+      }
+
+      const data = await response.json()
+      addLog('success', `✅ ${data.message}`)
+      addLog('info', 'Fire-and-Forget模式：后台正在计算中（预计10-20秒）')
+      addLog('warning', '💡 请等待20秒后，点击下方"查看意识树结果"按钮')
+
+      setTreeResult(data)
+
+    } catch (error) {
+      addLog('error', `调用失败: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setTreeEvalLoading(false)
+    }
+  }
+
+  // 查看意识树评估结果
+  const checkTreeResult = async () => {
+    if (!userId) {
+      addLog('error', '请先选择用户')
+      return
+    }
+
+    addLog('info', '正在查询数据库中的意识树数据...')
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('consciousness_tree_view')
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        addLog('error', `查询失败: ${error.message}`)
+        return
+      }
+
+      if (!data?.consciousness_tree_view) {
+        addLog('warning', '该用户还没有意识树数据，可能计算尚未完成')
+        return
+      }
+
+      const tree = data.consciousness_tree_view
+      addLog('success', '✅ 成功获取意识树数据！')
+      addLog('info', `根 (Roots): ${tree.roots?.growth_value || 0}% ${tree.roots?.is_solid ? '(实心)' : '(虚线)'}`)
+      addLog('info', `干 (Trunk): ${tree.trunk?.growth_value || 0}% ${tree.trunk?.is_solid ? '(实心)' : '(虚线)'}`)
+      addLog('info', `枝 (Branches): ${tree.branches?.growth_value || 0}% ${tree.branches?.is_solid ? '(实心)' : '(虚线)'}`)
+      addLog('info', `叶 (Leaves): ${tree.leaves?.growth_value || 0}% ${tree.leaves?.is_solid ? '(实心)' : '(虚线)'}`)
+      addLog('info', `果 (Fruits): ${tree.fruits?.growth_value || 0}% ${tree.fruits?.is_solid ? '(实心)' : '(虚线)'}`)
+
+      setTreeResult(tree)
+
+    } catch (error) {
+      addLog('error', `查询失败: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-black text-white p-8">
       <div className="max-w-7xl mx-auto">
@@ -503,6 +594,164 @@ export default function TestSummarizePage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* ========== 意识树评估测试区域 ========== */}
+        <div className="mt-12 border-t-4 border-purple-600 pt-8">
+          <h1 className="text-4xl font-bold mb-2 text-purple-400">🌳 意识树评估测试</h1>
+          <p className="text-gray-400 mb-8">Edge Function: evaluate-and-grow-tree | AI模型: GPT-4o Mini (The Architect)</p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 左侧：操作按钮 */}
+            <div className="space-y-6">
+              <div className="bg-purple-900/20 border border-purple-600 rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-4 text-purple-400">🎮 操作步骤</h2>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-gray-900 border border-gray-700 rounded">
+                    <div className="text-sm text-gray-400 mb-3">
+                      ✅ 确保已选择用户：<br/>
+                      {userId ? (
+                        <span className="text-green-400 font-mono text-xs break-all">{userId}</span>
+                      ) : (
+                        <span className="text-red-400">未选择用户，请在上方选择</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-purple-900/10 border border-purple-500/30 rounded">
+                    <div className="font-semibold text-purple-300 mb-2">步骤 1: 启动意识树评估</div>
+                    <button
+                      onClick={testTreeEvaluation}
+                      disabled={treeEvalLoading || !userId}
+                      className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                        treeEvalLoading || !userId
+                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      }`}
+                    >
+                      {treeEvalLoading ? '⏳ 启动中...' : '🚀 启动意识树评估'}
+                    </button>
+                    <div className="text-xs text-gray-400 mt-2">
+                      * 采用 Fire-and-Forget 模式，立即返回，后台计算约10-20秒
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-blue-900/10 border border-blue-500/30 rounded">
+                    <div className="font-semibold text-blue-300 mb-2">步骤 2: 查看评估结果</div>
+                    <button
+                      onClick={checkTreeResult}
+                      disabled={!userId}
+                      className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                        !userId
+                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                    >
+                      🔍 查看意识树结果
+                    </button>
+                    <div className="text-xs text-gray-400 mt-2">
+                      * 等待20秒后点击，从数据库读取最新结果
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 意识树结果可视化 */}
+              {treeResult && treeResult.roots && (
+                <div className="bg-gray-900 border border-purple-600 rounded-lg p-6">
+                  <h2 className="text-xl font-semibold mb-4 text-purple-400">🌳 意识树状态</h2>
+
+                  <div className="space-y-3">
+                    {[
+                      { name: '根 (Roots)', key: 'roots', emoji: '🌱', color: 'green' },
+                      { name: '干 (Trunk)', key: 'trunk', emoji: '🪵', color: 'yellow' },
+                      { name: '枝 (Branches)', key: 'branches', emoji: '🌿', color: 'blue' },
+                      { name: '叶 (Leaves)', key: 'leaves', emoji: '🍃', color: 'emerald' },
+                      { name: '果 (Fruits)', key: 'fruits', emoji: '🍎', color: 'red' }
+                    ].map(part => {
+                      const data = treeResult[part.key]
+                      return (
+                        <div key={part.key} className="p-4 bg-gray-800 border border-gray-700 rounded">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-semibold">
+                              {part.emoji} {part.name}
+                            </span>
+                            <span className={`text-sm ${data?.is_solid ? 'text-green-400' : 'text-gray-400'}`}>
+                              {data?.is_solid ? '✓ 实心' : '○ 虚线'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 bg-gray-700 rounded-full h-3 overflow-hidden">
+                              <div
+                                className={`h-full bg-${part.color}-500 transition-all duration-500`}
+                                style={{ width: `${data?.growth_value || 0}%` }}
+                              />
+                            </div>
+                            <span className="text-lg font-bold text-white w-12 text-right">
+                              {data?.growth_value || 0}%
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 右侧：说明文档 */}
+            <div className="space-y-6">
+              <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-4 text-purple-400">📖 测试说明</h2>
+
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <h3 className="font-semibold text-purple-300 mb-2">🧠 功能说明</h3>
+                    <p className="text-gray-400 leading-relaxed">
+                      这是系统的"大脑"。它读取用户的行为总结历史（最近50条），
+                      通过AI深度分析，计算出"意识进化树"的生长参数，并更新到数据库。
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-purple-300 mb-2">🎯 评分法则</h3>
+                    <ul className="text-gray-400 space-y-1 list-disc list-inside">
+                      <li><strong>根 (Roots)</strong>: 广度与连接 - 跨学科思考</li>
+                      <li><strong>干 (Trunk)</strong>: 觉察与定力 - 内省与专注</li>
+                      <li><strong>枝 (Branches)</strong>: 探索深度 - 持续追问</li>
+                      <li><strong>叶 (Leaves)</strong>: 洞见 - Aha Moment</li>
+                      <li><strong>果 (Fruits)</strong>: 创造与利他 - 具体产出</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-purple-300 mb-2">⚡ Fire-and-Forget</h3>
+                    <p className="text-gray-400 leading-relaxed">
+                      调用后立即返回200 OK，实际计算在后台进行（10-20秒）。
+                      前端不需要等待，用户体验更好。
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-purple-300 mb-2">🗄️ 数据存储</h3>
+                    <ul className="text-gray-400 space-y-1 list-disc list-inside">
+                      <li><code className="text-xs bg-gray-800 px-1 py-0.5 rounded">profiles.consciousness_tree_view</code> - 最新状态</li>
+                      <li><code className="text-xs bg-gray-800 px-1 py-0.5 rounded">consciousness_level_history</code> - 历史记录</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-3 bg-yellow-900/20 border border-yellow-600 rounded">
+                    <div className="text-xs text-yellow-300">
+                      ⚠️ 重要：意识树评估需要基于**所有维度**的行为总结<br/>
+                      测试前请先在上方选择【对话+作业+项目】全部三个维度，生成完整的行为总结。<br/>
+                      意识树评估会自动读取所有历史总结数据（最近50条）进行分析。
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

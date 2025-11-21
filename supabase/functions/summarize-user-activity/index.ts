@@ -322,13 +322,13 @@ async function summarizeDialogue(
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-5-mini-2025-08-07",  // GPT-5 Mini (2025年8月版)
+      model: "gpt-4o-mini",  // GPT-4o Mini - 稳定版本，已验证可用
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(conversationData, null, 2) },
       ],
-      // temperature: GPT-5不支持自定义temperature，只能用默认值1
-      max_completion_tokens: 500,  // GPT-5使用max_completion_tokens而不是max_tokens
+      max_tokens: 800,  // GPT-4o使用max_tokens
+      temperature: 0.7,
     }),
   });
 
@@ -339,8 +339,9 @@ async function summarizeDialogue(
 
   // 检查响应状态
   if (!response.ok) {
-    console.error(`[对话总结-OpenAI错误] ${result.error?.message || JSON.stringify(result)}`);
-    return `无法生成总结: OpenAI API错误 (${response.status}) - ${result.error?.message || '未知错误'}`;
+    const errorMsg = `OpenAI API错误 (${response.status}): ${result.error?.message || result.error?.code || JSON.stringify(result)}`;
+    console.error(`[对话总结-OpenAI错误] ${errorMsg}`);
+    return `无法生成总结: ${errorMsg}`;
   }
 
   // 检查响应格式
@@ -349,7 +350,14 @@ async function summarizeDialogue(
     return "无法生成总结: API返回格式异常";
   }
 
-  return result.choices[0]?.message?.content || "无法生成总结";
+  const summary = result.choices[0]?.message?.content;
+  if (!summary) {
+    console.error(`[对话总结-OpenAI错误] 响应中没有content: ${JSON.stringify(result.choices[0])}`);
+    return "无法生成总结: API未返回内容";
+  }
+
+  console.log(`[对话总结-OpenAI成功] 总结长度: ${summary.length}字`);
+  return summary;
 }
 
 /**
@@ -401,13 +409,13 @@ async function summarizeCoursework(
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-5-mini-2025-08-07",  // GPT-5 Mini (2025年8月版)
+      model: "gpt-4o-mini",  // GPT-4o Mini - 稳定版本，已验证可用
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(courseworkData, null, 2) },
       ],
-      // temperature: GPT-5不支持自定义temperature，只能用默认值1
-      max_completion_tokens: 500,  // GPT-5使用max_completion_tokens而不是max_tokens
+      max_tokens: 800,  // GPT-4o使用max_tokens
+      temperature: 0.7,
     }),
   });
 
@@ -418,8 +426,9 @@ async function summarizeCoursework(
 
   // 检查响应状态
   if (!response.ok) {
-    console.error(`[作业总结-OpenAI错误] ${result.error?.message || JSON.stringify(result)}`);
-    return `无法生成总结: OpenAI API错误 (${response.status}) - ${result.error?.message || '未知错误'}`;
+    const errorMsg = `OpenAI API错误 (${response.status}): ${result.error?.message || result.error?.code || JSON.stringify(result)}`;
+    console.error(`[作业总结-OpenAI错误] ${errorMsg}`);
+    return `无法生成总结: ${errorMsg}`;
   }
 
   // 检查响应格式
@@ -428,7 +437,14 @@ async function summarizeCoursework(
     return "无法生成总结: API返回格式异常";
   }
 
-  return result.choices[0]?.message?.content || "无法生成总结";
+  const summary = result.choices[0]?.message?.content;
+  if (!summary) {
+    console.error(`[作业总结-OpenAI错误] 响应中没有content: ${JSON.stringify(result.choices[0])}`);
+    return "无法生成总结: API未返回内容";
+  }
+
+  console.log(`[作业总结-OpenAI成功] 总结长度: ${summary.length}字`);
+  return summary;
 }
 
 /**
@@ -482,13 +498,13 @@ async function summarizeProjects(
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-5-mini-2025-08-07",  // GPT-5 Mini (2025年8月版)
+      model: "gpt-4o-mini",  // GPT-4o Mini - 稳定版本，已验证可用
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(projectData, null, 2) },
       ],
-      // temperature: GPT-5不支持自定义temperature，只能用默认值1
-      max_completion_tokens: 500,  // GPT-5使用max_completion_tokens而不是max_tokens
+      max_tokens: 800,  // GPT-4o使用max_tokens
+      temperature: 0.7,
     }),
   });
 
@@ -499,8 +515,9 @@ async function summarizeProjects(
 
   // 检查响应状态
   if (!response.ok) {
-    console.error(`[项目总结-OpenAI错误] ${result.error?.message || JSON.stringify(result)}`);
-    return `无法生成总结: OpenAI API错误 (${response.status}) - ${result.error?.message || '未知错误'}`;
+    const errorMsg = `OpenAI API错误 (${response.status}): ${result.error?.message || result.error?.code || JSON.stringify(result)}`;
+    console.error(`[项目总结-OpenAI错误] ${errorMsg}`);
+    return `无法生成总结: ${errorMsg}`;
   }
 
   // 检查响应格式
@@ -509,5 +526,12 @@ async function summarizeProjects(
     return "无法生成总结: API返回格式异常";
   }
 
-  return result.choices[0]?.message?.content || "无法生成总结";
+  const summary = result.choices[0]?.message?.content;
+  if (!summary) {
+    console.error(`[项目总结-OpenAI错误] 响应中没有content: ${JSON.stringify(result.choices[0])}`);
+    return "无法生成总结: API未返回内容";
+  }
+
+  console.log(`[项目总结-OpenAI成功] 总结长度: ${summary.length}字`);
+  return summary;
 }
