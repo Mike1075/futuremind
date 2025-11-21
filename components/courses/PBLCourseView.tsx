@@ -100,6 +100,14 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
             is_completed: completionMap.get(p.id)?.is_completed ?? false,
             progress: completionMap.get(p.id)?.progress ?? 0
           }))
+
+          // 🐛 调试日志：打印伊卡洛斯项目的进度数据
+          console.log('[数据加载] 合并后的项目进度:', projects.map(p => ({
+            title: p.title,
+            sequence: p.sequence_number,
+            progress: p.progress,
+            is_completed: p.is_completed
+          })))
         }
 
         setAllProjects(projects)
