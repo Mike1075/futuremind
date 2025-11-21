@@ -2,36 +2,94 @@
 
 import { useEffect, useState } from 'react'
 import { ConsciousnessTreeCanvas } from './ConsciousnessTreeCanvas'
-import { TreeGrowthData } from '@/lib/utils/consciousnessTreeGenerator'
+import { TreeGrowthData, TreeParams } from '@/lib/utils/consciousnessTreeGenerator'
 import { createClient } from '@/lib/supabase/client'
-
-export interface TreeTechParams {
-  depth: number
-  branchAngle: number
-  lengthDecay: number
-  trunkLength: number
-  trunkWidth: number
-  rootDepth: number
-  rootSpread: number
-  particleSize: number
-  glowIntensity: number
-  leafDensity: number
-  fruitProbability: number
-}
 
 interface ConsciousnessTreeViewProps {
   userId: string
   isPreview?: boolean  // 预览模式（隐藏调试信息）
-  techParams?: TreeTechParams  // 技术参数（实时调整）
+  techParams?: Partial<TreeParams>  // 技术参数（实时调整）
 }
 
-// 默认初始数据（全为0）
+// 默认初始数据（种子状态）
 const INITIAL_GROWTH_DATA: TreeGrowthData = {
-  roots: { growth_value: 0, is_solid: false },
-  trunk: { growth_value: 0, is_solid: false },
-  branches: { growth_value: 0, is_solid: false },
-  leaves: { growth_value: 0, is_solid: false },
-  fruits: { growth_value: 0, is_solid: false },
+  roots: { count: 0, depth_level: 0, is_solid: false },
+  trunk: { thickness: 0, height_level: 0, is_solid: false },
+  branches: { count: 0, avg_length: 0, is_solid: false },
+  leaves: { count: 0, is_solid: false },
+  fruits: { count: 0, is_solid: false },
+}
+
+/**
+ * 旧格式到新格式的数据转换函数
+ * 旧格式: { growth_value: 0-100, is_solid }
+ * 新格式: { count, depth_level, thickness, height_level, avg_length, is_solid }
+ */
+function migrateOldFormat(dbData: any): TreeGrowthData {
+  // 检测是否为旧格式（有 growth_value 字段）
+  const isOldFormat = dbData?.roots?.growth_value !== undefined
+
+  if (!isOldFormat) {
+    // 新格式直接返回（添加默认值保护）
+    return {
+      roots: {
+        count: dbData?.roots?.count ?? 0,
+        depth_level: dbData?.roots?.depth_level ?? 0,
+        is_solid: dbData?.roots?.is_solid ?? false
+      },
+      trunk: {
+        thickness: dbData?.trunk?.thickness ?? 0,
+        height_level: dbData?.trunk?.height_level ?? 0,
+        is_solid: dbData?.trunk?.is_solid ?? false
+      },
+      branches: {
+        count: dbData?.branches?.count ?? 0,
+        avg_length: dbData?.branches?.avg_length ?? 0,
+        is_solid: dbData?.branches?.is_solid ?? false
+      },
+      leaves: {
+        count: dbData?.leaves?.count ?? 0,
+        is_solid: dbData?.leaves?.is_solid ?? false
+      },
+      fruits: {
+        count: dbData?.fruits?.count ?? 0,
+        is_solid: dbData?.fruits?.is_solid ?? false
+      },
+    }
+  }
+
+  // 旧格式转换：growth_value (0-100) → 对应的新格式参数
+  const rootsValue = dbData?.roots?.growth_value ?? 0
+  const trunkValue = dbData?.trunk?.growth_value ?? 0
+  const branchesValue = dbData?.branches?.growth_value ?? 0
+  const leavesValue = dbData?.leaves?.growth_value ?? 0
+  const fruitsValue = dbData?.fruits?.growth_value ?? 0
+
+  return {
+    roots: {
+      count: Math.round((rootsValue / 100) * 20),  // 0-100 → 0-20
+      depth_level: (rootsValue / 100) * 10,        // 0-100 → 0-10
+      is_solid: dbData?.roots?.is_solid ?? false
+    },
+    trunk: {
+      thickness: (trunkValue / 100) * 50,          // 0-100 → 0-50
+      height_level: trunkValue,                     // 0-100 → 0-100
+      is_solid: dbData?.trunk?.is_solid ?? false
+    },
+    branches: {
+      count: Math.round((branchesValue / 100) * 20), // 0-100 → 0-20
+      avg_length: (branchesValue / 100) * 10,        // 0-100 → 0-10
+      is_solid: dbData?.branches?.is_solid ?? false
+    },
+    leaves: {
+      count: Math.round((leavesValue / 100) * 50),   // 0-100 → 0-50
+      is_solid: dbData?.leaves?.is_solid ?? false
+    },
+    fruits: {
+      count: Math.round((fruitsValue / 100) * 20),   // 0-100 → 0-20
+      is_solid: dbData?.fruits?.is_solid ?? false
+    },
+  }
 }
 
 export function ConsciousnessTreeView({ userId, isPreview = false, techParams }: ConsciousnessTreeViewProps) {
@@ -58,31 +116,9 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
       if (error) throw error
 
       if (data?.consciousness_tree_view) {
-        // 验证数据结构并与默认数据合并，确保所有字段都存在
-        const dbData = data.consciousness_tree_view as any
-        const mergedData: TreeGrowthData = {
-          roots: {
-            growth_value: dbData?.roots?.growth_value ?? 0,
-            is_solid: dbData?.roots?.is_solid ?? false
-          },
-          trunk: {
-            growth_value: dbData?.trunk?.growth_value ?? 0,
-            is_solid: dbData?.trunk?.is_solid ?? false
-          },
-          branches: {
-            growth_value: dbData?.branches?.growth_value ?? 0,
-            is_solid: dbData?.branches?.is_solid ?? false
-          },
-          leaves: {
-            growth_value: dbData?.leaves?.growth_value ?? 0,
-            is_solid: dbData?.leaves?.is_solid ?? false
-          },
-          fruits: {
-            growth_value: dbData?.fruits?.growth_value ?? 0,
-            is_solid: dbData?.fruits?.is_solid ?? false
-          },
-        }
-        setGrowthData(mergedData)
+        // 使用迁移函数自动处理新旧格式
+        const migratedData = migrateOldFormat(data.consciousness_tree_view)
+        setGrowthData(migratedData)
       }
     } catch (err) {
       console.error('加载意识树数据失败:', err)
@@ -116,11 +152,11 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
       {!isPreview && (
         <div className="absolute top-4 left-4 bg-black/80 text-white p-4 rounded-lg text-xs space-y-1">
           <div className="font-bold mb-2 text-red-400">意识树生长数据</div>
-          <div>根系: {growthData.roots.growth_value}% {growthData.roots.is_solid ? '✓' : '虚'}</div>
-          <div>树干: {growthData.trunk.growth_value}% {growthData.trunk.is_solid ? '✓' : '虚'}</div>
-          <div>枝干: {growthData.branches.growth_value}% {growthData.branches.is_solid ? '✓' : '虚'}</div>
-          <div>树叶: {growthData.leaves.growth_value}% {growthData.leaves.is_solid ? '✓' : '虚'}</div>
-          <div>果实: {growthData.fruits.growth_value}% {growthData.fruits.is_solid ? '✓' : '虚'}</div>
+          <div>🌱 根系: {growthData.roots.count}个 深度{growthData.roots.depth_level.toFixed(1)} {growthData.roots.is_solid ? '实' : '虚'}</div>
+          <div>🪵 树干: 厚度{growthData.trunk.thickness.toFixed(1)} 高度{growthData.trunk.height_level.toFixed(1)} {growthData.trunk.is_solid ? '实' : '虚'}</div>
+          <div>🌿 枝干: {growthData.branches.count}个 长度{growthData.branches.avg_length.toFixed(1)} {growthData.branches.is_solid ? '实' : '虚'}</div>
+          <div>🍃 树叶: {growthData.leaves.count}片 {growthData.leaves.is_solid ? '实' : '虚'}</div>
+          <div>🍎 果实: {growthData.fruits.count}个 {growthData.fruits.is_solid ? '实' : '虚'}</div>
         </div>
       )}
     </div>
