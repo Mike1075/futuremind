@@ -321,7 +321,7 @@ async function summarizeDialogue(
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-5-mini",  // 升级到GPT-5 Mini
+      model: "gpt-5-mini-2025-08-07",  // GPT-5 Mini (2025年8月版)
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(conversationData, null, 2) },
@@ -384,7 +384,7 @@ async function summarizeCoursework(
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-5-mini",  // 升级到GPT-5 Mini
+      model: "gpt-5-mini-2025-08-07",  // GPT-5 Mini (2025年8月版)
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(courseworkData, null, 2) },
@@ -449,7 +449,7 @@ async function summarizeProjects(
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-5-mini",  // 升级到GPT-5 Mini
+      model: "gpt-5-mini-2025-08-07",  // GPT-5 Mini (2025年8月版)
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(projectData, null, 2) },
