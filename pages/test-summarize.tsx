@@ -77,47 +77,47 @@ export default function TestSummarizePage() {
 
   const loadTestUsersDirectly = async () => {
     try {
-      // 方案1: 尝试查询数据库
+      // 方案1: 尝试查询数据库（查询所有角色，不只是学生）
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
-        .eq('role', 'student')
+        .select('id, full_name, email, role')
+        .order('role', { ascending: true })
         .order('full_name', { ascending: true })
-        .limit(20)
+        .limit(50)
 
       if (profileError || !profiles || profiles.length === 0) {
-        // 方案2: 如果查询失败或没有登录，使用硬编码的测试用户
+        // 方案2: 如果查询失败，使用硬编码的测试用户
         addLog('warning', '无法查询数据库，使用预设测试用户')
         const hardcodedUsers: TestUser[] = [
           {
-            id: 'b9a9ab9d-2978-4918-80e0-d12422e24cb2',
-            full_name: '陶子',
-            email: 'sam79v9streat@hotmail.com',
-            conversation_count: 0,
+            id: 'd13b38f0-2184-4724-a13a-af1f1d24b47a',
+            full_name: '杜富陶 (校长)',
+            email: '3368327@qq.com',
+            conversation_count: 5,
+            submission_count: 9,
+            project_count: 4
+          },
+          {
+            id: '61ea0e18-3ffd-4e7b-bae8-a8f745687808',
+            full_name: 'Ethan (教师)',
+            email: 'k245246@outlook.com',
+            conversation_count: 6,
             submission_count: 0,
+            project_count: 1
+          },
+          {
+            id: 'b9a9ab9d-2978-4918-80e0-d12422e24cb2',
+            full_name: '陶子 (学生)',
+            email: 'sam79v9streat@hotmail.com',
+            conversation_count: 1,
+            submission_count: 2,
             project_count: 0
           },
           {
             id: '538ad263-bde1-4af2-9c18-eb865f9ec33b',
-            full_name: '正方形',
+            full_name: '正方形 (学生)',
             email: '546648974@qq.com',
-            conversation_count: 0,
-            submission_count: 0,
-            project_count: 0
-          },
-          {
-            id: 'e84ab896-2278-45d7-809f-0d3041e88239',
-            full_name: 'law',
-            email: '546648971@qq.com',
-            conversation_count: 0,
-            submission_count: 0,
-            project_count: 0
-          },
-          {
-            id: 'fa67a5d2-3ce8-4452-91ab-caa6b1a47d0e',
-            full_name: '杜富陶',
-            email: 'futaodu@gmail.com',
-            conversation_count: 0,
+            conversation_count: 1,
             submission_count: 0,
             project_count: 0
           }
@@ -127,18 +127,18 @@ export default function TestSummarizePage() {
         return
       }
 
-      // 将所有学生添加到列表
-      const allStudents: TestUser[] = profiles.map(profile => ({
+      // 将所有用户添加到列表
+      const allUsers: TestUser[] = profiles.map(profile => ({
         id: profile.id,
-        full_name: profile.full_name || '未知',
+        full_name: `${profile.full_name || '未知'} (${profile.role})`,
         email: profile.email,
         conversation_count: 0,
         submission_count: 0,
         project_count: 0
       }))
 
-      setTestUsers(allStudents)
-      addLog('success', `成功加载 ${allStudents.length} 个学生用户`)
+      setTestUsers(allUsers)
+      addLog('success', `成功加载 ${allUsers.length} 个用户`)
       addLog('info', '提示：数据量显示为0是正常的，Edge Function会获取实际数据')
     } catch (err) {
       addLog('error', `查询失败: ${err instanceof Error ? err.message : String(err)}`)
@@ -146,12 +146,12 @@ export default function TestSummarizePage() {
       addLog('info', '使用备用测试用户...')
       const fallbackUsers: TestUser[] = [
         {
-          id: 'b9a9ab9d-2978-4918-80e0-d12422e24cb2',
-          full_name: '陶子',
-          email: 'sam79v9streat@hotmail.com',
-          conversation_count: 0,
-          submission_count: 0,
-          project_count: 0
+          id: 'd13b38f0-2184-4724-a13a-af1f1d24b47a',
+          full_name: '杜富陶 (校长)',
+          email: '3368327@qq.com',
+          conversation_count: 5,
+          submission_count: 9,
+          project_count: 4
         }
       ]
       setTestUsers(fallbackUsers)
@@ -337,9 +337,26 @@ export default function TestSummarizePage() {
                 </div>
               )}
 
+              {/* 手动输入用户ID */}
+              <div className="mt-4 p-4 bg-gray-800 border border-gray-600 rounded">
+                <label className="text-sm text-gray-400 mb-2 block">或者手动输入用户ID:</label>
+                <input
+                  type="text"
+                  value={userId}
+                  onChange={(e) => {
+                    setUserId(e.target.value)
+                    if (e.target.value) {
+                      addLog('info', `手动输入用户ID: ${e.target.value}`)
+                    }
+                  }}
+                  placeholder="粘贴用户ID (UUID格式)"
+                  className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded text-white font-mono text-sm focus:outline-none focus:border-green-500"
+                />
+              </div>
+
               {userId && (
                 <div className="mt-4 p-3 bg-green-900/20 border border-green-600 rounded">
-                  <div className="text-sm text-green-400">✅ 已选择用户ID:</div>
+                  <div className="text-sm text-green-400">✅ 当前用户ID:</div>
                   <div className="font-mono text-xs mt-1 break-all">{userId}</div>
                 </div>
               )}
