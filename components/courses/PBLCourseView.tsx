@@ -84,7 +84,7 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
           setMyProjects(myProjectsData)
 
           // 创建项目完成状态映射
-          const completionMap = new Map(
+          const completionMap = new Map<string, { is_completed: boolean; progress: number }>(
             myProjectsData.map((mp: UserSelectedProject) => [
               mp.course_contents.id,
               {
@@ -97,8 +97,8 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
           // 为所有项目添加完成状态
           projects = projects.map((p: Project) => ({
             ...p,
-            is_completed: completionMap.get(p.id)?.is_completed || false,
-            progress: completionMap.get(p.id)?.progress || 0
+            is_completed: completionMap.get(p.id)?.is_completed ?? false,
+            progress: completionMap.get(p.id)?.progress ?? 0
           }))
         }
 
