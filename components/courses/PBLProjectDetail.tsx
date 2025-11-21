@@ -9,6 +9,26 @@ import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
+// 伊卡洛斯项目模块名称映射（与主界面保持一致）
+const MODULE_NAMES: Record<number, string> = {
+  1: '模块一：无形的纽带',
+  2: '模块一：无形的纽带',
+  3: '模块一：无形的纽带',
+  4: '模块二：无形的地图',
+  5: '模块二：无形的地图',
+  6: '模块二：无形的地图',
+  7: '模块二：无形的地图',
+  8: '模块三：延展的心灵',
+  9: '模块三：延展的心灵',
+  10: '模块三：延展的心灵',
+  11: '模块三：延展的心灵',
+}
+
+// 根据sequence_number获取统一的模块名称
+const getModuleName = (sequenceNumber: number): string => {
+  return MODULE_NAMES[sequenceNumber] || '伊卡洛斯计划'
+}
+
 // 智能文本预处理器：将中文段落标签转换为Markdown格式并添加表情
 function preprocessContentToMarkdown(content: string): string {
   if (!content) return ''
@@ -555,27 +575,17 @@ export function PBLProjectDetail({
 
           {/* 元信息 */}
           <div className="flex flex-wrap gap-4 text-sm text-gray-400 mb-6">
-            {project.module_name && (
-              <span className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                </svg>
-                {project.module_name}
-              </span>
-            )}
-            {project.estimated_duration && (
-              <span className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                </svg>
-                预计 {project.estimated_duration} 分钟
-              </span>
-            )}
+            <span className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+              </svg>
+              {getModuleName(project.sequence_number)}
+            </span>
             <span className="flex items-center gap-2">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
               </svg>
-              {project.week_plan.length} 周计划
+              {project.week_plan.length} 周
             </span>
           </div>
 

@@ -464,12 +464,14 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           const x2 = centerX + subRadiusVmin * Math.cos(subAngle2 * Math.PI / 180)
                           const y2 = centerY + subRadiusVmin * Math.sin(subAngle2 * Math.PI / 180)
 
-                          // 根据边连接的两个项目的完成状态判断线型：两个都完成=实线，否则=虚线
+                          // 根据边连接的两个项目的完成状态判断线型：两个都完成>=60%=实线，否则=虚线
                           const currentProject = module.projects[projectIndex]
                           const nextProject = module.projects[nextIndex]
-                          const bothCompleted = currentProject.is_completed && nextProject.is_completed
-                          // 虚线样式：3 2 表示 3单位实线 + 2单位间隔（清晰的虚线效果）
-                          const strokeDasharray = bothCompleted ? "0" : "3 2"
+                          const currentCompleted = (currentProject.progress ?? 0) >= 60
+                          const nextCompleted = (nextProject.progress ?? 0) >= 60
+                          const bothCompleted = currentCompleted && nextCompleted
+                          // 虚线样式：2 1.5 表示 2单位实线 + 1.5单位间隔
+                          const strokeDasharray = bothCompleted ? "0" : "2 1.5"
 
                           return (
                             <motion.line
@@ -479,7 +481,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               x2={x2}
                               y2={y2}
                               stroke={currentColors[0]}
-                              strokeWidth={bothCompleted ? "0.4" : "1.2"}
+                              strokeWidth="0.3"
                               strokeDasharray={strokeDasharray}
                               strokeLinecap="round"
                               initial={{ pathLength: 0, opacity: 0 }}
