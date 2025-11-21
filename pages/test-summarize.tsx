@@ -376,6 +376,13 @@ export default function TestSummarizePage() {
 
     addTreeLog('info', '正在查询数据库中的意识树数据...')
 
+    // 检查登录状态
+    const { data: { session } } = await supabase.auth.getSession()
+    addTreeLog('info', `[调试] 登录状态: ${session ? '已登录' : '未登录 (使用匿名key)'}`)
+    if (session) {
+      addTreeLog('info', `[调试] 当前用户ID: ${session.user.id}`)
+    }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
