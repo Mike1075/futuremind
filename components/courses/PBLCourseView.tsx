@@ -102,7 +102,7 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
           }))
 
           // 🐛 调试日志：打印伊卡洛斯项目的进度数据
-          console.log('[数据加载] 合并后的项目进度:', projects.map(p => ({
+          console.log('[数据加载] 合并后的项目进度:', projects.map((p: Project) => ({
             title: p.title,
             sequence: p.sequence_number,
             progress: p.progress,
