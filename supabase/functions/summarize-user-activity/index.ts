@@ -326,7 +326,7 @@ async function summarizeDialogue(
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(conversationData, null, 2) },
       ],
-      temperature: 0.7,
+      // temperature: GPT-5不支持自定义temperature，只能用默认值1
       max_completion_tokens: 500,  // GPT-5使用max_completion_tokens而不是max_tokens
     }),
   });
@@ -405,7 +405,7 @@ async function summarizeCoursework(
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(courseworkData, null, 2) },
       ],
-      temperature: 0.7,
+      // temperature: GPT-5不支持自定义temperature，只能用默认值1
       max_completion_tokens: 500,  // GPT-5使用max_completion_tokens而不是max_tokens
     }),
   });
@@ -486,7 +486,7 @@ async function summarizeProjects(
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(projectData, null, 2) },
       ],
-      temperature: 0.7,
+      // temperature: GPT-5不支持自定义temperature，只能用默认值1
       max_completion_tokens: 500,  // GPT-5使用max_completion_tokens而不是max_tokens
     }),
   });
