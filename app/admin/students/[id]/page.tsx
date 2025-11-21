@@ -77,7 +77,7 @@ const LEVEL_NAMES = {
 export default function StudentDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const studentId = params.id as string
+  const studentId = params?.id as string
 
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<StudentDetail | null>(null)

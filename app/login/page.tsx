@@ -20,7 +20,7 @@ function LoginForm() {
   const supabase = createClient()
 
   // 获取重定向地址
-  const redirectTo = searchParams.get('redirect') || '/portal'
+  const redirectTo = searchParams?.get('redirect') || '/portal'
 
   // 确保只在客户端渲染
   useEffect(() => {

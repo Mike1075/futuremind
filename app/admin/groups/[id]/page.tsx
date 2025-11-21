@@ -52,7 +52,7 @@ const LEVEL_NAMES = {
 export default function GroupDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const groupId = params.id as string
+  const groupId = params?.id as string
 
   const [loading, setLoading] = useState(true)
   const [group, setGroup] = useState<Group | null>(null)

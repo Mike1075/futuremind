@@ -19,7 +19,7 @@ import type { Organization, Project, Task } from '@/lib/aip/types'
 export default function OrganizationDashboardPage() {
   const router = useRouter()
   const params = useParams()
-  const organizationId = params.organizationId as string
+  const organizationId = params?.organizationId as string
 
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [loading, setLoading] = useState(true)

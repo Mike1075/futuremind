@@ -76,7 +76,7 @@ const DIFFICULTY_LABELS = {
 export default function PBLProjectDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const projectId = params.projectId as string
+  const projectId = params?.projectId as string
 
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('details')
