@@ -383,18 +383,29 @@ export default function TestSummarizePage() {
         .eq('id', userId)
         .single()
 
+      // 调试：显示完整响应
+      addTreeLog('info', `[调试] 查询响应: ${JSON.stringify({ hasData: !!data, hasError: !!error })}`)
+
       if (error) {
         addTreeLog('error', `查询失败: ${error.message}`)
+        addTreeLog('error', `[调试] 错误详情: ${JSON.stringify(error)}`)
         return
       }
 
-      if (!data?.consciousness_tree_view) {
+      if (!data) {
+        addTreeLog('error', '[调试] data为null或undefined')
+        return
+      }
+
+      if (!data.consciousness_tree_view) {
         addTreeLog('warning', '该用户还没有意识树数据，可能计算尚未完成')
+        addTreeLog('info', `[调试] data内容: ${JSON.stringify(data)}`)
         return
       }
 
       const tree = data.consciousness_tree_view
       addTreeLog('success', '✅ 成功获取意识树数据！')
+      addTreeLog('info', `[调试] tree数据: ${JSON.stringify(tree)}`)
       addTreeLog('info', `根 (Roots): ${tree.roots?.growth_value || 0}% ${tree.roots?.is_solid ? '(实心)' : '(虚线)'}`)
       addTreeLog('info', `干 (Trunk): ${tree.trunk?.growth_value || 0}% ${tree.trunk?.is_solid ? '(实心)' : '(虚线)'}`)
       addTreeLog('info', `枝 (Branches): ${tree.branches?.growth_value || 0}% ${tree.branches?.is_solid ? '(实心)' : '(虚线)'}`)
@@ -402,6 +413,7 @@ export default function TestSummarizePage() {
       addTreeLog('info', `果 (Fruits): ${tree.fruits?.growth_value || 0}% ${tree.fruits?.is_solid ? '(实心)' : '(虚线)'}`)
 
       setTreeResult(tree)
+      addTreeLog('info', `[调试] treeResult已设置，应该显示可视化图表`)
 
     } catch (error) {
       addTreeLog('error', `查询失败: ${error instanceof Error ? error.message : String(error)}`)
