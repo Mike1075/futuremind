@@ -77,41 +77,29 @@ export default function TestSummarizePage() {
 
   const loadTestUsersDirectly = async () => {
     try {
-      // 直接查询profiles表
+      // 直接查询profiles表，加载所有学生（不统计数据量，避免RLS限制）
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
         .eq('role', 'student')
-        .limit(10)
+        .order('full_name', { ascending: true })
+        .limit(20)
 
       if (profileError) throw profileError
 
-      // 手动统计每个用户的数据
-      const usersWithData: TestUser[] = []
+      // 将所有学生添加到列表（不查询数据量，避免RLS阻止）
+      const allStudents: TestUser[] = (profiles || []).map(profile => ({
+        id: profile.id,
+        full_name: profile.full_name || '未知',
+        email: profile.email,
+        conversation_count: 0, // 不预先查询，避免RLS限制
+        submission_count: 0,
+        project_count: 0
+      }))
 
-      for (const profile of profiles || []) {
-        const [convResult, subResult, projResult] = await Promise.all([
-          supabase.from('gaia_conversations').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('is_active', true),
-          supabase.from('user_submissions').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
-          supabase.from('user_selected_projects').select('id', { count: 'exact', head: true }).eq('user_id', profile.id)
-        ])
-
-        const hasData = (convResult.count || 0) + (subResult.count || 0) + (projResult.count || 0) > 0
-
-        if (hasData) {
-          usersWithData.push({
-            id: profile.id,
-            full_name: profile.full_name || '未知',
-            email: profile.email,
-            conversation_count: convResult.count || 0,
-            submission_count: subResult.count || 0,
-            project_count: projResult.count || 0
-          })
-        }
-      }
-
-      setTestUsers(usersWithData)
-      addLog('success', `成功加载 ${usersWithData.length} 个有数据的用户`)
+      setTestUsers(allStudents)
+      addLog('success', `成功加载 ${allStudents.length} 个学生用户`)
+      addLog('info', '提示：由于权限限制，无法预先显示数据量。请直接选择学生进行测试。')
     } catch (err) {
       addLog('error', `直接查询失败: ${err instanceof Error ? err.message : String(err)}`)
     }
