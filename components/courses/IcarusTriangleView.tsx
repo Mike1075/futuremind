@@ -109,9 +109,14 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
   const shouldPause = activeModule !== null || selectedProject !== null
 
   const handleModuleClick = (moduleId: number) => {
+    console.log('[点击调试] 模块被点击:', moduleId)
+    console.log('[点击调试] 当前activeModule:', activeModule)
+
     if (activeModule === moduleId) {
+      console.log('[点击调试] 关闭当前模块')
       setActiveModule(null)
     } else {
+      console.log('[点击调试] 打开新模块:', moduleId)
       setActiveModule(moduleId)
       setSelectedProject(null)
     }
@@ -278,7 +283,11 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                       transform: 'translate(-50%, -50%)',
                     }}
                     className="cursor-pointer group"
-                    onClick={() => handleModuleClick(module.id)}
+                    onClick={(e) => {
+                      console.log('[点击调试] 外层容器被点击, moduleId:', module.id, 'event:', e.type)
+                      e.stopPropagation()
+                      handleModuleClick(module.id)
+                    }}
                     onMouseEnter={() => setHoveredModule(module.id)}
                     onMouseLeave={() => setHoveredModule(null)}
                   >
@@ -318,6 +327,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           boxShadow: `0 0 50px ${currentColors[0]}`,
                         }}
                         onClick={(e) => {
+                          console.log('[点击调试] 主圆形被点击, moduleId:', module.id, 'event:', e.type)
                           e.stopPropagation()
                           handleModuleClick(module.id)
                         }}
@@ -496,7 +506,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                             nextProgress: nextProject.progress,
                             nextCompleted,
                             bothCompleted,
-                            strokeDasharray
+                            strokeDasharray,
+                            '⚠️ 注意': bothCompleted ? '实线(0)' : '虚线(4 3)'
                           })
 
                           return (
@@ -510,9 +521,9 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               strokeWidth="0.3"
                               strokeDasharray={strokeDasharray}
                               strokeLinecap="round"
-                              initial={{ pathLength: 0, opacity: 0 }}
-                              animate={{ pathLength: 1, opacity: 1 }}
-                              exit={{ pathLength: 0, opacity: 0 }}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
                               transition={{
                                 delay: projectIndex * 0.1,
                                 duration: 0.6,
