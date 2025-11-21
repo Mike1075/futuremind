@@ -267,7 +267,6 @@ export const generateConsciousnessTree = (
 
   // 画布中心点
   const centerX = width / 2
-  const baseY = height * 0.65
 
   // 粒子数量熔断控制
   const particleLimit = { count: 0, max: 50000 }
@@ -276,6 +275,19 @@ export const generateConsciousnessTree = (
   const baseHeight = growthData.roots.count * 10  // 有根就有干
   const growHeight = growthData.trunk.height_level * 2.5
   const totalTrunkHeight = Math.max(baseHeight + growHeight, 10)
+
+  // 计算根系预计延伸深度
+  const rootDepth = growthData.roots.depth_level
+  let rootMaxDepth = 1
+  if (rootDepth > 2) rootMaxDepth = 2
+  if (rootDepth > 4) rootMaxDepth = 3
+  if (rootDepth > 6) rootMaxDepth = 4
+  if (rootDepth > 8) rootMaxDepth = 5
+  const rootLength = Math.max(rootDepth * 15, 5)
+  const rootTotalExtent = rootLength * (1 + 0.7 + 0.49 + 0.343 + 0.24) * (rootMaxDepth / 5)
+
+  // 树干底部位置（从画布底部向上预留根系空间 + 底部边距）
+  const baseY = height - rootTotalExtent - 100
   const trunkTopY = baseY - totalTrunkHeight
 
   // 动态粗度：根系越深，树干越稳
@@ -304,16 +316,7 @@ export const generateConsciousnessTree = (
   const rootCount = Math.max(growthData.roots.count, 0)
 
   if (rootCount > 0) {
-    const rootDepth = growthData.roots.depth_level
-
-    // 计算根系递归深度
-    let rootMaxDepth = 1
-    if (rootDepth > 2) rootMaxDepth = 2
-    if (rootDepth > 4) rootMaxDepth = 3
-    if (rootDepth > 6) rootMaxDepth = 4
-    if (rootDepth > 8) rootMaxDepth = 5
-
-    const rootLength = Math.max(rootDepth * 15, 5)
+    // rootDepth, rootMaxDepth, rootLength 已在前面计算
     const rootColor = getColor(
       'root',
       Math.min(rootDepth / 10, 1),

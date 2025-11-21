@@ -20,10 +20,12 @@ const DEFAULT_PARAMS: TreeParams = {
 
 export function ConsciousnessTreeCanvas({ growthData, techParams }: ConsciousnessTreeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    const container = containerRef.current
+    if (!canvas || !container) return
 
     const ctx = canvas.getContext('2d', {
       alpha: false,
@@ -31,10 +33,63 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
     })
     if (!ctx) return
 
-    // 直接合并参数（对标参考网站的简单方式）
+    // 直接合并参数
     const params = { ...DEFAULT_PARAMS, ...techParams }
 
+    // 计算树实际需要的空间（根据growthData动态计算）
+    const calculateTreeDimensions = () => {
+      // 基础宽度（视口宽度或最小800px）
+      const baseWidth = Math.max(container.clientWidth || 800, 800)
+
+      // 计算树干高度
+      const baseHeight = growthData.roots.count * 10
+      const growHeight = growthData.trunk.height_level * 2.5
+      const trunkHeight = Math.max(baseHeight + growHeight, 10)
+
+      // 计算根系深度（考虑递归层级）
+      const rootDepth = growthData.roots.depth_level
+      let rootMaxDepth = 1
+      if (rootDepth > 2) rootMaxDepth = 2
+      if (rootDepth > 4) rootMaxDepth = 3
+      if (rootDepth > 6) rootMaxDepth = 4
+      if (rootDepth > 8) rootMaxDepth = 5
+
+      const rootLength = Math.max(rootDepth * 15, 5)
+      // 根系总延伸 = 主根 + 递归分支（每级0.7倍）
+      const rootTotalExtent = rootLength * (1 + 0.7 + 0.49 + 0.343 + 0.24) * (rootMaxDepth / 5)
+
+      // 计算枝条延伸（考虑递归层级）
+      const branchLength = Math.max(growthData.branches.avg_length * 10, 5)
+      let branchMaxDepth = 2
+      if (growthData.branches.count > 3) branchMaxDepth = 3
+      if (growthData.branches.count > 6) branchMaxDepth = 4
+      if (growthData.branches.count > 12) branchMaxDepth = 5
+
+      // 枝条总延伸 = 主枝 + 递归分支
+      const branchTotalExtent = branchLength * (1 + 0.7 + 0.49 + 0.343 + 0.24) * (branchMaxDepth / 5)
+
+      // 总高度 = 上边距 + 树冠延伸 + 树干 + 根系延伸 + 下边距
+      const totalHeight = Math.max(
+        200 + branchTotalExtent + trunkHeight + rootTotalExtent + 200,
+        container.clientHeight || 600
+      )
+
+      // 总宽度 = 基础宽度 + 枝条左右延伸
+      const totalWidth = Math.max(
+        baseWidth + branchTotalExtent * 2,
+        baseWidth
+      )
+
+      return { width: totalWidth, height: totalHeight }
+    }
+
     const draw = () => {
+      const dimensions = calculateTreeDimensions()
+
+      // 设置Canvas尺寸为足够大
+      canvas.width = dimensions.width
+      canvas.height = dimensions.height
+
       // 清空画布
       ctx.fillStyle = '#000000'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -58,7 +113,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
         ctx.fill()
 
         // 增强发光效果
-        if (p.color.includes('70%') || p.color.includes('72%')) {
+        if (p.color.includes('70%') || p.color.includes('72%') || p.color.includes('85%')) {
           ctx.shadowBlur = 15
           ctx.shadowColor = p.color
           ctx.fill()
@@ -68,13 +123,11 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
     }
 
     const resize = () => {
-      canvas.width = canvas.parentElement?.clientWidth || 800
-      canvas.height = canvas.parentElement?.clientHeight || 600
       draw()
     }
 
     window.addEventListener('resize', resize)
-    resize()
+    draw()
 
     return () => {
       window.removeEventListener('resize', resize)
@@ -82,10 +135,15 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
   }, [growthData, techParams])
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="w-full h-full"
-      style={{ display: 'block', background: '#000' }}
-    />
+    <div
+      ref={containerRef}
+      className="w-full h-full overflow-auto"
+      style={{ background: '#000' }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{ display: 'block', background: '#000', minWidth: '100%' }}
+      />
+    </div>
   )
 }
