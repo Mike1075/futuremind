@@ -19,17 +19,38 @@ interface TestUser {
 }
 
 export default function TestSummarizePage() {
-  const [userId, setUserId] = useState('')
+  const [userId, setUserId] = useState(() => {
+    // 从localStorage恢复userId
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('test_userId') || ''
+    }
+    return ''
+  })
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>(['dialogue'])
   const [forceFullRefresh, setForceFullRefresh] = useState(true)  // 默认开启测试模式
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
+  const [isRestored, setIsRestored] = useState(false)
   const [testUsers, setTestUsers] = useState<TestUser[]>([])
   const [treeEvalLoading, setTreeEvalLoading] = useState(false)
   const [treeResult, setTreeResult] = useState<any>(null)
   const [treeEvalLogs, setTreeEvalLogs] = useState<LogEntry[]>([])
   const supabase = createClientComponentClient()
+
+  // 保存userId到localStorage
+  useEffect(() => {
+    if (userId && typeof window !== 'undefined') {
+      localStorage.setItem('test_userId', userId)
+    }
+  }, [userId])
+
+  // 保存result到localStorage（只保存结果，不保存logs）
+  useEffect(() => {
+    if (typeof window !== 'undefined' && result) {
+      localStorage.setItem('test_result', JSON.stringify(result))
+    }
+  }, [result])
 
   // 添加日志
   const addLog = (level: LogEntry['level'], message: string) => {
@@ -55,10 +76,14 @@ export default function TestSummarizePage() {
     setTreeEvalLogs(prev => [...prev, { timestamp, level, message }])
   }
 
-  // 清空日志
+  // 清空日志和结果
   const clearLogs = () => {
     setLogs([])
     setResult(null)
+    // 同时清空localStorage中的结果
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('test_result')
+    }
   }
 
   // 清空意识树日志
@@ -67,10 +92,31 @@ export default function TestSummarizePage() {
     setTreeResult(null)
   }
 
-  // 加载可用的测试用户
+  // 首次加载时恢复测试结果
   useEffect(() => {
-    loadTestUsers()
-  }, [])
+    if (typeof window !== 'undefined' && !isRestored) {
+      const savedResult = localStorage.getItem('test_result')
+
+      if (savedResult) {
+        try {
+          const parsedResult = JSON.parse(savedResult)
+          setResult(parsedResult)
+          addLog('success', '✅ 已从缓存恢复上次的测试结果')
+        } catch (e) {
+          console.error('恢复result失败:', e)
+        }
+      }
+
+      setIsRestored(true)
+    }
+  }, [isRestored])
+
+  // 加载可用的测试用户（只在恢复完成后执行）
+  useEffect(() => {
+    if (isRestored) {
+      loadTestUsers()
+    }
+  }, [isRestored])
 
   const loadTestUsers = async () => {
     addLog('info', '正在加载可用的测试用户...')
@@ -367,6 +413,39 @@ export default function TestSummarizePage() {
     }
   }
 
+  // 清空意识树数据（强制重置）
+  const clearTreeData = async () => {
+    if (!userId) {
+      addTreeLog('error', '请先选择用户')
+      return
+    }
+
+    if (!confirm('⚠️ 确认要清空该用户的意识树数据吗？\n\n清空后，树将重置为"种子"状态，下次评估会从零开始累积生长。')) {
+      return
+    }
+
+    addTreeLog('warning', '正在清空意识树数据...')
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ consciousness_tree_view: null })
+        .eq('id', userId)
+
+      if (error) {
+        addTreeLog('error', `清空失败: ${error.message}`)
+        return
+      }
+
+      addTreeLog('success', '✅ 意识树数据已清空！')
+      addTreeLog('info', '下次调用"启动意识树评估"时，会从种子状态开始生长')
+      setTreeResult(null)
+
+    } catch (error) {
+      addTreeLog('error', `清空失败: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
   // 查看意识树评估结果
   const checkTreeResult = async () => {
     if (!userId) {
@@ -413,11 +492,24 @@ export default function TestSummarizePage() {
       const tree = data.consciousness_tree_view
       addTreeLog('success', '✅ 成功获取意识树数据！')
       addTreeLog('info', `[调试] tree数据: ${JSON.stringify(tree)}`)
-      addTreeLog('info', `根 (Roots): ${tree.roots?.growth_value || 0}% ${tree.roots?.is_solid ? '(实心)' : '(虚线)'}`)
-      addTreeLog('info', `干 (Trunk): ${tree.trunk?.growth_value || 0}% ${tree.trunk?.is_solid ? '(实心)' : '(虚线)'}`)
-      addTreeLog('info', `枝 (Branches): ${tree.branches?.growth_value || 0}% ${tree.branches?.is_solid ? '(实心)' : '(虚线)'}`)
-      addTreeLog('info', `叶 (Leaves): ${tree.leaves?.growth_value || 0}% ${tree.leaves?.is_solid ? '(实心)' : '(虚线)'}`)
-      addTreeLog('info', `果 (Fruits): ${tree.fruits?.growth_value || 0}% ${tree.fruits?.is_solid ? '(实心)' : '(虚线)'}`)
+
+      // 支持新旧两种格式
+      if (tree.roots?.count !== undefined) {
+        // 新格式：count-based
+        addTreeLog('info', `🌱 根 (Roots): 领域数=${tree.roots.count}, 深度=${tree.roots.depth_level} ${tree.roots.is_solid ? '(实心)' : '(虚线)'}`)
+        addTreeLog('info', `🪵 干 (Trunk): 粗度=${tree.trunk.thickness}, 高度=${tree.trunk.height_level} ${tree.trunk.is_solid ? '(实心)' : '(虚线)'}`)
+        addTreeLog('info', `🌿 枝 (Branches): 数量=${tree.branches.count}, 长度=${tree.branches.avg_length} ${tree.branches.is_solid ? '(实心)' : '(虚线)'}`)
+        addTreeLog('info', `🍃 叶 (Leaves): 数量=${tree.leaves.count} ${tree.leaves.is_solid ? '(实心)' : '(虚线)'}`)
+        addTreeLog('info', `🍎 果 (Fruits): 数量=${tree.fruits.count} ${tree.fruits.is_solid ? '(实心)' : '(虚线)'}`)
+      } else {
+        // 旧格式：growth_value (百分比)
+        addTreeLog('warning', '⚠️ 检测到旧格式数据（百分比制），请点击"清空树数据"按钮重置')
+        addTreeLog('info', `根 (Roots): ${tree.roots?.growth_value || 0}% ${tree.roots?.is_solid ? '(实心)' : '(虚线)'}`)
+        addTreeLog('info', `干 (Trunk): ${tree.trunk?.growth_value || 0}% ${tree.trunk?.is_solid ? '(实心)' : '(虚线)'}`)
+        addTreeLog('info', `枝 (Branches): ${tree.branches?.growth_value || 0}% ${tree.branches?.is_solid ? '(实心)' : '(虚线)'}`)
+        addTreeLog('info', `叶 (Leaves): ${tree.leaves?.growth_value || 0}% ${tree.leaves?.is_solid ? '(实心)' : '(虚线)'}`)
+        addTreeLog('info', `果 (Fruits): ${tree.fruits?.growth_value || 0}% ${tree.fruits?.is_solid ? '(实心)' : '(虚线)'}`)
+      }
 
       setTreeResult(tree)
       addTreeLog('info', `[调试] treeResult已设置，应该显示可视化图表`)
@@ -637,8 +729,8 @@ export default function TestSummarizePage() {
 
         {/* ========== 意识树评估测试区域 ========== */}
         <div className="mt-12 border-t-4 border-purple-600 pt-8">
-          <h1 className="text-4xl font-bold mb-2 text-purple-400">🌳 意识树评估测试</h1>
-          <p className="text-gray-400 mb-8">Edge Function: evaluate-and-grow-tree | AI模型: GPT-4o Mini (The Architect)</p>
+          <h1 className="text-4xl font-bold mb-2 text-purple-400">🌳 意识树评估测试（累积生长制）</h1>
+          <p className="text-gray-400 mb-8">Edge Function: evaluate-and-grow-tree | AI模型: GPT-4o Mini (The Gardener) | 模式: 累积增量</p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 左侧：操作按钮 */}
@@ -693,6 +785,24 @@ export default function TestSummarizePage() {
                       * 等待20秒后点击，从数据库读取最新结果
                     </div>
                   </div>
+
+                  <div className="p-4 bg-red-900/10 border border-red-500/30 rounded">
+                    <div className="font-semibold text-red-300 mb-2">步骤 3: 清空树数据（可选）</div>
+                    <button
+                      onClick={clearTreeData}
+                      disabled={!userId}
+                      className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                        !userId
+                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                          : 'bg-red-600 hover:bg-red-700 text-white'
+                      }`}
+                    >
+                      🗑️ 清空树数据（重置为种子）
+                    </button>
+                    <div className="text-xs text-gray-400 mt-2">
+                      * 清空旧数据，下次评估从零开始累积生长
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -703,13 +813,15 @@ export default function TestSummarizePage() {
 
                   <div className="space-y-3">
                     {[
-                      { name: '根 (Roots)', key: 'roots', emoji: '🌱', color: 'green' },
-                      { name: '干 (Trunk)', key: 'trunk', emoji: '🪵', color: 'yellow' },
-                      { name: '枝 (Branches)', key: 'branches', emoji: '🌿', color: 'blue' },
-                      { name: '叶 (Leaves)', key: 'leaves', emoji: '🍃', color: 'emerald' },
-                      { name: '果 (Fruits)', key: 'fruits', emoji: '🍎', color: 'red' }
+                      { name: '根 (Roots)', key: 'roots', emoji: '🌱', color: 'green', metrics: ['count', 'depth_level'] },
+                      { name: '干 (Trunk)', key: 'trunk', emoji: '🪵', color: 'yellow', metrics: ['thickness', 'height_level'] },
+                      { name: '枝 (Branches)', key: 'branches', emoji: '🌿', color: 'blue', metrics: ['count', 'avg_length'] },
+                      { name: '叶 (Leaves)', key: 'leaves', emoji: '🍃', color: 'emerald', metrics: ['count'] },
+                      { name: '果 (Fruits)', key: 'fruits', emoji: '🍎', color: 'red', metrics: ['count'] }
                     ].map(part => {
                       const data = treeResult[part.key]
+                      const isNewFormat = data?.count !== undefined || data?.thickness !== undefined
+
                       return (
                         <div key={part.key} className="p-4 bg-gray-800 border border-gray-700 rounded">
                           <div className="flex items-center justify-between mb-2">
@@ -720,17 +832,67 @@ export default function TestSummarizePage() {
                               {data?.is_solid ? '✓ 实心' : '○ 虚线'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1 bg-gray-700 rounded-full h-3 overflow-hidden">
-                              <div
-                                className={`h-full bg-${part.color}-500 transition-all duration-500`}
-                                style={{ width: `${data?.growth_value || 0}%` }}
-                              />
+
+                          {isNewFormat ? (
+                            // 新格式：显示多个指标
+                            <div className="space-y-2 text-sm">
+                              {part.key === 'roots' && (
+                                <>
+                                  <div className="flex justify-between text-gray-300">
+                                    <span>领域数量:</span>
+                                    <span className="font-mono font-bold">{data.count}</span>
+                                  </div>
+                                  <div className="flex justify-between text-gray-300">
+                                    <span>探索深度:</span>
+                                    <span className="font-mono font-bold">{data.depth_level.toFixed(1)} / 10</span>
+                                  </div>
+                                </>
+                              )}
+                              {part.key === 'trunk' && (
+                                <>
+                                  <div className="flex justify-between text-gray-300">
+                                    <span>觉察粗度:</span>
+                                    <span className="font-mono font-bold">{data.thickness} / 50</span>
+                                  </div>
+                                  <div className="flex justify-between text-gray-300">
+                                    <span>练习高度:</span>
+                                    <span className="font-mono font-bold">{data.height_level} / 100</span>
+                                  </div>
+                                </>
+                              )}
+                              {part.key === 'branches' && (
+                                <>
+                                  <div className="flex justify-between text-gray-300">
+                                    <span>里程碑数:</span>
+                                    <span className="font-mono font-bold">{data.count}</span>
+                                  </div>
+                                  <div className="flex justify-between text-gray-300">
+                                    <span>洞见程度:</span>
+                                    <span className="font-mono font-bold">{data.avg_length.toFixed(1)} / 10</span>
+                                  </div>
+                                </>
+                              )}
+                              {(part.key === 'leaves' || part.key === 'fruits') && (
+                                <div className="flex justify-between text-gray-300">
+                                  <span>数量:</span>
+                                  <span className="font-mono font-bold text-lg">{data.count}</span>
+                                </div>
+                              )}
                             </div>
-                            <span className="text-lg font-bold text-white w-12 text-right">
-                              {data?.growth_value || 0}%
-                            </span>
-                          </div>
+                          ) : (
+                            // 旧格式：显示百分比进度条
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 bg-gray-700 rounded-full h-3 overflow-hidden">
+                                <div
+                                  className={`h-full bg-${part.color}-500 transition-all duration-500`}
+                                  style={{ width: `${data?.growth_value || 0}%` }}
+                                />
+                              </div>
+                              <span className="text-lg font-bold text-white w-12 text-right">
+                                {data?.growth_value || 0}%
+                              </span>
+                            </div>
+                          )}
                         </div>
                       )
                     })}

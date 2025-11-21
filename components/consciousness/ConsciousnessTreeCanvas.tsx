@@ -12,19 +12,10 @@ interface ConsciousnessTreeCanvasProps {
   techParams?: Partial<TreeParams>
 }
 
-// 默认参数（经典红色能量树）
+// 默认参数（经典红色能量树 V2）
 const DEFAULT_PARAMS: TreeParams = {
-  depth: 10,
-  branchAngle: 25,
-  lengthDecay: 0.75,
-  trunkLength: 120,
-  trunkWidth: 12,
-  rootDepth: 6,
-  rootSpread: 30,
   particleSize: 2,
   glowIntensity: 0.5,
-  leafDensity: 0.5,
-  fruitProbability: 0.08,
 }
 
 export function ConsciousnessTreeCanvas({ growthData, techParams }: ConsciousnessTreeCanvasProps) {
