@@ -28,6 +28,7 @@ export default function TestSummarizePage() {
   const [testUsers, setTestUsers] = useState<TestUser[]>([])
   const [treeEvalLoading, setTreeEvalLoading] = useState(false)
   const [treeResult, setTreeResult] = useState<any>(null)
+  const [treeEvalLogs, setTreeEvalLogs] = useState<LogEntry[]>([])
   const supabase = createClientComponentClient()
 
   // 添加日志
@@ -42,10 +43,28 @@ export default function TestSummarizePage() {
     setLogs(prev => [...prev, { timestamp, level, message }])
   }
 
+  // 添加意识树评估日志
+  const addTreeLog = (level: LogEntry['level'], message: string) => {
+    const timestamp = new Date().toLocaleTimeString('zh-CN', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      fractionalSecondDigits: 3
+    })
+    setTreeEvalLogs(prev => [...prev, { timestamp, level, message }])
+  }
+
   // 清空日志
   const clearLogs = () => {
     setLogs([])
     setResult(null)
+  }
+
+  // 清空意识树日志
+  const clearTreeLogs = () => {
+    setTreeEvalLogs([])
+    setTreeResult(null)
   }
 
   // 加载可用的测试用户
@@ -303,19 +322,19 @@ export default function TestSummarizePage() {
   // 测试意识树评估
   const testTreeEvaluation = async () => {
     if (!userId) {
-      addLog('error', '请先选择一个测试用户')
+      addTreeLog('error', '请先选择一个测试用户')
       return
     }
 
     setTreeEvalLoading(true)
-    setTreeResult(null)
-    addLog('info', '========== 意识树评估测试 ==========')
-    addLog('info', `用户ID: ${userId}`)
+    clearTreeLogs()
+    addTreeLog('info', '========== 意识树评估测试 ==========')
+    addTreeLog('info', `用户ID: ${userId}`)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
 
-      addLog('info', '正在调用 evaluate-and-grow-tree Edge Function...')
+      addTreeLog('info', '正在调用 evaluate-and-grow-tree Edge Function...')
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/evaluate-and-grow-tree`,
         {
@@ -330,19 +349,19 @@ export default function TestSummarizePage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        addLog('error', `HTTP ${response.status}: ${errorData.error || '未知错误'}`)
+        addTreeLog('error', `HTTP ${response.status}: ${errorData.error || '未知错误'}`)
         return
       }
 
       const data = await response.json()
-      addLog('success', `✅ ${data.message}`)
-      addLog('info', 'Fire-and-Forget模式：后台正在计算中（预计10-20秒）')
-      addLog('warning', '💡 请等待20秒后，点击下方"查看意识树结果"按钮')
+      addTreeLog('success', `✅ ${data.message}`)
+      addTreeLog('info', 'Fire-and-Forget模式：后台正在计算中（预计10-20秒）')
+      addTreeLog('warning', '💡 请等待20秒后，点击下方"查看意识树结果"按钮')
 
       setTreeResult(data)
 
     } catch (error) {
-      addLog('error', `调用失败: ${error instanceof Error ? error.message : String(error)}`)
+      addTreeLog('error', `调用失败: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setTreeEvalLoading(false)
     }
@@ -351,11 +370,11 @@ export default function TestSummarizePage() {
   // 查看意识树评估结果
   const checkTreeResult = async () => {
     if (!userId) {
-      addLog('error', '请先选择用户')
+      addTreeLog('error', '请先选择用户')
       return
     }
 
-    addLog('info', '正在查询数据库中的意识树数据...')
+    addTreeLog('info', '正在查询数据库中的意识树数据...')
 
     try {
       const { data, error } = await supabase
@@ -365,27 +384,27 @@ export default function TestSummarizePage() {
         .single()
 
       if (error) {
-        addLog('error', `查询失败: ${error.message}`)
+        addTreeLog('error', `查询失败: ${error.message}`)
         return
       }
 
       if (!data?.consciousness_tree_view) {
-        addLog('warning', '该用户还没有意识树数据，可能计算尚未完成')
+        addTreeLog('warning', '该用户还没有意识树数据，可能计算尚未完成')
         return
       }
 
       const tree = data.consciousness_tree_view
-      addLog('success', '✅ 成功获取意识树数据！')
-      addLog('info', `根 (Roots): ${tree.roots?.growth_value || 0}% ${tree.roots?.is_solid ? '(实心)' : '(虚线)'}`)
-      addLog('info', `干 (Trunk): ${tree.trunk?.growth_value || 0}% ${tree.trunk?.is_solid ? '(实心)' : '(虚线)'}`)
-      addLog('info', `枝 (Branches): ${tree.branches?.growth_value || 0}% ${tree.branches?.is_solid ? '(实心)' : '(虚线)'}`)
-      addLog('info', `叶 (Leaves): ${tree.leaves?.growth_value || 0}% ${tree.leaves?.is_solid ? '(实心)' : '(虚线)'}`)
-      addLog('info', `果 (Fruits): ${tree.fruits?.growth_value || 0}% ${tree.fruits?.is_solid ? '(实心)' : '(虚线)'}`)
+      addTreeLog('success', '✅ 成功获取意识树数据！')
+      addTreeLog('info', `根 (Roots): ${tree.roots?.growth_value || 0}% ${tree.roots?.is_solid ? '(实心)' : '(虚线)'}`)
+      addTreeLog('info', `干 (Trunk): ${tree.trunk?.growth_value || 0}% ${tree.trunk?.is_solid ? '(实心)' : '(虚线)'}`)
+      addTreeLog('info', `枝 (Branches): ${tree.branches?.growth_value || 0}% ${tree.branches?.is_solid ? '(实心)' : '(虚线)'}`)
+      addTreeLog('info', `叶 (Leaves): ${tree.leaves?.growth_value || 0}% ${tree.leaves?.is_solid ? '(实心)' : '(虚线)'}`)
+      addTreeLog('info', `果 (Fruits): ${tree.fruits?.growth_value || 0}% ${tree.fruits?.is_solid ? '(实心)' : '(虚线)'}`)
 
       setTreeResult(tree)
 
     } catch (error) {
-      addLog('error', `查询失败: ${error instanceof Error ? error.message : String(error)}`)
+      addTreeLog('error', `查询失败: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -701,8 +720,38 @@ export default function TestSummarizePage() {
               )}
             </div>
 
-            {/* 右侧：说明文档 */}
+            {/* 右侧：日志和说明文档 */}
             <div className="space-y-6">
+              {/* 意识树评估日志 */}
+              <div className="bg-gray-900 border border-purple-600 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-purple-400">📝 评估日志</h2>
+                  <button
+                    onClick={clearTreeLogs}
+                    className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-all"
+                  >
+                    清空
+                  </button>
+                </div>
+
+                <div className="bg-black rounded p-4 font-mono text-sm h-64 overflow-y-auto">
+                  {treeEvalLogs.length === 0 ? (
+                    <div className="text-gray-500">等待测试...</div>
+                  ) : (
+                    treeEvalLogs.map((log, i) => (
+                      <div key={i} className={`mb-1 ${
+                        log.level === 'error' ? 'text-red-400' :
+                        log.level === 'success' ? 'text-green-400' :
+                        log.level === 'warning' ? 'text-yellow-400' :
+                        'text-gray-300'
+                      }`}>
+                        <span className="text-gray-500">[{log.timestamp}]</span> {log.message}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
               <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
                 <h2 className="text-xl font-semibold mb-4 text-purple-400">📖 测试说明</h2>
 
