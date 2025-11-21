@@ -285,7 +285,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
 
                       {/* 主圆形 - 自转 */}
                       <motion.div
-                        className="relative w-20 h-20 rounded-full flex items-center justify-center text-white shadow-2xl"
+                        className="relative w-20 h-20 rounded-full flex items-center justify-center text-white shadow-2xl cursor-pointer"
                         style={{
                           background: `linear-gradient(135deg, ${gradientString})`,
                           border: isActive ? '3px solid rgba(255,255,255,0.8)' : '3px solid rgba(255,255,255,0.4)',
@@ -303,9 +303,12 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           scale: isActive ? 0.85 : 1.3,  // hover时稍微放大一点
                           boxShadow: `0 0 50px ${currentColors[0]}`,
                         }}
-                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleModuleClick(module.id)
+                        }}
                       >
-                        <div className="text-4xl font-bold">{module.id}</div>
+                        <div className="text-4xl font-bold pointer-events-none">{module.id}</div>
                       </motion.div>
 
                       {/* 模块名称标签 - 仅在hover时显示，沿径向延伸 */}
@@ -475,10 +478,10 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               y1={y1}
                               x2={x2}
                               y2={y2}
-                              stroke={`url(#gradient-${module.id})`}
-                              strokeWidth="0.8"
+                              stroke={currentColors[0]}
+                              strokeWidth={bothCompleted ? "0.4" : "1.2"}
                               strokeDasharray={strokeDasharray}
-                              filter={`url(#glow-${module.id})`}
+                              strokeLinecap="round"
                               initial={{ pathLength: 0, opacity: 0 }}
                               animate={{ pathLength: 1, opacity: 1 }}
                               exit={{ pathLength: 0, opacity: 0 }}
