@@ -196,9 +196,11 @@ export const generateConsciousnessTree = (
       glowIntensity
     )
 
-    // 在180度扇形区域均匀分布
-    const angleStart = 210
-    const angleEnd = 330
+    // 在180度扇形区域均匀分布（向下生长）
+    // Canvas坐标系：0°右，90°下，180°左，270°上
+    // 根系向下：30°（右下）到 150°（左下）
+    const angleStart = 30
+    const angleEnd = 150
     const angleStep = rootCount > 1 ? (angleEnd - angleStart) / (rootCount - 1) : 0
 
     for (let i = 0; i < rootCount; i++) {
