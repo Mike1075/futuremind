@@ -77,7 +77,7 @@ export default function TestSummarizePage() {
 
   const loadTestUsersDirectly = async () => {
     try {
-      // 直接查询profiles表，加载所有学生（不统计数据量，避免RLS限制）
+      // 方案1: 尝试查询数据库
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
@@ -85,23 +85,77 @@ export default function TestSummarizePage() {
         .order('full_name', { ascending: true })
         .limit(20)
 
-      if (profileError) throw profileError
+      if (profileError || !profiles || profiles.length === 0) {
+        // 方案2: 如果查询失败或没有登录，使用硬编码的测试用户
+        addLog('warning', '无法查询数据库，使用预设测试用户')
+        const hardcodedUsers: TestUser[] = [
+          {
+            id: 'b9a9ab9d-2978-4918-80e0-d12422e24cb2',
+            full_name: '陶子',
+            email: 'sam79v9streat@hotmail.com',
+            conversation_count: 0,
+            submission_count: 0,
+            project_count: 0
+          },
+          {
+            id: '538ad263-bde1-4af2-9c18-eb865f9ec33b',
+            full_name: '正方形',
+            email: '546648974@qq.com',
+            conversation_count: 0,
+            submission_count: 0,
+            project_count: 0
+          },
+          {
+            id: 'e84ab896-2278-45d7-809f-0d3041e88239',
+            full_name: 'law',
+            email: '546648971@qq.com',
+            conversation_count: 0,
+            submission_count: 0,
+            project_count: 0
+          },
+          {
+            id: 'fa67a5d2-3ce8-4452-91ab-caa6b1a47d0e',
+            full_name: '杜富陶',
+            email: 'futaodu@gmail.com',
+            conversation_count: 0,
+            submission_count: 0,
+            project_count: 0
+          }
+        ]
+        setTestUsers(hardcodedUsers)
+        addLog('success', `加载了 ${hardcodedUsers.length} 个预设测试用户`)
+        return
+      }
 
-      // 将所有学生添加到列表（不查询数据量，避免RLS阻止）
-      const allStudents: TestUser[] = (profiles || []).map(profile => ({
+      // 将所有学生添加到列表
+      const allStudents: TestUser[] = profiles.map(profile => ({
         id: profile.id,
         full_name: profile.full_name || '未知',
         email: profile.email,
-        conversation_count: 0, // 不预先查询，避免RLS限制
+        conversation_count: 0,
         submission_count: 0,
         project_count: 0
       }))
 
       setTestUsers(allStudents)
       addLog('success', `成功加载 ${allStudents.length} 个学生用户`)
-      addLog('info', '提示：由于权限限制，无法预先显示数据量。请直接选择学生进行测试。')
+      addLog('info', '提示：数据量显示为0是正常的，Edge Function会获取实际数据')
     } catch (err) {
-      addLog('error', `直接查询失败: ${err instanceof Error ? err.message : String(err)}`)
+      addLog('error', `查询失败: ${err instanceof Error ? err.message : String(err)}`)
+      // 降级方案：使用硬编码用户
+      addLog('info', '使用备用测试用户...')
+      const fallbackUsers: TestUser[] = [
+        {
+          id: 'b9a9ab9d-2978-4918-80e0-d12422e24cb2',
+          full_name: '陶子',
+          email: 'sam79v9streat@hotmail.com',
+          conversation_count: 0,
+          submission_count: 0,
+          project_count: 0
+        }
+      ]
+      setTestUsers(fallbackUsers)
+      addLog('success', '已加载备用测试用户')
     }
   }
 
