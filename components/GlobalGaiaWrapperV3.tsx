@@ -16,7 +16,7 @@ export function GlobalGaiaWrapperV3() {
     '/pbl' // 如果PBL也属于探索者联盟，也排除
   ]
 
-  const shouldShowGaia = !excludePaths.some(path => pathname.startsWith(path))
+  const shouldShowGaia = !excludePaths.some(path => pathname?.startsWith(path))
 
   if (!shouldShowGaia) {
     return null

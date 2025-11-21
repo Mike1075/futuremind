@@ -70,7 +70,7 @@ export default function TestSummarizePage() {
         addLog('warning', '未找到有数据的测试用户')
       }
     } catch (err) {
-      addLog('error', `加载测试用户失败: ${err.message}`)
+      addLog('error', `加载测试用户失败: ${err instanceof Error ? err.message : String(err)}`)
       await loadTestUsersDirectly()
     }
   }
@@ -113,7 +113,7 @@ export default function TestSummarizePage() {
       setTestUsers(usersWithData)
       addLog('success', `成功加载 ${usersWithData.length} 个有数据的用户`)
     } catch (err) {
-      addLog('error', `直接查询失败: ${err.message}`)
+      addLog('error', `直接查询失败: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
@@ -209,7 +209,7 @@ export default function TestSummarizePage() {
       }
 
     } catch (err) {
-      addLog('error', `网络错误: ${err.message}`)
+      addLog('error', `网络错误: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setIsLoading(false)
     }
@@ -237,7 +237,7 @@ export default function TestSummarizePage() {
         addLog('info', `  - 有效期至: ${new Date(data.valid_until).toLocaleString('zh-CN')}`)
       }
     } catch (err) {
-      addLog('warning', `数据库验证失败: ${err.message}`)
+      addLog('warning', `数据库验证失败: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
