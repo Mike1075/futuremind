@@ -327,7 +327,7 @@ async function summarizeDialogue(
         { role: "user", content: JSON.stringify(conversationData, null, 2) },
       ],
       temperature: 0.7,
-      max_tokens: 500,
+      max_completion_tokens: 500,  // GPT-5使用max_completion_tokens而不是max_tokens
     }),
   });
 
@@ -406,7 +406,7 @@ async function summarizeCoursework(
         { role: "user", content: JSON.stringify(courseworkData, null, 2) },
       ],
       temperature: 0.7,
-      max_tokens: 500,
+      max_completion_tokens: 500,  // GPT-5使用max_completion_tokens而不是max_tokens
     }),
   });
 
@@ -487,7 +487,7 @@ async function summarizeProjects(
         { role: "user", content: JSON.stringify(projectData, null, 2) },
       ],
       temperature: 0.7,
-      max_tokens: 500,
+      max_completion_tokens: 500,  // GPT-5使用max_completion_tokens而不是max_tokens
     }),
   });
 
