@@ -156,11 +156,14 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
     }
   }
 
-  // 获取伊卡洛斯系统的11个项目
+  // 获取伊卡洛斯系统的11个项目（通过subtitle中的年龄段识别）
   const icarusProjects = allProjects
-    .filter(p => p.project_visibility === 'system')
+    .filter(p =>
+      p.project_visibility === 'system' &&
+      p.subtitle &&
+      /\d+[-~]\d+岁|\d+岁以上/.test(p.subtitle)
+    )
     .sort((a, b) => a.sequence_number - b.sequence_number)
-    .slice(0, 11)
 
   // 准备模块数据
   const MODULES = [
