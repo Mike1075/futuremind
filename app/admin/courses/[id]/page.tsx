@@ -47,7 +47,7 @@ export default function CourseDetailPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const courseId = params?.id as string
-  const tabParam = searchParams.get('tab') as TabType | null
+  const tabParam = searchParams?.get('tab') as TabType | null
 
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>(tabParam || 'students')
