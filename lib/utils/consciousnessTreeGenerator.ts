@@ -1,33 +1,38 @@
 /**
- * 意识树生成算法 V2 - 累积生长制
- * 完全数据驱动的生成逻辑，不再依赖递归深度
- * 颜色方案：纯红色系（暗红→亮红带金边感）
- * 虚实线：通过粒子间距控制
+ * 意识树生成算法 V3 - 递归分形 (Recursive Fractals)
+ * 仿生学自然生长效果，完全数据驱动
+ *
+ * 核心改进：
+ * - 5级根系分形结构
+ * - 树干动态比例（与根系关联）
+ * - 三主枝 + 递归树冠
+ * - 优化叶果可见度（增大尺寸、云朵分布）
+ * - 伪随机种子（避免闪烁）
  */
 
-// ============ 新的数据接口 ============
+// ============ 数据接口 ============
 export interface TreeGrowthData {
   roots: {
-    count: number;          // 决定生成多少条主根
-    depth_level: number;    // 决定根的长度 (0-10)
-    is_solid: boolean;      // 决定绘制风格
+    count: number;          // 主根数量 (0-20)
+    depth_level: number;    // 探索深度 (0-10)，决定递归层级
+    is_solid: boolean;
   };
   trunk: {
-    thickness: number;      // 决定树干的基础宽度 (0-50)
-    height_level: number;   // 决定树干的总长度 (0-100)
+    thickness: number;      // 基础粗度 (0-50)
+    height_level: number;   // 生长高度 (0-100)
     is_solid: boolean;
   };
   branches: {
-    count: number;          // 决定主分叉的数量
-    avg_length: number;     // 决定枝条长度 (0-10)
+    count: number;          // 主枝数量 (0-20)，>=3时启用三主枝
+    avg_length: number;     // 平均长度 (0-10)
     is_solid: boolean;
   };
   leaves: {
-    count: number;          // 决定叶子粒子的总数
+    count: number;          // 叶子数量 (0-50)
     is_solid: boolean;
   };
   fruits: {
-    count: number;          // 决定果实粒子的总数
+    count: number;          // 果实数量 (0-20)
     is_solid: boolean;
   };
 }
@@ -46,20 +51,37 @@ export interface TreeParams {
   glowIntensity: number       // 发光强度 (0-1)
 }
 
-// 工具函数：随机数
-const random = (min: number, max: number) => Math.random() * (max - min) + min
+// 枝条节点（用于收集叶果挂载点）
+interface BranchNode {
+  x: number
+  y: number
+  level: number  // 递归层级
+  angle: number  // 生长角度
+}
 
-/**
- * 颜色生成函数
- * 纯红色系：H=0-8°，根据数值控制明度和饱和度
- */
+// ============ 伪随机函数 ============
+let randomSeed = 0
+
+function seededRandom(): number {
+  randomSeed = (randomSeed * 9301 + 49297) % 233280
+  return randomSeed / 233280
+}
+
+function initSeed(seed: number): void {
+  randomSeed = seed
+}
+
+function random(min: number, max: number): number {
+  return seededRandom() * (max - min) + min
+}
+
+// ============ 颜色生成函数 ============
 const getColor = (
   type: 'root' | 'trunk' | 'branch' | 'leaf' | 'fruit',
   value: number,    // 归一化值 0-1
   isSolid: boolean,
   glowIntensity: number = 0.5
 ): string => {
-  // 基础色相：红色范围
   let hue = 0
   let baseLightness = 25
   let baseSaturation = 60
@@ -81,19 +103,25 @@ const getColor = (
       baseSaturation = 70
       break
     case 'leaf':
-      hue = 5 // 稍带金感
+      hue = 5
       baseLightness = 45
       baseSaturation = 75
       break
     case 'fruit':
-      hue = 8 // 金边红
+      hue = 8
       baseLightness = 50
       baseSaturation = 80
       break
   }
 
-  // 根据数值提升明度和饱和度
-  const lightness = baseLightness + value * (72 - baseLightness)
+  // 修复：分类控制最大明度，避免发白
+  const maxLightness = type === 'root' ? 55 :
+                       type === 'trunk' ? 60 :
+                       type === 'branch' ? 65 :
+                       type === 'leaf' ? 70 :
+                       85  // 果实特别亮
+
+  const lightness = baseLightness + value * (maxLightness - baseLightness)
   const saturation = baseSaturation + value * (100 - baseSaturation)
 
   // 虚实状态控制透明度
@@ -103,11 +131,7 @@ const getColor = (
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
 }
 
-/**
- * 核心：虚实线绘制
- * 实线：粒子间距小（连续）
- * 虚线：粒子间距大（稀疏）
- */
+// ============ 虚实线绘制（保持不变）============
 const drawLine = (
   particles: Particle[],
   x1: number,
@@ -115,14 +139,13 @@ const drawLine = (
   x2: number,
   y2: number,
   width: number,
-  type: 'root' | 'trunk' | 'branch',
   color: string,
   isSolid: boolean,
   particleSize: number
 ) => {
   const dist = Math.hypot(x2 - x1, y2 - y1)
 
-  // 关键：虚实线的粒子间距差异
+  // 虚实线的粒子间距差异
   const stepSize = isSolid ? (particleSize * 0.4) : (particleSize * 3.0)
   const steps = Math.max(Math.floor(dist / stepSize), 1)
 
@@ -146,9 +169,85 @@ const drawLine = (
   }
 }
 
-/**
- * 生成意识树 V2 - 数据驱动
- */
+// ============ 通用递归分支函数 ============
+const recursiveBranch = (
+  particles: Particle[],
+  nodes: BranchNode[],
+  startX: number,
+  startY: number,
+  angle: number,         // 角度（度数）
+  length: number,        // 长度
+  width: number,         // 宽度
+  currentDepth: number,  // 当前递归深度
+  maxDepth: number,      // 最大递归深度
+  color: string,
+  isSolid: boolean,
+  particleSize: number,
+  branchType: 'root' | 'branch',  // 分支类型
+  particleLimit: { count: number, max: number }  // 粒子数量控制
+) => {
+  // 熔断：超出递归深度或粒子数量
+  if (currentDepth > maxDepth || length < 3 || particleLimit.count > particleLimit.max) {
+    return
+  }
+
+  // 计算终点坐标
+  const rad = (angle * Math.PI) / 180
+  const endX = startX + length * Math.cos(rad)
+  const endY = startY + length * Math.sin(rad)
+
+  // 绘制当前分支
+  drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
+
+  // 估算增加的粒子数
+  const dist = Math.hypot(endX - startX, endY - startY)
+  const steps = Math.floor(dist / (particleSize * (isSolid ? 0.4 : 3.0)))
+  const layers = Math.floor(width / (particleSize * 0.8))
+  particleLimit.count += steps * layers
+
+  // 收集节点（用于挂载叶果）
+  nodes.push({ x: endX, y: endY, level: currentDepth, angle })
+
+  // 递归生成子分支
+  const newLength = length * 0.7
+  const newWidth = Math.max(width * 0.6, 0.5)
+
+  if (branchType === 'root') {
+    // 根系：每级分2叉
+    const angleOffset1 = random(15, 30)
+    const angleOffset2 = random(15, 30)
+
+    recursiveBranch(
+      particles, nodes, endX, endY,
+      angle + angleOffset1, newLength, newWidth,
+      currentDepth + 1, maxDepth,
+      color, isSolid, particleSize, 'root', particleLimit
+    )
+
+    recursiveBranch(
+      particles, nodes, endX, endY,
+      angle - angleOffset2, newLength, newWidth,
+      currentDepth + 1, maxDepth,
+      color, isSolid, particleSize, 'root', particleLimit
+    )
+  } else {
+    // 树枝：每级分2-3叉（更自然）
+    const numSubBranches = currentDepth < maxDepth - 1 ? 2 : 1
+
+    for (let i = 0; i < numSubBranches; i++) {
+      const angleOffset = i === 0 ? random(20, 35) : random(-35, -20)
+
+      recursiveBranch(
+        particles, nodes, endX, endY,
+        angle + angleOffset, newLength, newWidth,
+        currentDepth + 1, maxDepth,
+        color, isSolid, particleSize, 'branch', particleLimit
+      )
+    }
+  }
+}
+
+// ============ 主生成函数 ============
 export const generateConsciousnessTree = (
   params: TreeParams,
   growthData: TreeGrowthData,
@@ -157,227 +256,226 @@ export const generateConsciousnessTree = (
 ): Particle[] => {
   const particles: Particle[] = []
   const { particleSize, glowIntensity } = params
+  const branchNodes: BranchNode[] = []
+
+  // 初始化伪随机种子（基于数据计算，确保稳定）
+  const seed = growthData.roots.count * 1000 +
+               growthData.trunk.thickness * 100 +
+               growthData.trunk.height_level * 10 +
+               growthData.branches.count
+  initSeed(seed)
 
   // 画布中心点
   const centerX = width / 2
   const baseY = height * 0.65
 
+  // 粒子数量熔断控制
+  const particleLimit = { count: 0, max: 50000 }
+
   // ========== 第一步：生成树干 ==========
-  const trunkThickness = Math.max(growthData.trunk.thickness * 0.8, 1) // 映射到像素宽度
-  const trunkHeight = Math.max(growthData.trunk.height_level * 2, 10) // 映射到像素高度
-  const trunkTopY = baseY - trunkHeight
+  const baseHeight = growthData.roots.count * 10  // 有根就有干
+  const growHeight = growthData.trunk.height_level * 2.5
+  const totalTrunkHeight = Math.max(baseHeight + growHeight, 10)
+  const trunkTopY = baseY - totalTrunkHeight
+
+  // 动态粗度：根系越深，树干越稳
+  const visualThickness = growthData.trunk.thickness + (growthData.roots.depth_level * 2)
+  const trunkWidth = Math.max(visualThickness * 0.8, 1)
 
   const trunkColor = getColor(
     'trunk',
-    growthData.trunk.height_level / 100,
+    Math.min(growthData.trunk.height_level / 100, 1),
     growthData.trunk.is_solid,
     glowIntensity
   )
 
+  // 绘制树干（多层粒子堆叠，确保扎实）
   drawLine(
     particles,
     centerX, baseY,
     centerX, trunkTopY,
-    trunkThickness,
-    'trunk',
+    trunkWidth,
     trunkColor,
     growthData.trunk.is_solid,
     particleSize
   )
 
-  // ========== 第二步：生成根系 ==========
+  // ========== 第二步：生成5级根系分形 ==========
   const rootCount = Math.max(growthData.roots.count, 0)
+
   if (rootCount > 0) {
-    const rootLength = Math.max(growthData.roots.depth_level * 15, 5)
+    const rootDepth = growthData.roots.depth_level
+
+    // 计算根系递归深度
+    let rootMaxDepth = 1
+    if (rootDepth > 2) rootMaxDepth = 2
+    if (rootDepth > 4) rootMaxDepth = 3
+    if (rootDepth > 6) rootMaxDepth = 4
+    if (rootDepth > 8) rootMaxDepth = 5
+
+    const rootLength = Math.max(rootDepth * 15, 5)
     const rootColor = getColor(
       'root',
-      growthData.roots.depth_level / 10,
+      Math.min(rootDepth / 10, 1),
       growthData.roots.is_solid,
       glowIntensity
     )
 
-    // 在180度扇形区域均匀分布（向下生长）
-    // Canvas坐标系：0°右，90°下，180°左，270°上
-    // 根系向下：30°（右下）到 150°（左下）
+    // 在30°-150°扇形区域均匀分布主根
     const angleStart = 30
     const angleEnd = 150
     const angleStep = rootCount > 1 ? (angleEnd - angleStart) / (rootCount - 1) : 0
 
+    const rootNodes: BranchNode[] = []
+
     for (let i = 0; i < rootCount; i++) {
       const angle = angleStart + angleStep * i + random(-5, 5)
-      const rad = (angle * Math.PI) / 180
-      const endX = centerX + rootLength * Math.cos(rad)
-      const endY = baseY + rootLength * Math.sin(rad)
-      const rootWidth = Math.max(trunkThickness * 0.5, 0.5)
+      const rootWidth = Math.max(trunkWidth * 0.5, 0.5)
 
-      drawLine(
-        particles,
+      recursiveBranch(
+        particles, rootNodes,
         centerX, baseY,
-        endX, endY,
-        rootWidth,
-        'root',
-        rootColor,
-        growthData.roots.is_solid,
-        particleSize
+        angle, rootLength, rootWidth,
+        1, rootMaxDepth,
+        rootColor, growthData.roots.is_solid, particleSize,
+        'root', particleLimit
       )
-
-      // 二级根（可选，增加美观度）
-      if (growthData.roots.depth_level > 3) {
-        const subRootLength = rootLength * 0.5
-        const subAngle1 = angle + random(15, 30)
-        const subAngle2 = angle - random(15, 30)
-        const rad1 = (subAngle1 * Math.PI) / 180
-        const rad2 = (subAngle2 * Math.PI) / 180
-
-        drawLine(
-          particles,
-          endX, endY,
-          endX + subRootLength * Math.cos(rad1),
-          endY + subRootLength * Math.sin(rad1),
-          rootWidth * 0.7,
-          'root',
-          rootColor,
-          growthData.roots.is_solid,
-          particleSize
-        )
-
-        drawLine(
-          particles,
-          endX, endY,
-          endX + subRootLength * Math.cos(rad2),
-          endY + subRootLength * Math.sin(rad2),
-          rootWidth * 0.7,
-          'root',
-          rootColor,
-          growthData.roots.is_solid,
-          particleSize
-        )
-      }
     }
   }
 
-  // ========== 第三步：生成枝干 ==========
+  // ========== 第三步：生成"三主枝"树冠 ==========
   const branchCount = Math.max(growthData.branches.count, 0)
-  const branchEndpoints: { x: number; y: number }[] = [] // 收集枝条末端，用于挂载叶果
 
-  if (branchCount > 0) {
-    const branchLength = Math.max(growthData.branches.avg_length * 8, 5)
+  if (branchCount > 0 && totalTrunkHeight > 10) {
+    const branchLength = Math.max(growthData.branches.avg_length * 10, 5)
+
+    // 计算树枝递归深度（基于count）
+    let branchMaxDepth = 2
+    if (branchCount > 3) branchMaxDepth = 3
+    if (branchCount > 6) branchMaxDepth = 4
+    if (branchCount > 12) branchMaxDepth = 5
+
     const branchColor = getColor(
       'branch',
-      growthData.branches.avg_length / 10,
+      Math.min(growthData.branches.avg_length / 10, 1),
       growthData.branches.is_solid,
       glowIntensity
     )
 
-    // 在树干顶部30%区域随机生成生长点
-    const branchZoneStart = trunkTopY
-    const branchZoneEnd = trunkTopY + trunkHeight * 0.3
+    const branchWidth = Math.max(trunkWidth * 0.4, 0.5)
 
-    for (let i = 0; i < branchCount; i++) {
-      const startY = random(branchZoneStart, branchZoneEnd)
-      const startX = centerX + random(-trunkThickness * 0.5, trunkThickness * 0.5)
+    // 三主枝结构
+    const mainBranches = [
+      { angle: -130, active: branchCount >= 1 },  // 左主枝
+      { angle: -50, active: branchCount >= 2 },   // 右主枝
+      { angle: -90, active: branchCount >= 3 },   // 中主枝
+    ]
 
-      // 随机角度（左右展开）
-      const angle = random(-75, -105) + (i % 2 === 0 ? -30 : 30) + random(-15, 15)
-      const rad = (angle * Math.PI) / 180
-      const endX = startX + branchLength * Math.cos(rad)
-      const endY = startY + branchLength * Math.sin(rad)
-      const branchWidth = Math.max(trunkThickness * 0.4, 0.5)
-
-      drawLine(
-        particles,
-        startX, startY,
-        endX, endY,
-        branchWidth,
-        'branch',
-        branchColor,
-        growthData.branches.is_solid,
-        particleSize
-      )
-
-      branchEndpoints.push({ x: endX, y: endY })
-
-      // 二级枝（增加美观度）
-      if (growthData.branches.avg_length > 2) {
-        const subBranchLength = branchLength * 0.6
-        const subAngle = angle + random(-35, 35)
-        const subRad = (subAngle * Math.PI) / 180
-        const subEndX = endX + subBranchLength * Math.cos(subRad)
-        const subEndY = endY + subBranchLength * Math.sin(subRad)
-
-        drawLine(
-          particles,
-          endX, endY,
-          subEndX, subEndY,
-          branchWidth * 0.6,
-          'branch',
-          branchColor,
-          growthData.branches.is_solid,
-          particleSize
+    mainBranches.forEach(branch => {
+      if (branch.active) {
+        recursiveBranch(
+          particles, branchNodes,
+          centerX, trunkTopY,
+          branch.angle, branchLength, branchWidth,
+          1, branchMaxDepth,
+          branchColor, growthData.branches.is_solid, particleSize,
+          'branch', particleLimit
         )
+      }
+    })
+  }
 
-        branchEndpoints.push({ x: subEndX, y: subEndY })
+  // ========== 第四步：生成叶子（云朵状分布）==========
+  const leafCount = Math.max(growthData.leaves.count, 0)
+
+  if (leafCount > 0 && branchNodes.length > 0) {
+    // 增大叶子尺寸（3倍）
+    const leafSize = particleSize * 3
+
+    // 叶子颜色
+    const leafColor = getColor(
+      'leaf',
+      leafCount > 10 ? 0.8 : 0.5,
+      growthData.leaves.is_solid,
+      glowIntensity
+    )
+
+    // 只在Level 2+的节点上生成叶子
+    const leafNodes = branchNodes.filter(node => node.level >= 2)
+
+    if (leafNodes.length > 0) {
+      for (let i = 0; i < leafCount; i++) {
+        const node = leafNodes[Math.floor(seededRandom() * leafNodes.length)]
+
+        // 在节点周围生成叶子簇（云朵效果）
+        const offsetX = random(-12, 12)
+        const offsetY = random(-12, 12)
+
+        // 叶子大小随机差异（增加自然感）
+        const sizeVariation = leafSize * random(0.8, 1.2)
+
+        particles.push({
+          x: node.x + offsetX,
+          y: node.y + offsetY,
+          size: sizeVariation,
+          color: leafColor
+        })
       }
     }
   }
 
-  // ========== 第四步：生成叶与果 ==========
-
-  // 叶子
-  const leafCount = Math.max(growthData.leaves.count, 0)
-  if (leafCount > 0 && branchEndpoints.length > 0) {
-    const leafColor = getColor(
-      'leaf',
-      leafCount > 5 ? 0.7 : 0.4,
-      growthData.leaves.is_solid,
-      glowIntensity
-    )
-    const leafSize = particleSize * 1.5
-
-    for (let i = 0; i < leafCount; i++) {
-      const endpoint = branchEndpoints[Math.floor(Math.random() * branchEndpoints.length)]
-      const offsetX = random(-8, 8)
-      const offsetY = random(-8, 8)
-
-      particles.push({
-        x: endpoint.x + offsetX,
-        y: endpoint.y + offsetY,
-        size: leafSize,
-        color: leafColor
-      })
-    }
-  }
-
-  // 果实
+  // ========== 第五步：生成果实（悬挂+高亮）==========
   const fruitCount = Math.max(growthData.fruits.count, 0)
-  if (fruitCount > 0 && branchEndpoints.length > 0) {
+
+  if (fruitCount > 0 && branchNodes.length > 0) {
+    // 增大果实尺寸（4倍）
+    const fruitSize = particleSize * 4
+
+    // 果实颜色（高亮）
     const fruitColor = getColor(
       'fruit',
-      fruitCount > 3 ? 0.8 : 0.5,
+      1.0,  // 最大亮度
       growthData.fruits.is_solid,
       glowIntensity
     )
-    const fruitSize = particleSize * 3
 
-    for (let i = 0; i < fruitCount; i++) {
-      const endpoint = branchEndpoints[Math.floor(Math.random() * branchEndpoints.length)]
-      const offsetX = random(-5, 5)
-      const offsetY = random(-5, 5)
+    // 果实随机悬挂在节点或末梢
+    const fruitNodes = branchNodes.filter(node => node.level >= 1)
 
-      particles.push({
-        x: endpoint.x + offsetX,
-        y: endpoint.y + offsetY,
-        size: fruitSize,
-        color: fruitColor
-      })
+    if (fruitNodes.length > 0) {
+      for (let i = 0; i < fruitCount; i++) {
+        const node = fruitNodes[Math.floor(seededRandom() * fruitNodes.length)]
+
+        // 垂挂在枝条下方
+        const offsetX = random(-8, 8)
+        const offsetY = random(5, 15)  // 向下偏移
+
+        // 果实主粒子
+        particles.push({
+          x: node.x + offsetX,
+          y: node.y + offsetY,
+          size: fruitSize,
+          color: fruitColor
+        })
+
+        // 增加光晕粒子（使其醒目）
+        for (let j = 0; j < 3; j++) {
+          const haloOffset = random(-fruitSize, fruitSize)
+          particles.push({
+            x: node.x + offsetX + haloOffset,
+            y: node.y + offsetY + haloOffset,
+            size: fruitSize * 0.6,
+            color: fruitColor.replace(/[\d.]+\)$/, '0.3)')  // 降低光晕透明度
+          })
+        }
+      }
     }
   }
 
   // ========== 种子状态处理 ==========
-  // 如果所有数值都是0，绘制一颗"种子"
   if (
     rootCount === 0 &&
-    trunkHeight <= 10 &&
+    totalTrunkHeight <= 10 &&
     branchCount === 0 &&
     leafCount === 0 &&
     fruitCount === 0
