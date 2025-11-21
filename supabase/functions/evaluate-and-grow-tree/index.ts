@@ -179,22 +179,16 @@ async function executeTreeEvaluation(userId: string): Promise<void> {
 
     console.log(`[更新成功] profiles.consciousness_tree_view 已更新`);
 
-    // 步骤6: 插入历史记录
-    const { error: historyError } = await supabase
-      .from("consciousness_level_history")
-      .insert({
-        user_id: userId,
-        tree_state: newTreeData,
-        recorded_at: new Date().toISOString(),
-        calculated_by: "edge_function_gpt4o",
-      });
-
-    if (historyError) {
-      console.error(`[历史记录错误]`, historyError);
-      // 不抛出错误，因为主要更新已完成
-    } else {
-      console.log(`[历史记录] 已插入 consciousness_level_history`);
-    }
+    // 步骤6: 插入历史记录 (暂时跳过 - 表结构待更新)
+    // TODO: consciousness_level_history 表需要添加 tree_state 字段才能存储意识树历史
+    // const { error: historyError } = await supabase
+    //   .from("consciousness_level_history")
+    //   .insert({
+    //     user_id: userId,
+    //     tree_state: newTreeData,
+    //     recorded_at: new Date().toISOString(),
+    //   });
+    console.log(`[跳过历史记录] consciousness_level_history表结构待更新`);
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     console.log(`[完成] 用户 ${userId} 的意识树评估完成，耗时 ${duration}秒`);
