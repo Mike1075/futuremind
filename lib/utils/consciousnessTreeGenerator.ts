@@ -471,7 +471,9 @@ const generateBranches = (
   glowIntensity: number
 ): BranchNode[] => {
   const totalBudget = growthData.branches.count
-  const baseLength = growthData.branches.avg_length * 10
+  // 🌿 优化：缩短基础长度，让枝条更短、分叉更密集（参考图特征）
+  // avg_length=10时，baseLength=40px（之前是100px）
+  const baseLength = growthData.branches.avg_length * 4
   const isSolid = growthData.branches.is_solid
   const branchNodes: BranchNode[] = []
 
@@ -488,7 +490,12 @@ const generateBranches = (
     maxLevel: number
   ): void => {
     // 停止条件：预算用完、深度达到、长度太小
-    if (budgetUsed >= totalBudget || level > maxLevel || length < 3) return
+    // 🌿 降低最小长度阈值：1.5px（之前3px），允许更细分支继续生长，增加密集度
+    if (budgetUsed >= totalBudget || level > maxLevel || length < 1.5) {
+      // 🔧 当前节点成为末端，消耗预算
+      if (level > 0) budgetUsed++  // level=0是主枝起点，不计入末端
+      return
+    }
 
     // 计算终点
     const endX = startX + Math.cos((angle * Math.PI) / 180) * length
@@ -511,9 +518,8 @@ const generateBranches = (
       sideShootCount: 0,
     })
 
-    budgetUsed++
-
     // 🌿 二叉分叉（每个枝条末端分2叉，持续递归）
+    // 🔧 优化：只有在成为"末端节点"时才消耗预算，让count直观对应末端分支数
     if (budgetUsed < totalBudget && level < maxLevel) {
       // 长度衰减：75-85%（更温和，枝条更长）
       const newLength = length * random(0.75, 0.85)
@@ -529,7 +535,7 @@ const generateBranches = (
 
       if (remainingBudget >= 2) {
         // 预算充足，生成左右两个分叉（随机顺序，避免左分叉总是先消耗预算）
-        if (Math.random() < 0.5) {
+        if (seededRandom() < 0.5) {
           // 先左后右
           recursiveBinaryTree(endX, endY, angle - spreadAngle, newLength, newWidth, level + 1, maxLevel)
           recursiveBinaryTree(endX, endY, angle + spreadAngle, newLength, newWidth, level + 1, maxLevel)
@@ -540,10 +546,11 @@ const generateBranches = (
         }
       } else if (remainingBudget === 1) {
         // 预算只够一个分支，随机选左或右
-        const forkAngle = Math.random() < 0.5 ? angle - spreadAngle : angle + spreadAngle
+        const forkAngle = seededRandom() < 0.5 ? angle - spreadAngle : angle + spreadAngle
         recursiveBinaryTree(endX, endY, forkAngle, newLength, newWidth, level + 1, maxLevel)
       }
     }
+    // 注意：budgetUsed++ 现在在函数开头的return之前（成为真正末端时）
   }
 
   // 计算最大递归深度（基于预算）
