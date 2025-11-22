@@ -551,17 +551,15 @@ const generateBranches = (
     trunkHeight
   )
 
-  // 🌿 步骤2：根据洞见程度计算实际长度（1/3规则）
-  // avgLength=0: 基础长度（1/3自然长度）
-  // avgLength=20: 最大长度（自然长度）
-  const minLength = naturalBranchLength / 3
-  const maxLength = naturalBranchLength
-  const branchLength = minLength + (maxLength - minLength) * (avgLength / 20)
+  // 🌿 步骤2：计算虚线框架长度和最大长度
+  const baseLength = naturalBranchLength / 3  // 虚线框架（基础长度）
+  const maxLength = naturalBranchLength       // 最大长度
 
-  // 🌿 步骤3：根据洞见程度决定虚实线
-  // avgLength < 5: 虚线
-  // avgLength >= 5: 实线
-  const shouldDrawSolid = avgLength >= 5 && isSolid
+  // 🌿 步骤3：根据洞见程度计算实线长度
+  // avgLength=0: 实线0px（全虚线）
+  // avgLength=10: 实线=baseLength（虚线全部转化）
+  // avgLength=20: 实线=maxLength（超过框架，继续延长）
+  const solidLength = (avgLength / 20) * maxLength
 
   const branchNodes: BranchNode[] = []
 
@@ -572,52 +570,89 @@ const generateBranches = (
     { angle: -50, name: '右主枝' },
   ]
 
-  // 绘制主枝的辅助函数
+  // 绘制单个枝条的辅助函数（分段绘制：实线部分 + 虚线剩余部分）
   const drawSingleBranch = (
     startX: number,
     startY: number,
     angle: number,
-    length: number,
     width: number,
     isMain: boolean
   ) => {
-    const endX = startX + Math.cos((angle * Math.PI) / 180) * length
-    const endY = startY + Math.sin((angle * Math.PI) / 180) * length
+    const color = getColor('branch', overallProgress, isSolid, glowIntensity)
 
-    const color = getColor('branch', overallProgress, shouldDrawSolid, glowIntensity)
-    drawLine(particles, startX, startY, endX, endY, width, color, shouldDrawSolid, particleSize)
+    if (solidLength < baseLength) {
+      // 情况1：实线未填满虚线框架
+      // 绘制：实线部分 + 虚线剩余部分
 
-    branchNodes.push({
-      x: endX,
-      y: endY,
-      level: isMain ? 1 : 2,
-      angle,
-      length,
-      width,
-      isOpen: true,
-      sideShootCount: 0,
-    })
+      if (solidLength > 0) {
+        // 绘制实线部分
+        const solidEndX = startX + Math.cos((angle * Math.PI) / 180) * solidLength
+        const solidEndY = startY + Math.sin((angle * Math.PI) / 180) * solidLength
+        drawLine(particles, startX, startY, solidEndX, solidEndY, width, color, true, particleSize)
 
-    return { endX, endY }
+        // 从实线末端继续绘制虚线剩余部分
+        const dashedEndX = startX + Math.cos((angle * Math.PI) / 180) * baseLength
+        const dashedEndY = startY + Math.sin((angle * Math.PI) / 180) * baseLength
+        drawLine(particles, solidEndX, solidEndY, dashedEndX, dashedEndY, width, color, false, particleSize)
+      } else {
+        // avgLength=0时，只绘制虚线框架
+        const dashedEndX = startX + Math.cos((angle * Math.PI) / 180) * baseLength
+        const dashedEndY = startY + Math.sin((angle * Math.PI) / 180) * baseLength
+        drawLine(particles, startX, startY, dashedEndX, dashedEndY, width, color, false, particleSize)
+      }
+
+      // 记录节点（虚线框架的末端）
+      const endX = startX + Math.cos((angle * Math.PI) / 180) * baseLength
+      const endY = startY + Math.sin((angle * Math.PI) / 180) * baseLength
+      branchNodes.push({
+        x: endX,
+        y: endY,
+        level: isMain ? 1 : 2,
+        angle,
+        length: baseLength,
+        width,
+        isOpen: true,
+        sideShootCount: 0,
+      })
+      return { endX, endY }
+
+    } else {
+      // 情况2：实线超过虚线框架（虚线全部转化，继续延长）
+      // 只绘制实线
+      const endX = startX + Math.cos((angle * Math.PI) / 180) * solidLength
+      const endY = startY + Math.sin((angle * Math.PI) / 180) * solidLength
+      drawLine(particles, startX, startY, endX, endY, width, color, true, particleSize)
+
+      branchNodes.push({
+        x: endX,
+        y: endY,
+        level: isMain ? 1 : 2,
+        angle,
+        length: solidLength,
+        width,
+        isOpen: true,
+        sideShootCount: 0,
+      })
+      return { endX, endY }
+    }
   }
 
   // 绘制3个主枝
   for (let i = 0; i < 3; i++) {
     const branch = mainBranches[i]
-    const length = branchLength * random(0.9, 1.1)
     const width = Math.max(trunkWidth * 0.6, 2)
 
     const originOffsetX = random(-trunkWidth / 3, trunkWidth / 3)
     const startX = trunkTopX + originOffsetX
     const startY = trunkTopY
 
-    drawSingleBranch(startX, startY, branch.angle, length, width, true)
+    drawSingleBranch(startX, startY, branch.angle, width, true)
   }
 
-  // 🌿 步骤5：根据里程数(count)添加额外分叉
+  // 🌿 步骤5：根据里程数(count)添加额外新枝
   // count=0: 只有3个主枝
-  // count=1: 3个主枝 + 1个分叉
-  // count=2: 3个主枝 + 2个分叉
+  // count=1: 3个主枝 + 1个新枝 = 4个枝
+  // count=2: 3个主枝 + 2个新枝 = 5个枝
   // ...
 
   if (totalCount > 0) {
@@ -625,12 +660,10 @@ const generateBranches = (
     const forksPerMainBranch = Math.floor(totalCount / 3)
     const remainingForks = totalCount % 3
 
-    let forkIndex = 0
-
     for (let mainIndex = 0; mainIndex < 3; mainIndex++) {
       const mainBranch = mainBranches[mainIndex]
 
-      // 当前主枝的分叉数量
+      // 当前主枝的侧枝数量
       let forksForThisBranch = forksPerMainBranch
       if (mainIndex < remainingForks) {
         forksForThisBranch += 1
@@ -641,22 +674,21 @@ const generateBranches = (
       const startX = trunkTopX + originOffsetX
       const startY = trunkTopY
 
-      // 计算主枝终点
-      const mainLength = branchLength * random(0.9, 1.1)
-      const mainEndX = startX + Math.cos((mainBranch.angle * Math.PI) / 180) * mainLength
-      const mainEndY = startY + Math.sin((mainBranch.angle * Math.PI) / 180) * mainLength
+      // 计算主枝终点（使用实际长度）
+      const actualMainLength = solidLength >= baseLength ? solidLength : baseLength
+      const mainEndX = startX + Math.cos((mainBranch.angle * Math.PI) / 180) * actualMainLength
+      const mainEndY = startY + Math.sin((mainBranch.angle * Math.PI) / 180) * actualMainLength
 
       // 从主枝末端生成侧枝
       for (let forkNum = 0; forkNum < forksForThisBranch; forkNum++) {
         // 侧枝参数
-        const forkLength = branchLength * random(0.6, 0.8)  // 侧枝比主枝短
         const forkWidth = Math.max(trunkWidth * 0.4, 1.5)
 
         // 侧枝角度：在主枝基础上±30-50度
         const forkAngleOffset = random(30, 50) * (seededRandom() < 0.5 ? -1 : 1)
         const forkAngle = mainBranch.angle + forkAngleOffset
 
-        drawSingleBranch(mainEndX, mainEndY, forkAngle, forkLength, forkWidth, false)
+        drawSingleBranch(mainEndX, mainEndY, forkAngle, forkWidth, false)
       }
     }
   }
