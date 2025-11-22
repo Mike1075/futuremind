@@ -158,6 +158,35 @@ const drawLine = (
   }
 }
 
+// ============ 绘制渐变粗度线段（用于喇叭口过渡） ============
+const drawTaperLine = (
+  particles: Particle[],
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  startWidth: number,
+  endWidth: number,
+  color: string,
+  isSolid: boolean,
+  particleSize: number
+): void => {
+  const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+  const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps
+    const x = x1 + (x2 - x1) * t
+    const y = y1 + (y2 - y1) * t
+
+    // 渐变粗度：从 startWidth 到 endWidth
+    const currentWidth = startWidth + (endWidth - startWidth) * t
+    const size = Math.max(currentWidth / 2, 1) * (isSolid ? 1 : 0.5)
+
+    particles.push({ x, y, size, color, shape: 'circle' })
+  }
+}
+
 // ============ 辅助函数：对数增长 - 主根数量 ============
 const calculateMainRootCount = (count: number): number => {
   // 🔥 对数增长（log2），避免阶梯突变
@@ -187,6 +216,45 @@ const calculateRootDepth = (count: number, rootIndex: number, mainRootCount: num
 
   // 限制范围
   return Math.max(1, Math.min(depth, 6))
+}
+
+// ============ 新增：根据根系计算自然树干粗度（达芬奇规则） ============
+const calculateNaturalTrunkWidth = (rootCount: number, depthLevel: number): number => {
+  // 🌳 基于达芬奇规则：树干横截面积 ≈ 所有主根横截面积之和
+  // 简化计算：树干粗度与根系发展成正比
+
+  const mainRootCount = calculateMainRootCount(rootCount)
+  const rootWidth = Math.max(depthLevel * 2, 3)  // 单个主根粗度
+
+  // 所有主根横截面积之和（近似）
+  const totalRootArea = mainRootCount * (rootWidth / 2) ** 2 * Math.PI
+
+  // 树干半径（从面积反推）
+  const trunkRadius = Math.sqrt(totalRootArea / Math.PI)
+
+  // 树干粗度（直径）
+  const naturalWidth = trunkRadius * 2
+
+  // 确保最小值和合理上限
+  return Math.max(Math.min(naturalWidth, 60), 8)
+}
+
+// ============ 新增：根据根系计算自然树干高度 ============
+const calculateNaturalTrunkHeight = (rootCount: number, depthLevel: number): number => {
+  // 🌳 自然规律：树干高度与根系延伸范围成正比（约1-2倍）
+
+  const baseRootLength = 50 + depthLevel * 15  // 主根长度
+  const mainRootCount = calculateMainRootCount(rootCount)
+
+  // 估算根系延伸范围（考虑递归分支）
+  const avgDepth = Math.log2(rootCount + 1)
+  const rootExtension = baseRootLength * (1 + avgDepth * 0.3)
+
+  // 树干高度 = 根系延伸范围的1.5倍（经验值）
+  const naturalHeight = rootExtension * 1.5
+
+  // 确保合理范围
+  return Math.max(Math.min(naturalHeight, 400), 50)
 }
 
 // ============ 纯递归函数：生成对称二叉树根系 ============
@@ -285,21 +353,40 @@ const generateRoots = (
     // 计算主根角度
     const angle = startAngle + (i + 1) * angleStep
 
-    // 起点：从树干底部发出（稍微偏离中心）
-    const radiusOffset = Math.max(trunkWidth / 4, 5)
-    const offsetAngle = angle - 90
-    const startX = centerX + Math.cos((offsetAngle * Math.PI) / 180) * radiusOffset
+    // 🌳 新逻辑：起点在树干底部圆周上（而不是偏离中心点）
+    const circumferenceAngle = angle - 90  // 转换为圆周角度
+    const startX = centerX + Math.cos((circumferenceAngle * Math.PI) / 180) * (trunkWidth / 2)
     const startY = baseY
+
+    // 🌳 喇叭口过渡段：从树干粗度平滑过渡到根系粗度
+    const transitionLength = 15  // 过渡段长度
+    const transitionEndX = startX + Math.cos((angle * Math.PI) / 180) * transitionLength
+    const transitionEndY = startY + Math.sin((angle * Math.PI) / 180) * transitionLength
+
+    // 绘制过渡段（渐变粗度：从树干粗度 → 根系粗度）
+    const transitionColor = getColor('root', 0, isSolid, glowIntensity)
+    drawTaperLine(
+      particles,
+      startX,
+      startY,
+      transitionEndX,
+      transitionEndY,
+      trunkWidth,   // 起始粗度 = 树干粗度
+      baseWidth,    // 结束粗度 = 根系粗度
+      transitionColor,
+      isSolid,
+      particleSize
+    )
 
     // 🔥 方案F-步骤4：为每个主根动态分配深度（目标导向）
     // 使总末端数 ≈ count × 1.3，实现"1个领域≈1个小叉"
     const rootDepth = calculateRootDepth(totalCount, i, mainRootCount)
 
-    // 为每个主根调用纯递归函数生成子树
+    // 为每个主根调用纯递归函数生成子树（从过渡段末端开始）
     drawRootRecursive(
       particles,
-      startX,
-      startY,
+      transitionEndX,  // 从过渡段末端开始
+      transitionEndY,
       angle,
       baseLength * random(0.9, 1.1),  // 稍微随机化初始长度
       baseWidth,
@@ -311,15 +398,15 @@ const generateRoots = (
     )
 
     // 记录主根末端（保留接口兼容性）
-    const endX = startX + Math.cos((angle * Math.PI) / 180) * baseLength
-    const endY = startY + Math.sin((angle * Math.PI) / 180) * baseLength
+    const endX = transitionEndX + Math.cos((angle * Math.PI) / 180) * baseLength
+    const endY = transitionEndY + Math.sin((angle * Math.PI) / 180) * baseLength
     rootNodes.push({ x: endX, y: endY, level: 1, angle, length: baseLength, width: baseWidth })
   }
 
   return rootNodes
 }
 
-// ============ 2. 树干：生物力学比例（对数增长，体积填充） ============
+// ============ 2. 树干：自然比例 + 1/3规则 ============
 const generateTrunk = (
   particles: Particle[],
   centerX: number,
@@ -330,24 +417,33 @@ const generateTrunk = (
   glowIntensity: number
 ): { topX: number; topY: number; trunkWidth: number } => {
   const thickness = growthData.trunk.thickness
+  const heightLevel = growthData.trunk.height_level
   const isSolid = growthData.trunk.is_solid
 
-  // 生物力学公式
-  const BaseHeight = 100
-  const GrowthFactor = Math.log(totalRootCount + 1) * 50
-  const UserProgress = growthData.trunk.height_level / 100
-  const FinalHeight = (BaseHeight + GrowthFactor) * UserProgress
+  // 🌳 步骤1：计算"自然粗度Y"和"自然长度Z"（基于根系发展）
+  const naturalWidth = calculateNaturalTrunkWidth(totalRootCount, growthData.roots.depth_level)
+  const naturalHeight = calculateNaturalTrunkHeight(totalRootCount, growthData.roots.depth_level)
+
+  // 🌳 步骤2：应用1/3规则
+  // 默认粗度 = 1/3 × Y，最大粗度 = Y
+  const minWidth = naturalWidth / 3
+  const maxWidth = naturalWidth
+  const actualWidth = minWidth + (maxWidth - minWidth) * (thickness / 50)  // thickness: 0-50
+
+  // 默认长度 = 1/3 × Z，最大长度 = Z
+  const minHeight = naturalHeight / 3
+  const maxHeight = naturalHeight
+  const actualHeight = minHeight + (maxHeight - minHeight) * (heightLevel / 100)  // height_level: 0-100
 
   const topX = centerX
-  const topY = baseY - FinalHeight
-
-  // 🔥 核心修复：直接使用thickness值作为像素宽度，不再除以10！
-  const BaseTrunkWidth = Math.max(thickness, 2)
+  const topY = baseY - actualHeight
 
   // 关键：thickness > 0 绘制实线，thickness == 0 绘制虚线
   const drawSolid = thickness > 0 && isSolid
 
-  const color = getColor('trunk', UserProgress, drawSolid, glowIntensity)
+  // 颜色深度基于高度进度
+  const colorDepth = heightLevel / 100
+  const color = getColor('trunk', colorDepth, drawSolid, glowIntensity)
 
   // 使用粗粒子绘制树干
   drawLine(
@@ -356,13 +452,13 @@ const generateTrunk = (
     baseY,
     topX,
     topY,
-    BaseTrunkWidth,
+    actualWidth,
     color,
     drawSolid,
     particleSize
   )
 
-  return { topX, topY, trunkWidth: BaseTrunkWidth }
+  return { topX, topY, trunkWidth: actualWidth }
 }
 
 // ============ 3. 枝条：预算消耗与形态学（横截面分布） ============
