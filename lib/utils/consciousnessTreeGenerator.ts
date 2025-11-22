@@ -111,8 +111,8 @@ const getColor = (
       lightness = 15 + depth * 7
       break
     case 'branch':
-      // 枝条：30% → 55%
-      lightness = 30 + depth * 25
+      // 枝条：20% → 35%（和根系类似，从暗红开始，根据count填充程度变亮）
+      lightness = 20 + depth * 15
       break
     case 'leaf':
       // 叶子：40% → 60%（较亮）
@@ -512,8 +512,9 @@ const generateBranches = (
   // avg_length=0时 → actualBranchLength = minLength（1/3自然长度，避免秃树）
   // avg_length=20时 → actualBranchLength = maxLength（完整自然长度）
 
-  // 最终基础长度（用于递归起点）
-  const baseLength = actualBranchLength * 4  // 保持原有的倍数关系
+  // 🔧 修复：直接使用actualBranchLength作为baseLength（移除*4倍数）
+  // 之前的*4导致枝条太长，递归层数太多，count=3时生成了30+个末端
+  const baseLength = actualBranchLength
 
   const isSolid = growthData.branches.is_solid
   const branchNodes: BranchNode[] = []
@@ -543,8 +544,10 @@ const generateBranches = (
     const endY = startY + Math.sin((angle * Math.PI) / 180) * length
 
     // 绘制当前枝条
-    const depth = Math.min(level / maxLevel, 1)
-    const color = getColor('branch', depth, isSolid, glowIntensity)
+    // 🎨 修复：颜色基于count填充程度，而不是递归深度
+    // count接近100时，整体才变亮红（从暗红20%到亮红35%）
+    const fillRatio = Math.min(totalBudget / 100, 1)
+    const color = getColor('branch', fillRatio, isSolid, glowIntensity)
     drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
 
     // 记录节点
