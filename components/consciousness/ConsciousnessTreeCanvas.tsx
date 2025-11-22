@@ -242,7 +242,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
   return (
     <div
       ref={containerRef}
-      className="w-full h-full overflow-auto"
+      className="w-full h-full overflow-hidden"
       style={{ background: '#000' }}
     >
       <canvas
