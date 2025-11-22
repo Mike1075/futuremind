@@ -528,7 +528,7 @@ const generateTrunk = (
   return { topX, topY, trunkWidth: actualWidth }
 }
 
-// ============ 3. 枝条：基础结构 + 里程分叉 ============
+// ============ 3. 枝条：递归分形树（虚实线+多级分叉） ============
 const generateBranches = (
   particles: Particle[],
   trunkTopX: number,
@@ -540,104 +540,125 @@ const generateBranches = (
   particleSize: number,
   glowIntensity: number
 ): BranchNode[] => {
-  const totalCount = growthData.branches.count  // 里程数
-  const avgLength = growthData.branches.avg_length  // 洞见程度 (0-20)
+  const totalCount = growthData.branches.count  // 里程数（控制递归深度）
+  const avgLength = growthData.branches.avg_length  // 洞见程度（控制长度和虚实线）
   const isSolid = growthData.branches.is_solid
 
-  // 🌿 步骤1：计算自然枝条长度（已增加3倍）
+  // 🌿 步骤1：计算基础长度（已增加3倍）
   const naturalBranchLength = calculateNaturalBranchLength(
     growthData.roots.count,
     growthData.roots.depth_level,
     trunkHeight
   )
 
-  // 🌿 步骤2：计算虚线框架长度和最大长度
-  const baseLength = naturalBranchLength / 3  // 虚线框架（基础长度）
-  const maxLength = naturalBranchLength       // 最大长度
+  // 🌿 步骤2：根据洞见程度计算实际初始长度
+  // avgLength=0: 1/3自然长度（虚线框架）
+  // avgLength=20: 完整自然长度（最大长度）
+  const minInitialLength = naturalBranchLength / 3
+  const maxInitialLength = naturalBranchLength
+  const initialLength = minInitialLength + (maxInitialLength - minInitialLength) * (avgLength / 20)
 
-  // 🌿 步骤3：根据洞见程度计算实线长度
-  // avgLength=0: 实线0px（全虚线）
-  // avgLength=10: 实线=baseLength（虚线全部转化）
-  // avgLength=20: 实线=maxLength（超过框架，继续延长）
-  const solidLength = (avgLength / 20) * maxLength
+  // 🌿 步骤3：根据里程数计算递归深度
+  // count=0: depth=1（只有主枝，无分叉）
+  // count=10: depth=2（1级分叉）
+  // count=20: depth=3（2级分叉）
+  // count=50: depth=4（3级分叉）
+  // count=100: depth=5（4级分叉）
+  const maxDepth = Math.min(Math.max(1, Math.floor(totalCount / 20) + 1), 6)
+
+  // 🌿 步骤4：计算虚线框架长度（基于avgLength）
+  // 虚线框架 = 当前实际长度的 max(1 - avgLength/20, 0)
+  // avgLength=0: 100%虚线
+  // avgLength=10: 50%虚线
+  // avgLength=20: 0%虚线（全实线）
+  const dashedRatio = Math.max(1 - avgLength / 20, 0)
 
   const branchNodes: BranchNode[] = []
 
-  // 🌿 步骤4：总是生成3个主枝（基础结构）
+  // 🌿 递归分叉函数（参考tree代码）
+  const recursiveBranch = (
+    startX: number,
+    startY: number,
+    length: number,
+    angle: number,
+    width: number,
+    currentDepth: number
+  ): void => {
+    // 递归终止条件
+    if (currentDepth > maxDepth || length < 3) return
+
+    // 计算末端坐标
+    const endX = startX + Math.cos((angle * Math.PI) / 180) * length
+    const endY = startY + Math.sin((angle * Math.PI) / 180) * length
+
+    // 绘制当前段（分段：实线+虚线）
+    const color = getColor('branch', overallProgress, isSolid, glowIntensity)
+    const dashedLength = length * dashedRatio  // 虚线部分长度
+
+    if (dashedLength > 0 && avgLength < 20) {
+      // 绘制实线部分（从起点到实线末端）
+      const solidEnd = length - dashedLength
+      if (solidEnd > 0) {
+        const solidEndX = startX + Math.cos((angle * Math.PI) / 180) * solidEnd
+        const solidEndY = startY + Math.sin((angle * Math.PI) / 180) * solidEnd
+        drawLine(particles, startX, startY, solidEndX, solidEndY, width, color, true, particleSize)
+
+        // 绘制虚线部分（从实线末端到终点）
+        drawLine(particles, solidEndX, solidEndY, endX, endY, width, color, false, particleSize)
+      } else {
+        // 全虚线
+        drawLine(particles, startX, startY, endX, endY, width, color, false, particleSize)
+      }
+    } else {
+      // 全实线
+      drawLine(particles, startX, startY, endX, endY, width, color, true, particleSize)
+    }
+
+    // 记录节点
+    branchNodes.push({
+      x: endX,
+      y: endY,
+      level: currentDepth,
+      angle,
+      length,
+      width,
+      isOpen: true,
+      sideShootCount: 0,
+    })
+
+    // 递归分叉（左右对称，参考tree代码）
+    const newLength = length * 0.7  // 长度衰减70%
+    const newWidth = Math.max(width * 0.7, 0.8)  // 粗度衰减70%，最小0.8
+    const branchAngle = 25  // 分叉角度25度
+
+    // 左分支
+    recursiveBranch(
+      endX,
+      endY,
+      newLength,
+      angle - branchAngle,
+      newWidth,
+      currentDepth + 1
+    )
+
+    // 右分支
+    recursiveBranch(
+      endX,
+      endY,
+      newLength,
+      angle + branchAngle,
+      newWidth,
+      currentDepth + 1
+    )
+  }
+
+  // 🌿 步骤5：生成3个主枝
   const mainBranches = [
     { angle: -130, name: '左主枝' },
     { angle: -90, name: '中主枝' },
     { angle: -50, name: '右主枝' },
   ]
 
-  // 绘制单个枝条的辅助函数（分段绘制：实线部分 + 虚线剩余部分）
-  const drawSingleBranch = (
-    startX: number,
-    startY: number,
-    angle: number,
-    width: number,
-    isMain: boolean
-  ) => {
-    const color = getColor('branch', overallProgress, isSolid, glowIntensity)
-
-    if (solidLength < baseLength) {
-      // 情况1：实线未填满虚线框架
-      // 绘制：实线部分 + 虚线剩余部分
-
-      if (solidLength > 0) {
-        // 绘制实线部分
-        const solidEndX = startX + Math.cos((angle * Math.PI) / 180) * solidLength
-        const solidEndY = startY + Math.sin((angle * Math.PI) / 180) * solidLength
-        drawLine(particles, startX, startY, solidEndX, solidEndY, width, color, true, particleSize)
-
-        // 从实线末端继续绘制虚线剩余部分
-        const dashedEndX = startX + Math.cos((angle * Math.PI) / 180) * baseLength
-        const dashedEndY = startY + Math.sin((angle * Math.PI) / 180) * baseLength
-        drawLine(particles, solidEndX, solidEndY, dashedEndX, dashedEndY, width, color, false, particleSize)
-      } else {
-        // avgLength=0时，只绘制虚线框架
-        const dashedEndX = startX + Math.cos((angle * Math.PI) / 180) * baseLength
-        const dashedEndY = startY + Math.sin((angle * Math.PI) / 180) * baseLength
-        drawLine(particles, startX, startY, dashedEndX, dashedEndY, width, color, false, particleSize)
-      }
-
-      // 记录节点（虚线框架的末端）
-      const endX = startX + Math.cos((angle * Math.PI) / 180) * baseLength
-      const endY = startY + Math.sin((angle * Math.PI) / 180) * baseLength
-      branchNodes.push({
-        x: endX,
-        y: endY,
-        level: isMain ? 1 : 2,
-        angle,
-        length: baseLength,
-        width,
-        isOpen: true,
-        sideShootCount: 0,
-      })
-      return { endX, endY }
-
-    } else {
-      // 情况2：实线超过虚线框架（虚线全部转化，继续延长）
-      // 只绘制实线
-      const endX = startX + Math.cos((angle * Math.PI) / 180) * solidLength
-      const endY = startY + Math.sin((angle * Math.PI) / 180) * solidLength
-      drawLine(particles, startX, startY, endX, endY, width, color, true, particleSize)
-
-      branchNodes.push({
-        x: endX,
-        y: endY,
-        level: isMain ? 1 : 2,
-        angle,
-        length: solidLength,
-        width,
-        isOpen: true,
-        sideShootCount: 0,
-      })
-      return { endX, endY }
-    }
-  }
-
-  // 绘制3个主枝
   for (let i = 0; i < 3; i++) {
     const branch = mainBranches[i]
     const width = Math.max(trunkWidth * 0.6, 2)
@@ -646,51 +667,15 @@ const generateBranches = (
     const startX = trunkTopX + originOffsetX
     const startY = trunkTopY
 
-    drawSingleBranch(startX, startY, branch.angle, width, true)
-  }
-
-  // 🌿 步骤5：根据里程数(count)添加额外新枝
-  // count=0: 只有3个主枝
-  // count=1: 3个主枝 + 1个新枝 = 4个枝
-  // count=2: 3个主枝 + 2个新枝 = 5个枝
-  // ...
-
-  if (totalCount > 0) {
-    // 计算每个主枝应该分出多少个侧枝
-    const forksPerMainBranch = Math.floor(totalCount / 3)
-    const remainingForks = totalCount % 3
-
-    for (let mainIndex = 0; mainIndex < 3; mainIndex++) {
-      const mainBranch = mainBranches[mainIndex]
-
-      // 当前主枝的侧枝数量
-      let forksForThisBranch = forksPerMainBranch
-      if (mainIndex < remainingForks) {
-        forksForThisBranch += 1
-      }
-
-      // 主枝起点
-      const originOffsetX = random(-trunkWidth / 3, trunkWidth / 3)
-      const startX = trunkTopX + originOffsetX
-      const startY = trunkTopY
-
-      // 计算主枝终点（使用实际长度）
-      const actualMainLength = solidLength >= baseLength ? solidLength : baseLength
-      const mainEndX = startX + Math.cos((mainBranch.angle * Math.PI) / 180) * actualMainLength
-      const mainEndY = startY + Math.sin((mainBranch.angle * Math.PI) / 180) * actualMainLength
-
-      // 从主枝末端生成侧枝
-      for (let forkNum = 0; forkNum < forksForThisBranch; forkNum++) {
-        // 侧枝参数
-        const forkWidth = Math.max(trunkWidth * 0.4, 1.5)
-
-        // 侧枝角度：在主枝基础上±30-50度
-        const forkAngleOffset = random(30, 50) * (seededRandom() < 0.5 ? -1 : 1)
-        const forkAngle = mainBranch.angle + forkAngleOffset
-
-        drawSingleBranch(mainEndX, mainEndY, forkAngle, forkWidth, false)
-      }
-    }
+    // 启动递归
+    recursiveBranch(
+      startX,
+      startY,
+      initialLength,
+      branch.angle,
+      width,
+      1
+    )
   }
 
   return branchNodes
