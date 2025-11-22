@@ -107,8 +107,8 @@ const getColor = (
       lightness = 20 + depth * 10
       break
     case 'trunk':
-      // 树干：20% → 40%
-      lightness = 20 + depth * 20
+      // 树干：18% → 28%（降低亮度，避免粒子叠加成白色）
+      lightness = 18 + depth * 10
       break
     case 'branch':
       // 枝条：30% → 55%
@@ -683,23 +683,30 @@ export function generateConsciousnessTree(
   const centerX = canvasWidth / 2
   const baseY = canvasHeight * 0.65
 
-  // 🔥 新顺序：先生成树干（获取宽度），再用宽度生成根系和枝条
+  // 🔥 优化顺序：先计算树干宽度，再按【根系→树干→枝条】顺序绘制
 
   // 1. 预计算根系数量（用于对数增长公式）
   const estimatedRootCount = growthData.roots.count
 
-  // 2. 生成树干（对数增长，返回宽度）
-  const { topX, topY, trunkWidth } = generateTrunk(
-    particles,
-    centerX,
-    baseY,
-    growthData,
-    estimatedRootCount,
-    params.particleSize,
-    params.glowIntensity
-  )
+  // 2. 预先计算树干参数（不绘制）
+  const naturalWidth = calculateNaturalTrunkWidth(estimatedRootCount, growthData.roots.depth_level)
+  const naturalHeight = calculateNaturalTrunkHeight(estimatedRootCount, growthData.roots.depth_level)
 
-  // 3. 生成根系（使用树干宽度进行横截面分布）
+  const thickness = growthData.trunk.thickness
+  const heightLevel = growthData.trunk.height_level
+
+  const minWidth = naturalWidth / 3
+  const maxWidth = naturalWidth
+  const trunkWidth = minWidth + (maxWidth - minWidth) * (thickness / 50)
+
+  const minHeight = naturalHeight / 3
+  const maxHeight = naturalHeight
+  const actualHeight = minHeight + (maxHeight - minHeight) * (heightLevel / 100)
+
+  const topX = centerX
+  const topY = baseY - actualHeight
+
+  // 3. 先绘制根系（在底层）
   const rootNodes = generateRoots(
     particles,
     centerX,
@@ -710,7 +717,18 @@ export function generateConsciousnessTree(
     params.glowIntensity
   )
 
-  // 4. 生成枝条（使用树干宽度进行横截面分布）
+  // 4. 再绘制树干（覆盖在根系喇叭口上方）
+  generateTrunk(
+    particles,
+    centerX,
+    baseY,
+    growthData,
+    estimatedRootCount,
+    params.particleSize,
+    params.glowIntensity
+  )
+
+  // 5. 生成枝条（使用树干宽度进行横截面分布）
   const branchNodes = generateBranches(
     particles,
     topX,
@@ -721,10 +739,10 @@ export function generateConsciousnessTree(
     params.glowIntensity
   )
 
-  // 4. 生成树叶
+  // 6. 生成树叶
   generateLeaves(particles, branchNodes, growthData, params.particleSize, params.glowIntensity)
 
-  // 5. 生成果实
+  // 7. 生成果实
   generateFruits(particles, branchNodes, growthData, params.particleSize, params.glowIntensity)
 
   return particles
