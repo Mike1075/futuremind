@@ -616,26 +616,31 @@ const generateBranches = (
 
     // count=0时绘制虚线，否则实线
     const isDashed = totalCount === 0
-    drawSingleBranch(startX, startY, minInitialLength, branch.angle, width, isDashed)
+    // 🔥 修复：虚线主枝也应响应avg_length（使用initialLength而非minInitialLength）
+    drawSingleBranch(startX, startY, initialLength, branch.angle, width, isDashed)
   }
 
   // 🌿 步骤4：count>0时，累积生成侧枝（每个count对应固定位置）
+  // 🔥 关键修复：侧枝只从3个主枝延伸，不从侧枝再延伸（避免角度累积）
   if (totalCount > 0) {
+    // 只从前3个主枝延伸侧枝
+    const mainBranchNodes = branchNodes.slice(0, 3)
+
     for (let branchIndex = 0; branchIndex < totalCount; branchIndex++) {
-      // 为每个枝条选择父枝（稳定选择）
-      const parentIndex = branchIndex % branchNodes.length
-      const parent = branchNodes[parentIndex]
+      // 为每个侧枝选择主枝作为父枝（循环分配）
+      const parentIndex = branchIndex % 3
+      const parent = mainBranchNodes[parentIndex]
 
       // 使用枝条索引生成稳定的随机值
       const r1 = getStableRandom(branchIndex, 1)
       const r2 = getStableRandom(branchIndex, 2)
       const r3 = getStableRandom(branchIndex, 3)
 
-      // 侧枝长度：父枝的50-70%
-      const sideLength = initialLength * (0.5 + r1 * 0.2) * 0.7
+      // 侧枝长度：主枝的60-80%
+      const sideLength = initialLength * (0.6 + r1 * 0.2)
 
-      // 侧枝角度：在父枝基础上±30-60度
-      const angleOffset = 30 + r2 * 30
+      // 侧枝角度：在主枝基础上±20-40度（更保守）
+      const angleOffset = 20 + r2 * 20
       const sideAngle = parent.angle + (r3 < 0.5 ? -angleOffset : angleOffset)
 
       // 侧枝粗度
