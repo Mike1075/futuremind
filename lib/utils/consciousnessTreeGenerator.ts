@@ -158,31 +158,20 @@ const drawLine = (
   }
 }
 
-// ============ 辅助函数：平滑的主根数量增长 ============
+// ============ 辅助函数：对数增长 - 主根数量 ============
 const calculateMainRootCount = (count: number): number => {
-  // 🔥 更平滑的增长曲线（每3-5个count增加1个主根）
-  // 避免突然从2个主根跳到3个主根带来大量分叉
-  if (count <= 3) return 1
-  if (count <= 6) return 2
-  if (count <= 10) return 3
-  if (count <= 15) return 4
-  if (count <= 20) return 5   // count=16时5个主根，避免突变
-  if (count <= 30) return 6
-  if (count <= 45) return 7
-  if (count <= 60) return 8
-  if (count <= 70) return 9
-  return Math.min(10, Math.ceil(count / 8))
+  // 🔥 对数增长（log2），避免阶梯突变
+  // count=1: 1根, count=3: 2根, count=7: 3根, count=15: 4根, count=31: 5根
+  // 增长非常平滑，每次翻倍才增加1个主根
+  return Math.max(1, Math.ceil(Math.log2(count + 1)))
 }
 
-// ============ 辅助函数：根据count计算平均递归深度 ============
+// ============ 辅助函数：对数增长 - 平均深度 ============
 const calculateAverageDepth = (count: number): number => {
-  // 🔥 平均深度（基础值），每个主根会在此基础上±1浮动
-  // 这样总末端数 ≈ mainRootCount × 2^avgDepth
-  if (count <= 6) return 2   // 4个末端/根
-  if (count <= 15) return 3  // 8个末端/根
-  if (count <= 30) return 4  // 16个末端/根
-  if (count <= 60) return 5  // 32个末端/根
-  return 6                   // 64个末端/根
+  // 🔥 对数增长（log2 / 2），比主根数量增长更慢
+  // 这样避免在同一个count阈值同时增加主根和深度（双重突变）
+  // count=1-3: depth=2, count=4-15: depth=3, count=16-63: depth=4
+  return 2 + Math.floor(Math.log2(count + 1) / 2)
 }
 
 // ============ 纯递归函数：生成对称二叉树根系 ============
