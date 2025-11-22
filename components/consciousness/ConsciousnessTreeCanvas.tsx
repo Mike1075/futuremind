@@ -212,19 +212,19 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
     let increasing = true
     const animate = () => {
       setSeedOpacity((prev) => {
-        // 减慢速度：从0.02改为0.008，让呼吸更自然
+        // 再次减慢速度：从0.008改为0.004，呼吸更加缓慢优雅
         if (increasing) {
           if (prev >= 0.85) {
             increasing = false
-            return prev - 0.008
+            return prev - 0.004
           }
-          return prev + 0.008
+          return prev + 0.004
         } else {
           if (prev <= 0.35) {
             increasing = true
-            return prev + 0.008
+            return prev + 0.004
           }
-          return prev - 0.008
+          return prev - 0.004
         }
       })
       animationRef.current = requestAnimationFrame(animate)
