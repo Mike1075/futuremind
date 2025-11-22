@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { ConsciousnessTreeCanvas } from './ConsciousnessTreeCanvas'
 import { ConsciousnessTreeView } from './ConsciousnessTreeView'
 import { TreeParams, TreeGrowthData } from '@/lib/utils/consciousnessTreeGenerator'
-import { ArrowLeft, Sparkles, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowLeft, Sparkles, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 // 默认生长数据（累积生长制 - 可手动调控）
 const INITIAL_GROWTH_DATA: TreeGrowthData = {
@@ -27,6 +28,8 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
   const [growthData, setGrowthData] = useState<TreeGrowthData>(INITIAL_GROWTH_DATA)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [zoom, setZoom] = useState(1)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const isPrincipal = userRole === 'principal'
 
@@ -39,6 +42,35 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
   // 缩放控制
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.2, 3))
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.2, 0.5))
+
+  // 刷新意识树数据
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    try {
+      const supabase = createClient()
+
+      // 重新从数据库获取最新的意识树数据
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('consciousness_tree_view')
+        .eq('id', userId)
+        .single()
+
+      if (error) throw error
+
+      // 通过更新key强制ConsciousnessTreeView重新加载
+      setRefreshKey(prev => prev + 1)
+
+      setMessage({ type: 'success', text: '✅ 已刷新到最新状态' })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error('[刷新失败]', error)
+      setMessage({ type: 'error', text: '❌ 刷新失败，请稍后重试' })
+      setTimeout(() => setMessage(null), 3000)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [userId])
 
   // 更新生长数据的通用函数
   const updateGrowthData = (part: keyof TreeGrowthData, field: string, value: number | boolean) => {
@@ -91,8 +123,17 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
               <h1 className="text-2xl font-bold text-white">我的意识进化树</h1>
 
-              {/* 缩放控制 */}
+              {/* 刷新和缩放控制 */}
               <div className="flex items-center gap-2">
+                <button
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+                  title="刷新最新数据"
+                >
+                  <RefreshCw className={`w-5 h-5 text-green-300 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
+                <div className="w-px h-6 bg-white/10"></div>
                 <button
                   onClick={handleZoomOut}
                   className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
@@ -134,7 +175,7 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
                   transformOrigin: 'center center'
                 }}
               >
-                <ConsciousnessTreeView userId={userId} isPreview={false} />
+                <ConsciousnessTreeView key={refreshKey} userId={userId} isPreview={false} />
               </div>
             </div>
           </motion.div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -40,6 +40,26 @@ export function PortalClient({
 
   // ✅ 使用SWR缓存课程数据（首次3秒，后续瞬间）
   const { courses: enrolledCourses, loading: coursesLoading } = usePortalCourses(userId)
+
+  // 🌱 登录时自动触发总结和意识树计算（24小时规则）
+  useEffect(() => {
+    const triggerSummary = async () => {
+      try {
+        const response = await fetch('/api/trigger-summary', {
+          method: 'POST'
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          console.log('[Portal] 总结触发结果:', result.message)
+        }
+      } catch (error) {
+        console.error('[Portal] 触发总结失败:', error)
+      }
+    }
+
+    triggerSummary()
+  }, []) // 只在组件挂载时执行一次
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
