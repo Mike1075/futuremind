@@ -30,7 +30,7 @@ const COURSE_COLORS = [
 ]
 
 // 曲线路径节点位置（百分比）- 根据手绘参考图设计的耳朵轮廓
-// 完整的耳朵形状：外耳轮 + 耳垂 + 内耳凹陷（耳洞）
+// 完整的耳朵形状：外耳轮 + 耳垂 + 内耳凹陷（耳洞 - 向右内勾）
 const PATH_POINTS = [
   { x: 30, y: 25 },   // Day 1 - 左上起点
   { x: 42, y: 15 },   // Day 2 - 向上弯曲
@@ -43,9 +43,9 @@ const PATH_POINTS = [
   { x: 68, y: 78 },   // Day 9 - 耳垂右侧
   { x: 54, y: 85 },   // Day 10 - 耳垂底部（最低点）
   { x: 40, y: 82 },   // Day 11 - 耳垂左侧
-  { x: 32, y: 72 },   // Day 12 - 耳垂向上，准备内勾
-  { x: 18, y: 54 },   // Day 13 - 深度向内凹陷（耳洞最深处，大幅向左勾14个单位）
-  { x: 20, y: 36 },   // Day 14 - 耳洞上部出口，形成明显内凹轮廓
+  { x: 32, y: 72 },   // Day 12 - 耳垂向上，准备向右内勾
+  { x: 40, y: 56 },   // Day 13 - 向右内勾（耳洞深处，x从32增加到40）
+  { x: 45, y: 38 },   // Day 14 - 耳洞上部，继续向右上形成内凹轮廓
 ]
 
 export function ListeningCourseView({ courseSystem, contents, completionMap, scoreMap }: ListeningCourseViewProps) {
