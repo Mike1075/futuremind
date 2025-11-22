@@ -158,12 +158,93 @@ const drawLine = (
   }
 }
 
-// ============ 1. 根系：阶梯式分形消耗逻辑（横截面分布） ============
+// ============ 辅助函数：根据count计算最大递归深度 ============
+const calculateMaxDepth = (count: number): number => {
+  // 业务逻辑：
+  // count=1-3   → depth=2 (2^2=4个末端足够)
+  // count=4-10  → depth=3 (2^3=8个末端)
+  // count=11-20 → depth=4 (2^4=16个末端)
+  // count=21-40 → depth=5 (2^5=32个末端)
+  // count=41+   → depth=6-8 (2^6=64, 2^8=256个末端)
+
+  if (count <= 3) return 2
+  if (count <= 10) return 3
+  if (count <= 20) return 4
+  if (count <= 40) return 5
+  if (count <= 80) return 6
+  return Math.min(Math.ceil(Math.log2(count)) + 2, 8)
+}
+
+// ============ 纯递归函数：生成对称二叉树根系 ============
+const drawRootRecursive = (
+  particles: Particle[],
+  x: number,              // 起点x
+  y: number,              // 起点y
+  angle: number,          // 生长角度（度）
+  length: number,         // 当前段长度
+  width: number,          // 当前段粗度
+  level: number,          // 当前层级（从1开始）
+  maxLevel: number,       // 最大层级
+  isSolid: boolean,       // 是否实线
+  particleSize: number,
+  glowIntensity: number
+): void => {
+  // 递归终止条件
+  if (level > maxLevel || length < 5) return
+
+  // 1. 计算终点
+  const endX = x + Math.cos((angle * Math.PI) / 180) * length
+  const endY = y + Math.sin((angle * Math.PI) / 180) * length
+
+  // 2. 计算颜色深度（根据层级）
+  const depth = Math.min((level - 1) * 0.05, 0.25)  // 0.0 → 0.25
+  const color = getColor('root', depth, isSolid, glowIntensity)
+
+  // 3. 绘制当前线段
+  drawLine(particles, x, y, endX, endY, width, color, isSolid, particleSize)
+
+  // 4. 递归生成左右子树（强制对称分叉）
+  const newLength = length * 0.75  // 🔥 统一衰减比例
+  const newWidth = Math.max(width * 0.7, 0.8)  // 🔥 统一粗度衰减，最小0.8px
+  const spread = 40  // 🔥 统一分叉角度
+
+  // 左分支
+  drawRootRecursive(
+    particles,
+    endX,
+    endY,
+    angle - spread,
+    newLength,
+    newWidth,
+    level + 1,
+    maxLevel,
+    isSolid,
+    particleSize,
+    glowIntensity
+  )
+
+  // 右分支
+  drawRootRecursive(
+    particles,
+    endX,
+    endY,
+    angle + spread,
+    newLength,
+    newWidth,
+    level + 1,
+    maxLevel,
+    isSolid,
+    particleSize,
+    glowIntensity
+  )
+}
+
+// ============ 1. 根系：纯递归对称分叉 + 扇形分布（方案A） ============
 const generateRoots = (
   particles: Particle[],
   centerX: number,
   baseY: number,
-  trunkWidth: number,  // 新增：树干宽度，用于横截面分布
+  trunkWidth: number,
   growthData: TreeGrowthData,
   particleSize: number,
   glowIntensity: number
@@ -174,162 +255,50 @@ const generateRoots = (
 
   if (totalCount === 0) return rootNodes
 
-  // 阶梯式消耗逻辑
-  let remainingBudget = totalCount
+  // 🔥 方案A-步骤1：计算主根数量（保持150°扇形分布）
+  const mainRootCount = Math.min(Math.ceil(totalCount / 8), 80)
 
-  // Level 1: 主根（前5个点，每1点生成1根）
-  const level1Count = Math.min(remainingBudget, 5)
-  const level1BaseLength = growthData.roots.depth_level * 15
-  // 🔥 修复：根系粗度独立于树干，基于深度级别
-  const level1BaseWidth = Math.max(growthData.roots.depth_level * 2, 3)
+  // 🔥 方案A-步骤2：计算每个主根的最大递归深度
+  const maxDepth = calculateMaxDepth(totalCount)
 
-  for (let i = 0; i < level1Count; i++) {
-    // 🔥 核心修复：主根在地平线以下扇形分布（150度总范围）
-    // 中心向下90度，左右各展开75度（15°-165°）
-    const totalSpread = 150  // 总扇形角度
-    const startAngle = 90 - totalSpread / 2  // 起始角度 15°
-    const angleStep = totalSpread / (level1Count + 1)  // 均匀间隔
-    const angle = startAngle + (i + 1) * angleStep  // 每个主根的角度
+  // 🔥 方案A-步骤3：计算基础参数
+  const baseLength = 50 + growthData.roots.depth_level * 15  // 基础长度
+  const baseWidth = Math.max(growthData.roots.depth_level * 2, 3)  // 基础粗度
+
+  // 🔥 方案A-步骤4：生成主根（150°扇形分布）
+  const totalSpread = 150  // 扇形总角度
+  const startAngle = 90 - totalSpread / 2  // 起始角度 15°
+  const angleStep = totalSpread / (mainRootCount + 1)  // 均匀间隔
+
+  for (let i = 0; i < mainRootCount; i++) {
+    // 计算主根角度
+    const angle = startAngle + (i + 1) * angleStep
 
     // 起点：从树干底部发出（稍微偏离中心）
     const radiusOffset = Math.max(trunkWidth / 4, 5)
-    const offsetAngle = angle - 90  // 相对垂直方向的偏移
+    const offsetAngle = angle - 90
     const startX = centerX + Math.cos((offsetAngle * Math.PI) / 180) * radiusOffset
     const startY = baseY
 
-    // 🔥 修复：基础长度50px + depth_level增长
-    const baseMinLength = 50
-    const depthBonus = growthData.roots.depth_level * 15
-    const length = (baseMinLength + depthBonus) * random(0.8, 1.2)
-    const width = level1BaseWidth
+    // 🔥 方案A-步骤5：为每个主根调用纯递归函数生成完整子树
+    drawRootRecursive(
+      particles,
+      startX,
+      startY,
+      angle,
+      baseLength * random(0.9, 1.1),  // 稍微随机化初始长度
+      baseWidth,
+      1,  // 从第1层开始
+      maxDepth,
+      isSolid,
+      particleSize,
+      glowIntensity
+    )
 
-    const endX = startX + Math.cos((angle * Math.PI) / 180) * length
-    const endY = startY + Math.sin((angle * Math.PI) / 180) * length
-
-    // 🔥 修复：调暗颜色（depth=0.0，最暗的红色）
-    const color = getColor('root', 0.0, isSolid, glowIntensity)
-    drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
-
-    rootNodes.push({ x: endX, y: endY, level: 1, angle, length, width })
-  }
-
-  remainingBudget -= level1Count
-
-  // Level 2: 二级根（左右对称分叉）
-  if (remainingBudget > 0 && level1Count > 0) {
-    const level1Nodes = rootNodes.filter(n => n.level === 1)
-    const level2BaseLength = 50 + growthData.roots.depth_level * 10  // 基础50px + depth增长
-    const level2Width = Math.max(level1BaseWidth * 0.6, 1.5)
-
-    for (const parentNode of level1Nodes) {
-      if (remainingBudget < 2) break
-
-      // 🔥 修复：左右对称分叉（±45度）
-      const forkAngles = [-45, 45]  // 左右各一个
-
-      for (const forkOffset of forkAngles) {
-        if (remainingBudget < 2) break
-
-        const angle = parentNode.angle + forkOffset
-        const length = level2BaseLength * random(0.8, 1.1)
-
-        const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
-        const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
-
-        const color = getColor('root', 0.05, isSolid, glowIntensity)
-        drawLine(particles, parentNode.x, parentNode.y, endX, endY, level2Width, color, isSolid, particleSize)
-
-        rootNodes.push({ x: endX, y: endY, level: 2, angle, length, width: level2Width })
-        remainingBudget -= 2
-      }
-    }
-  }
-
-  // Level 3: 三级根（对称或单侧分叉）
-  if (remainingBudget > 0 && totalCount > 15) {
-    const level2Nodes = rootNodes.filter(n => n.level === 2)
-    const level3BaseLength = 35 + growthData.roots.depth_level * 7
-    const level3Width = Math.max(level1BaseWidth * 0.36, 1.2)
-
-    for (const parentNode of level2Nodes) {
-      if (remainingBudget <= 0) break
-
-      // 尝试左右分叉，如果预算不足则单侧
-      const canForkBoth = remainingBudget >= 2
-      const forkAngles = canForkBoth ? [-40, 40] : [random(-40, 40) > 0 ? 40 : -40]
-
-      for (const forkOffset of forkAngles) {
-        if (remainingBudget < 1) break
-
-        const angle = parentNode.angle + forkOffset
-        const length = level3BaseLength * random(0.7, 1.0)
-
-        const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
-        const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
-
-        const color = getColor('root', 0.1, isSolid, glowIntensity)
-        drawLine(particles, parentNode.x, parentNode.y, endX, endY, level3Width, color, isSolid, particleSize)
-
-        rootNodes.push({ x: endX, y: endY, level: 3, angle, length, width: level3Width })
-        remainingBudget -= 1
-      }
-    }
-  }
-
-  // Level 4-6: 更细的分叉（随机单侧或双侧）
-  if (remainingBudget > 0 && totalCount > 25) {
-    const level3Nodes = rootNodes.filter(n => n.level === 3)
-    const level4BaseLength = 25 + growthData.roots.depth_level * 5
-    const level4Width = Math.max(level1BaseWidth * 0.22, 1)
-
-    for (const parentNode of level3Nodes) {
-      if (remainingBudget <= 0) break
-
-      // 随机生成1-2个子根
-      const childCount = Math.min(remainingBudget >= 2 ? random(1, 3) : 1, remainingBudget)
-
-      for (let j = 0; j < childCount; j++) {
-        if (remainingBudget < 1) break
-
-        const angle = parentNode.angle + (j === 0 ? -35 : 35) * random(0.8, 1.2)
-        const length = level4BaseLength * random(0.6, 1.0)
-
-        const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
-        const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
-
-        const color = getColor('root', 0.15, isSolid, glowIntensity)
-        drawLine(particles, parentNode.x, parentNode.y, endX, endY, level4Width, color, isSolid, particleSize)
-
-        rootNodes.push({ x: endX, y: endY, level: 4, angle, length, width: level4Width })
-        remainingBudget -= 1
-      }
-    }
-  }
-
-  // Level 5-6: 毛细根（极细分叉）
-  if (remainingBudget > 0 && totalCount > 45) {
-    const level4Nodes = rootNodes.filter(n => n.level >= 4)
-    const level5BaseLength = 20 + growthData.roots.depth_level * 3
-    const level5Width = Math.max(level1BaseWidth * 0.13, 0.8)
-
-    for (const parentNode of level4Nodes) {
-      if (remainingBudget <= 0) break
-
-      // 毛细根：随机单侧
-      if (random(0, 1) > 0.5 && remainingBudget >= 1) {
-        const angle = parentNode.angle + random(-50, 50)
-        const length = level5BaseLength * random(0.5, 1.0)
-
-        const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
-        const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
-
-        const color = getColor('root', 0.2, isSolid, glowIntensity)
-        drawLine(particles, parentNode.x, parentNode.y, endX, endY, level5Width, color, isSolid, particleSize)
-
-        rootNodes.push({ x: endX, y: endY, level: 5 + parentNode.level - 4, angle, length, width: level5Width })
-        remainingBudget -= 1
-      }
-    }
+    // 记录主根末端（虽然现在用递归，但保留接口兼容性）
+    const endX = startX + Math.cos((angle * Math.PI) / 180) * baseLength
+    const endY = startY + Math.sin((angle * Math.PI) / 180) * baseLength
+    rootNodes.push({ x: endX, y: endY, level: 1, angle, length: baseLength, width: baseWidth })
   }
 
   return rootNodes
