@@ -216,13 +216,23 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                         <stop offset="100%" stopColor={color.from} />
                       </linearGradient>
                     </defs>
+                    {/* 外层发光效果 */}
                     <path
                       d={`M ${prevPoint.x} ${prevPoint.y} C ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${prevPoint.y}, ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${point.y}, ${point.x} ${point.y}`}
                       fill="none"
                       stroke={`url(#grad-${index})`}
-                      strokeWidth="0.8"
+                      strokeWidth="1.5"
                       strokeLinecap="round"
-                      className="animate-pulse"
+                      opacity="0.3"
+                      filter="blur(3px)"
+                    />
+                    {/* 主实线 - 加粗到2.5 */}
+                    <path
+                      d={`M ${prevPoint.x} ${prevPoint.y} C ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${prevPoint.y}, ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${point.y}, ${point.x} ${point.y}`}
+                      fill="none"
+                      stroke={`url(#grad-${index})`}
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
                     />
                   </g>
                 )
