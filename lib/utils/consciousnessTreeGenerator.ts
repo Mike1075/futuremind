@@ -158,21 +158,31 @@ const drawLine = (
   }
 }
 
-// ============ 辅助函数：根据count计算最大递归深度 ============
-const calculateMaxDepth = (count: number): number => {
-  // 业务逻辑：
-  // count=1-3   → depth=2 (2^2=4个末端足够)
-  // count=4-10  → depth=3 (2^3=8个末端)
-  // count=11-20 → depth=4 (2^4=16个末端)
-  // count=21-40 → depth=5 (2^5=32个末端)
-  // count=41+   → depth=6-8 (2^6=64, 2^8=256个末端)
-
-  if (count <= 3) return 2
+// ============ 辅助函数：平滑的主根数量增长 ============
+const calculateMainRootCount = (count: number): number => {
+  // 🔥 更平滑的增长曲线（每3-5个count增加1个主根）
+  // 避免突然从2个主根跳到3个主根带来大量分叉
+  if (count <= 3) return 1
+  if (count <= 6) return 2
   if (count <= 10) return 3
-  if (count <= 20) return 4
-  if (count <= 40) return 5
-  if (count <= 80) return 6
-  return Math.min(Math.ceil(Math.log2(count)) + 2, 8)
+  if (count <= 15) return 4
+  if (count <= 20) return 5   // count=16时5个主根，避免突变
+  if (count <= 30) return 6
+  if (count <= 45) return 7
+  if (count <= 60) return 8
+  if (count <= 70) return 9
+  return Math.min(10, Math.ceil(count / 8))
+}
+
+// ============ 辅助函数：根据count计算平均递归深度 ============
+const calculateAverageDepth = (count: number): number => {
+  // 🔥 平均深度（基础值），每个主根会在此基础上±1浮动
+  // 这样总末端数 ≈ mainRootCount × 2^avgDepth
+  if (count <= 6) return 2   // 4个末端/根
+  if (count <= 15) return 3  // 8个末端/根
+  if (count <= 30) return 4  // 16个末端/根
+  if (count <= 60) return 5  // 32个末端/根
+  return 6                   // 64个末端/根
 }
 
 // ============ 纯递归函数：生成对称二叉树根系 ============
@@ -239,7 +249,7 @@ const drawRootRecursive = (
   )
 }
 
-// ============ 1. 根系：纯递归对称分叉 + 扇形分布（方案A） ============
+// ============ 1. 根系：混合深度策略 + 扇形分布（方案E） ============
 const generateRoots = (
   particles: Particle[],
   centerX: number,
@@ -255,17 +265,17 @@ const generateRoots = (
 
   if (totalCount === 0) return rootNodes
 
-  // 🔥 方案A-步骤1：计算主根数量（保持150°扇形分布）
-  const mainRootCount = Math.min(Math.ceil(totalCount / 8), 80)
+  // 🔥 方案E-步骤1：计算主根数量（更平滑的增长）
+  const mainRootCount = calculateMainRootCount(totalCount)
 
-  // 🔥 方案A-步骤2：计算每个主根的最大递归深度
-  const maxDepth = calculateMaxDepth(totalCount)
+  // 🔥 方案E-步骤2：计算平均深度（基础值）
+  const avgDepth = calculateAverageDepth(totalCount)
 
-  // 🔥 方案A-步骤3：计算基础参数
+  // 🔥 方案E-步骤3：计算基础参数
   const baseLength = 50 + growthData.roots.depth_level * 15  // 基础长度
   const baseWidth = Math.max(growthData.roots.depth_level * 2, 3)  // 基础粗度
 
-  // 🔥 方案A-步骤4：生成主根（150°扇形分布）
+  // 🔥 方案E-步骤4：生成主根（150°扇形分布）
   const totalSpread = 150  // 扇形总角度
   const startAngle = 90 - totalSpread / 2  // 起始角度 15°
   const angleStep = totalSpread / (mainRootCount + 1)  // 均匀间隔
@@ -280,7 +290,12 @@ const generateRoots = (
     const startX = centerX + Math.cos((offsetAngle * Math.PI) / 180) * radiusOffset
     const startY = baseY
 
-    // 🔥 方案A-步骤5：为每个主根调用纯递归函数生成完整子树
+    // 🔥 方案E-步骤5：每个主根深度略有不同（±1浮动）
+    // 这样视觉上有层次感，总末端数更接近count
+    const depthVariation = Math.floor(random(-1, 2))  // -1, 0, 1
+    const rootDepth = Math.max(2, avgDepth + depthVariation)
+
+    // 为每个主根调用纯递归函数生成子树
     drawRootRecursive(
       particles,
       startX,
@@ -289,13 +304,13 @@ const generateRoots = (
       baseLength * random(0.9, 1.1),  // 稍微随机化初始长度
       baseWidth,
       1,  // 从第1层开始
-      maxDepth,
+      rootDepth,  // 🔥 每个主根深度不同！
       isSolid,
       particleSize,
       glowIntensity
     )
 
-    // 记录主根末端（虽然现在用递归，但保留接口兼容性）
+    // 记录主根末端（保留接口兼容性）
     const endX = startX + Math.cos((angle * Math.PI) / 180) * baseLength
     const endY = startY + Math.sin((angle * Math.PI) / 180) * baseLength
     rootNodes.push({ x: endX, y: endY, level: 1, angle, length: baseLength, width: baseWidth })
