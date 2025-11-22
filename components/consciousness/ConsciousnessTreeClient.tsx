@@ -461,7 +461,7 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
                   <input
                     type="range"
                     min="0"
-                    max="20"
+                    max="100"
                     step="1"
                     value={growthData.branches.count}
                     onChange={(e) => updateGrowthData('branches', 'count', parseInt(e.target.value))}
@@ -474,12 +474,12 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <label className="text-sm text-gray-300">洞见程度 (avg_length)</label>
-                    <span className="text-sm font-mono text-yellow-400">{growthData.branches.avg_length.toFixed(1)} / 10</span>
+                    <span className="text-sm font-mono text-yellow-400">{growthData.branches.avg_length.toFixed(1)} / 20</span>
                   </div>
                   <input
                     type="range"
                     min="0"
-                    max="10"
+                    max="20"
                     step="0.5"
                     value={growthData.branches.avg_length}
                     onChange={(e) => updateGrowthData('branches', 'avg_length', parseFloat(e.target.value))}

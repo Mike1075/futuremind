@@ -524,27 +524,25 @@ const generateBranches = (
       // 分叉角度：20-35度（随机变化）
       const spreadAngle = random(20, 35)
 
-      // 左分叉
-      recursiveBinaryTree(
-        endX,
-        endY,
-        angle - spreadAngle,
-        newLength,
-        newWidth,
-        level + 1,
-        maxLevel
-      )
+      // 🔧 检查预算：如果只够生成一个分支，随机选左或右（避免总是偏左）
+      const remainingBudget = totalBudget - budgetUsed
 
-      // 右分叉
-      recursiveBinaryTree(
-        endX,
-        endY,
-        angle + spreadAngle,
-        newLength,
-        newWidth,
-        level + 1,
-        maxLevel
-      )
+      if (remainingBudget >= 2) {
+        // 预算充足，生成左右两个分叉（随机顺序，避免左分叉总是先消耗预算）
+        if (Math.random() < 0.5) {
+          // 先左后右
+          recursiveBinaryTree(endX, endY, angle - spreadAngle, newLength, newWidth, level + 1, maxLevel)
+          recursiveBinaryTree(endX, endY, angle + spreadAngle, newLength, newWidth, level + 1, maxLevel)
+        } else {
+          // 先右后左
+          recursiveBinaryTree(endX, endY, angle + spreadAngle, newLength, newWidth, level + 1, maxLevel)
+          recursiveBinaryTree(endX, endY, angle - spreadAngle, newLength, newWidth, level + 1, maxLevel)
+        }
+      } else if (remainingBudget === 1) {
+        // 预算只够一个分支，随机选左或右
+        const forkAngle = Math.random() < 0.5 ? angle - spreadAngle : angle + spreadAngle
+        recursiveBinaryTree(endX, endY, forkAngle, newLength, newWidth, level + 1, maxLevel)
+      }
     }
   }
 
