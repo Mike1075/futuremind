@@ -180,7 +180,8 @@ const generateRoots = (
   // Level 1: 主根（前5个点，每1点生成1根）
   const level1Count = Math.min(remainingBudget, 5)
   const level1BaseLength = growthData.roots.depth_level * 15
-  const level1BaseWidth = Math.max(trunkWidth * 0.6, 2)  // 粗度为树干的60%
+  // 🔥 修复：根系粗度独立于树干，基于深度级别
+  const level1BaseWidth = Math.max(growthData.roots.depth_level * 2, 3)
 
   for (let i = 0; i < level1Count; i++) {
     // 横截面分布：起点在树干底部圆形范围内随机
@@ -203,135 +204,138 @@ const generateRoots = (
 
   remainingBudget -= level1Count
 
-  // Level 2: 二级根（点数>5，每2点生成1根）
-  if (remainingBudget > 0) {
-    const level2Count = Math.floor(remainingBudget / 2)
+  // Level 2: 二级根（点数>5，每个Level 1根分出2-3个子根）
+  if (remainingBudget > 0 && level1Count > 0) {
+    const level1Nodes = rootNodes.filter(n => n.level === 1)
     const level2Length = level1BaseLength * 0.7
-    const level2Width = Math.max(level1BaseWidth * 0.6, 1)  // 粗度递减60%，最小1px
+    const level2Width = Math.max(level1BaseWidth * 0.6, 1.5)
 
-    for (let i = 0; i < level2Count; i++) {
-      // 随机附着在主根上
-      if (rootNodes.length === 0) break
-      const parentNode = rootNodes[Math.floor(random(0, Math.min(rootNodes.length, level1Count)))]
+    for (const parentNode of level1Nodes) {
+      if (remainingBudget <= 0) break
 
-      const angle = parentNode.angle + random(-40, 40)
-      const length = level2Length * random(0.7, 1.0)
+      // 每个Level 1根生成2-3个子根
+      const childCount = Math.min(Math.floor(random(2, 4)), Math.ceil(remainingBudget / 2))
 
-      const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
-      const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
+      for (let j = 0; j < childCount && remainingBudget >= 2; j++) {
+        const angle = parentNode.angle + random(-50, 50)
+        const length = level2Length * random(0.7, 1.0)
 
-      const color = getColor('root', 0.3, isSolid, glowIntensity)
-      drawLine(particles, parentNode.x, parentNode.y, endX, endY, level2Width, color, isSolid, particleSize)
+        const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
+        const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
 
-      rootNodes.push({ x: endX, y: endY, level: 2, angle, length, width: level2Width })
+        const color = getColor('root', 0.3, isSolid, glowIntensity)
+        drawLine(particles, parentNode.x, parentNode.y, endX, endY, level2Width, color, isSolid, particleSize)
+
+        rootNodes.push({ x: endX, y: endY, level: 2, angle, length, width: level2Width })
+        remainingBudget -= 2
+      }
     }
-
-    remainingBudget -= level2Count * 2
   }
 
-  // Level 3: 三级根（点数>15，每1点生成1根）
+  // Level 3: 三级根（点数>15，每个Level 2根分出1-2个子根）
   if (remainingBudget > 0 && totalCount > 15) {
-    const level3Count = Math.min(remainingBudget, totalCount - 15)
-    const level3Length = level1BaseLength * 0.5
-    const level3Width = Math.max(level1BaseWidth * 0.6 * 0.6, 1)  // 每层*0.6
-
     const level2Nodes = rootNodes.filter(n => n.level === 2)
+    const level3Length = level1BaseLength * 0.5
+    const level3Width = Math.max(level1BaseWidth * 0.36, 1.2)
 
-    for (let i = 0; i < level3Count; i++) {
-      if (level2Nodes.length === 0) break
-      const parentNode = level2Nodes[Math.floor(random(0, level2Nodes.length))]
+    for (const parentNode of level2Nodes) {
+      if (remainingBudget <= 0) break
 
-      const angle = parentNode.angle + random(-50, 50)
-      const length = level3Length * random(0.6, 1.0)
+      const childCount = Math.min(Math.floor(random(1, 3)), remainingBudget)
 
-      const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
-      const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
+      for (let j = 0; j < childCount && remainingBudget >= 1; j++) {
+        const angle = parentNode.angle + random(-60, 60)
+        const length = level3Length * random(0.6, 1.0)
 
-      const color = getColor('root', 0.4, isSolid, glowIntensity)
-      drawLine(particles, parentNode.x, parentNode.y, endX, endY, level3Width, color, isSolid, particleSize)
+        const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
+        const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
 
-      rootNodes.push({ x: endX, y: endY, level: 3, angle, length, width: level3Width })
+        const color = getColor('root', 0.4, isSolid, glowIntensity)
+        drawLine(particles, parentNode.x, parentNode.y, endX, endY, level3Width, color, isSolid, particleSize)
+
+        rootNodes.push({ x: endX, y: endY, level: 3, angle, length, width: level3Width })
+        remainingBudget -= 1
+      }
     }
-
-    remainingBudget -= level3Count
   }
 
-  // Level 4: 四级根（点数>25，每1点生成1根）
+  // Level 4: 四级根（点数>25，每个Level 3根分出1-2个子根）
   if (remainingBudget > 0 && totalCount > 25) {
-    const level4Count = Math.min(remainingBudget, totalCount - 25)
-    const level4Length = level1BaseLength * 0.35
-    const level4Width = Math.max(level1BaseWidth * 0.6 * 0.6 * 0.6, 1)
-
     const level3Nodes = rootNodes.filter(n => n.level === 3)
+    const level4Length = level1BaseLength * 0.35
+    const level4Width = Math.max(level1BaseWidth * 0.22, 1)
 
-    for (let i = 0; i < level4Count; i++) {
-      if (level3Nodes.length === 0) break
-      const parentNode = level3Nodes[Math.floor(random(0, level3Nodes.length))]
+    for (const parentNode of level3Nodes) {
+      if (remainingBudget <= 0) break
 
-      const angle = parentNode.angle + random(-60, 60)
-      const length = level4Length * random(0.5, 1.0)
+      const childCount = Math.min(Math.floor(random(1, 3)), remainingBudget)
 
-      const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
-      const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
+      for (let j = 0; j < childCount && remainingBudget >= 1; j++) {
+        const angle = parentNode.angle + random(-70, 70)
+        const length = level4Length * random(0.5, 1.0)
 
-      const color = getColor('root', 0.5, isSolid, glowIntensity)
-      drawLine(particles, parentNode.x, parentNode.y, endX, endY, level4Width, color, isSolid, particleSize)
+        const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
+        const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
 
-      rootNodes.push({ x: endX, y: endY, level: 4, angle, length, width: level4Width })
+        const color = getColor('root', 0.5, isSolid, glowIntensity)
+        drawLine(particles, parentNode.x, parentNode.y, endX, endY, level4Width, color, isSolid, particleSize)
+
+        rootNodes.push({ x: endX, y: endY, level: 4, angle, length, width: level4Width })
+        remainingBudget -= 1
+      }
     }
-
-    remainingBudget -= level4Count
   }
 
-  // Level 5: 五级根（点数>45，每1点生成1根）
+  // Level 5: 五级根（点数>45，每个Level 4根分出1个子根）
   if (remainingBudget > 0 && totalCount > 45) {
-    const level5Count = Math.min(remainingBudget, totalCount - 45)
-    const level5Length = level1BaseLength * 0.25
-    const level5Width = Math.max(level1BaseWidth * 0.6 * 0.6 * 0.6 * 0.6, 1)
-
     const level4Nodes = rootNodes.filter(n => n.level === 4)
+    const level5Length = level1BaseLength * 0.25
+    const level5Width = Math.max(level1BaseWidth * 0.13, 0.8)
 
-    for (let i = 0; i < level5Count; i++) {
-      if (level4Nodes.length === 0) break
-      const parentNode = level4Nodes[Math.floor(random(0, level4Nodes.length))]
+    for (const parentNode of level4Nodes) {
+      if (remainingBudget <= 0) break
 
-      const angle = parentNode.angle + random(-70, 70)
-      const length = level5Length * random(0.4, 1.0)
+      const childCount = Math.min(Math.floor(random(1, 2)), remainingBudget)
 
-      const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
-      const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
+      for (let j = 0; j < childCount && remainingBudget >= 1; j++) {
+        const angle = parentNode.angle + random(-80, 80)
+        const length = level5Length * random(0.4, 1.0)
 
-      const color = getColor('root', 0.6, isSolid, glowIntensity)
-      drawLine(particles, parentNode.x, parentNode.y, endX, endY, level5Width, color, isSolid, particleSize)
+        const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
+        const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
 
-      rootNodes.push({ x: endX, y: endY, level: 5, angle, length, width: level5Width })
+        const color = getColor('root', 0.6, isSolid, glowIntensity)
+        drawLine(particles, parentNode.x, parentNode.y, endX, endY, level5Width, color, isSolid, particleSize)
+
+        rootNodes.push({ x: endX, y: endY, level: 5, angle, length, width: level5Width })
+        remainingBudget -= 1
+      }
     }
-
-    remainingBudget -= level5Count
   }
 
-  // Level 6: 扩展层（点数>60，每10点生成1根）- 新增支持更多根系
+  // Level 6: 扩展层（点数>60，Level 5根继续分叉）
   if (remainingBudget > 0 && totalCount > 60) {
-    const level6Count = Math.floor(Math.min(remainingBudget, totalCount - 60) / 10)
-    const level6Length = level1BaseLength * 0.2
-    const level6Width = Math.max(level1BaseWidth * Math.pow(0.6, 5), 1)
-
     const level5Nodes = rootNodes.filter(n => n.level === 5)
+    const level6Length = level1BaseLength * 0.2
+    const level6Width = Math.max(level1BaseWidth * 0.08, 0.6)
 
-    for (let i = 0; i < level6Count; i++) {
-      if (level5Nodes.length === 0) break
-      const parentNode = level5Nodes[Math.floor(random(0, level5Nodes.length))]
+    for (const parentNode of level5Nodes) {
+      if (remainingBudget <= 0) break
 
-      const angle = parentNode.angle + random(-80, 80)
-      const length = level6Length * random(0.3, 0.8)
+      // Level 6 只生成1个子根
+      if (remainingBudget >= 1 && random(0, 1) > 0.5) {
+        const angle = parentNode.angle + random(-90, 90)
+        const length = level6Length * random(0.3, 0.8)
 
-      const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
-      const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
+        const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
+        const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
 
-      const color = getColor('root', 0.7, isSolid, glowIntensity)
-      drawLine(particles, parentNode.x, parentNode.y, endX, endY, level6Width, color, isSolid, particleSize)
+        const color = getColor('root', 0.7, isSolid, glowIntensity)
+        drawLine(particles, parentNode.x, parentNode.y, endX, endY, level6Width, color, isSolid, particleSize)
 
-      rootNodes.push({ x: endX, y: endY, level: 6, angle, length, width: level6Width })
+        rootNodes.push({ x: endX, y: endY, level: 6, angle, length, width: level6Width })
+        remainingBudget -= 1
+      }
     }
   }
 
