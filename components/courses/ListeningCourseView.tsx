@@ -49,7 +49,7 @@ const PATH_POINTS = [
 ]
 
 export function ListeningCourseView({ courseSystem, contents, completionMap, scoreMap }: ListeningCourseViewProps) {
-  // 生成SVG曲线路径
+  // 生成SVG曲线路径（使用优化的贝塞尔曲线控制点）
   const generatePath = () => {
     if (PATH_POINTS.length < 2) return ''
 
@@ -59,11 +59,11 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
       const current = PATH_POINTS[i]
       const next = PATH_POINTS[i + 1]
 
-      // 使用贝塞尔曲线创建平滑路径
-      const controlX1 = current.x + (next.x - current.x) * 0.5
-      const controlY1 = current.y
-      const controlX2 = current.x + (next.x - current.x) * 0.5
-      const controlY2 = next.y
+      // 优化的贝塞尔曲线控制点，确保平滑连接
+      const controlX1 = current.x + (next.x - current.x) * 0.4
+      const controlY1 = current.y + (next.y - current.y) * 0.2
+      const controlX2 = current.x + (next.x - current.x) * 0.6
+      const controlY2 = current.y + (next.y - current.y) * 0.8
 
       path += ` C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${next.x} ${next.y}`
     }
@@ -218,9 +218,9 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                       <stop offset="100%" stopColor={color.from} />
                     </linearGradient>
                   </defs>
-                  {/* 实线路径 */}
+                  {/* 实线路径 - 优化贝塞尔曲线控制点，确保平滑连接 */}
                   <path
-                    d={`M ${prevPoint.x} ${prevPoint.y} C ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${prevPoint.y}, ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${point.y}, ${point.x} ${point.y}`}
+                    d={`M ${prevPoint.x} ${prevPoint.y} C ${prevPoint.x + (point.x - prevPoint.x) * 0.4} ${prevPoint.y + (point.y - prevPoint.y) * 0.2}, ${prevPoint.x + (point.x - prevPoint.x) * 0.6} ${prevPoint.y + (point.y - prevPoint.y) * 0.8}, ${point.x} ${point.y}`}
                     fill="none"
                     stroke={`url(#grad-${index})`}
                     strokeWidth="0.8"
