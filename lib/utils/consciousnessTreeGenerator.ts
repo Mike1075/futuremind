@@ -352,13 +352,13 @@ const generateRoots = (
     // 计算主根角度
     const angle = startAngle + (i + 1) * angleStep
 
-    // 🌳 新逻辑：起点在树干底部圆周上（而不是偏离中心点）
-    const circumferenceAngle = angle - 90  // 转换为圆周角度
-    const startX = centerX + Math.cos((circumferenceAngle * Math.PI) / 180) * (trunkWidth / 2)
+    // 🌳 修复：所有根系都从树干底部中心点出发
+    // 这样确保树干和根系完美对齐，不会偏移
+    const startX = centerX
     const startY = baseY
 
     // 🌳 喇叭口过渡段：从树干粗度平滑过渡到根系粗度
-    const transitionLength = 15  // 过渡段长度
+    const transitionLength = Math.max(trunkWidth * 0.6, 15)  // 过渡段长度随树干粗度调整
     const transitionEndX = startX + Math.cos((angle * Math.PI) / 180) * transitionLength
     const transitionEndY = startY + Math.sin((angle * Math.PI) / 180) * transitionLength
 
@@ -370,8 +370,8 @@ const generateRoots = (
       startY,
       transitionEndX,
       transitionEndY,
-      trunkWidth,   // 起始粗度 = 树干粗度
-      baseWidth,    // 结束粗度 = 根系粗度
+      trunkWidth * 0.8,   // 起始粗度 = 树干粗度的80%（避免过渡段比树干粗）
+      baseWidth,          // 结束粗度 = 根系粗度
       transitionColor,
       isSolid,
       particleSize
