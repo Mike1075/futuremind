@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   generateConsciousnessTree,
   TreeParams,
@@ -21,6 +21,17 @@ const DEFAULT_PARAMS: TreeParams = {
 export function ConsciousnessTreeCanvas({ growthData, techParams }: ConsciousnessTreeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [seedOpacity, setSeedOpacity] = useState(0.3)
+  const animationRef = useRef<number>()
+
+  // 检测是否为空树（种子状态）
+  const isEmptyTree =
+    growthData.roots.count === 0 &&
+    growthData.trunk.thickness === 0 &&
+    growthData.trunk.height_level === 0 &&
+    growthData.branches.count === 0 &&
+    growthData.leaves.count === 0 &&
+    growthData.fruits.count === 0
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -94,6 +105,36 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
       ctx.fillStyle = '#000000'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+      // 如果是空树，绘制闪烁的种子
+      if (isEmptyTree) {
+        const centerX = canvas.width / 2
+        const centerY = canvas.height / 2
+
+        // 绘制种子（椭圆形）
+        ctx.save()
+        ctx.globalCompositeOperation = 'lighter'
+
+        // 外层发光
+        ctx.shadowBlur = 30
+        ctx.shadowColor = `rgba(220, 38, 38, ${seedOpacity})`
+
+        // 种子主体
+        ctx.beginPath()
+        ctx.ellipse(centerX, centerY, 15, 20, 0, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(220, 38, 38, ${seedOpacity})`
+        ctx.fill()
+
+        // 内部高光
+        ctx.shadowBlur = 15
+        ctx.beginPath()
+        ctx.ellipse(centerX - 3, centerY - 5, 5, 7, 0, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(248, 113, 113, ${seedOpacity * 0.8})`
+        ctx.fill()
+
+        ctx.restore()
+        return
+      }
+
       // 设置发光效果
       ctx.globalCompositeOperation = 'lighter'
 
@@ -132,7 +173,45 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
     return () => {
       window.removeEventListener('resize', resize)
     }
-  }, [growthData, techParams])
+  }, [growthData, techParams, seedOpacity, isEmptyTree])
+
+  // 种子闪烁动画
+  useEffect(() => {
+    if (!isEmptyTree) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+      return
+    }
+
+    let increasing = true
+    const animate = () => {
+      setSeedOpacity((prev) => {
+        if (increasing) {
+          if (prev >= 0.9) {
+            increasing = false
+            return prev - 0.02
+          }
+          return prev + 0.02
+        } else {
+          if (prev <= 0.3) {
+            increasing = true
+            return prev + 0.02
+          }
+          return prev - 0.02
+        }
+      })
+      animationRef.current = requestAnimationFrame(animate)
+    }
+
+    animationRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+    }
+  }, [isEmptyTree])
 
   return (
     <div

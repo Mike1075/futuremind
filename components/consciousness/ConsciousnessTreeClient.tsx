@@ -121,11 +121,12 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
             className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
           >
             <div
-              className="relative h-[800px] w-full bg-black rounded-lg overflow-auto"
+              className="relative h-[800px] w-full bg-black rounded-lg"
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                overflow: zoom > 1 ? 'auto' : 'hidden'
               }}
             >
               <div style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}>
