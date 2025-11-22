@@ -283,15 +283,18 @@ export function PortalClient({
                 <h3 className="text-lg font-semibold text-white">意识进化树</h3>
               </div>
               <div className="relative h-64 w-full bg-black rounded-lg mb-4 overflow-hidden">
-                <ConsciousnessTreeView userId={userId} isPreview={true} />
+                <div className="w-full h-full flex items-center justify-center">
+                  <div style={{ transform: 'scale(0.35)', transformOrigin: 'center center', width: '280%', height: '280%' }}>
+                    <ConsciousnessTreeView userId={userId} isPreview={true} />
+                  </div>
+                </div>
               </div>
 
               {/* 成长数据 */}
               <div className="bg-white/5 rounded-lg p-4 mb-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">意识成长值</span>
+                <div className="flex items-center">
                   <span className="text-lg font-bold text-red-400">
-                    等级1：探索者 ({initialConsciousnessGrowth})
+                    等级1：探索者
                   </span>
                 </div>
               </div>

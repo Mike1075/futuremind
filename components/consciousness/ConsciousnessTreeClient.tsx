@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { ConsciousnessTreeCanvas } from './ConsciousnessTreeCanvas'
+import { ConsciousnessTreeView } from './ConsciousnessTreeView'
 import { TreeParams, TreeGrowthData } from '@/lib/utils/consciousnessTreeGenerator'
-import { ArrowLeft, Sparkles } from 'lucide-react'
+import { ArrowLeft, Sparkles, ZoomIn, ZoomOut } from 'lucide-react'
 
 // 默认生长数据（累积生长制 - 可手动调控）
 const INITIAL_GROWTH_DATA: TreeGrowthData = {
@@ -25,14 +26,19 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
   const router = useRouter()
   const [growthData, setGrowthData] = useState<TreeGrowthData>(INITIAL_GROWTH_DATA)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [zoom, setZoom] = useState(1)
 
-  const isAdmin = userRole && ['principal', 'teacher'].includes(userRole)
+  const isPrincipal = userRole === 'principal'
 
   // 技术参数状态（简化版）
   const [techParams, setTechParams] = useState<TreeParams>({
     particleSize: 2,
     glowIntensity: 0.5,
   })
+
+  // 缩放控制
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.2, 3))
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.2, 0.5))
 
   // 更新生长数据的通用函数
   const updateGrowthData = (part: keyof TreeGrowthData, field: string, value: number | boolean) => {
@@ -63,6 +69,78 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
     setMessage({ type: 'success', text: '🌱 已重置为种子状态' })
   }
 
+  // 非校长用户：显示真实数据视图（带缩放功能）
+  if (!isPrincipal) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        {/* 顶部导航 */}
+        <motion.nav
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/5 backdrop-blur-md border-b border-white/10"
+        >
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => router.push('/portal')}
+                className="flex items-center space-x-2 text-red-300 hover:text-red-200 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>返回探索基地</span>
+              </button>
+
+              <h1 className="text-2xl font-bold text-white">我的意识进化树</h1>
+
+              {/* 缩放控制 */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleZoomOut}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                  title="缩小"
+                >
+                  <ZoomOut className="w-5 h-5 text-red-300" />
+                </button>
+                <span className="text-sm text-gray-400 w-16 text-center">{Math.round(zoom * 100)}%</span>
+                <button
+                  onClick={handleZoomIn}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                  title="放大"
+                >
+                  <ZoomIn className="w-5 h-5 text-red-300" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.nav>
+
+        {/* 主内容：意识树视图 */}
+        <div className="container mx-auto px-6 py-8">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
+          >
+            <div
+              className="relative h-[800px] w-full bg-black rounded-lg overflow-auto"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <div style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}>
+                <div style={{ width: '100vw', height: '800px' }}>
+                  <ConsciousnessTreeView userId={userId} isPreview={false} />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    )
+  }
+
+  // 校长用户：显示测试工作台
   return (
     <div className="min-h-screen bg-black text-white">
       {/* 顶部导航 */}
