@@ -144,8 +144,8 @@ const getColor = (
   // 🌳 整体进度影响颜色演变（所有部分统一）
   if (overallProgress < 0.9) {
     // 第一级树：0-90%
-    // 色相：0 → 10 (从纯红到略带橙的金边红)
-    hue = overallProgress * 11  // 0% → 0, 90% → 10
+    // 色相：纯红色 (0)
+    hue = 0
 
     // 饱和度：70 → 95 (逐渐鲜艳)
     saturation = 70 + overallProgress * 28  // 0% → 70, 90% → 95
@@ -158,13 +158,18 @@ const getColor = (
 
     // 进度越高，亮度提升越多（0-90%提升20-30个亮度点）
     const progressBonus = overallProgress * 30
-    lightness = Math.min(baseLight + progressBonus, 50)  // 最高50%（金边红）
+    lightness = Math.min(baseLight + progressBonus, 50)
 
   } else {
-    // 第二级树：90%+（暂时保持金边红，后续可换色）
-    hue = 10
+    // 第二级树：90%+（亮红色为主 + 金边点缀）
+    // 🔥 修复：保持红色为主，只在边缘添加金色光晕效果
+    // 色相：纯红色 (0)，不变金黄
+    hue = 0
+    // 饱和度：保持高饱和红色
     saturation = 95
-    lightness = 50
+    // 亮度：亮红色（比之前稍亮，但不是金色）
+    lightness = 55  // 亮红色（原来50%，现在55%更亮一点）
+    // 注意：金边效果应该通过后续的发光/描边实现，而不是改变主色调
   }
 
   const alpha = isSolid ? 0.9 : 0.4
@@ -528,7 +533,7 @@ const generateTrunk = (
   return { topX, topY, trunkWidth: actualWidth }
 }
 
-// ============ 3. 枝条：递归分形树（虚实线+多级分叉） ============
+// ============ 3. 枝条：预算控制的递归树（分叉+侧枝混合） ============
 const generateBranches = (
   particles: Particle[],
   trunkTopX: number,
@@ -540,79 +545,90 @@ const generateBranches = (
   particleSize: number,
   glowIntensity: number
 ): BranchNode[] => {
-  const totalCount = growthData.branches.count  // 里程数（控制递归深度）
-  const avgLength = growthData.branches.avg_length  // 洞见程度（控制长度和虚实线）
+  const totalCount = growthData.branches.count  // 里程数（枝条总数）
+  const avgLength = growthData.branches.avg_length  // 洞见程度（控制长度）
   const isSolid = growthData.branches.is_solid
 
-  // 🌿 步骤1：计算基础长度（已增加3倍）
+  // 🌿 步骤1：计算基础长度
   const naturalBranchLength = calculateNaturalBranchLength(
     growthData.roots.count,
     growthData.roots.depth_level,
     trunkHeight
   )
 
-  // 🌿 步骤2：根据洞见程度计算实际初始长度
-  // avgLength=0: 1/3自然长度（虚线框架）
+  // 🌿 步骤2：根据洞见程度计算实际长度
+  // avgLength=0: 1/2自然长度（适中的初始长度）
   // avgLength=20: 完整自然长度（最大长度）
-  const minInitialLength = naturalBranchLength / 3
+  const minInitialLength = naturalBranchLength / 2  // 改为1/2，不太短
   const maxInitialLength = naturalBranchLength
   const initialLength = minInitialLength + (maxInitialLength - minInitialLength) * (avgLength / 20)
 
-  // 🌿 步骤3：根据里程数计算递归深度
-  // count=0: depth=1（只有主枝，无分叉）
-  // count=10: depth=2（1级分叉）
-  // count=20: depth=3（2级分叉）
-  // count=50: depth=4（3级分叉）
-  // count=100: depth=5（4级分叉）
-  const maxDepth = Math.min(Math.max(1, Math.floor(totalCount / 20) + 1), 6)
-
-  // 🌿 步骤4：计算虚线框架长度（基于avgLength）
-  // 虚线框架 = 当前实际长度的 max(1 - avgLength/20, 0)
-  // avgLength=0: 100%虚线
-  // avgLength=10: 50%虚线
-  // avgLength=20: 0%虚线（全实线）
-  const dashedRatio = Math.max(1 - avgLength / 20, 0)
-
   const branchNodes: BranchNode[] = []
 
-  // 🌿 递归分叉函数（参考tree代码）
+  // 🌿 特殊情况：count=0时，只绘制3根虚线主枝（示意性）
+  if (totalCount === 0) {
+    const mainBranches = [
+      { angle: -130, name: '左主枝' },
+      { angle: -90, name: '中主枝' },
+      { angle: -50, name: '右主枝' },
+    ]
+
+    const color = getColor('branch', overallProgress, isSolid, glowIntensity)
+
+    for (let i = 0; i < 3; i++) {
+      const branch = mainBranches[i]
+      const width = Math.max(trunkWidth * 0.6, 2)
+
+      const originOffsetX = random(-trunkWidth / 3, trunkWidth / 3)
+      const startX = trunkTopX + originOffsetX
+      const startY = trunkTopY
+
+      // 绘制虚线主枝
+      const endX = startX + Math.cos((branch.angle * Math.PI) / 180) * minInitialLength
+      const endY = startY + Math.sin((branch.angle * Math.PI) / 180) * minInitialLength
+      drawLine(particles, startX, startY, endX, endY, width, color, false, particleSize)
+
+      branchNodes.push({
+        x: endX,
+        y: endY,
+        level: 1,
+        angle: branch.angle,
+        length: minInitialLength,
+        width,
+        isOpen: true,
+        sideShootCount: 0,
+      })
+    }
+
+    return branchNodes
+  }
+
+  // 🌿 步骤3：count>0时，使用预算控制生成枝条
+  let budgetUsed = 0
+  const color = getColor('branch', overallProgress, isSolid, glowIntensity)
+
+  // 🌿 递归分叉函数（预算控制）
   const recursiveBranch = (
     startX: number,
     startY: number,
     length: number,
     angle: number,
     width: number,
-    currentDepth: number
+    currentDepth: number,
+    parentIsSide: boolean  // 是否为侧枝的子枝
   ): void => {
     // 递归终止条件
-    if (currentDepth > maxDepth || length < 3) return
+    if (budgetUsed >= totalCount || length < 5 || currentDepth > 8) {
+      if (currentDepth > 0 && !parentIsSide) budgetUsed++  // 消耗预算
+      return
+    }
 
     // 计算末端坐标
     const endX = startX + Math.cos((angle * Math.PI) / 180) * length
     const endY = startY + Math.sin((angle * Math.PI) / 180) * length
 
-    // 绘制当前段（分段：实线+虚线）
-    const color = getColor('branch', overallProgress, isSolid, glowIntensity)
-    const dashedLength = length * dashedRatio  // 虚线部分长度
-
-    if (dashedLength > 0 && avgLength < 20) {
-      // 绘制实线部分（从起点到实线末端）
-      const solidEnd = length - dashedLength
-      if (solidEnd > 0) {
-        const solidEndX = startX + Math.cos((angle * Math.PI) / 180) * solidEnd
-        const solidEndY = startY + Math.sin((angle * Math.PI) / 180) * solidEnd
-        drawLine(particles, startX, startY, solidEndX, solidEndY, width, color, true, particleSize)
-
-        // 绘制虚线部分（从实线末端到终点）
-        drawLine(particles, solidEndX, solidEndY, endX, endY, width, color, false, particleSize)
-      } else {
-        // 全虚线
-        drawLine(particles, startX, startY, endX, endY, width, color, false, particleSize)
-      }
-    } else {
-      // 全实线
-      drawLine(particles, startX, startY, endX, endY, width, color, true, particleSize)
-    }
+    // 绘制当前段（全实线）
+    drawLine(particles, startX, startY, endX, endY, width, color, true, particleSize)
 
     // 记录节点
     branchNodes.push({
@@ -626,38 +642,37 @@ const generateBranches = (
       sideShootCount: 0,
     })
 
-    // 递归分叉（左右对称，参考tree代码）
-    const newLength = length * 0.7  // 长度衰减70%
-    const newWidth = Math.max(width * 0.7, 0.8)  // 粗度衰减70%，最小0.8
-    const branchAngle = 25  // 分叉角度25度
+    // 🌿 随机决定是继续分叉还是生成侧枝
+    const shouldFork = seededRandom() < 0.6  // 60%概率分叉，40%概率侧枝
 
-    // 左分支
-    recursiveBranch(
-      endX,
-      endY,
-      newLength,
-      angle - branchAngle,
-      newWidth,
-      currentDepth + 1
-    )
+    if (shouldFork && budgetUsed < totalCount - 1) {
+      // 对称分叉（左右2叉）
+      const newLength = length * random(0.65, 0.75)
+      const newWidth = Math.max(width * 0.7, 0.8)
+      const branchAngle = random(20, 30)
 
-    // 右分支
-    recursiveBranch(
-      endX,
-      endY,
-      newLength,
-      angle + branchAngle,
-      newWidth,
-      currentDepth + 1
-    )
+      // 左分支
+      recursiveBranch(endX, endY, newLength, angle - branchAngle, newWidth, currentDepth + 1, parentIsSide)
+      // 右分支
+      recursiveBranch(endX, endY, newLength, angle + branchAngle, newWidth, currentDepth + 1, parentIsSide)
+    } else {
+      // 单侧枝
+      const newLength = length * random(0.5, 0.7)
+      const newWidth = Math.max(width * 0.6, 0.8)
+      const sideAngle = random(25, 50) * (seededRandom() < 0.5 ? -1 : 1)
+
+      recursiveBranch(endX, endY, newLength, angle + sideAngle, newWidth, currentDepth + 1, true)
+    }
   }
 
-  // 🌿 步骤5：生成3个主枝
+  // 🌿 步骤4：生成3个主枝
   const mainBranches = [
     { angle: -130, name: '左主枝' },
     { angle: -90, name: '中主枝' },
     { angle: -50, name: '右主枝' },
   ]
+
+  const budgetPerBranch = Math.floor(totalCount / 3)
 
   for (let i = 0; i < 3; i++) {
     const branch = mainBranches[i]
@@ -667,15 +682,13 @@ const generateBranches = (
     const startX = trunkTopX + originOffsetX
     const startY = trunkTopY
 
-    // 启动递归
-    recursiveBranch(
-      startX,
-      startY,
-      initialLength,
-      branch.angle,
-      width,
-      1
-    )
+    const savedBudget = budgetUsed
+    recursiveBranch(startX, startY, initialLength, branch.angle, width, 1, false)
+
+    // 限制每个主枝的预算
+    if (budgetUsed > savedBudget + budgetPerBranch) {
+      budgetUsed = savedBudget + budgetPerBranch
+    }
   }
 
   return branchNodes

@@ -205,7 +205,24 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
             <h1 className="text-2xl font-bold text-white">意识树测试工作台（累积生长制）</h1>
 
-            <div className="w-24"></div>
+            {/* 缩放控制 */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleZoomOut}
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                title="缩小"
+              >
+                <ZoomOut className="w-5 h-5 text-red-300" />
+              </button>
+              <span className="text-sm text-gray-400 w-16 text-center">{Math.round(zoom * 100)}%</span>
+              <button
+                onClick={handleZoomIn}
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                title="放大"
+              >
+                <ZoomIn className="w-5 h-5 text-red-300" />
+              </button>
+            </div>
           </div>
         </div>
       </motion.nav>
@@ -220,11 +237,23 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
               animate={{ opacity: 1, scale: 1 }}
               className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
             >
-              <div className="relative h-[800px] w-full bg-black rounded-lg">
-                <ConsciousnessTreeCanvas
-                  growthData={growthData}
-                  techParams={techParams}
-                />
+              <div className="relative h-[800px] w-full bg-black rounded-lg overflow-hidden">
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transform: `scale(${zoom})`,
+                    transformOrigin: 'center center'
+                  }}
+                >
+                  <ConsciousnessTreeCanvas
+                    growthData={growthData}
+                    techParams={techParams}
+                  />
+                </div>
               </div>
 
               {/* 当前数据显示 */}
