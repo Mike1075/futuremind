@@ -184,19 +184,24 @@ const generateRoots = (
   const level1BaseWidth = Math.max(growthData.roots.depth_level * 2, 3)
 
   for (let i = 0; i < level1Count; i++) {
-    // 横截面分布：起点在树干底部圆形范围内随机
-    const originOffsetX = random(-trunkWidth / 2, trunkWidth / 2)
+    // 🔥 修复：主根规律分布（围绕圆周均匀分布）
+    const circumferenceAngle = (i / level1Count) * 360
+    const radiusOffset = trunkWidth / 3
+    const originOffsetX = Math.cos((circumferenceAngle * Math.PI) / 180) * radiusOffset
+    const originOffsetY = Math.sin((circumferenceAngle * Math.PI) / 180) * radiusOffset * 0.3
     const startX = centerX + originOffsetX
-    const startY = baseY
+    const startY = baseY + originOffsetY
 
-    const angle = 90 + random(-30, 30)  // 向下生长，±30度随机
+    // 🔥 修复：主根向下生长，±15度（更垂直，更像真实树根）
+    const angle = 90 + random(-15, 15)
     const length = level1BaseLength * random(0.8, 1.2)
     const width = level1BaseWidth
 
     const endX = startX + Math.cos((angle * Math.PI) / 180) * length
     const endY = startY + Math.sin((angle * Math.PI) / 180) * length
 
-    const color = getColor('root', 0.2, isSolid, glowIntensity)
+    // 🔥 修复：调暗颜色（depth=0.0，最暗的红色）
+    const color = getColor('root', 0.0, isSolid, glowIntensity)
     drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
 
     rootNodes.push({ x: endX, y: endY, level: 1, angle, length, width })
@@ -217,13 +222,15 @@ const generateRoots = (
       const childCount = Math.min(Math.floor(random(2, 4)), Math.ceil(remainingBudget / 2))
 
       for (let j = 0; j < childCount && remainingBudget >= 2; j++) {
-        const angle = parentNode.angle + random(-50, 50)
+        // 🔥 修复：缩小分叉角度到真实范围（±30度）
+        const angle = parentNode.angle + random(-30, 30)
         const length = level2Length * random(0.7, 1.0)
 
         const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
         const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
 
-        const color = getColor('root', 0.3, isSolid, glowIntensity)
+        // 🔥 修复：调暗颜色（depth=0.05）
+        const color = getColor('root', 0.05, isSolid, glowIntensity)
         drawLine(particles, parentNode.x, parentNode.y, endX, endY, level2Width, color, isSolid, particleSize)
 
         rootNodes.push({ x: endX, y: endY, level: 2, angle, length, width: level2Width })
@@ -244,13 +251,15 @@ const generateRoots = (
       const childCount = Math.min(Math.floor(random(1, 3)), remainingBudget)
 
       for (let j = 0; j < childCount && remainingBudget >= 1; j++) {
-        const angle = parentNode.angle + random(-60, 60)
+        // 🔥 修复：±40度
+        const angle = parentNode.angle + random(-40, 40)
         const length = level3Length * random(0.6, 1.0)
 
         const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
         const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
 
-        const color = getColor('root', 0.4, isSolid, glowIntensity)
+        // 🔥 修复：调暗颜色（depth=0.1）
+        const color = getColor('root', 0.1, isSolid, glowIntensity)
         drawLine(particles, parentNode.x, parentNode.y, endX, endY, level3Width, color, isSolid, particleSize)
 
         rootNodes.push({ x: endX, y: endY, level: 3, angle, length, width: level3Width })
@@ -271,13 +280,15 @@ const generateRoots = (
       const childCount = Math.min(Math.floor(random(1, 3)), remainingBudget)
 
       for (let j = 0; j < childCount && remainingBudget >= 1; j++) {
-        const angle = parentNode.angle + random(-70, 70)
+        // 🔥 修复：±45度
+        const angle = parentNode.angle + random(-45, 45)
         const length = level4Length * random(0.5, 1.0)
 
         const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
         const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
 
-        const color = getColor('root', 0.5, isSolid, glowIntensity)
+        // 🔥 修复：调暗颜色（depth=0.15）
+        const color = getColor('root', 0.15, isSolid, glowIntensity)
         drawLine(particles, parentNode.x, parentNode.y, endX, endY, level4Width, color, isSolid, particleSize)
 
         rootNodes.push({ x: endX, y: endY, level: 4, angle, length, width: level4Width })
@@ -298,13 +309,15 @@ const generateRoots = (
       const childCount = Math.min(Math.floor(random(1, 2)), remainingBudget)
 
       for (let j = 0; j < childCount && remainingBudget >= 1; j++) {
-        const angle = parentNode.angle + random(-80, 80)
+        // 🔥 修复：±50度
+        const angle = parentNode.angle + random(-50, 50)
         const length = level5Length * random(0.4, 1.0)
 
         const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
         const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
 
-        const color = getColor('root', 0.6, isSolid, glowIntensity)
+        // 🔥 修复：调暗颜色（depth=0.2）
+        const color = getColor('root', 0.2, isSolid, glowIntensity)
         drawLine(particles, parentNode.x, parentNode.y, endX, endY, level5Width, color, isSolid, particleSize)
 
         rootNodes.push({ x: endX, y: endY, level: 5, angle, length, width: level5Width })
@@ -324,13 +337,15 @@ const generateRoots = (
 
       // Level 6 只生成1个子根
       if (remainingBudget >= 1 && random(0, 1) > 0.5) {
-        const angle = parentNode.angle + random(-90, 90)
+        // 🔥 修复：±55度
+        const angle = parentNode.angle + random(-55, 55)
         const length = level6Length * random(0.3, 0.8)
 
         const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
         const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
 
-        const color = getColor('root', 0.7, isSolid, glowIntensity)
+        // 🔥 修复：调暗颜色（depth=0.25）
+        const color = getColor('root', 0.25, isSolid, glowIntensity)
         drawLine(particles, parentNode.x, parentNode.y, endX, endY, level6Width, color, isSolid, particleSize)
 
         rootNodes.push({ x: endX, y: endY, level: 6, angle, length, width: level6Width })
@@ -603,12 +618,9 @@ export function generateConsciousnessTree(
 ): Particle[] {
   const particles: Particle[] = []
 
-  // 初始化伪随机种子
-  const seed =
-    growthData.roots.count * 1000 +
-    growthData.trunk.thickness * 100 +
-    growthData.trunk.height_level * 10 +
-    growthData.branches.count
+  // 🔥 修复：使用固定种子，确保相同配置下树的形态稳定
+  // 不使用count等可变参数，避免调整参数时已有部分跳动
+  const seed = 12345
   initSeed(seed)
 
   const centerX = canvasWidth / 2
