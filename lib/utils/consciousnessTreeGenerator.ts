@@ -131,7 +131,7 @@ const getColor = (
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
 }
 
-// ============ 绘制直线（粒子化） ============
+// ============ 绘制直线（粒子化，支持宽度填充） ============
 const drawLine = (
   particles: Particle[],
   x1: number,
@@ -141,26 +141,65 @@ const drawLine = (
   width: number,
   color: string,
   isSolid: boolean,
-  particleSize: number
+  particleSize: number,
+  withVolumetricFill: boolean = false  // 新增：是否填充体积（用于粗树干）
 ): void => {
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
   const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
 
+  // 计算垂直于线段的方向
+  const dx = x2 - x1
+  const dy = y2 - y1
+  const perpX = -dy / distance
+  const perpY = dx / distance
+
   for (let i = 0; i <= steps; i++) {
     const t = i / steps
-    const x = x1 + (x2 - x1) * t
-    const y = y1 + (y2 - y1) * t
-    const size = (width / 2) * (isSolid ? 1 : 0.5)
+    const centerX = x1 + dx * t
+    const centerY = y1 + dy * t
 
-    particles.push({ x, y, size, color, shape: 'circle' })
+    if (withVolumetricFill && width > 5) {
+      // 对于粗线条，填充多条粒子流（横截面）
+      const layerCount = Math.ceil(width / 3)
+      for (let layer = 0; layer < layerCount; layer++) {
+        const offset = (layer / (layerCount - 1) - 0.5) * width
+        const x = centerX + perpX * offset
+        const y = centerY + perpY * offset
+
+        // 光照效果：中心亮，边缘暗
+        const distFromCenter = Math.abs(offset) / (width / 2)
+        const brightnessMultiplier = 1 - distFromCenter * 0.4
+
+        // 调整颜色亮度
+        const adjustedColor = adjustColorBrightness(color, brightnessMultiplier)
+        const size = particleSize * (isSolid ? 1.2 : 0.6)
+
+        particles.push({ x, y, size, color: adjustedColor, shape: 'circle' })
+      }
+    } else {
+      // 普通细线条，单条粒子流
+      const size = Math.max(width / 2, 1) * (isSolid ? 1 : 0.5)
+      particles.push({ x: centerX, y: centerY, size, color, shape: 'circle' })
+    }
   }
 }
 
-// ============ 1. 根系：阶梯式分形消耗逻辑 ============
+// 辅助函数：调整颜色亮度
+const adjustColorBrightness = (hslaColor: string, multiplier: number): string => {
+  const match = hslaColor.match(/hsla\((\d+),\s*(\d+)%,\s*(\d+)%,\s*([\d.]+)\)/)
+  if (!match) return hslaColor
+
+  const [, h, s, l, a] = match
+  const adjustedL = Math.min(Math.max(parseFloat(l) * multiplier, 0), 100)
+  return `hsla(${h}, ${s}%, ${adjustedL.toFixed(0)}%, ${a})`
+}
+
+// ============ 1. 根系：阶梯式分形消耗逻辑（横截面分布） ============
 const generateRoots = (
   particles: Particle[],
   centerX: number,
   baseY: number,
+  trunkWidth: number,  // 新增：树干宽度，用于横截面分布
   growthData: TreeGrowthData,
   particleSize: number,
   glowIntensity: number
@@ -173,23 +212,27 @@ const generateRoots = (
 
   // 阶梯式消耗逻辑
   let remainingBudget = totalCount
-  let currentLevel = 1
 
   // Level 1: 主根（前5个点，每1点生成1根）
   const level1Count = Math.min(remainingBudget, 5)
   const level1BaseLength = growthData.roots.depth_level * 15
-  const level1BaseWidth = 3
+  const level1BaseWidth = Math.max(trunkWidth * 0.6, 2)  // 粗度为树干的60%
 
   for (let i = 0; i < level1Count; i++) {
+    // 横截面分布：起点在树干底部圆形范围内随机
+    const originOffsetX = random(-trunkWidth / 2, trunkWidth / 2)
+    const startX = centerX + originOffsetX
+    const startY = baseY
+
     const angle = 90 + random(-30, 30)  // 向下生长，±30度随机
     const length = level1BaseLength * random(0.8, 1.2)
     const width = level1BaseWidth
 
-    const endX = centerX + Math.cos((angle * Math.PI) / 180) * length
-    const endY = baseY + Math.sin((angle * Math.PI) / 180) * length
+    const endX = startX + Math.cos((angle * Math.PI) / 180) * length
+    const endY = startY + Math.sin((angle * Math.PI) / 180) * length
 
     const color = getColor('root', 0.2, isSolid, glowIntensity)
-    drawLine(particles, centerX, baseY, endX, endY, width, color, isSolid, particleSize)
+    drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
 
     rootNodes.push({ x: endX, y: endY, level: 1, angle, length, width })
   }
@@ -200,7 +243,7 @@ const generateRoots = (
   if (remainingBudget > 0) {
     const level2Count = Math.floor(remainingBudget / 2)
     const level2Length = level1BaseLength * 0.7
-    const level2Width = level1BaseWidth * 0.7
+    const level2Width = Math.max(level1BaseWidth * 0.6, 1)  // 粗度递减60%，最小1px
 
     for (let i = 0; i < level2Count; i++) {
       // 随机附着在主根上
@@ -226,7 +269,7 @@ const generateRoots = (
   if (remainingBudget > 0 && totalCount > 15) {
     const level3Count = Math.min(remainingBudget, totalCount - 15)
     const level3Length = level1BaseLength * 0.5
-    const level3Width = level1BaseWidth * 0.5
+    const level3Width = Math.max(level1BaseWidth * 0.6 * 0.6, 1)  // 每层*0.6
 
     const level2Nodes = rootNodes.filter(n => n.level === 2)
 
@@ -249,11 +292,11 @@ const generateRoots = (
     remainingBudget -= level3Count
   }
 
-  // Level 4: 四级根（点数>25）
+  // Level 4: 四级根（点数>25，每1点生成1根）
   if (remainingBudget > 0 && totalCount > 25) {
     const level4Count = Math.min(remainingBudget, totalCount - 25)
     const level4Length = level1BaseLength * 0.35
-    const level4Width = level1BaseWidth * 0.35
+    const level4Width = Math.max(level1BaseWidth * 0.6 * 0.6 * 0.6, 1)
 
     const level3Nodes = rootNodes.filter(n => n.level === 3)
 
@@ -276,11 +319,11 @@ const generateRoots = (
     remainingBudget -= level4Count
   }
 
-  // Level 5: 五级根（点数>45）
+  // Level 5: 五级根（点数>45，每1点生成1根）
   if (remainingBudget > 0 && totalCount > 45) {
     const level5Count = Math.min(remainingBudget, totalCount - 45)
     const level5Length = level1BaseLength * 0.25
-    const level5Width = level1BaseWidth * 0.25
+    const level5Width = Math.max(level1BaseWidth * 0.6 * 0.6 * 0.6 * 0.6, 1)
 
     const level4Nodes = rootNodes.filter(n => n.level === 4)
 
@@ -299,12 +342,39 @@ const generateRoots = (
 
       rootNodes.push({ x: endX, y: endY, level: 5, angle, length, width: level5Width })
     }
+
+    remainingBudget -= level5Count
+  }
+
+  // Level 6: 扩展层（点数>60，每10点生成1根）- 新增支持更多根系
+  if (remainingBudget > 0 && totalCount > 60) {
+    const level6Count = Math.floor(Math.min(remainingBudget, totalCount - 60) / 10)
+    const level6Length = level1BaseLength * 0.2
+    const level6Width = Math.max(level1BaseWidth * Math.pow(0.6, 5), 1)
+
+    const level5Nodes = rootNodes.filter(n => n.level === 5)
+
+    for (let i = 0; i < level6Count; i++) {
+      if (level5Nodes.length === 0) break
+      const parentNode = level5Nodes[Math.floor(random(0, level5Nodes.length))]
+
+      const angle = parentNode.angle + random(-80, 80)
+      const length = level6Length * random(0.3, 0.8)
+
+      const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * length
+      const endY = parentNode.y + Math.sin((angle * Math.PI) / 180) * length
+
+      const color = getColor('root', 0.7, isSolid, glowIntensity)
+      drawLine(particles, parentNode.x, parentNode.y, endX, endY, level6Width, color, isSolid, particleSize)
+
+      rootNodes.push({ x: endX, y: endY, level: 6, angle, length, width: level6Width })
+    }
   }
 
   return rootNodes
 }
 
-// ============ 2. 树干：生物力学比例（对数增长） ============
+// ============ 2. 树干：生物力学比例（对数增长，体积填充） ============
 const generateTrunk = (
   particles: Particle[],
   centerX: number,
@@ -313,7 +383,7 @@ const generateTrunk = (
   totalRootCount: number,
   particleSize: number,
   glowIntensity: number
-): { topX: number; topY: number } => {
+): { topX: number; topY: number; trunkWidth: number } => {
   const thickness = growthData.trunk.thickness
   const isSolid = growthData.trunk.is_solid
 
@@ -326,21 +396,37 @@ const generateTrunk = (
   const topX = centerX
   const topY = baseY - FinalHeight
 
+  // 🔥 核心修复：直接使用thickness值作为像素宽度，不再除以10！
+  const BaseTrunkWidth = Math.max(thickness, 2)
+
   // 关键：thickness > 0 绘制实线，thickness == 0 绘制虚线
   const drawSolid = thickness > 0 && isSolid
-  const visualWidth = Math.max(thickness / 10, 0.5)
 
   const color = getColor('trunk', UserProgress, drawSolid, glowIntensity)
-  drawLine(particles, centerX, baseY, topX, topY, visualWidth, color, drawSolid, particleSize)
 
-  return { topX, topY }
+  // 使用体积填充模式绘制粗树干
+  drawLine(
+    particles,
+    centerX,
+    baseY,
+    topX,
+    topY,
+    BaseTrunkWidth,
+    color,
+    drawSolid,
+    particleSize,
+    true  // withVolumetricFill=true
+  )
+
+  return { topX, topY, trunkWidth: BaseTrunkWidth }
 }
 
-// ============ 3. 枝条：预算消耗与形态学 ============
+// ============ 3. 枝条：预算消耗与形态学（横截面分布） ============
 const generateBranches = (
   particles: Particle[],
   trunkTopX: number,
   trunkTopY: number,
+  trunkWidth: number,  // 新增：树干宽度，用于横截面分布
   growthData: TreeGrowthData,
   particleSize: number,
   glowIntensity: number
@@ -361,13 +447,18 @@ const generateBranches = (
   for (let i = 0; i < Math.min(3, budget); i++) {
     const branch = mainBranches[i]
     const length = baseLength * random(0.8, 1.2)
-    const width = 4
+    const width = Math.max(trunkWidth * 0.6, 2)  // 粗度为树干的60%
 
-    const endX = trunkTopX + Math.cos((branch.angle * Math.PI) / 180) * length
-    const endY = trunkTopY + Math.sin((branch.angle * Math.PI) / 180) * length
+    // 横截面分布：起点在树干顶部圆形范围内随机
+    const originOffsetX = random(-trunkWidth / 2, trunkWidth / 2)
+    const startX = trunkTopX + originOffsetX
+    const startY = trunkTopY
+
+    const endX = startX + Math.cos((branch.angle * Math.PI) / 180) * length
+    const endY = startY + Math.sin((branch.angle * Math.PI) / 180) * length
 
     const color = getColor('branch', 0.3, isSolid, glowIntensity)
-    drawLine(particles, trunkTopX, trunkTopY, endX, endY, width, color, isSolid, particleSize)
+    drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
 
     branchNodes.push({
       x: endX,
@@ -383,7 +474,7 @@ const generateBranches = (
     budget--
   }
 
-  // 阶段2：侧枝与分叉
+  // 阶段2：侧枝与分叉（粗度递减）
   while (budget > 0) {
     // 优先填满侧枝
     const openNodes = branchNodes.filter(n => n.isOpen && n.sideShootCount < 2)
@@ -396,7 +487,7 @@ const generateBranches = (
     if (parentNode.sideShootCount < 2 && budget >= 1) {
       const sideAngle = parentNode.angle + random(-45, 45)
       const sideLength = parentNode.length * 0.6 * random(0.7, 1.0)
-      const sideWidth = parentNode.width * 0.7
+      const sideWidth = Math.max(parentNode.width * 0.6, 1)  // 粗度递减60%，最小1px
 
       // 在中段生成侧枝
       const midX = parentNode.x - Math.cos((parentNode.angle * Math.PI) / 180) * (parentNode.length * 0.5)
@@ -428,7 +519,7 @@ const generateBranches = (
       const fork1Angle = parentNode.angle + random(-25, -10)
       const fork2Angle = parentNode.angle + random(10, 25)
       const forkLength = parentNode.length * 0.5
-      const forkWidth = parentNode.width * 0.6
+      const forkWidth = Math.max(parentNode.width * 0.6, 1)  // 粗度递减60%，最小1px
 
       for (const angle of [fork1Angle, fork2Angle]) {
         const endX = parentNode.x + Math.cos((angle * Math.PI) / 180) * forkLength
@@ -556,32 +647,39 @@ export function generateConsciousnessTree(
   const centerX = canvasWidth / 2
   const baseY = canvasHeight * 0.65
 
-  // 1. 生成根系（阶梯式分形）
+  // 🔥 新顺序：先生成树干（获取宽度），再用宽度生成根系和枝条
+
+  // 1. 预计算根系数量（用于对数增长公式）
+  const estimatedRootCount = growthData.roots.count
+
+  // 2. 生成树干（对数增长，返回宽度）
+  const { topX, topY, trunkWidth } = generateTrunk(
+    particles,
+    centerX,
+    baseY,
+    growthData,
+    estimatedRootCount,
+    params.particleSize,
+    params.glowIntensity
+  )
+
+  // 3. 生成根系（使用树干宽度进行横截面分布）
   const rootNodes = generateRoots(
     particles,
     centerX,
     baseY,
+    trunkWidth,  // 传入树干宽度
     growthData,
     params.particleSize,
     params.glowIntensity
   )
 
-  // 2. 生成树干（对数增长）
-  const { topX, topY } = generateTrunk(
-    particles,
-    centerX,
-    baseY,
-    growthData,
-    rootNodes.length,
-    params.particleSize,
-    params.glowIntensity
-  )
-
-  // 3. 生成枝条（预算消耗）
+  // 4. 生成枝条（使用树干宽度进行横截面分布）
   const branchNodes = generateBranches(
     particles,
     topX,
     topY,
+    trunkWidth,  // 传入树干宽度
     growthData,
     params.particleSize,
     params.glowIntensity
