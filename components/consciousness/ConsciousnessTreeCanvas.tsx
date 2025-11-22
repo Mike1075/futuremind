@@ -69,8 +69,9 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
       // 根系总延伸 = 主根 + 递归分支（每级0.7倍）
       const rootTotalExtent = rootLength * (1 + 0.7 + 0.49 + 0.343 + 0.24) * (rootMaxDepth / 5)
 
-      // 计算枝条延伸（考虑递归层级）
-      const branchLength = Math.max(growthData.branches.avg_length * 10, 5)
+      // 🔧 修复：枝条延伸计算（匹配新的1/3规则逻辑，移除*4倍数）
+      // 基础长度更短，需要更保守的估算
+      const branchLength = Math.max(growthData.branches.avg_length * 4, 5)
       let branchMaxDepth = 2
       if (growthData.branches.count > 3) branchMaxDepth = 3
       if (growthData.branches.count > 6) branchMaxDepth = 4
@@ -80,8 +81,9 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
       const branchTotalExtent = branchLength * (1 + 0.7 + 0.49 + 0.343 + 0.24) * (branchMaxDepth / 5)
 
       // 总高度 = 上边距 + 树冠延伸 + 树干 + 根系延伸 + 下边距
+      // 🔧 增加上下边距，确保滚动时能看全整棵树
       const totalHeight = Math.max(
-        200 + branchTotalExtent + trunkHeight + rootTotalExtent + 200,
+        300 + branchTotalExtent + trunkHeight + rootTotalExtent + 300,
         container.clientHeight || 600
       )
 
