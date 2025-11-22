@@ -131,7 +131,7 @@ const getColor = (
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
 }
 
-// ============ 绘制直线（粒子化，支持宽度填充） ============
+// ============ 绘制直线（粒子化） ============
 const drawLine = (
   particles: Particle[],
   x1: number,
@@ -141,57 +141,21 @@ const drawLine = (
   width: number,
   color: string,
   isSolid: boolean,
-  particleSize: number,
-  withVolumetricFill: boolean = false  // 新增：是否填充体积（用于粗树干）
+  particleSize: number
 ): void => {
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
   const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
 
-  // 计算垂直于线段的方向
-  const dx = x2 - x1
-  const dy = y2 - y1
-  const perpX = -dy / distance
-  const perpY = dx / distance
-
   for (let i = 0; i <= steps; i++) {
     const t = i / steps
-    const centerX = x1 + dx * t
-    const centerY = y1 + dy * t
+    const x = x1 + (x2 - x1) * t
+    const y = y1 + (y2 - y1) * t
 
-    if (withVolumetricFill && width > 5) {
-      // 对于粗线条，填充多条粒子流（横截面）
-      const layerCount = Math.ceil(width / 3)
-      for (let layer = 0; layer < layerCount; layer++) {
-        const offset = (layer / (layerCount - 1) - 0.5) * width
-        const x = centerX + perpX * offset
-        const y = centerY + perpY * offset
+    // 🔥 使用粗粒子而非多层填充，避免发光叠加过强
+    const size = Math.max(width / 2, 1) * (isSolid ? 1 : 0.5)
 
-        // 光照效果：中心亮，边缘暗
-        const distFromCenter = Math.abs(offset) / (width / 2)
-        const brightnessMultiplier = 1 - distFromCenter * 0.4
-
-        // 调整颜色亮度
-        const adjustedColor = adjustColorBrightness(color, brightnessMultiplier)
-        const size = particleSize * (isSolid ? 1.2 : 0.6)
-
-        particles.push({ x, y, size, color: adjustedColor, shape: 'circle' })
-      }
-    } else {
-      // 普通细线条，单条粒子流
-      const size = Math.max(width / 2, 1) * (isSolid ? 1 : 0.5)
-      particles.push({ x: centerX, y: centerY, size, color, shape: 'circle' })
-    }
+    particles.push({ x, y, size, color, shape: 'circle' })
   }
-}
-
-// 辅助函数：调整颜色亮度
-const adjustColorBrightness = (hslaColor: string, multiplier: number): string => {
-  const match = hslaColor.match(/hsla\((\d+),\s*(\d+)%,\s*(\d+)%,\s*([\d.]+)\)/)
-  if (!match) return hslaColor
-
-  const [, h, s, l, a] = match
-  const adjustedL = Math.min(Math.max(parseFloat(l) * multiplier, 0), 100)
-  return `hsla(${h}, ${s}%, ${adjustedL.toFixed(0)}%, ${a})`
 }
 
 // ============ 1. 根系：阶梯式分形消耗逻辑（横截面分布） ============
@@ -404,7 +368,7 @@ const generateTrunk = (
 
   const color = getColor('trunk', UserProgress, drawSolid, glowIntensity)
 
-  // 使用体积填充模式绘制粗树干
+  // 使用粗粒子绘制树干
   drawLine(
     particles,
     centerX,
@@ -414,8 +378,7 @@ const generateTrunk = (
     BaseTrunkWidth,
     color,
     drawSolid,
-    particleSize,
-    true  // withVolumetricFill=true
+    particleSize
   )
 
   return { topX, topY, trunkWidth: BaseTrunkWidth }
