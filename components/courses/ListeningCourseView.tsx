@@ -44,8 +44,8 @@ const PATH_POINTS = [
   { x: 54, y: 85 },   // Day 10 - 耳垂底部（最低点）
   { x: 40, y: 82 },   // Day 11 - 耳垂左侧
   { x: 32, y: 72 },   // Day 12 - 耳垂向上，准备内勾
-  { x: 24, y: 56 },   // Day 13 - 深度向内凹陷（耳洞，更深地向左勾）
-  { x: 26, y: 38 },   // Day 14 - 耳洞上部，形成内凹轮廓
+  { x: 18, y: 54 },   // Day 13 - 深度向内凹陷（耳洞最深处，大幅向左勾14个单位）
+  { x: 20, y: 36 },   // Day 14 - 耳洞上部出口，形成明显内凹轮廓
 ]
 
 export function ListeningCourseView({ courseSystem, contents, completionMap, scoreMap }: ListeningCourseViewProps) {
@@ -197,37 +197,37 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
             </defs>
 
             {contents.map((content, index) => {
+              if (index === 0) return null // 第一个节点前面没有路径
+
               const isCompleted = completionMap.get(content.id) === true
-              const prevCompleted = index > 0 ? completionMap.get(contents[index - 1]?.id) === true : false
-              const isUnlocked = index === 0 || completionMap.get(contents[index - 1]?.id) === true
+              const prevCompleted = completionMap.get(contents[index - 1]?.id) === true
+              const isUnlocked = completionMap.get(contents[index - 1]?.id) === true
               const point = PATH_POINTS[index]
+              const prevPoint = PATH_POINTS[index - 1]
               const color = COURSE_COLORS[index]
+              const prevColor = COURSE_COLORS[index - 1]
 
-              // 只要当前节点已解锁（点亮），且前一个节点已完成，就绘制实线路径
-              if (index > 0 && isUnlocked && prevCompleted) {
-                const prevPoint = PATH_POINTS[index - 1]
-                const prevColor = COURSE_COLORS[index - 1]
+              // 只要前一个节点已完成（当前节点自动解锁），就绘制实线路径
+              if (!prevCompleted) return null
 
-                return (
-                  <g key={`path-${index}`}>
-                    <defs>
-                      <linearGradient id={`grad-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor={prevColor.to} />
-                        <stop offset="100%" stopColor={color.from} />
-                      </linearGradient>
-                    </defs>
-                    {/* 实线路径 - 恢复原始粗细0.8 */}
-                    <path
-                      d={`M ${prevPoint.x} ${prevPoint.y} C ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${prevPoint.y}, ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${point.y}, ${point.x} ${point.y}`}
-                      fill="none"
-                      stroke={`url(#grad-${index})`}
-                      strokeWidth="0.8"
-                      strokeLinecap="round"
-                    />
-                  </g>
-                )
-              }
-              return null
+              return (
+                <g key={`path-${index}`}>
+                  <defs>
+                    <linearGradient id={`grad-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor={prevColor.to} />
+                      <stop offset="100%" stopColor={color.from} />
+                    </linearGradient>
+                  </defs>
+                  {/* 实线路径 */}
+                  <path
+                    d={`M ${prevPoint.x} ${prevPoint.y} C ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${prevPoint.y}, ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${point.y}, ${point.x} ${point.y}`}
+                    fill="none"
+                    stroke={`url(#grad-${index})`}
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                  />
+                </g>
+              )
             })}
           </svg>
 
