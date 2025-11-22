@@ -477,98 +477,6 @@ const generateBranches = (
 
   let budgetUsed = 0
 
-  // 递归分形枝条函数（带侧枝系统）
-  const recursiveBranch = (
-    startX: number,
-    startY: number,
-    angle: number,
-    length: number,
-    width: number,
-    level: number,
-    maxLevel: number
-  ): void => {
-    if (budgetUsed >= totalBudget || level > maxLevel || length < 5) return
-
-    // 计算当前枝条终点
-    const endX = startX + Math.cos((angle * Math.PI) / 180) * length
-    const endY = startY + Math.sin((angle * Math.PI) / 180) * length
-
-    // 绘制当前枝条
-    const depth = Math.min(level / maxLevel, 1)
-    const color = getColor('branch', depth, isSolid, glowIntensity)
-    drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
-
-    // 记录节点
-    branchNodes.push({
-      x: endX,
-      y: endY,
-      level,
-      angle,
-      length,
-      width,
-      isOpen: true,
-      sideShootCount: 0,
-    })
-
-    budgetUsed++
-
-    // 🌿 策略1：主分叉（二叉分叉，消耗2点预算）
-    if (budgetUsed + 2 <= totalBudget && level < maxLevel) {
-      const forkLength = length * random(0.65, 0.75)  // 主分叉长度衰减
-      const forkWidth = Math.max(width * 0.7, 1)
-      const forkSpread = random(18, 28)  // 分叉角度18-28度
-
-      // 左分叉
-      recursiveBranch(
-        endX, endY,
-        angle - forkSpread,
-        forkLength,
-        forkWidth,
-        level + 1,
-        maxLevel
-      )
-
-      // 右分叉
-      recursiveBranch(
-        endX, endY,
-        angle + forkSpread,
-        forkLength,
-        forkWidth,
-        level + 1,
-        maxLevel
-      )
-    }
-
-    // 🌿 策略2：侧枝（从主枝中段发出，消耗1-2点预算）
-    if (budgetUsed < totalBudget && level < maxLevel - 1 && length > 20) {
-      const sideShootCount = Math.random() < 0.6 ? 1 : 2  // 60%概率1个侧枝，40%概率2个
-
-      for (let i = 0; i < sideShootCount; i++) {
-        if (budgetUsed >= totalBudget) break
-
-        // 侧枝从主枝的30%-70%位置发出
-        const position = random(0.3, 0.7)
-        const midX = startX + Math.cos((angle * Math.PI) / 180) * (length * position)
-        const midY = startY + Math.sin((angle * Math.PI) / 180) * (length * position)
-
-        // 侧枝角度：与主枝成40-70度夹角
-        const sideAngle = angle + (i === 0 ? 1 : -1) * random(40, 70)
-        const sideLength = length * random(0.4, 0.6)  // 侧枝较短
-        const sideWidth = Math.max(width * 0.5, 0.8)
-
-        // 递归生成侧枝（侧枝也可以分叉）
-        recursiveBranch(
-          midX, midY,
-          sideAngle,
-          sideLength,
-          sideWidth,
-          level + 1,
-          maxLevel
-        )
-      }
-    }
-  }
-
   // 计算最大递归深度（基于预算）
   // budget越大，树越繁茂，深度越深
   const maxLevel = Math.min(Math.ceil(Math.log2(totalBudget + 1)) + 2, 8)
@@ -580,6 +488,9 @@ const generateBranches = (
     { angle: -50, name: '右' },
   ]
 
+  // 🔥 修复：为每个主枝分配预算，确保3个主枝都能生成
+  const budgetPerBranch = Math.floor(totalBudget / 3)  // 平均分配预算
+
   for (let i = 0; i < Math.min(3, totalBudget); i++) {
     const branch = mainBranches[i]
     const length = baseLength * random(0.9, 1.1)
@@ -590,11 +501,74 @@ const generateBranches = (
     const startX = trunkTopX + originOffsetX
     const startY = trunkTopY
 
-    // 递归生成分形枝条
-    recursiveBranch(startX, startY, branch.angle, length, width, 1, maxLevel)
+    // 为当前主枝设置预算上限
+    const branchBudgetLimit = budgetUsed + budgetPerBranch
 
-    // 预留一些预算给其他主枝
-    if (budgetUsed >= totalBudget * 0.9) break
+    // 递归生成分形枝条（限制预算）
+    const recursiveWithLimit = (
+      startX: number,
+      startY: number,
+      angle: number,
+      length: number,
+      width: number,
+      level: number,
+      maxLevel: number,
+      budgetLimit: number
+    ): void => {
+      // 使用临时预算限制替代全局限制
+      if (budgetUsed >= budgetLimit || budgetUsed >= totalBudget || level > maxLevel || length < 5) return
+
+      const endX = startX + Math.cos((angle * Math.PI) / 180) * length
+      const endY = startY + Math.sin((angle * Math.PI) / 180) * length
+
+      const depth = Math.min(level / maxLevel, 1)
+      const color = getColor('branch', depth, isSolid, glowIntensity)
+      drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
+
+      branchNodes.push({
+        x: endX,
+        y: endY,
+        level,
+        angle,
+        length,
+        width,
+        isOpen: true,
+        sideShootCount: 0,
+      })
+
+      budgetUsed++
+
+      // 主分叉
+      if (budgetUsed + 2 <= budgetLimit && budgetUsed + 2 <= totalBudget && level < maxLevel) {
+        const forkLength = length * random(0.65, 0.75)
+        const forkWidth = Math.max(width * 0.7, 1)
+        const forkSpread = random(18, 28)
+
+        recursiveWithLimit(endX, endY, angle - forkSpread, forkLength, forkWidth, level + 1, maxLevel, budgetLimit)
+        recursiveWithLimit(endX, endY, angle + forkSpread, forkLength, forkWidth, level + 1, maxLevel, budgetLimit)
+      }
+
+      // 侧枝
+      if (budgetUsed < budgetLimit && budgetUsed < totalBudget && level < maxLevel - 1 && length > 20) {
+        const sideShootCount = Math.random() < 0.6 ? 1 : 2
+
+        for (let i = 0; i < sideShootCount; i++) {
+          if (budgetUsed >= budgetLimit || budgetUsed >= totalBudget) break
+
+          const position = random(0.3, 0.7)
+          const midX = startX + Math.cos((angle * Math.PI) / 180) * (length * position)
+          const midY = startY + Math.sin((angle * Math.PI) / 180) * (length * position)
+
+          const sideAngle = angle + (i === 0 ? 1 : -1) * random(40, 70)
+          const sideLength = length * random(0.4, 0.6)
+          const sideWidth = Math.max(width * 0.5, 0.8)
+
+          recursiveWithLimit(midX, midY, sideAngle, sideLength, sideWidth, level + 1, maxLevel, budgetLimit)
+        }
+      }
+    }
+
+    recursiveWithLimit(startX, startY, branch.angle, length, width, 1, maxLevel, branchBudgetLimit)
   }
 
   return branchNodes
