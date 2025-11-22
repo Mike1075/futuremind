@@ -166,12 +166,27 @@ const calculateMainRootCount = (count: number): number => {
   return Math.max(1, Math.ceil(Math.log2(count + 1)))
 }
 
-// ============ 辅助函数：对数增长 - 平均深度 ============
-const calculateAverageDepth = (count: number): number => {
-  // 🔥 对数增长（log2 / 2），比主根数量增长更慢
-  // 这样避免在同一个count阈值同时增加主根和深度（双重突变）
-  // count=1-3: depth=2, count=4-15: depth=3, count=16-63: depth=4
-  return 2 + Math.floor(Math.log2(count + 1) / 2)
+// ============ 辅助函数：目标导向 - 每个主根的深度 ============
+const calculateRootDepth = (count: number, rootIndex: number, mainRootCount: number): number => {
+  // 🔥 目标：总末端数 ≈ count × 1.3（约1.3倍，使"1个领域≈1个小叉"）
+  //
+  // 原问题：完全二叉树导致末端爆炸
+  // - count=9: 4根 × depth=3 × 8末端 = 32个末端（期望9个！）
+  //
+  // 解决方案：为每个根分配不同深度，使总末端数≈目标
+
+  const targetEndpoints = count * 1.3  // 目标末端数
+  const avgEndpointsPerRoot = targetEndpoints / mainRootCount  // 每根平均末端数
+
+  // 反推深度：2^depth = avgEndpointsPerRoot
+  const idealDepth = Math.log2(avgEndpointsPerRoot)
+
+  // 添加随机性（±1层），让树有深有浅更自然
+  const variation = Math.floor(random(-1, 2))  // -1, 0, 1
+  const depth = Math.round(idealDepth) + variation
+
+  // 限制范围
+  return Math.max(1, Math.min(depth, 6))
 }
 
 // ============ 纯递归函数：生成对称二叉树根系 ============
@@ -238,7 +253,7 @@ const drawRootRecursive = (
   )
 }
 
-// ============ 1. 根系：混合深度策略 + 扇形分布（方案E） ============
+// ============ 1. 根系：目标导向深度分配 + 扇形分布（方案F） ============
 const generateRoots = (
   particles: Particle[],
   centerX: number,
@@ -254,17 +269,14 @@ const generateRoots = (
 
   if (totalCount === 0) return rootNodes
 
-  // 🔥 方案E-步骤1：计算主根数量（更平滑的增长）
+  // 🔥 方案F-步骤1：计算主根数量（对数增长）
   const mainRootCount = calculateMainRootCount(totalCount)
 
-  // 🔥 方案E-步骤2：计算平均深度（基础值）
-  const avgDepth = calculateAverageDepth(totalCount)
-
-  // 🔥 方案E-步骤3：计算基础参数
+  // 🔥 方案F-步骤2：计算基础参数
   const baseLength = 50 + growthData.roots.depth_level * 15  // 基础长度
   const baseWidth = Math.max(growthData.roots.depth_level * 2, 3)  // 基础粗度
 
-  // 🔥 方案E-步骤4：生成主根（150°扇形分布）
+  // 🔥 方案F-步骤3：生成主根（150°扇形分布）
   const totalSpread = 150  // 扇形总角度
   const startAngle = 90 - totalSpread / 2  // 起始角度 15°
   const angleStep = totalSpread / (mainRootCount + 1)  // 均匀间隔
@@ -279,10 +291,9 @@ const generateRoots = (
     const startX = centerX + Math.cos((offsetAngle * Math.PI) / 180) * radiusOffset
     const startY = baseY
 
-    // 🔥 方案E-步骤5：每个主根深度略有不同（±1浮动）
-    // 这样视觉上有层次感，总末端数更接近count
-    const depthVariation = Math.floor(random(-1, 2))  // -1, 0, 1
-    const rootDepth = Math.max(2, avgDepth + depthVariation)
+    // 🔥 方案F-步骤4：为每个主根动态分配深度（目标导向）
+    // 使总末端数 ≈ count × 1.3，实现"1个领域≈1个小叉"
+    const rootDepth = calculateRootDepth(totalCount, i, mainRootCount)
 
     // 为每个主根调用纯递归函数生成子树
     drawRootRecursive(
@@ -293,7 +304,7 @@ const generateRoots = (
       baseLength * random(0.9, 1.1),  // 稍微随机化初始长度
       baseWidth,
       1,  // 从第1层开始
-      rootDepth,  // 🔥 每个主根深度不同！
+      rootDepth,  // 🔥 每个主根深度不同（目标导向分配）
       isSolid,
       particleSize,
       glowIntensity
