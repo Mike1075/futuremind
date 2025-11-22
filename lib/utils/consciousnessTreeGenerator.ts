@@ -221,22 +221,21 @@ const calculateRootDepth = (count: number, rootIndex: number, mainRootCount: num
 // ============ 新增：根据根系计算自然树干粗度（达芬奇规则） ============
 const calculateNaturalTrunkWidth = (rootCount: number, depthLevel: number): number => {
   // 🌳 基于达芬奇规则：树干横截面积 ≈ 所有主根横截面积之和
-  // 简化计算：树干粗度与根系发展成正比
+  // 优化：使用更激进的线性关系，确保粗度视觉效果明显
 
   const mainRootCount = calculateMainRootCount(rootCount)
-  const rootWidth = Math.max(depthLevel * 2, 3)  // 单个主根粗度
 
-  // 所有主根横截面积之和（近似）
-  const totalRootArea = mainRootCount * (rootWidth / 2) ** 2 * Math.PI
+  // 基础粗度：主根数量贡献（每个主根+5px）
+  const baseWidth = mainRootCount * 5
 
-  // 树干半径（从面积反推）
-  const trunkRadius = Math.sqrt(totalRootArea / Math.PI)
+  // 深度加成：探索深度贡献（每层+4px）
+  const depthBonus = depthLevel * 4
 
-  // 树干粗度（直径）
-  const naturalWidth = trunkRadius * 2
+  // 自然粗度 = 基础 + 深度加成
+  const naturalWidth = baseWidth + depthBonus
 
-  // 确保最小值和合理上限
-  return Math.max(Math.min(naturalWidth, 60), 8)
+  // 确保最小值和合理上限（最大80px，确保粗壮的树干效果）
+  return Math.max(Math.min(naturalWidth, 80), 10)
 }
 
 // ============ 新增：根据根系计算自然树干高度 ============
