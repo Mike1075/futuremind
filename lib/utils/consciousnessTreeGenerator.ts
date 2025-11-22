@@ -303,20 +303,21 @@ const calculateNaturalBranchLength = (
   depthLevel: number,
   trunkHeight: number
 ): number => {
-  // 🌿 自然规律：枝条长度与树干高度成比例（约20-40%）
+  // 🌿 自然规律：枝条长度与树干高度成比例（约60-120%）
   // 同时考虑根系深度的影响
+  // 🔥 增加3倍长度，让枝繁叶茂更明显
 
-  // 基础长度：树干高度的30%（经验值）
-  const baseLength = trunkHeight * 0.3
+  // 基础长度：树干高度的90%（原来30%，现在增加3倍）
+  const baseLength = trunkHeight * 0.9
 
   // 深度加成：根系深度越深，能量越足，枝条更有力
-  const depthBonus = depthLevel * 5
+  const depthBonus = depthLevel * 15  // 原来5，现在增加3倍
 
   // 自然枝条长度 = 基础长度 + 深度加成
   const naturalLength = baseLength + depthBonus
 
-  // 确保合理范围（最小20px，最大150px）
-  return Math.max(Math.min(naturalLength, 150), 20)
+  // 确保合理范围（最小60px，最大450px，都增加3倍）
+  return Math.max(Math.min(naturalLength, 450), 60)
 }
 
 // ============ 纯递归函数：生成对称二叉树根系 ============
@@ -527,78 +528,69 @@ const generateTrunk = (
   return { topX, topY, trunkWidth: actualWidth }
 }
 
-// ============ 3. 枝条：纯分形二叉树（简化版，更茂密） ============
+// ============ 3. 枝条：基础结构 + 里程分叉 ============
 const generateBranches = (
   particles: Particle[],
   trunkTopX: number,
   trunkTopY: number,
   trunkWidth: number,
-  trunkHeight: number,  // 新增：树干实际高度
+  trunkHeight: number,
   growthData: TreeGrowthData,
   overallProgress: number,
   particleSize: number,
   glowIntensity: number
 ): BranchNode[] => {
-  const totalBudget = growthData.branches.count
+  const totalCount = growthData.branches.count  // 里程数
+  const avgLength = growthData.branches.avg_length  // 洞见程度 (0-20)
+  const isSolid = growthData.branches.is_solid
 
-  // 🌿 应用1/3规则（和树干设计完全一致）
-  // 步骤1：计算"自然枝条长度"（基于根系和树干发展）
+  // 🌿 步骤1：计算自然枝条长度（已增加3倍）
   const naturalBranchLength = calculateNaturalBranchLength(
     growthData.roots.count,
     growthData.roots.depth_level,
     trunkHeight
   )
 
-  // 步骤2：应用1/3规则
-  // 默认长度 = 1/3 × naturalLength，最大长度 = naturalLength
+  // 🌿 步骤2：根据洞见程度计算实际长度（1/3规则）
+  // avgLength=0: 基础长度（1/3自然长度）
+  // avgLength=20: 最大长度（自然长度）
   const minLength = naturalBranchLength / 3
   const maxLength = naturalBranchLength
-  const actualBranchLength = minLength + (maxLength - minLength) * (growthData.branches.avg_length / 20)
+  const branchLength = minLength + (maxLength - minLength) * (avgLength / 20)
 
-  // avg_length=0时 → actualBranchLength = minLength（1/3自然长度，避免秃树）
-  // avg_length=20时 → actualBranchLength = maxLength（完整自然长度）
+  // 🌿 步骤3：根据洞见程度决定虚实线
+  // avgLength < 5: 虚线
+  // avgLength >= 5: 实线
+  const shouldDrawSolid = avgLength >= 5 && isSolid
 
-  // 🔧 修复：直接使用actualBranchLength作为baseLength（移除*4倍数）
-  // 之前的*4导致枝条太长，递归层数太多，count=3时生成了30+个末端
-  const baseLength = actualBranchLength
-
-  const isSolid = growthData.branches.is_solid
   const branchNodes: BranchNode[] = []
 
-  let budgetUsed = 0
+  // 🌿 步骤4：总是生成3个主枝（基础结构）
+  const mainBranches = [
+    { angle: -130, name: '左主枝' },
+    { angle: -90, name: '中主枝' },
+    { angle: -50, name: '右主枝' },
+  ]
 
-  // 🌳 纯递归二叉树函数（每个枝条末端分2叉）
-  const recursiveBinaryTree = (
+  // 绘制主枝的辅助函数
+  const drawSingleBranch = (
     startX: number,
     startY: number,
     angle: number,
     length: number,
     width: number,
-    level: number,
-    maxLevel: number
-  ): void => {
-    // 停止条件：预算用完、深度达到、长度太小
-    // 🌿 降低最小长度阈值：1.5px（之前3px），允许更细分支继续生长，增加密集度
-    if (budgetUsed >= totalBudget || level > maxLevel || length < 1.5) {
-      // 🔧 当前节点成为末端，消耗预算
-      if (level > 0) budgetUsed++  // level=0是主枝起点，不计入末端
-      return
-    }
-
-    // 计算终点
+    isMain: boolean
+  ) => {
     const endX = startX + Math.cos((angle * Math.PI) / 180) * length
     const endY = startY + Math.sin((angle * Math.PI) / 180) * length
 
-    // 绘制当前枝条
-    // 🎨 使用整体生长进度决定颜色（所有部分统一）
-    const color = getColor('branch', overallProgress, isSolid, glowIntensity)
-    drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
+    const color = getColor('branch', overallProgress, shouldDrawSolid, glowIntensity)
+    drawLine(particles, startX, startY, endX, endY, width, color, shouldDrawSolid, particleSize)
 
-    // 记录节点
     branchNodes.push({
       x: endX,
       y: endY,
-      level,
+      level: isMain ? 1 : 2,
       angle,
       length,
       width,
@@ -606,76 +598,66 @@ const generateBranches = (
       sideShootCount: 0,
     })
 
-    // 🌿 二叉分叉（每个枝条末端分2叉，持续递归）
-    // 🔧 优化：只有在成为"末端节点"时才消耗预算，让count直观对应末端分支数
-    if (budgetUsed < totalBudget && level < maxLevel) {
-      // 长度衰减：75-85%（更温和，枝条更长）
-      const newLength = length * random(0.75, 0.85)
-
-      // 粗度衰减：70%
-      const newWidth = Math.max(width * 0.7, 0.8)
-
-      // 分叉角度：20-35度（随机变化）
-      const spreadAngle = random(20, 35)
-
-      // 🔧 检查预算：如果只够生成一个分支，随机选左或右（避免总是偏左）
-      const remainingBudget = totalBudget - budgetUsed
-
-      if (remainingBudget >= 2) {
-        // 预算充足，生成左右两个分叉（随机顺序，避免左分叉总是先消耗预算）
-        if (seededRandom() < 0.5) {
-          // 先左后右
-          recursiveBinaryTree(endX, endY, angle - spreadAngle, newLength, newWidth, level + 1, maxLevel)
-          recursiveBinaryTree(endX, endY, angle + spreadAngle, newLength, newWidth, level + 1, maxLevel)
-        } else {
-          // 先右后左
-          recursiveBinaryTree(endX, endY, angle + spreadAngle, newLength, newWidth, level + 1, maxLevel)
-          recursiveBinaryTree(endX, endY, angle - spreadAngle, newLength, newWidth, level + 1, maxLevel)
-        }
-      } else if (remainingBudget === 1) {
-        // 预算只够一个分支，随机选左或右
-        const forkAngle = seededRandom() < 0.5 ? angle - spreadAngle : angle + spreadAngle
-        recursiveBinaryTree(endX, endY, forkAngle, newLength, newWidth, level + 1, maxLevel)
-      }
-    }
-    // 注意：budgetUsed++ 现在在函数开头的return之前（成为真正末端时）
+    return { endX, endY }
   }
 
-  // 计算最大递归深度（基于预算）
-  // budget=20 → maxLevel=6, budget=50 → maxLevel=7, budget=100 → maxLevel=8
-  const maxLevel = Math.min(Math.ceil(Math.log2(totalBudget + 1)) + 1, 10)
-
-  // 生成3个主枝（左、中、右）
-  const mainBranches = [
-    { angle: -130, name: '左' },
-    { angle: -90, name: '中' },
-    { angle: -50, name: '右' },
-  ]
-
-  // 为每个主枝分配预算
-  const budgetPerBranch = Math.floor(totalBudget / 3)
-
-  for (let i = 0; i < Math.min(3, totalBudget); i++) {
+  // 绘制3个主枝
+  for (let i = 0; i < 3; i++) {
     const branch = mainBranches[i]
-    const length = baseLength * random(0.9, 1.1)
+    const length = branchLength * random(0.9, 1.1)
     const width = Math.max(trunkWidth * 0.6, 2)
 
-    // 主枝起点在树干顶部
     const originOffsetX = random(-trunkWidth / 3, trunkWidth / 3)
     const startX = trunkTopX + originOffsetX
     const startY = trunkTopY
 
-    // 记录当前预算位置
-    const branchStartBudget = budgetUsed
-    const branchBudgetLimit = branchStartBudget + budgetPerBranch
+    drawSingleBranch(startX, startY, branch.angle, length, width, true)
+  }
 
-    // 递归生成（使用临时变量限制预算）
-    const savedBudgetUsed = budgetUsed
-    recursiveBinaryTree(startX, startY, branch.angle, length, width, 1, maxLevel)
+  // 🌿 步骤5：根据里程数(count)添加额外分叉
+  // count=0: 只有3个主枝
+  // count=1: 3个主枝 + 1个分叉
+  // count=2: 3个主枝 + 2个分叉
+  // ...
 
-    // 如果当前主枝超过分配预算，停止继续分配给当前枝
-    if (budgetUsed > branchBudgetLimit) {
-      budgetUsed = branchBudgetLimit
+  if (totalCount > 0) {
+    // 计算每个主枝应该分出多少个侧枝
+    const forksPerMainBranch = Math.floor(totalCount / 3)
+    const remainingForks = totalCount % 3
+
+    let forkIndex = 0
+
+    for (let mainIndex = 0; mainIndex < 3; mainIndex++) {
+      const mainBranch = mainBranches[mainIndex]
+
+      // 当前主枝的分叉数量
+      let forksForThisBranch = forksPerMainBranch
+      if (mainIndex < remainingForks) {
+        forksForThisBranch += 1
+      }
+
+      // 主枝起点
+      const originOffsetX = random(-trunkWidth / 3, trunkWidth / 3)
+      const startX = trunkTopX + originOffsetX
+      const startY = trunkTopY
+
+      // 计算主枝终点
+      const mainLength = branchLength * random(0.9, 1.1)
+      const mainEndX = startX + Math.cos((mainBranch.angle * Math.PI) / 180) * mainLength
+      const mainEndY = startY + Math.sin((mainBranch.angle * Math.PI) / 180) * mainLength
+
+      // 从主枝末端生成侧枝
+      for (let forkNum = 0; forkNum < forksForThisBranch; forkNum++) {
+        // 侧枝参数
+        const forkLength = branchLength * random(0.6, 0.8)  // 侧枝比主枝短
+        const forkWidth = Math.max(trunkWidth * 0.4, 1.5)
+
+        // 侧枝角度：在主枝基础上±30-50度
+        const forkAngleOffset = random(30, 50) * (seededRandom() < 0.5 ? -1 : 1)
+        const forkAngle = mainBranch.angle + forkAngleOffset
+
+        drawSingleBranch(mainEndX, mainEndY, forkAngle, forkLength, forkWidth, false)
+      }
     }
   }
 
