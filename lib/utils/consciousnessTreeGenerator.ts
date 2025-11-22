@@ -256,6 +256,28 @@ const calculateNaturalTrunkHeight = (rootCount: number, depthLevel: number): num
   return Math.max(Math.min(naturalHeight, 400), 50)
 }
 
+// ============ 新增：根据根系和树干计算自然枝条长度 ============
+const calculateNaturalBranchLength = (
+  rootCount: number,
+  depthLevel: number,
+  trunkHeight: number
+): number => {
+  // 🌿 自然规律：枝条长度与树干高度成比例（约20-40%）
+  // 同时考虑根系深度的影响
+
+  // 基础长度：树干高度的30%（经验值）
+  const baseLength = trunkHeight * 0.3
+
+  // 深度加成：根系深度越深，能量越足，枝条更有力
+  const depthBonus = depthLevel * 5
+
+  // 自然枝条长度 = 基础长度 + 深度加成
+  const naturalLength = baseLength + depthBonus
+
+  // 确保合理范围（最小20px，最大150px）
+  return Math.max(Math.min(naturalLength, 150), 20)
+}
+
 // ============ 纯递归函数：生成对称二叉树根系 ============
 const drawRootRecursive = (
   particles: Particle[],
@@ -466,14 +488,33 @@ const generateBranches = (
   trunkTopX: number,
   trunkTopY: number,
   trunkWidth: number,
+  trunkHeight: number,  // 新增：树干实际高度
   growthData: TreeGrowthData,
   particleSize: number,
   glowIntensity: number
 ): BranchNode[] => {
   const totalBudget = growthData.branches.count
-  // 🌿 优化：缩短基础长度，让枝条更短、分叉更密集（参考图特征）
-  // avg_length=10时，baseLength=40px（之前是100px）
-  const baseLength = growthData.branches.avg_length * 4
+
+  // 🌿 应用1/3规则（和树干设计完全一致）
+  // 步骤1：计算"自然枝条长度"（基于根系和树干发展）
+  const naturalBranchLength = calculateNaturalBranchLength(
+    growthData.roots.count,
+    growthData.roots.depth_level,
+    trunkHeight
+  )
+
+  // 步骤2：应用1/3规则
+  // 默认长度 = 1/3 × naturalLength，最大长度 = naturalLength
+  const minLength = naturalBranchLength / 3
+  const maxLength = naturalBranchLength
+  const actualBranchLength = minLength + (maxLength - minLength) * (growthData.branches.avg_length / 20)
+
+  // avg_length=0时 → actualBranchLength = minLength（1/3自然长度，避免秃树）
+  // avg_length=20时 → actualBranchLength = maxLength（完整自然长度）
+
+  // 最终基础长度（用于递归起点）
+  const baseLength = actualBranchLength * 4  // 保持原有的倍数关系
+
   const isSolid = growthData.branches.is_solid
   const branchNodes: BranchNode[] = []
 
@@ -731,12 +772,13 @@ export function generateConsciousnessTree(
     params.glowIntensity
   )
 
-  // 5. 生成枝条（使用树干宽度进行横截面分布）
+  // 5. 生成枝条（使用树干宽度和高度计算自然长度）
   const branchNodes = generateBranches(
     particles,
     topX,
     topY,
-    trunkWidth,  // 传入树干宽度
+    trunkWidth,     // 传入树干宽度
+    actualHeight,   // 传入树干实际高度（用于计算自然枝条长度）
     growthData,
     params.particleSize,
     params.glowIntensity
