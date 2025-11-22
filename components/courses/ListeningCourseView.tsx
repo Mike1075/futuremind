@@ -198,13 +198,13 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
 
             {contents.map((content, index) => {
               const isCompleted = completionMap.get(content.id) === true
+              const prevCompleted = index > 0 ? completionMap.get(contents[index - 1]?.id) === true : false
               const isUnlocked = index === 0 || completionMap.get(contents[index - 1]?.id) === true
               const point = PATH_POINTS[index]
               const color = COURSE_COLORS[index]
 
-              // 如果当前节点已完成，绘制从前一个节点到当前节点的路径
-              // 修复：改为检查当前节点是否完成，而不是前一个节点
-              if (index > 0 && isCompleted) {
+              // 只有当前节点和前一个节点都完成时，才绘制实线路径
+              if (index > 0 && isCompleted && prevCompleted) {
                 const prevPoint = PATH_POINTS[index - 1]
                 const prevColor = COURSE_COLORS[index - 1]
 
