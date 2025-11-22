@@ -22,7 +22,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [seedOpacity, setSeedOpacity] = useState(0.3)
-  const animationRef = useRef<number>()
+  const animationRef = useRef<number | undefined>(undefined)
 
   // 检测是否为空树（种子状态）
   const isEmptyTree =
