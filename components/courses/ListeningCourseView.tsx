@@ -30,7 +30,7 @@ const COURSE_COLORS = [
 ]
 
 // 曲线路径节点位置（百分比）- 根据手绘参考图设计的耳朵轮廓
-// 完整的耳朵形状：外耳轮 + 耳垂 + 内耳凹陷
+// 完整的耳朵形状：外耳轮 + 耳垂 + 内耳凹陷（耳洞）
 const PATH_POINTS = [
   { x: 30, y: 25 },   // Day 1 - 左上起点
   { x: 42, y: 15 },   // Day 2 - 向上弯曲
@@ -44,8 +44,8 @@ const PATH_POINTS = [
   { x: 54, y: 85 },   // Day 10 - 耳垂底部（最低点）
   { x: 40, y: 82 },   // Day 11 - 耳垂左侧
   { x: 32, y: 72 },   // Day 12 - 耳垂向上，准备内勾
-  { x: 28, y: 58 },   // Day 13 - 向内凹陷（耳窝，向左勾进去）
-  { x: 30, y: 42 },   // Day 14 - 耳窝上部，回勾向上
+  { x: 24, y: 56 },   // Day 13 - 深度向内凹陷（耳洞，更深地向左勾）
+  { x: 26, y: 38 },   // Day 14 - 耳洞上部，形成内凹轮廓
 ]
 
 export function ListeningCourseView({ courseSystem, contents, completionMap, scoreMap }: ListeningCourseViewProps) {
@@ -203,8 +203,8 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
               const point = PATH_POINTS[index]
               const color = COURSE_COLORS[index]
 
-              // 只有当前节点和前一个节点都完成时，才绘制实线路径
-              if (index > 0 && isCompleted && prevCompleted) {
+              // 只要当前节点已解锁（点亮），且前一个节点已完成，就绘制实线路径
+              if (index > 0 && isUnlocked && prevCompleted) {
                 const prevPoint = PATH_POINTS[index - 1]
                 const prevColor = COURSE_COLORS[index - 1]
 
@@ -216,22 +216,12 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                         <stop offset="100%" stopColor={color.from} />
                       </linearGradient>
                     </defs>
-                    {/* 外层发光效果 */}
+                    {/* 实线路径 - 恢复原始粗细0.8 */}
                     <path
                       d={`M ${prevPoint.x} ${prevPoint.y} C ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${prevPoint.y}, ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${point.y}, ${point.x} ${point.y}`}
                       fill="none"
                       stroke={`url(#grad-${index})`}
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      opacity="0.3"
-                      filter="blur(3px)"
-                    />
-                    {/* 主实线 - 加粗到2.5 */}
-                    <path
-                      d={`M ${prevPoint.x} ${prevPoint.y} C ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${prevPoint.y}, ${prevPoint.x + (point.x - prevPoint.x) * 0.5} ${point.y}, ${point.x} ${point.y}`}
-                      fill="none"
-                      stroke={`url(#grad-${index})`}
-                      strokeWidth="2.5"
+                      strokeWidth="0.8"
                       strokeLinecap="round"
                     />
                   </g>
