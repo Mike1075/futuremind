@@ -90,40 +90,81 @@ function random(min: number, max: number): number {
   return seededRandom() * (max - min) + min
 }
 
-// ============ 颜色系统：暗红到亮红 ============
+// ============ 计算整体树生长进度（所有部分的平均值） ============
+const calculateOverallGrowthProgress = (growthData: TreeGrowthData): number => {
+  // 各部分的最大值设定（可调整）
+  const MAX_ROOT_COUNT = 80
+  const MAX_TRUNK_THICKNESS = 50
+  const MAX_TRUNK_HEIGHT = 100
+  const MAX_BRANCH_COUNT = 100
+  const MAX_BRANCH_LENGTH = 20
+  const MAX_LEAF_COUNT = 50
+  const MAX_FRUIT_COUNT = 20
+
+  // 计算各部分的填充百分比
+  const rootProgress = Math.min(growthData.roots.count / MAX_ROOT_COUNT, 1)
+  const rootDepthProgress = Math.min(growthData.roots.depth_level / 10, 1)
+  const trunkThicknessProgress = Math.min(growthData.trunk.thickness / MAX_TRUNK_THICKNESS, 1)
+  const trunkHeightProgress = Math.min(growthData.trunk.height_level / MAX_TRUNK_HEIGHT, 1)
+  const branchCountProgress = Math.min(growthData.branches.count / MAX_BRANCH_COUNT, 1)
+  const branchLengthProgress = Math.min(growthData.branches.avg_length / MAX_BRANCH_LENGTH, 1)
+  const leafProgress = Math.min(growthData.leaves.count / MAX_LEAF_COUNT, 1)
+  const fruitProgress = Math.min(growthData.fruits.count / MAX_FRUIT_COUNT, 1)
+
+  // 取所有部分的平均值（整体生长进度）
+  const overallProgress = (
+    rootProgress +
+    rootDepthProgress +
+    trunkThicknessProgress +
+    trunkHeightProgress +
+    branchCountProgress +
+    branchLengthProgress +
+    leafProgress +
+    fruitProgress
+  ) / 8
+
+  return overallProgress
+}
+
+// ============ 颜色系统：基于整体生长进度，从暗红到金边红 ============
 const getColor = (
   type: 'root' | 'trunk' | 'branch' | 'leaf' | 'fruit',
-  depth: number,     // 深度/成熟度 (0-1)，0=内部暗，1=外部亮
+  overallProgress: number,  // 整体生长进度 (0-1)，0=刚开始，1=接近升级
   isSolid: boolean,
   glowIntensity: number = 0.5
 ): string => {
-  const hue = 0  // 全部使用红色
-  let saturation = 70
-  let lightness = 20  // 默认暗红
+  // 🎨 基于整体生长进度的颜色演变
+  // 0-90%: 从暗红 → 亮红 → 金边红
+  // 90%+: 第二级树（换颜色，暂时保持红色系）
 
-  switch (type) {
-    case 'root':
-      // 根部：暗红 20% → 30%
-      lightness = 20 + depth * 10
-      break
-    case 'trunk':
-      // 树干：15% → 22%（进一步降低亮度，避免粒子叠加过曝）
-      lightness = 15 + depth * 7
-      break
-    case 'branch':
-      // 枝条：20% → 35%（和根系类似，从暗红开始，根据count填充程度变亮）
-      lightness = 20 + depth * 15
-      break
-    case 'leaf':
-      // 叶子：40% → 60%（较亮）
-      lightness = 40 + depth * 20
-      saturation = 80
-      break
-    case 'fruit':
-      // 果实：55% → 60%（最亮，仅成熟部分发光）
-      lightness = Math.min(55 + depth * 5, 60)
-      saturation = 90
-      break
+  let hue = 0       // 纯红色
+  let saturation = 70
+  let lightness = 20
+
+  // 🌳 整体进度影响颜色演变（所有部分统一）
+  if (overallProgress < 0.9) {
+    // 第一级树：0-90%
+    // 色相：0 → 10 (从纯红到略带橙的金边红)
+    hue = overallProgress * 11  // 0% → 0, 90% → 10
+
+    // 饱和度：70 → 95 (逐渐鲜艳)
+    saturation = 70 + overallProgress * 28  // 0% → 70, 90% → 95
+
+    // 亮度：根据部位基础值 + 整体进度加成
+    const baseLight = type === 'trunk' ? 15 :
+                      type === 'root' ? 20 :
+                      type === 'branch' ? 20 :
+                      type === 'leaf' ? 30 : 35  // fruit
+
+    // 进度越高，亮度提升越多（0-90%提升20-30个亮度点）
+    const progressBonus = overallProgress * 30
+    lightness = Math.min(baseLight + progressBonus, 50)  // 最高50%（金边红）
+
+  } else {
+    // 第二级树：90%+（暂时保持金边红，后续可换色）
+    hue = 10
+    saturation = 95
+    lightness = 50
   }
 
   const alpha = isSolid ? 0.9 : 0.4
@@ -289,6 +330,7 @@ const drawRootRecursive = (
   level: number,          // 当前层级（从1开始）
   maxLevel: number,       // 最大层级
   isSolid: boolean,       // 是否实线
+  overallProgress: number, // 整体生长进度
   particleSize: number,
   glowIntensity: number
 ): void => {
@@ -299,9 +341,8 @@ const drawRootRecursive = (
   const endX = x + Math.cos((angle * Math.PI) / 180) * length
   const endY = y + Math.sin((angle * Math.PI) / 180) * length
 
-  // 2. 计算颜色深度（根据层级）
-  const depth = Math.min((level - 1) * 0.05, 0.25)  // 0.0 → 0.25
-  const color = getColor('root', depth, isSolid, glowIntensity)
+  // 2. 使用整体进度决定颜色（所有部分统一）
+  const color = getColor('root', overallProgress, isSolid, glowIntensity)
 
   // 3. 绘制当前线段
   drawLine(particles, x, y, endX, endY, width, color, isSolid, particleSize)
@@ -322,6 +363,7 @@ const drawRootRecursive = (
     level + 1,
     maxLevel,
     isSolid,
+    overallProgress,
     particleSize,
     glowIntensity
   )
@@ -337,6 +379,7 @@ const drawRootRecursive = (
     level + 1,
     maxLevel,
     isSolid,
+    overallProgress,
     particleSize,
     glowIntensity
   )
@@ -349,6 +392,7 @@ const generateRoots = (
   baseY: number,
   trunkWidth: number,
   growthData: TreeGrowthData,
+  overallProgress: number,
   particleSize: number,
   glowIntensity: number
 ): RootNode[] => {
@@ -385,7 +429,7 @@ const generateRoots = (
     const transitionEndY = startY + Math.sin((angle * Math.PI) / 180) * transitionLength
 
     // 绘制过渡段（渐变粗度：从树干粗度 → 根系粗度）
-    const transitionColor = getColor('root', 0, isSolid, glowIntensity)
+    const transitionColor = getColor('root', overallProgress, isSolid, glowIntensity)
     drawTaperLine(
       particles,
       startX,
@@ -414,6 +458,7 @@ const generateRoots = (
       1,  // 从第1层开始
       rootDepth,  // 🔥 每个主根深度不同（目标导向分配）
       isSolid,
+      overallProgress,  // 传递整体进度
       particleSize,
       glowIntensity
     )
@@ -434,6 +479,7 @@ const generateTrunk = (
   baseY: number,
   growthData: TreeGrowthData,
   totalRootCount: number,
+  overallProgress: number,
   particleSize: number,
   glowIntensity: number
 ): { topX: number; topY: number; trunkWidth: number } => {
@@ -462,9 +508,8 @@ const generateTrunk = (
   // 关键：thickness > 0 绘制实线，thickness == 0 绘制虚线
   const drawSolid = thickness > 0 && isSolid
 
-  // 颜色深度基于高度进度
-  const colorDepth = heightLevel / 100
-  const color = getColor('trunk', colorDepth, drawSolid, glowIntensity)
+  // 使用整体进度决定颜色（所有部分统一）
+  const color = getColor('trunk', overallProgress, drawSolid, glowIntensity)
 
   // 使用粗粒子绘制树干
   drawLine(
@@ -490,6 +535,7 @@ const generateBranches = (
   trunkWidth: number,
   trunkHeight: number,  // 新增：树干实际高度
   growthData: TreeGrowthData,
+  overallProgress: number,
   particleSize: number,
   glowIntensity: number
 ): BranchNode[] => {
@@ -544,10 +590,8 @@ const generateBranches = (
     const endY = startY + Math.sin((angle * Math.PI) / 180) * length
 
     // 绘制当前枝条
-    // 🎨 修复：颜色基于count填充程度，而不是递归深度
-    // count接近100时，整体才变亮红（从暗红20%到亮红35%）
-    const fillRatio = Math.min(totalBudget / 100, 1)
-    const color = getColor('branch', fillRatio, isSolid, glowIntensity)
+    // 🎨 使用整体生长进度决定颜色（所有部分统一）
+    const color = getColor('branch', overallProgress, isSolid, glowIntensity)
     drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
 
     // 记录节点
@@ -643,6 +687,7 @@ const generateLeaves = (
   particles: Particle[],
   branchNodes: BranchNode[],
   growthData: TreeGrowthData,
+  overallProgress: number,
   particleSize: number,
   glowIntensity: number
 ): void => {
@@ -661,8 +706,8 @@ const generateLeaves = (
     const offsetX = random(-10, 10)
     const offsetY = random(-10, 10)
 
-    const depth = Math.min(node.level / 6, 1)
-    const color = getColor('leaf', depth, isSolid, glowIntensity)
+    // 使用整体生长进度决定颜色（所有部分统一）
+    const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
     const size = particleSize * random(1.5, 2.5)
     const rotation = random(0, 360)
 
@@ -682,6 +727,7 @@ const generateFruits = (
   particles: Particle[],
   branchNodes: BranchNode[],
   growthData: TreeGrowthData,
+  overallProgress: number,
   particleSize: number,
   glowIntensity: number
 ): void => {
@@ -699,8 +745,8 @@ const generateFruits = (
     const offsetX = random(-8, 8)
     const offsetY = random(5, 15)  // 果实垂挂在下方
 
-    const depth = Math.min(node.level / 6, 1)
-    const color = getColor('fruit', depth, isSolid, glowIntensity)
+    // 使用整体生长进度决定颜色（所有部分统一）
+    const color = getColor('fruit', overallProgress, isSolid, glowIntensity)
     const size = particleSize * random(2.5, 3.5)
 
     particles.push({
@@ -726,6 +772,9 @@ export function generateConsciousnessTree(
   // 不使用count等可变参数，避免调整参数时已有部分跳动
   const seed = 12345
   initSeed(seed)
+
+  // 🎨 计算整体生长进度（所有部分的平均值）- 用于统一颜色
+  const overallProgress = calculateOverallGrowthProgress(growthData)
 
   const centerX = canvasWidth / 2
   const baseY = canvasHeight * 0.65
@@ -760,6 +809,7 @@ export function generateConsciousnessTree(
     baseY,
     trunkWidth,  // 传入树干宽度
     growthData,
+    overallProgress,  // 传入整体进度
     params.particleSize,
     params.glowIntensity
   )
@@ -771,6 +821,7 @@ export function generateConsciousnessTree(
     baseY,
     growthData,
     estimatedRootCount,
+    overallProgress,  // 传入整体进度
     params.particleSize,
     params.glowIntensity
   )
@@ -783,15 +834,16 @@ export function generateConsciousnessTree(
     trunkWidth,     // 传入树干宽度
     actualHeight,   // 传入树干实际高度（用于计算自然枝条长度）
     growthData,
+    overallProgress,  // 传入整体进度
     params.particleSize,
     params.glowIntensity
   )
 
   // 6. 生成树叶
-  generateLeaves(particles, branchNodes, growthData, params.particleSize, params.glowIntensity)
+  generateLeaves(particles, branchNodes, growthData, overallProgress, params.particleSize, params.glowIntensity)
 
   // 7. 生成果实
-  generateFruits(particles, branchNodes, growthData, params.particleSize, params.glowIntensity)
+  generateFruits(particles, branchNodes, growthData, overallProgress, params.particleSize, params.glowIntensity)
 
   return particles
 }
