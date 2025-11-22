@@ -114,21 +114,46 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
         ctx.save()
         ctx.globalCompositeOperation = 'lighter'
 
+        // 最外层光环（淡淡的光晕）
+        const gradient1 = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 60)
+        gradient1.addColorStop(0, `rgba(220, 38, 38, ${seedOpacity * 0.3})`)
+        gradient1.addColorStop(0.5, `rgba(220, 38, 38, ${seedOpacity * 0.15})`)
+        gradient1.addColorStop(1, 'rgba(220, 38, 38, 0)')
+        ctx.fillStyle = gradient1
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, 60, 0, Math.PI * 2)
+        ctx.fill()
+
+        // 中层光环
+        const gradient2 = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 35)
+        gradient2.addColorStop(0, `rgba(239, 68, 68, ${seedOpacity * 0.5})`)
+        gradient2.addColorStop(0.6, `rgba(220, 38, 38, ${seedOpacity * 0.3})`)
+        gradient2.addColorStop(1, 'rgba(220, 38, 38, 0)')
+        ctx.fillStyle = gradient2
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, 35, 0, Math.PI * 2)
+        ctx.fill()
+
         // 外层发光
-        ctx.shadowBlur = 30
-        ctx.shadowColor = `rgba(220, 38, 38, ${seedOpacity})`
+        ctx.shadowBlur = 40
+        ctx.shadowColor = `rgba(220, 38, 38, ${seedOpacity * 0.8})`
 
         // 种子主体
         ctx.beginPath()
         ctx.ellipse(centerX, centerY, 15, 20, 0, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(220, 38, 38, ${seedOpacity})`
+        const seedGradient = ctx.createRadialGradient(centerX - 5, centerY - 5, 0, centerX, centerY, 20)
+        seedGradient.addColorStop(0, `rgba(248, 113, 113, ${seedOpacity})`)
+        seedGradient.addColorStop(0.5, `rgba(220, 38, 38, ${seedOpacity})`)
+        seedGradient.addColorStop(1, `rgba(185, 28, 28, ${seedOpacity * 0.9})`)
+        ctx.fillStyle = seedGradient
         ctx.fill()
 
         // 内部高光
-        ctx.shadowBlur = 15
+        ctx.shadowBlur = 20
+        ctx.shadowColor = `rgba(252, 165, 165, ${seedOpacity * 0.6})`
         ctx.beginPath()
-        ctx.ellipse(centerX - 3, centerY - 5, 5, 7, 0, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(248, 113, 113, ${seedOpacity * 0.8})`
+        ctx.ellipse(centerX - 4, centerY - 6, 6, 8, 0, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(252, 165, 165, ${seedOpacity * 0.7})`
         ctx.fill()
 
         ctx.restore()
@@ -175,7 +200,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
     }
   }, [growthData, techParams, seedOpacity, isEmptyTree])
 
-  // 种子闪烁动画
+  // 种子闪烁动画（更慢更优雅）
   useEffect(() => {
     if (!isEmptyTree) {
       if (animationRef.current) {
@@ -187,18 +212,19 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
     let increasing = true
     const animate = () => {
       setSeedOpacity((prev) => {
+        // 减慢速度：从0.02改为0.008，让呼吸更自然
         if (increasing) {
-          if (prev >= 0.9) {
+          if (prev >= 0.85) {
             increasing = false
-            return prev - 0.02
+            return prev - 0.008
           }
-          return prev + 0.02
+          return prev + 0.008
         } else {
-          if (prev <= 0.3) {
+          if (prev <= 0.35) {
             increasing = true
-            return prev + 0.02
+            return prev + 0.008
           }
-          return prev - 0.02
+          return prev - 0.008
         }
       })
       animationRef.current = requestAnimationFrame(animate)
