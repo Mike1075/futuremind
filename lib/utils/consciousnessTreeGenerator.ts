@@ -563,7 +563,7 @@ const drawBranchRecursive = (
   width: number,
   currentDepth: number,
   maxDepth: number,
-  maxCount: number,  // 最大枝条数（count限制）
+  totalCount: number,  // 用于控制虚实状态
   avgLength: number,  // 洞见程度影响
   branchNodes: BranchNode[],
   overallProgress: number,
@@ -572,16 +572,20 @@ const drawBranchRecursive = (
   glowIntensity: number,
   branchId: number  // 用于稳定随机
 ): void => {
-  // 终止条件：深度超限或已达到count上限
-  if (currentDepth > maxDepth || branchCounter >= maxCount) return
+  // 🔥 只用深度限制，不用count限制（让树完全生长）
+  if (currentDepth > maxDepth) return
 
   // 计算当前段的终点
   const endX = startX + Math.cos((angle * Math.PI) / 180) * length
   const endY = startY + Math.sin((angle * Math.PI) / 180) * length
 
+  // 🔥 虚实状态：前totalCount个枝条是实线，后面是虚线
+  branchCounter++
+  const isCurrentSolid = branchCounter <= totalCount
+
   // 绘制当前枝条段
-  const color = getColor('branch', overallProgress, isSolid, glowIntensity)
-  drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
+  const color = getColor('branch', overallProgress, isCurrentSolid, glowIntensity)
+  drawLine(particles, startX, startY, endX, endY, width, color, isCurrentSolid, particleSize)
 
   branchNodes.push({
     startX,
@@ -595,9 +599,6 @@ const drawBranchRecursive = (
     isOpen: true,
     sideShootCount: 0,
   })
-
-  branchCounter++
-  if (branchCounter >= maxCount) return
 
   // 🔥 纯Y形递归分叉（参考tree.js）
   const baseBranchAngle = 25  // 基础分叉角度
@@ -614,11 +615,11 @@ const drawBranchRecursive = (
     newWidth,
     currentDepth + 1,
     maxDepth,
-    maxCount,
+    totalCount,  // 继续传递totalCount
     avgLength,
     branchNodes,
     overallProgress,
-    isSolid,
+    isSolid,  // 保持传递isSolid（用于getColor）
     particleSize,
     glowIntensity,
     branchId * 2  // 左分支ID
@@ -634,11 +635,11 @@ const drawBranchRecursive = (
     newWidth,
     currentDepth + 1,
     maxDepth,
-    maxCount,
+    totalCount,  // 继续传递totalCount
     avgLength,
     branchNodes,
     overallProgress,
-    isSolid,
+    isSolid,  // 保持传递isSolid（用于getColor）
     particleSize,
     glowIntensity,
     branchId * 2 + 1  // 右分支ID
@@ -720,21 +721,13 @@ const generateBranches = (
       { angle: -50, name: '右主枝' },
     ]
 
-    // 🔥 count控制枝条数量：为每个主枝分配count/3的预算
-    const countPerBranch = Math.ceil(totalCount / 3)
-
+    // 🔥 让每个主枝都完全生长到maxDepth，count只控制虚实状态
     for (let i = 0; i < 3; i++) {
-      if (branchCounter >= totalCount) break
-
       const branch = mainBranches[i]
       const width = Math.max(trunkWidth * 0.6, 3)
       const offsetX = (i - 1) * (trunkWidth / 4)
       const startX = trunkTopX + offsetX
       const startY = trunkTopY
-
-      // 每个主枝的count预算
-      const remainingCount = totalCount - branchCounter
-      const branchBudget = Math.min(countPerBranch, remainingCount)
 
       drawBranchRecursive(
         particles,
@@ -745,7 +738,7 @@ const generateBranches = (
         width,
         1,
         maxDepth,
-        branchCounter + branchBudget,  // count限制
+        totalCount,  // 传递totalCount用于虚实判断
         avgLength,
         branchNodes,
         overallProgress,
