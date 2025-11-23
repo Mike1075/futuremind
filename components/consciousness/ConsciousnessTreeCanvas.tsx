@@ -205,9 +205,10 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
           ctx.quadraticCurveTo(-p.size * 0.8, -p.size * 0.5, 0, -p.size * 1.5)  // 左上回到顶点
           ctx.closePath()
           ctx.strokeStyle = p.color
-          ctx.lineWidth = 0.5
+          ctx.lineWidth = 1
           ctx.stroke()
-          ctx.globalAlpha = 0.3
+          // 🔥 增加叶子填充透明度，让叶子更明显
+          ctx.globalAlpha = 0.6
           ctx.fill()
           ctx.globalAlpha = 1
 
@@ -216,7 +217,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
           ctx.moveTo(0, -p.size * 1.5)
           ctx.lineTo(0, p.size)
           ctx.strokeStyle = p.color
-          ctx.lineWidth = 0.3
+          ctx.lineWidth = 0.5
           ctx.stroke()
 
           ctx.restore()

@@ -64,11 +64,13 @@ interface RootNode {
 
 // 枝条节点（用于预算消耗）
 interface BranchNode {
-  x: number
-  y: number
+  startX: number     // 起点X
+  startY: number     // 起点Y
+  x: number          // 终点X
+  y: number          // 终点Y
   level: number      // 递归深度
   angle: number      // 生长角度
-  length: number     // 剩余长度
+  length: number     // 线段长度
   width: number      // 粗度
   isOpen: boolean    // 是否可以继续生长
   sideShootCount: number  // 已有侧枝数量
@@ -582,6 +584,8 @@ const drawBranchRecursive = (
   drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
 
   branchNodes.push({
+    startX,
+    startY,
     x: endX,
     y: endY,
     level: currentDepth,
@@ -685,6 +689,8 @@ const generateBranches = (
       drawLine(particles, startX, startY, endX, endY, width, color, false, particleSize)
 
       branchNodes.push({
+        startX,
+        startY,
         x: endX,
         y: endY,
         level: 1,
@@ -698,15 +704,8 @@ const generateBranches = (
   } else {
     // count>0时使用递归算法
 
-    // 🔥 修复：使用avg_length控制深度，确保树形状稳定（不随count变化）
-    // avg_length (0-20) 映射到 maxDepth (3-8)
-    // 0-3: depth 3 (最多7个枝条)
-    // 4-7: depth 4 (最多15个枝条)
-    // 8-11: depth 5 (最多31个枝条)
-    // 12-15: depth 6 (最多63个枝条)
-    // 16-19: depth 7 (最多127个枝条)
-    // 20: depth 8 (最多255个枝条)
-    const maxDepth = Math.min(3 + Math.floor(avgLength / 4), 8)
+    // 🔥 固定深度8（确保树形状稳定，不随参数变化）
+    const maxDepth = 8
 
     // 🔥 基础长度：受avgLength影响（0-20映射到50%-150%）
     const naturalBranchLength = calculateNaturalBranchLength(trunkHeight)
@@ -721,20 +720,22 @@ const generateBranches = (
       { angle: -50, name: '右主枝' },
     ]
 
-    // 🔥 计算理论最大枝条数：每个深度maxDepth的完全二叉树
-    // 每个主枝的最大枝条数 = 2^maxDepth - 1
-    const maxBranchesPerTree = Math.pow(2, maxDepth) - 1
-    const theoreticalMaxCount = 3 * maxBranchesPerTree
+    // 🔥 count控制枝条数量：为每个主枝分配count/3的预算
+    const countPerBranch = Math.ceil(totalCount / 3)
 
     for (let i = 0; i < 3; i++) {
+      if (branchCounter >= totalCount) break
+
       const branch = mainBranches[i]
       const width = Math.max(trunkWidth * 0.6, 3)
       const offsetX = (i - 1) * (trunkWidth / 4)
       const startX = trunkTopX + offsetX
       const startY = trunkTopY
 
-      // 🔥 修复：不再用count限制，让树完全生长到maxDepth
-      // count只作为显示数字（可用于后续控制虚实状态）
+      // 每个主枝的count预算
+      const remainingCount = totalCount - branchCounter
+      const branchBudget = Math.min(countPerBranch, remainingCount)
+
       drawBranchRecursive(
         particles,
         startX,
@@ -744,7 +745,7 @@ const generateBranches = (
         width,
         1,  // 从深度1开始
         maxDepth,
-        theoreticalMaxCount,  // 使用理论最大值，不限制生长
+        branchCounter + branchBudget,  // count限制：只生成到这个数量
         avgLength,
         branchNodes,
         overallProgress,
@@ -773,29 +774,46 @@ const generateLeaves = (
 
   if (leafCount === 0 || branchNodes.length === 0) return
 
-  // 只附着在实线枝条上
-  const solidNodes = isSolid ? branchNodes : branchNodes.filter(() => random(0, 1) > 0.5)
+  // 🍃 沿着枝条线段两侧密集分布叶子
+  // 只在较外层的枝条上生成叶子（level >= 3）
+  const leafBranches = branchNodes.filter(n => n.level >= 3)
+  if (leafBranches.length === 0) return
 
-  for (let i = 0; i < leafCount; i++) {
-    if (solidNodes.length === 0) break
+  // 每个枝条线段上的叶子密度（每20像素长度1片叶子）
+  const totalBranchLength = leafBranches.reduce((sum, b) => sum + b.length, 0)
+  const leavesPerSegment = leafCount / leafBranches.length
 
-    const node = solidNodes[Math.floor(random(0, solidNodes.length))]
-    const offsetX = random(-10, 10)
-    const offsetY = random(-10, 10)
+  for (const branch of leafBranches) {
+    // 根据线段长度决定叶子数量
+    const segmentLeafCount = Math.max(1, Math.round(leavesPerSegment))
 
-    // 使用整体生长进度决定颜色（所有部分统一）
-    const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
-    const size = particleSize * random(1.5, 2.5)
-    const rotation = random(0, 360)
+    for (let i = 0; i < segmentLeafCount; i++) {
+      // 沿着线段随机位置（10%-90%，避免起点和终点）
+      const t = 0.1 + random(0, 0.8)
+      const x = branch.startX + (branch.x - branch.startX) * t
+      const y = branch.startY + (branch.y - branch.startY) * t
 
-    particles.push({
-      x: node.x + offsetX,
-      y: node.y + offsetY,
-      size,
-      color,
-      shape: 'leaf',
-      rotation,
-    })
+      // 计算垂直于枝条的方向（用于左右偏移）
+      const perpAngle = branch.angle + (random(0, 1) > 0.5 ? 90 : -90)  // 随机选择左侧或右侧
+      const offsetDist = random(5, 15)  // 垂直偏移距离
+      const offsetX = Math.cos((perpAngle * Math.PI) / 180) * offsetDist
+      const offsetY = Math.sin((perpAngle * Math.PI) / 180) * offsetDist
+
+      // 使用整体生长进度决定颜色（所有部分统一）
+      const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
+      const size = particleSize * random(2, 3.5)  // 增大叶子尺寸
+      // 叶子旋转角度与枝条方向一致
+      const rotation = branch.angle + random(-30, 30)
+
+      particles.push({
+        x: x + offsetX,
+        y: y + offsetY,
+        size,
+        color,
+        shape: 'leaf',
+        rotation,
+      })
+    }
   }
 }
 
