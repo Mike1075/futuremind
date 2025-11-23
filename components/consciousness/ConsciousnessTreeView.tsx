@@ -104,14 +104,23 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
   const loadTreeData = async () => {
     try {
       setLoading(true)
+      setError(null)
+
+      // 🔥 添加超时保护（5秒）
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('加载超时')), 5000)
+      })
+
       const supabase = createClient()
 
       // 从 profiles 表获取 consciousness_tree_view
-      const { data, error } = await supabase
+      const dataPromise = supabase
         .from('profiles')
         .select('consciousness_tree_view')
         .eq('id', userId)
         .single()
+
+      const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any
 
       if (error) throw error
 
@@ -119,10 +128,21 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
         // 使用迁移函数自动处理新旧格式
         const migratedData = migrateOldFormat(data.consciousness_tree_view)
         setGrowthData(migratedData)
+      } else {
+        // 🔥 如果没有数据，使用种子状态（而不是报错）
+        console.log('用户还没有意识树数据，显示种子状态')
+        setGrowthData(INITIAL_GROWTH_DATA)
       }
     } catch (err) {
       console.error('加载意识树数据失败:', err)
-      setError('无法加载意识树数据')
+      // 🔥 预览模式下即使加载失败也显示种子状态
+      if (isPreview) {
+        console.log('预览模式：加载失败，显示种子状态')
+        setGrowthData(INITIAL_GROWTH_DATA)
+        setError(null)  // 清除错误，避免显示错误界面
+      } else {
+        setError('无法加载意识树数据')
+      }
     } finally {
       setLoading(false)
     }
