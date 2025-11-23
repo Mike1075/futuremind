@@ -748,9 +748,15 @@ const generateBranches = (
     ]
 
     // 🔥 让每个主枝都完全生长到maxDepth，count只控制虚实状态
+    // 🌿 枝条粗度自然调节：枝条少时更细，枝条多时更粗
+    let branchWidthScale = 0.3  // 基础粗度（枝条少时）
+    if (totalCount > 10) branchWidthScale = 0.4
+    if (totalCount > 30) branchWidthScale = 0.5
+    if (totalCount > 60) branchWidthScale = 0.6  // 枝条多时最粗
+
     for (let i = 0; i < 3; i++) {
       const branch = mainBranches[i]
-      const width = Math.max(trunkWidth * 0.6, 3)
+      const width = Math.max(trunkWidth * branchWidthScale, 2)  // 使用动态粗度系数
       const offsetX = (i - 1) * (trunkWidth / 4)
       const startX = trunkTopX + offsetX
       const startY = trunkTopY
@@ -793,8 +799,17 @@ const generateLeaves = (
 
   if (leafCount === 0 || branchNodes.length === 0) return
 
-  // 🍃 沿着枝条线段两侧密集分布叶子（所有枝条都可以长叶子）
-  const leafBranches = branchNodes
+  // 🍃 自然规律：根据枝条数量决定叶子生长位置
+  const totalCount = growthData.branches.count
+
+  // 计算最小叶子层级：枝条越多，叶子越只长在末端细枝上
+  let minLeafLevel = 1  // 默认所有枝条都可以长叶子
+  if (totalCount > 10) minLeafLevel = 2  // 10+个里程：从第2层开始长叶子
+  if (totalCount > 30) minLeafLevel = 3  // 30+个里程：从第3层开始长叶子
+  if (totalCount > 60) minLeafLevel = 4  // 60+个里程：只在细小末端长叶子
+
+  // 过滤出可以长叶子的枝条（细枝）
+  const leafBranches = branchNodes.filter(n => n.level >= minLeafLevel)
   if (leafBranches.length === 0) return
 
   // 🔥 修复：确保叶子数量完全匹配leafCount
