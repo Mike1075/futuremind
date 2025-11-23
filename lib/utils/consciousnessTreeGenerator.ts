@@ -569,9 +569,9 @@ const generateBranches = (
   // 🔥 修复：移除depthLevel参数
   const naturalBranchLength = calculateNaturalBranchLength(trunkHeight)
 
-  // avgLength控制长度（0-20），映射到60%-100%（提高最小值）
-  const minInitialLength = naturalBranchLength * 0.6  // 从50%提高到60%
-  const maxInitialLength = naturalBranchLength
+  // 🔥 修复：avgLength控制长度（0-20），映射到50%-150%（增加变化幅度）
+  const minInitialLength = naturalBranchLength * 0.5  // 最小50%
+  const maxInitialLength = naturalBranchLength * 1.5  // 最大150%
   const baseInitialLength = minInitialLength + (maxInitialLength - minInitialLength) * (avgLength / 20)
 
   const allBranches: SimpleBranch[] = []
@@ -635,22 +635,34 @@ const generateBranches = (
     const lengthMultiplier = 1 + Math.floor(i / 10) * 0.1
     const currentBaseLength = baseInitialLength * lengthMultiplier
 
-    // 🔥 改进父枝选择策略：优先从主枝和较粗的枝条生长
-    // 前30%的侧枝优先从主枝生长，之后从所有可用枝条（包括侧枝）生长
+    // 🔥 全新父枝选择策略：形成真正的树状多级分支结构
     let parentBranch: SimpleBranch
-    if (i < Math.max(totalCount * 0.3, 6)) {
-      // 前30%（至少6个）：只从3个主枝生长
+
+    if (i < 9) {
+      // 前9个侧枝：均匀分配到3个主枝（每个主枝3个一级侧枝）
       const mainBranchIndex = i % 3
       parentBranch = allBranches[mainBranchIndex]
-    } else {
-      // 后70%：从主枝和已生成的一级侧枝中选择（优先粗枝，level<=2）
-      const availableParents = allBranches.filter(b => b.level <= 2 && b.width >= 1.5)
-      if (availableParents.length === 0) {
-        // 如果没有足够粗的枝条，就从所有level<=2的枝条中选
-        const fallbackParents = allBranches.filter(b => b.level <= 2)
-        parentBranch = fallbackParents[i % fallbackParents.length]
+    } else if (i < 27) {
+      // 第10-27个侧枝（18个）：从9个一级侧枝生长（每个长2个二级侧枝）
+      const parentIndex = 3 + ((i - 9) % 9)  // 从索引3-11的一级侧枝选择
+      if (parentIndex < allBranches.length) {
+        parentBranch = allBranches[parentIndex]
       } else {
-        // 使用稳定随机选择父枝
+        // fallback：从主枝选择
+        parentBranch = allBranches[i % 3]
+      }
+    } else {
+      // 第28+个侧枝：从所有已有枝条中智能选择
+      // 优先选择较粗的枝条（宽度>=1.0），但不限制层级
+      const availableParents = allBranches.filter(b => b.width >= 1.0 && b.level <= 4)
+
+      if (availableParents.length === 0) {
+        // fallback：从所有枝条中选择（限制最大level=5，避免无限深度）
+        const fallbackParents = allBranches.filter(b => b.level <= 5)
+        const parentIndex = Math.floor(getStableRandom(branchId, 0) * fallbackParents.length)
+        parentBranch = fallbackParents[parentIndex]
+      } else {
+        // 使用稳定随机从可用父枝中选择
         const parentIndex = Math.floor(getStableRandom(branchId, 0) * availableParents.length)
         parentBranch = availableParents[parentIndex]
       }
@@ -668,12 +680,38 @@ const generateBranches = (
 
     const sideAngle = parentBranch.angle + angleOffset
 
-    // 🔥 侧枝长度：父枝的60-80%（提高长度比例），再乘以lengthMultiplier
-    const sideLengthRatio = 0.6 + getStableRandom(branchId, 4) * 0.2  // 从0.5-0.7提高到0.6-0.8
-    const sideLength = currentBaseLength * sideLengthRatio * (parentBranch.level === 1 ? 1 : 0.8)
+    // 🔥 侧枝长度：根据父枝层级动态调整
+    // level 1（主枝）的侧枝：70-85%
+    // level 2（一级侧枝）的侧枝：65-80%
+    // level 3+的侧枝：60-75%
+    let lengthRatioBase = 0.7
+    let lengthRatioRange = 0.15
+    if (parentBranch.level === 1) {
+      lengthRatioBase = 0.7
+      lengthRatioRange = 0.15
+    } else if (parentBranch.level === 2) {
+      lengthRatioBase = 0.65
+      lengthRatioRange = 0.15
+    } else {
+      lengthRatioBase = 0.6
+      lengthRatioRange = 0.15
+    }
+    const sideLengthRatio = lengthRatioBase + getStableRandom(branchId, 4) * lengthRatioRange
+    const sideLength = currentBaseLength * sideLengthRatio
 
-    // 🔥 侧枝粗度：父枝的75%（从60%提高到75%，保持更粗）
-    const sideWidth = Math.max(parentBranch.width * 0.75, 1.0)  // 最小宽度从0.5提高到1.0
+    // 🔥 侧枝粗度：根据父枝层级动态衰减
+    // level 1 → level 2: 80%
+    // level 2 → level 3: 75%
+    // level 3+: 70%
+    let widthDecay = 0.75
+    if (parentBranch.level === 1) {
+      widthDecay = 0.8
+    } else if (parentBranch.level === 2) {
+      widthDecay = 0.75
+    } else {
+      widthDecay = 0.7
+    }
+    const sideWidth = Math.max(parentBranch.width * widthDecay, 0.8)  // 最小宽度0.8
 
     const sideEndX = sideStartX + Math.cos((sideAngle * Math.PI) / 180) * sideLength
     const sideEndY = sideStartY + Math.sin((sideAngle * Math.PI) / 180) * sideLength
