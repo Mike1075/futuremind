@@ -41,7 +41,7 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
   // 缩放控制
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.2, 3))
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.2, 0.5))
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.1))  // 🔥 最小缩放到10%
 
   // 刷新意识树数据
   const handleRefresh = useCallback(async () => {

@@ -336,7 +336,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
   return (
     <div
       ref={containerRef}
-      className="w-full h-full overflow-hidden relative"
+      className="w-full h-full relative"
       style={{ background: '#000' }}
     >
       {/* 🖱️ 拖拽提示层（仅在非预览模式显示） */}

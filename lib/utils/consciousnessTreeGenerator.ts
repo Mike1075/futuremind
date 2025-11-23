@@ -349,9 +349,9 @@ const drawRootRecursive = (
   drawLine(particles, x, y, endX, endY, width, color, isSolid, particleSize)
 
   // 4. 递归生成左右子树（强制对称分叉）
-  const newLength = length * 0.75  // 🔥 统一衰减比例
+  const newLength = length * 0.65  // 🔥 根系长度衰减更快（75%→65%），让根系更紧凑
   const newWidth = Math.max(width * 0.7, 0.8)  // 🔥 统一粗度衰减，最小0.8px
-  const spread = 40  // 🔥 统一分叉角度
+  const spread = 35  // 🔥 根系分叉角度更小（40→35），让根系更向下
 
   // 左分支
   drawRootRecursive(
@@ -406,8 +406,8 @@ const generateRoots = (
   // 🔥 方案F-步骤1：计算主根数量（对数增长）
   const mainRootCount = calculateMainRootCount(totalCount)
 
-  // 🔥 方案F-步骤2：计算基础参数
-  const baseLength = 50 + growthData.roots.depth_level * 15  // 基础长度
+  // 🔥 方案F-步骤2：计算基础参数（减小根系长度，让树冠比根系大）
+  const baseLength = 30 + growthData.roots.depth_level * 5  // 基础长度（减小系数：15→5）
   // 🔥 修复：主根粗度与树干粗度成正比（达芬奇规则：约70%树干粗度）
   const baseWidth = Math.max(trunkWidth * 0.7, 3)  // 基础粗度
 
