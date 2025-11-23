@@ -551,9 +551,7 @@ interface SimpleBranch {
   parentId: number
 }
 
-// 🌿 递归枝条生成函数（自然随机变化 + 侧枝）
-let branchCounter = 0  // 用于跟踪已生成的枝条数量
-
+// 🌿 递归枝条生成函数（纯Y形分叉）
 const drawBranchRecursive = (
   particles: Particle[],
   startX: number,
@@ -659,7 +657,6 @@ const generateBranches = (
   const isSolid = growthData.branches.is_solid
 
   const branchNodes: BranchNode[] = []
-  branchCounter = 0  // 重置计数器
 
   if (totalCount === 0) {
     // count=0时绘制3个虚线主枝
