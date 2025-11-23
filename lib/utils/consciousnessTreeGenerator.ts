@@ -536,179 +536,29 @@ const generateTrunk = (
   return { topX, topY, trunkWidth: actualWidth }
 }
 
-// ============ 3. 枝条：递归预算消耗（分形生长） ============
+// ============ 3. 枝条：简单累积生成（1 count = 1 枝条） ============
 
 // 🌿 辅助函数：使用ID作为随机种子（确保稳定性）
-let branchIdCounter = 0
 const getStableRandom = (branchId: number, offset: number): number => {
   const seed = (branchId * 9301 + offset * 49297) % 233280
   return seed / 233280
 }
 
-// 🌿 递归函数：绘制枝条（分叉+侧枝）
-const drawBranchRecursive = (
-  particles: Particle[],
-  startX: number,
-  startY: number,
-  angle: number,
-  length: number,
-  width: number,
-  remainingBudget: number,
-  level: number,
-  branchId: number,
-  overallProgress: number,
-  isSolid: boolean,
-  particleSize: number,
-  glowIntensity: number,
-  branchNodes: BranchNode[]
-): number => {
-  // 终止条件
-  if (remainingBudget <= 0 || level > 6 || length < 5 || width < 0.5) {
-    return remainingBudget
-  }
-
-  // 步骤1：绘制当前枝条
-  const endX = startX + Math.cos((angle * Math.PI) / 180) * length
-  const endY = startY + Math.sin((angle * Math.PI) / 180) * length
-  const color = getColor('branch', overallProgress, isSolid, glowIntensity)
-  drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
-
-  branchNodes.push({
-    x: endX,
-    y: endY,
-    level,
-    angle,
-    length,
-    width,
-    isOpen: true,
-    sideShootCount: 0,
-  })
-
-  // 消耗1预算
-  remainingBudget -= 1
-  if (remainingBudget <= 0) return 0
-
-  // 步骤2A：在中段生成侧枝（层级越高侧枝越少）
-  let sideBranchCount = 0
-  if (level === 1) sideBranchCount = 2       // 主枝：2个侧枝（40%, 70%）
-  else if (level === 2) sideBranchCount = Math.floor(getStableRandom(branchId, 10) * 2) + 1  // 次级：1-2个侧枝
-  else if (level === 3) sideBranchCount = getStableRandom(branchId, 11) < 0.5 ? 1 : 0  // 三级：50%概率1个侧枝
-  // 层级4+：无侧枝
-
-  if (sideBranchCount > 0 && remainingBudget > 0) {
-    for (let i = 0; i < sideBranchCount; i++) {
-      if (remainingBudget <= 0) break
-
-      // 侧枝位置（在主干的40%, 50%, 70%等位置）
-      const positionRatio = level === 1 ? (i === 0 ? 0.4 : 0.7) : 0.5
-      const sideX = startX + Math.cos((angle * Math.PI) / 180) * length * positionRatio
-      const sideY = startY + Math.sin((angle * Math.PI) / 180) * length * positionRatio
-
-      // 侧枝角度（较大，伸展开）
-      const r1 = getStableRandom(branchId, 20 + i)
-      const r2 = getStableRandom(branchId, 30 + i)
-      let minAngle, maxAngle
-      if (level === 1) { minAngle = 50; maxAngle = 70 }
-      else if (level === 2) { minAngle = 40; maxAngle = 60 }
-      else { minAngle = 30; maxAngle = 50 }
-
-      const angleOffset = minAngle + r1 * (maxAngle - minAngle)
-
-      // 🔥 修复重叠：主枝的两个侧枝强制分在两侧（避免交叉）
-      const sideAngle = level === 1
-        ? angle + (i === 0 ? -angleOffset : angleOffset)  // i=0左侧，i=1右侧
-        : angle + (r2 < 0.5 ? -angleOffset : angleOffset)  // 其他层级随机
-
-      // 侧枝长度和粗度
-      const sideLength = length * (0.4 + r1 * 0.2)  // 40-60%
-      const sideWidth = Math.max(width * 0.6, 0.5)
-
-      // 侧枝预算（剩余预算的25%）
-      const sideBudget = Math.floor(remainingBudget * 0.25)
-
-      if (sideBudget > 0) {
-        // 🔥 修复跳动：使用固定的种子（基于父枝ID、层级、侧枝索引）
-        const newBranchId = branchId * 1000 + level * 100 + i * 10 + 1
-        const consumed = drawBranchRecursive(
-          particles,
-          sideX,
-          sideY,
-          sideAngle,
-          sideLength,
-          sideWidth,
-          sideBudget,
-          level + 1,
-          newBranchId,
-          overallProgress,
-          isSolid,
-          particleSize,
-          glowIntensity,
-          branchNodes
-        )
-        remainingBudget -= (sideBudget - consumed)
-      }
-    }
-  }
-
-  if (remainingBudget <= 0) return 0
-
-  // 步骤2B：在末端生成分叉（Y字形）
-  const forkCount = level === 1 ? (getStableRandom(branchId, 40) < 0.5 ? 2 : 3) : 2
-
-  if (remainingBudget > 0 && forkCount > 0) {
-    const budgetPerFork = Math.floor(remainingBudget / forkCount)
-
-    for (let i = 0; i < forkCount; i++) {
-      if (remainingBudget <= 0) break
-
-      const r3 = getStableRandom(branchId, 50 + i)
-      const r4 = getStableRandom(branchId, 60 + i)
-
-      // 分叉角度（较小，向上延伸）
-      let minAngle, maxAngle
-      if (level === 1) { minAngle = 25; maxAngle = 40 }
-      else if (level === 2) { minAngle = 20; maxAngle = 35 }
-      else if (level === 3) { minAngle = 15; maxAngle = 30 }
-      else { minAngle = 10; maxAngle = 25 }
-
-      const angleOffset = minAngle + r3 * (maxAngle - minAngle)
-      let forkAngle
-      if (forkCount === 2) {
-        forkAngle = angle + (i === 0 ? -angleOffset : angleOffset)
-      } else {
-        forkAngle = angle + (i === 0 ? -angleOffset : i === 1 ? 0 : angleOffset)
-      }
-
-      // 分叉长度和粗度
-      const forkLength = length * (0.65 + r4 * 0.1)  // 65-75%
-      const forkWidth = Math.max(width * 0.7, 0.5)
-
-      // 🔥 修复跳动：使用固定的种子（基于父枝ID、层级、分叉索引）
-      const newBranchId = branchId * 1000 + level * 100 + i * 10 + 2
-      const consumed = drawBranchRecursive(
-        particles,
-        endX,
-        endY,
-        forkAngle,
-        forkLength,
-        forkWidth,
-        budgetPerFork,
-        level + 1,
-        newBranchId,
-        overallProgress,
-        isSolid,
-        particleSize,
-        glowIntensity,
-        branchNodes
-      )
-      remainingBudget -= (budgetPerFork - consumed)
-    }
-  }
-
-  return remainingBudget
+// 🌿 单枝条定义（用于累积生成）
+interface SimpleBranch {
+  id: number
+  startX: number
+  startY: number
+  endX: number
+  endY: number
+  angle: number
+  length: number
+  width: number
+  level: number
+  parentId: number
 }
 
-// 🌿 主函数：生成枝条
+// 🌿 主函数：生成枝条（累积生成，1 count = 1 枝条）
 const generateBranches = (
   particles: Particle[],
   trunkTopX: number,
@@ -720,80 +570,139 @@ const generateBranches = (
   particleSize: number,
   glowIntensity: number
 ): BranchNode[] => {
-  const totalCount = growthData.branches.count  // 里程数（总预算）
+  const totalCount = growthData.branches.count  // 里程数（总count）
   const avgLength = growthData.branches.avg_length  // 洞见程度（控制长度）
   const isSolid = growthData.branches.is_solid
 
-  // 🌿 步骤1：计算基础长度
+  // 🌿 步骤1：计算基础长度（只受avgLength影响，不影响Canvas尺寸）
   const naturalBranchLength = calculateNaturalBranchLength(
     growthData.roots.count,
     growthData.roots.depth_level,
     trunkHeight
   )
 
-  // 🌿 步骤2：根据洞见程度计算实际长度
+  // avgLength控制长度（0-20），映射到50%-100%
   const minInitialLength = naturalBranchLength / 2
   const maxInitialLength = naturalBranchLength
-  const initialLength = minInitialLength + (maxInitialLength - minInitialLength) * (avgLength / 20)
+  const baseInitialLength = minInitialLength + (maxInitialLength - minInitialLength) * (avgLength / 20)
 
+  const allBranches: SimpleBranch[] = []
   const branchNodes: BranchNode[] = []
-  branchIdCounter = 0  // 重置ID计数器
 
-  // 🌿 主枝定义（固定3个）
+  // 🌿 步骤2：创建3个主枝（固定，level=1）
   const mainBranches = [
     { angle: -130, name: '左主枝' },
     { angle: -90, name: '中主枝' },
     { angle: -50, name: '右主枝' },
   ]
 
-  // 🌿 步骤3：生成3个主枝
   for (let i = 0; i < 3; i++) {
     const branch = mainBranches[i]
     const width = Math.max(trunkWidth * 0.6, 2)
-
-    // 使用固定偏移（基于索引）
     const offsetX = (i - 1) * (trunkWidth / 4)
     const startX = trunkTopX + offsetX
     const startY = trunkTopY
 
-    // count=0时绘制虚线示意枝
-    if (totalCount === 0) {
-      const endX = startX + Math.cos((branch.angle * Math.PI) / 180) * initialLength
-      const endY = startY + Math.sin((branch.angle * Math.PI) / 180) * initialLength
-      const color = getColor('branch', overallProgress, false, glowIntensity)
-      drawLine(particles, startX, startY, endX, endY, width, color, false, particleSize)
+    // 主枝长度（不受count影响，只受avgLength影响）
+    const mainLength = baseInitialLength
 
-      branchNodes.push({
-        x: endX,
-        y: endY,
-        level: 1,
-        angle: branch.angle,
-        length: initialLength,
-        width,
-        isOpen: false,
-        sideShootCount: 0,
-      })
-    } else {
-      // count>0时，调用递归函数（每个主枝分配1/3预算）
-      const budgetPerMain = Math.floor(totalCount / 3)
-      // 🔥 修复跳动：3个主枝使用固定ID（1, 2, 3）
-      drawBranchRecursive(
-        particles,
-        startX,
-        startY,
-        branch.angle,
-        initialLength,
-        width,
-        budgetPerMain,
-        1,  // 层级1
-        i + 1,  // 主枝ID: 1, 2, 3（固定）
-        overallProgress,
-        isSolid,
-        particleSize,
-        glowIntensity,
-        branchNodes
-      )
-    }
+    const endX = startX + Math.cos((branch.angle * Math.PI) / 180) * mainLength
+    const endY = startY + Math.sin((branch.angle * Math.PI) / 180) * mainLength
+
+    // 保存主枝
+    allBranches.push({
+      id: i + 1,  // ID: 1, 2, 3
+      startX,
+      startY,
+      endX,
+      endY,
+      angle: branch.angle,
+      length: mainLength,
+      width,
+      level: 1,
+      parentId: 0  // 主枝无父枝
+    })
+
+    // count=0时绘制虚线，count>0时绘制实线
+    const color = getColor('branch', overallProgress, totalCount > 0 && isSolid, glowIntensity)
+    drawLine(particles, startX, startY, endX, endY, width, color, totalCount > 0 && isSolid, particleSize)
+
+    branchNodes.push({
+      x: endX,
+      y: endY,
+      level: 1,
+      angle: branch.angle,
+      length: mainLength,
+      width,
+      isOpen: true,
+      sideShootCount: 0,
+    })
+  }
+
+  // 🌿 步骤3：根据count累积生成侧枝（1 count = 1 侧枝）
+  for (let i = 0; i < totalCount; i++) {
+    const branchId = i + 4  // 从4开始（1,2,3是主枝）
+
+    // 🔥 关键：每10个侧枝，基础长度增加10%
+    const lengthMultiplier = 1 + Math.floor(i / 10) * 0.1
+    const currentBaseLength = baseInitialLength * lengthMultiplier
+
+    // 🔥 选择父枝：轮流从3个主枝开始，然后考虑已生成的侧枝
+    // 优先选择level较低、且侧枝数量少的枝条
+    const availableParents = allBranches.filter(b => b.level <= 3)  // 最多3层
+    const parentIndex = i % availableParents.length
+    const parentBranch = availableParents[parentIndex]
+
+    // 🔥 计算稳定的位置（基于branchId种子，在父枝的30%-80%位置）
+    const positionRatio = 0.3 + getStableRandom(branchId, 1) * 0.5  // 0.3-0.8
+
+    const sideStartX = parentBranch.startX + Math.cos((parentBranch.angle * Math.PI) / 180) * parentBranch.length * positionRatio
+    const sideStartY = parentBranch.startY + Math.sin((parentBranch.angle * Math.PI) / 180) * parentBranch.length * positionRatio
+
+    // 🔥 计算稳定的角度（基于branchId种子，左右交替+随机偏移）
+    const baseSide = getStableRandom(branchId, 2) < 0.5 ? -1 : 1  // 左或右
+    const angleOffset = (40 + getStableRandom(branchId, 3) * 30) * baseSide  // ±40-70度
+
+    const sideAngle = parentBranch.angle + angleOffset
+
+    // 🔥 侧枝长度：父枝的50-70%，再乘以lengthMultiplier
+    const sideLengthRatio = 0.5 + getStableRandom(branchId, 4) * 0.2
+    const sideLength = currentBaseLength * sideLengthRatio * (parentBranch.level === 1 ? 1 : 0.7)
+
+    // 🔥 侧枝粗度：父枝的60%
+    const sideWidth = Math.max(parentBranch.width * 0.6, 0.5)
+
+    const sideEndX = sideStartX + Math.cos((sideAngle * Math.PI) / 180) * sideLength
+    const sideEndY = sideStartY + Math.sin((sideAngle * Math.PI) / 180) * sideLength
+
+    // 保存侧枝
+    allBranches.push({
+      id: branchId,
+      startX: sideStartX,
+      startY: sideStartY,
+      endX: sideEndX,
+      endY: sideEndY,
+      angle: sideAngle,
+      length: sideLength,
+      width: sideWidth,
+      level: parentBranch.level + 1,
+      parentId: parentBranch.id
+    })
+
+    // 绘制侧枝
+    const color = getColor('branch', overallProgress, isSolid, glowIntensity)
+    drawLine(particles, sideStartX, sideStartY, sideEndX, sideEndY, sideWidth, color, isSolid, particleSize)
+
+    branchNodes.push({
+      x: sideEndX,
+      y: sideEndY,
+      level: parentBranch.level + 1,
+      angle: sideAngle,
+      length: sideLength,
+      width: sideWidth,
+      isOpen: true,
+      sideShootCount: 0,
+    })
   }
 
   return branchNodes
