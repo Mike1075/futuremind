@@ -698,11 +698,15 @@ const generateBranches = (
   } else {
     // count>0时使用递归算法
 
-    // 🔥 动态计算深度：2^depth ≈ count → depth ≈ log2(count)
-    // 为每个主枝分配count/3的预算
-    const countPerBranch = Math.ceil(totalCount / 3)
-    // depth = log2(countPerBranch)，向上取整
-    const maxDepth = Math.max(Math.ceil(Math.log2(countPerBranch + 1)), 3)  // 最小深度3
+    // 🔥 修复：使用avg_length控制深度，确保树形状稳定（不随count变化）
+    // avg_length (0-20) 映射到 maxDepth (3-8)
+    // 0-3: depth 3 (最多7个枝条)
+    // 4-7: depth 4 (最多15个枝条)
+    // 8-11: depth 5 (最多31个枝条)
+    // 12-15: depth 6 (最多63个枝条)
+    // 16-19: depth 7 (最多127个枝条)
+    // 20: depth 8 (最多255个枝条)
+    const maxDepth = Math.min(3 + Math.floor(avgLength / 4), 8)
 
     // 🔥 基础长度：受avgLength影响（0-20映射到50%-150%）
     const naturalBranchLength = calculateNaturalBranchLength(trunkHeight)
@@ -717,19 +721,20 @@ const generateBranches = (
       { angle: -50, name: '右主枝' },
     ]
 
-    for (let i = 0; i < 3; i++) {
-      if (branchCounter >= totalCount) break
+    // 🔥 计算理论最大枝条数：每个深度maxDepth的完全二叉树
+    // 每个主枝的最大枝条数 = 2^maxDepth - 1
+    const maxBranchesPerTree = Math.pow(2, maxDepth) - 1
+    const theoreticalMaxCount = 3 * maxBranchesPerTree
 
+    for (let i = 0; i < 3; i++) {
       const branch = mainBranches[i]
       const width = Math.max(trunkWidth * 0.6, 3)
       const offsetX = (i - 1) * (trunkWidth / 4)
       const startX = trunkTopX + offsetX
       const startY = trunkTopY
 
-      // 每个主枝的count预算
-      const remainingCount = totalCount - branchCounter
-      const branchBudget = Math.min(countPerBranch, remainingCount)
-
+      // 🔥 修复：不再用count限制，让树完全生长到maxDepth
+      // count只作为显示数字（可用于后续控制虚实状态）
       drawBranchRecursive(
         particles,
         startX,
@@ -739,7 +744,7 @@ const generateBranches = (
         width,
         1,  // 从深度1开始
         maxDepth,
-        branchCounter + branchBudget,  // count限制
+        theoreticalMaxCount,  // 使用理论最大值，不限制生长
         avgLength,
         branchNodes,
         overallProgress,
