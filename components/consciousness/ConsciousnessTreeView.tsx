@@ -82,7 +82,7 @@ function migrateOldFormat(dbData: any): TreeGrowthData {
       is_solid: dbData?.branches?.is_solid ?? false
     },
     leaves: {
-      count: Math.round((leavesValue / 100) * 50),   // 0-100 → 0-50
+      count: Math.round((leavesValue / 100) * 200),   // 0-100 → 0-200（增加叶子上限）
       is_solid: dbData?.leaves?.is_solid ?? false
     },
     fruits: {

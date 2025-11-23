@@ -303,9 +303,9 @@ export function PortalClient({
                 <h3 className="text-lg font-semibold text-white">意识进化树</h3>
               </div>
               <div className="relative h-64 w-full bg-black rounded-lg mb-4 overflow-hidden">
-                {/* 简化预览结构：直接缩放40% */}
+                {/* 预览结构：大容器缩小到40% */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div style={{ width: '100%', height: '100%', transform: 'scale(0.4)', transformOrigin: 'center center' }}>
+                  <div style={{ width: '640px', height: '640px', transform: 'scale(0.4)', transformOrigin: 'center center' }}>
                     <ConsciousnessTreeView userId={userId} isPreview={true} />
                   </div>
                 </div>

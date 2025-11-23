@@ -166,19 +166,65 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
         canvas.height
       )
 
-      // 绘制粒子
+      // 绘制粒子（根据形状绘制不同图案）
       particles.forEach((p) => {
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
         ctx.fillStyle = p.color
-        ctx.fill()
 
-        // 增强发光效果
-        if (p.color.includes('70%') || p.color.includes('72%') || p.color.includes('85%')) {
-          ctx.shadowBlur = 15
+        // 根据shape绘制不同形状
+        if (p.shape === 'leaf') {
+          // 🍃 叶子：用线条绘制尖椭圆形
+          ctx.save()
+          ctx.translate(p.x, p.y)
+          ctx.rotate((p.rotation || 0) * Math.PI / 180)
+
+          // 叶子轮廓（尖椭圆）
+          ctx.beginPath()
+          ctx.moveTo(0, -p.size * 1.5)  // 顶端尖点
+          ctx.quadraticCurveTo(p.size * 0.8, -p.size * 0.5, p.size * 0.6, 0)  // 右上
+          ctx.quadraticCurveTo(p.size * 0.8, p.size * 0.5, 0, p.size)  // 右下
+          ctx.quadraticCurveTo(-p.size * 0.8, p.size * 0.5, -p.size * 0.6, 0)  // 左下
+          ctx.quadraticCurveTo(-p.size * 0.8, -p.size * 0.5, 0, -p.size * 1.5)  // 左上回到顶点
+          ctx.closePath()
+          ctx.strokeStyle = p.color
+          ctx.lineWidth = 0.5
+          ctx.stroke()
+          ctx.globalAlpha = 0.3
+          ctx.fill()
+          ctx.globalAlpha = 1
+
+          // 叶脉（中线）
+          ctx.beginPath()
+          ctx.moveTo(0, -p.size * 1.5)
+          ctx.lineTo(0, p.size)
+          ctx.strokeStyle = p.color
+          ctx.lineWidth = 0.3
+          ctx.stroke()
+
+          ctx.restore()
+        } else if (p.shape === 'apple') {
+          // 🍎 果实：圆形（比叶子大）
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.fill()
+
+          // 果实发光效果
+          ctx.shadowBlur = 10
           ctx.shadowColor = p.color
           ctx.fill()
           ctx.shadowBlur = 0
+        } else {
+          // 默认：圆形粒子
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.fill()
+
+          // 增强发光效果
+          if (p.color.includes('70%') || p.color.includes('72%') || p.color.includes('85%')) {
+            ctx.shadowBlur = 15
+            ctx.shadowColor = p.color
+            ctx.fill()
+            ctx.shadowBlur = 0
+          }
         }
       })
     }

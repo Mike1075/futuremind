@@ -542,13 +542,13 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
                   <input
                     type="range"
                     min="0"
-                    max="50"
+                    max="200"
                     step="1"
                     value={growthData.leaves.count}
                     onChange={(e) => updateGrowthData('leaves', 'count', parseInt(e.target.value))}
                     className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Aha Moments 总数</p>
+                  <p className="text-xs text-gray-500 mt-1">Aha Moments 总数（最多200片）</p>
                 </div>
 
                 {/* is_solid */}

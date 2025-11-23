@@ -595,17 +595,17 @@ const drawBranchRecursive = (
   branchCounter++
   if (branchCounter >= maxCount) return
 
-  // 🌿 侧枝生成（在主干中段，概率随层级递减）
-  // 层级1-2：30%概率，层级3-4：20%概率，层级5+：10%概率
+  // 🌿 侧枝生成（枝繁叶茂版本：增加概率和范围）
+  // 层级1-2：60%概率，层级3-4：45%概率，层级5+：25%概率
   let sideShootProbability = 0
-  if (currentDepth <= 2) sideShootProbability = 0.3
-  else if (currentDepth <= 4) sideShootProbability = 0.2
-  else sideShootProbability = 0.1
+  if (currentDepth <= 2) sideShootProbability = 0.6
+  else if (currentDepth <= 4) sideShootProbability = 0.45
+  else sideShootProbability = 0.25
 
   const r1 = getStableRandom(branchId, 100)
   if (r1 < sideShootProbability && branchCounter < maxCount) {
-    // 侧枝位置：主干50%-70%位置
-    const sideRatio = 0.5 + getStableRandom(branchId, 101) * 0.2
+    // 侧枝位置：扩大范围到30%-80%位置（更分散）
+    const sideRatio = 0.3 + getStableRandom(branchId, 101) * 0.5
     const sideX = startX + Math.cos((angle * Math.PI) / 180) * length * sideRatio
     const sideY = startY + Math.sin((angle * Math.PI) / 180) * length * sideRatio
 
@@ -912,30 +912,17 @@ export function generateConsciousnessTree(
   const maxHeight = naturalHeight
   const actualHeight = minHeight + (maxHeight - minHeight) * (heightLevel / 100)
 
-  // baseY应该让树干+枝条向上，根系向下，整体居中
-  // 树冠大约是树干高度的1.5倍，根系大约是固定80px
-  const estimatedTreeTop = actualHeight * 2.5  // 树干 + 枝条
-  const estimatedRootDepth = 80
+  // 🔥 修复居中：重新估算树的实际高度
+  // 枝条会递归生长，向上延伸较远，需要更大的估算系数
+  const estimatedTreeTop = actualHeight * 3.5  // 树干 + 枝条向上延伸
+  const estimatedRootDepth = 100  // 根系向下延伸（增加估算）
   const totalTreeHeight = estimatedTreeTop + estimatedRootDepth
 
-  // 🔥 修复居中：baseY应该让整树的中心位于画布中心
   // 树的顶部：baseY - estimatedTreeTop（从baseY向上延伸）
   // 树的底部：baseY + estimatedRootDepth（从baseY向下延伸）
-  // 树的中心：baseY - (estimatedTreeTop - estimatedRootDepth) / 2
+  // 树的中心应该在：(treeTop + treeBottom) / 2 = baseY - (estimatedTreeTop - estimatedRootDepth) / 2
   // 要让树中心在canvasHeight/2，解出baseY：
   const baseY = canvasHeight / 2 + (estimatedTreeTop - estimatedRootDepth) / 2
-
-  console.log('[树居中调试]', {
-    canvasHeight,
-    actualHeight,
-    estimatedTreeTop,
-    estimatedRootDepth,
-    baseY,
-    treeTop: baseY - estimatedTreeTop,
-    treeBottom: baseY + estimatedRootDepth,
-    treeCenter: baseY - (estimatedTreeTop - estimatedRootDepth) / 2,
-    expectedCenter: canvasHeight / 2
-  })
 
   // 🔥 优化顺序：先计算树干宽度，再按【根系→树干→枝条】顺序绘制
 
