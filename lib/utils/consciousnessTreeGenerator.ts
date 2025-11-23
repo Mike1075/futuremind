@@ -54,10 +54,10 @@ export interface TreeParams {
 
 // ============ 性能优化常量 ============
 const PERFORMANCE = {
-  MAX_ROOT_DEPTH: 4,      // 根系最大递归深度（2^4=16，大幅降低）
-  MAX_BRANCH_DEPTH: 4,    // 枝条最大递归深度（3×2^4=48个枝条）
-  MAX_PARTICLES: 3000,    // 最大粒子总数（从6000大幅降到3000）
-  SPARSE_THRESHOLD: 1500  // 达到此粒子数后开始稀疏化（从3000降到1500）
+  MAX_ROOT_DEPTH: 7,      // 根系最大递归深度（恢复到7，让大参数时根系茂盛）
+  MAX_BRANCH_DEPTH: 4,    // 枝条最大递归深度（保持4，枝条是主要性能瓶颈）
+  MAX_PARTICLES: 4000,    // 最大粒子总数（提升到4000，平衡视觉和性能）
+  SPARSE_THRESHOLD: 2000  // 达到此粒子数后开始稀疏化（2000开始稀疏化）
 } as const
 
 // 根节点（用于多级生长）
