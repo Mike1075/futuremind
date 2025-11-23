@@ -336,23 +336,27 @@ const drawRootRecursive = (
   isSolid: boolean,       // 是否实线
   overallProgress: number, // 整体生长进度
   particleSize: number,
-  glowIntensity: number
+  glowIntensity: number,
+  depthBonus: number = 1  // 🔥 深度增益系数（随总深度增加）
 ): void => {
   // 递归终止条件
   if (level > maxLevel || length < 5) return
 
-  // 1. 计算终点
-  const endX = x + Math.cos((angle * Math.PI) / 180) * length
-  const endY = y + Math.sin((angle * Math.PI) / 180) * length
+  // 1. 🔥 应用深度增益：每多一级根，所有根都会相应增长
+  const actualLength = length * depthBonus
 
-  // 2. 使用整体进度决定颜色（所有部分统一）
+  // 2. 计算终点
+  const endX = x + Math.cos((angle * Math.PI) / 180) * actualLength
+  const endY = y + Math.sin((angle * Math.PI) / 180) * actualLength
+
+  // 3. 使用整体进度决定颜色（所有部分统一）
   const color = getColor('root', overallProgress, isSolid, glowIntensity)
 
-  // 3. 🔥 绘制当前线段（粗细渐变：从粗到细）
+  // 4. 🔥 绘制当前线段（粗细渐变：从粗到细）
   const newWidth = Math.max(width * 0.7, 0.8)  // 末端粗度
   drawTaperLine(particles, x, y, endX, endY, width, newWidth, color, isSolid, particleSize)
 
-  // 4. 递归生成左右子树（强制对称分叉）
+  // 5. 递归生成左右子树（强制对称分叉）
   const newLength = length * 0.70  // 🔥 根系长度衰减（保持适中）
   const spread = 38  // 🔥 根系分叉角度
 
@@ -369,7 +373,8 @@ const drawRootRecursive = (
     isSolid,
     overallProgress,
     particleSize,
-    glowIntensity
+    glowIntensity,
+    depthBonus  // 🔥 传递深度增益系数
   )
 
   // 右分支
@@ -385,7 +390,8 @@ const drawRootRecursive = (
     isSolid,
     overallProgress,
     particleSize,
-    glowIntensity
+    glowIntensity,
+    depthBonus  // 🔥 传递深度增益系数
   )
 }
 
@@ -406,15 +412,13 @@ const generateRoots = (
 
   if (totalCount === 0) return rootNodes
 
-  // 🔥 方案F-步骤1：计算主根数量（对数增长）
-  const mainRootCount = calculateMainRootCount(totalCount)
+  // 🔥 方案H-步骤1：计算主根数量（对数增长，最多4个）
+  const mainRootCount = Math.min(calculateMainRootCount(totalCount), 4)
 
-  // 🔥 方案G：计算基础参数（累积生长：count越多，根越长越粗）
-  // 基础长度随count增长（体现累积效应：领域越多，根系越发达）
-  const growthFactor = 0.6 + Math.min(totalCount * 0.015, 0.8)  // 0.6-1.4倍增长
-  const baseLength = (40 + growthData.roots.depth_level * 8) * growthFactor * 1.5  // 🔥 整体放大50%
-  // 🔥 修复：主根粗度也随count增长
-  const baseWidth = Math.max(trunkWidth * 0.7, 3) * growthFactor * 1.5  // 🔥 整体放大50%
+  // 🔥 方案H：固定基础参数（不随count变化）
+  // 根的生长通过递归深度（rootDepth）来体现，而不是baseLength变化
+  const baseLength = (40 + growthData.roots.depth_level * 8) * 1.5  // 🔥 整体放大50%（固定）
+  const baseWidth = Math.max(trunkWidth * 0.7, 3) * 1.5  // 🔥 整体放大50%（固定）
 
   // 🔥 方案F-步骤3：生成主根（150°扇形分布）
   const totalSpread = 150  // 扇形总角度
@@ -455,9 +459,13 @@ const generateRoots = (
       particleSize
     )
 
-    // 🔥 方案F-步骤4：为每个主根动态分配深度（目标导向）
+    // 🔥 方案H-步骤2：为每个主根动态分配深度（目标导向）
     // 使总末端数 ≈ count × 1.3，实现"1个领域≈1个小叉"
     const rootDepth = calculateRootDepth(totalCount, i, mainRootCount)
+
+    // 🔥 方案H-步骤3：计算深度增益系数
+    // 每多一级根，所有现有根都会相应增长10%
+    const depthBonus = 1 + (rootDepth - 1) * 0.1
 
     // 为每个主根调用纯递归函数生成子树（从过渡段末端开始）
     drawRootRecursive(
@@ -465,14 +473,15 @@ const generateRoots = (
       transitionEndX,  // 从过渡段末端开始
       transitionEndY,
       angle,
-      currentLength,   // 🔥 使用递进长度
-      currentWidth,    // 🔥 使用递进粗度
+      currentLength,
+      currentWidth,
       1,  // 从第1层开始
       rootDepth,  // 🔥 每个主根深度不同（目标导向分配）
       isSolid,
       overallProgress,  // 传递整体进度
       particleSize,
-      glowIntensity
+      glowIntensity,
+      depthBonus  // 🔥 传递深度增益系数
     )
 
     // 记录主根末端（保留接口兼容性）
