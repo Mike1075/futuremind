@@ -265,38 +265,40 @@ const calculateRootDepth = (count: number, rootIndex: number, mainRootCount: num
 }
 
 // ============ 新增：根据根系计算自然树干粗度（达芬奇规则） ============
-const calculateNaturalTrunkWidth = (rootCount: number, depthLevel: number): number => {
+const calculateNaturalTrunkWidth = (rootCount: number): number => {
   // 🌳 基于达芬奇规则：树干横截面积 ≈ 所有主根横截面积之和
-  // 优化：使用更激进的线性关系，确保粗度视觉效果明显
+  // 🔥 修复：移除depthLevel依赖，只根据rootCount计算，避免根系深度影响树干粗度
 
   const mainRootCount = calculateMainRootCount(rootCount)
 
   // 基础粗度：主根数量贡献（每个主根+5px）
   const baseWidth = mainRootCount * 5
 
-  // 深度加成：探索深度贡献（每层+4px）
-  const depthBonus = depthLevel * 4
+  // 领域数量加成：领域越多，树干越粗（但增长缓慢）
+  const countBonus = Math.log2(rootCount + 1) * 3
 
-  // 自然粗度 = 基础 + 深度加成
-  const naturalWidth = baseWidth + depthBonus
+  // 自然粗度 = 基础 + 数量加成
+  const naturalWidth = baseWidth + countBonus
 
   // 确保最小值和合理上限（最大80px，确保粗壮的树干效果）
   return Math.max(Math.min(naturalWidth, 80), 10)
 }
 
 // ============ 新增：根据根系计算自然树干高度 ============
-const calculateNaturalTrunkHeight = (rootCount: number, depthLevel: number): number => {
-  // 🌳 自然规律：树干高度与根系延伸范围成正比（约1-2倍）
+const calculateNaturalTrunkHeight = (rootCount: number): number => {
+  // 🌳 自然规律：树干高度与根系规模成正比
+  // 🔥 修复：移除depthLevel依赖，只根据rootCount计算
 
-  const baseRootLength = 50 + depthLevel * 15  // 主根长度
   const mainRootCount = calculateMainRootCount(rootCount)
 
-  // 估算根系延伸范围（考虑递归分支）
-  const avgDepth = Math.log2(rootCount + 1)
-  const rootExtension = baseRootLength * (1 + avgDepth * 0.3)
+  // 基础高度：主根数量的影响
+  const baseHeight = mainRootCount * 40
 
-  // 树干高度 = 根系延伸范围的1.5倍（经验值）
-  const naturalHeight = rootExtension * 1.5
+  // 领域数量的对数影响（避免过度增长）
+  const countBonus = Math.log2(rootCount + 1) * 20
+
+  // 自然高度 = 基础 + 数量加成
+  const naturalHeight = baseHeight + countBonus
 
   // 确保合理范围
   return Math.max(Math.min(naturalHeight, 400), 50)
@@ -413,7 +415,8 @@ const generateRoots = (
 
   // 🔥 方案F-步骤2：计算基础参数
   const baseLength = 50 + growthData.roots.depth_level * 15  // 基础长度
-  const baseWidth = Math.max(growthData.roots.depth_level * 2, 3)  // 基础粗度
+  // 🔥 修复：主根粗度与树干粗度成正比（达芬奇规则：约70%树干粗度）
+  const baseWidth = Math.max(trunkWidth * 0.7, 3)  // 基础粗度
 
   // 🔥 方案F-步骤3：生成主根（150°扇形分布）
   const totalSpread = 150  // 扇形总角度
@@ -494,8 +497,8 @@ const generateTrunk = (
   const isSolid = growthData.trunk.is_solid
 
   // 🌳 步骤1：计算"自然粗度Y"和"自然长度Z"（基于根系发展）
-  const naturalWidth = calculateNaturalTrunkWidth(totalRootCount, growthData.roots.depth_level)
-  const naturalHeight = calculateNaturalTrunkHeight(totalRootCount, growthData.roots.depth_level)
+  const naturalWidth = calculateNaturalTrunkWidth(totalRootCount)
+  const naturalHeight = calculateNaturalTrunkHeight(totalRootCount)
 
   // 🌳 步骤2：应用1/3规则
   // 默认粗度 = 1/3 × Y，最大粗度 = Y
@@ -610,7 +613,11 @@ const drawBranchRecursive = (
       else { minAngle = 30; maxAngle = 50 }
 
       const angleOffset = minAngle + r1 * (maxAngle - minAngle)
-      const sideAngle = angle + (r2 < 0.5 ? -angleOffset : angleOffset)
+
+      // 🔥 修复重叠：主枝的两个侧枝强制分在两侧（避免交叉）
+      const sideAngle = level === 1
+        ? angle + (i === 0 ? -angleOffset : angleOffset)  // i=0左侧，i=1右侧
+        : angle + (r2 < 0.5 ? -angleOffset : angleOffset)  // 其他层级随机
 
       // 侧枝长度和粗度
       const sideLength = length * (0.4 + r1 * 0.2)  // 40-60%
@@ -620,7 +627,8 @@ const drawBranchRecursive = (
       const sideBudget = Math.floor(remainingBudget * 0.25)
 
       if (sideBudget > 0) {
-        const newBranchId = ++branchIdCounter
+        // 🔥 修复跳动：使用固定的种子（基于父枝ID、层级、侧枝索引）
+        const newBranchId = branchId * 1000 + level * 100 + i * 10 + 1
         const consumed = drawBranchRecursive(
           particles,
           sideX,
@@ -675,7 +683,8 @@ const drawBranchRecursive = (
       const forkLength = length * (0.65 + r4 * 0.1)  // 65-75%
       const forkWidth = Math.max(width * 0.7, 0.5)
 
-      const newBranchId = ++branchIdCounter
+      // 🔥 修复跳动：使用固定的种子（基于父枝ID、层级、分叉索引）
+      const newBranchId = branchId * 1000 + level * 100 + i * 10 + 2
       const consumed = drawBranchRecursive(
         particles,
         endX,
@@ -767,6 +776,7 @@ const generateBranches = (
     } else {
       // count>0时，调用递归函数（每个主枝分配1/3预算）
       const budgetPerMain = Math.floor(totalCount / 3)
+      // 🔥 修复跳动：3个主枝使用固定ID（1, 2, 3）
       drawBranchRecursive(
         particles,
         startX,
@@ -776,7 +786,7 @@ const generateBranches = (
         width,
         budgetPerMain,
         1,  // 层级1
-        ++branchIdCounter,
+        i + 1,  // 主枝ID: 1, 2, 3（固定）
         overallProgress,
         isSolid,
         particleSize,
@@ -892,8 +902,8 @@ export function generateConsciousnessTree(
   const estimatedRootCount = growthData.roots.count
 
   // 2. 预先计算树干参数（不绘制）
-  const naturalWidth = calculateNaturalTrunkWidth(estimatedRootCount, growthData.roots.depth_level)
-  const naturalHeight = calculateNaturalTrunkHeight(estimatedRootCount, growthData.roots.depth_level)
+  const naturalWidth = calculateNaturalTrunkWidth(estimatedRootCount)
+  const naturalHeight = calculateNaturalTrunkHeight(estimatedRootCount)
 
   const thickness = growthData.trunk.thickness
   const heightLevel = growthData.trunk.height_level

@@ -237,23 +237,12 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
               animate={{ opacity: 1, scale: 1 }}
               className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
             >
-              <div className="relative h-[800px] w-full bg-black rounded-lg overflow-hidden">
-                <div
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transform: `scale(${zoom})`,
-                    transformOrigin: 'center center'
-                  }}
-                >
-                  <ConsciousnessTreeCanvas
-                    growthData={growthData}
-                    techParams={techParams}
-                  />
-                </div>
+              <div className="relative h-[800px] w-full bg-black rounded-lg overflow-auto">
+                <ConsciousnessTreeCanvas
+                  growthData={growthData}
+                  techParams={techParams}
+                  zoom={zoom}
+                />
               </div>
 
               {/* 当前数据显示 */}
