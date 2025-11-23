@@ -102,6 +102,15 @@ function random(min: number, max: number): number {
   return seededRandom() * (max - min) + min
 }
 
+// 🔥 确定性随机数生成：基于索引生成固定的随机值
+// 用于叶子/果实位置，确保相同索引每次都生成相同的随机数
+function deterministicRandom(seed1: number, seed2: number, min: number, max: number): number {
+  // 简单哈希函数：将两个索引组合成一个确定性的值
+  const hash = ((seed1 * 73856093) ^ (seed2 * 19349663)) % 233280
+  const normalized = hash / 233280
+  return normalized * (max - min) + min
+}
+
 // ============ 计算整体树生长进度（所有部分的平均值） ============
 const calculateOverallGrowthProgress = (growthData: TreeGrowthData): number => {
   // 各部分的最大值设定（可调整）
@@ -837,23 +846,27 @@ const generateLeaves = (
     }
 
     for (let i = 0; i < segmentLeafCount; i++) {
+      // 🔥 使用确定性随机数：基于枝条索引和叶子总计数，确保位置固定
+      const leafSeed = generatedLeafCount  // 使用全局叶子计数作为唯一标识
+
       // 沿着线段随机位置（10%-90%，避免起点和终点）
-      const t = 0.1 + random(0, 0.8)
+      const t = 0.1 + deterministicRandom(branchIdx, leafSeed, 0, 0.8)
       const x = branch.startX + (branch.x - branch.startX) * t
       const y = branch.startY + (branch.y - branch.startY) * t
 
       // 计算垂直于枝条的方向（用于左右偏移）
-      const perpAngle = branch.angle + (random(0, 1) > 0.5 ? 90 : -90)  // 随机选择左侧或右侧
-      const offsetDist = random(5, 15)  // 垂直偏移距离
+      const perpSide = deterministicRandom(branchIdx + 1000, leafSeed, 0, 1) > 0.5 ? 90 : -90
+      const perpAngle = branch.angle + perpSide  // 确定性左右选择
+      const offsetDist = deterministicRandom(branchIdx + 2000, leafSeed, 5, 15)  // 垂直偏移距离
       const offsetX = Math.cos((perpAngle * Math.PI) / 180) * offsetDist
       const offsetY = Math.sin((perpAngle * Math.PI) / 180) * offsetDist
 
       // 使用整体生长进度决定颜色（所有部分统一）
       const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
-      // 🔥 叶子大小根据枝条数量动态调整
-      const size = particleSize * random(leafSizeScale * 0.8, leafSizeScale * 1.2)
-      // 叶子旋转角度与枝条方向一致
-      const rotation = branch.angle + random(-30, 30)
+      // 🔥 叶子大小根据枝条数量动态调整（使用确定性随机）
+      const size = particleSize * deterministicRandom(branchIdx + 3000, leafSeed, leafSizeScale * 0.8, leafSizeScale * 1.2)
+      // 叶子旋转角度与枝条方向一致（使用确定性随机）
+      const rotation = branch.angle + deterministicRandom(branchIdx + 4000, leafSeed, -30, 30)
 
       particles.push({
         x: x + offsetX,

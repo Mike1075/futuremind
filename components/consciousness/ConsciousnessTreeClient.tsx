@@ -589,7 +589,7 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
                   <input
                     type="range"
                     min="0"
-                    max="20"
+                    max="50"
                     step="1"
                     value={growthData.fruits.count}
                     onChange={(e) => updateGrowthData('fruits', 'count', parseInt(e.target.value))}
