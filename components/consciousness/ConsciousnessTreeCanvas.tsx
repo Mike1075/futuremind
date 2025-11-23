@@ -222,16 +222,37 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
 
           ctx.restore()
         } else if (p.shape === 'apple') {
-          // 🍎 果实：圆形（比叶子大）
+          // 🍎 果实：圆形（比叶子大）+ 彩色勾边
+          ctx.save()
+
+          // 填充红色果实主体
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.fillStyle = p.color
           ctx.fill()
 
+          // 🔥 添加彩色渐变勾边（更明显的果实标识）
+          const gradient = ctx.createLinearGradient(
+            p.x - p.size, p.y - p.size,
+            p.x + p.size, p.y + p.size
+          )
+          gradient.addColorStop(0, 'rgba(255, 215, 0, 0.9)')    // 金色
+          gradient.addColorStop(0.25, 'rgba(255, 165, 0, 0.9)') // 橙色
+          gradient.addColorStop(0.5, 'rgba(255, 105, 180, 0.9)') // 粉色
+          gradient.addColorStop(0.75, 'rgba(138, 43, 226, 0.9)') // 紫色
+          gradient.addColorStop(1, 'rgba(255, 215, 0, 0.9)')     // 金色
+
+          ctx.strokeStyle = gradient
+          ctx.lineWidth = 2.5
+          ctx.stroke()
+
           // 果实发光效果
-          ctx.shadowBlur = 10
+          ctx.shadowBlur = 12
           ctx.shadowColor = p.color
           ctx.fill()
           ctx.shadowBlur = 0
+
+          ctx.restore()
         } else {
           // 默认：圆形粒子
           ctx.beginPath()

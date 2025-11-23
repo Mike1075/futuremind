@@ -101,7 +101,7 @@ const calculateOverallGrowthProgress = (growthData: TreeGrowthData): number => {
   const MAX_BRANCH_COUNT = 100
   const MAX_BRANCH_LENGTH = 20
   const MAX_LEAF_COUNT = 50
-  const MAX_FRUIT_COUNT = 20
+  const MAX_FRUIT_COUNT = 30  // 🔥 修复：果实最大数量改为30
 
   // 计算各部分的填充百分比
   const rootProgress = Math.min(growthData.roots.count / MAX_ROOT_COUNT, 1)
@@ -497,7 +497,9 @@ const generateTrunk = (
   // 默认粗度 = 1/3 × Y，最大粗度 = Y
   const minWidth = naturalWidth / 3
   const maxWidth = naturalWidth
-  const actualWidth = minWidth + (maxWidth - minWidth) * (thickness / 50)  // thickness: 0-50
+  // 🔥 修复：使用平方曲线让粗度变化更明显（小值增长慢，大值增长快）
+  const thicknessRatio = Math.pow(thickness / 50, 1.5)  // 指数曲线，让变化更敏感
+  const actualWidth = minWidth + (maxWidth - minWidth) * thicknessRatio  // thickness: 0-50
 
   // 默认长度 = 1/3 × Z，最大长度 = Z
   const minHeight = naturalHeight / 3
@@ -835,18 +837,23 @@ const generateFruits = (
 
   if (fruitCount === 0 || branchNodes.length === 0) return
 
-  const matureNodes = branchNodes.filter(n => n.level >= 2)
+  // 🔥 优化果实位置：果实长在成熟的外层枝条上（level >= 3），更符合植物学规律
+  const matureNodes = branchNodes.filter(n => n.level >= 3)
+
+  // 如果没有足够成熟的枝条，降级到level >= 2
+  const fruitNodes = matureNodes.length > 0 ? matureNodes : branchNodes.filter(n => n.level >= 2)
 
   for (let i = 0; i < fruitCount; i++) {
-    if (matureNodes.length === 0) break
+    if (fruitNodes.length === 0) break
 
-    const node = matureNodes[Math.floor(random(0, matureNodes.length))]
-    const offsetX = random(-8, 8)
-    const offsetY = random(5, 15)  // 果实垂挂在下方
+    const node = fruitNodes[Math.floor(random(0, fruitNodes.length))]
+    // 🔥 果实垂挂效果：X轴小幅偏移，Y轴向下垂挂
+    const offsetX = random(-5, 5)
+    const offsetY = random(8, 18)  // 果实自然下垂
 
     // 使用整体生长进度决定颜色（所有部分统一）
     const color = getColor('fruit', overallProgress, isSolid, glowIntensity)
-    const size = particleSize * random(2.5, 3.5)
+    const size = particleSize * random(2.8, 4.0)  // 🔥 果实稍大更明显
 
     particles.push({
       x: node.x + offsetX,
