@@ -304,27 +304,18 @@ const calculateNaturalTrunkHeight = (rootCount: number): number => {
   return Math.max(Math.min(naturalHeight, 400), 50)
 }
 
-// ============ 新增：根据根系和树干计算自然枝条长度 ============
+// ============ 新增：根据树干计算自然枝条长度 ============
 const calculateNaturalBranchLength = (
-  rootCount: number,
-  depthLevel: number,
   trunkHeight: number
 ): number => {
-  // 🌿 自然规律：枝条长度与树干高度成比例（约60-120%）
-  // 同时考虑根系深度的影响
-  // 🔥 增加3倍长度，让枝繁叶茂更明显
+  // 🌿 自然规律：枝条长度与树干高度成比例（约90%）
+  // 🔥 修复：移除depthLevel依赖，只基于树干高度计算
 
-  // 基础长度：树干高度的90%（原来30%，现在增加3倍）
+  // 基础长度：树干高度的90%
   const baseLength = trunkHeight * 0.9
 
-  // 深度加成：根系深度越深，能量越足，枝条更有力
-  const depthBonus = depthLevel * 15  // 原来5，现在增加3倍
-
-  // 自然枝条长度 = 基础长度 + 深度加成
-  const naturalLength = baseLength + depthBonus
-
-  // 确保合理范围（最小60px，最大450px，都增加3倍）
-  return Math.max(Math.min(naturalLength, 450), 60)
+  // 确保合理范围（最小60px，最大450px）
+  return Math.max(Math.min(baseLength, 450), 60)
 }
 
 // ============ 纯递归函数：生成对称二叉树根系 ============
@@ -575,14 +566,11 @@ const generateBranches = (
   const isSolid = growthData.branches.is_solid
 
   // 🌿 步骤1：计算基础长度（只受avgLength影响，不影响Canvas尺寸）
-  const naturalBranchLength = calculateNaturalBranchLength(
-    growthData.roots.count,
-    growthData.roots.depth_level,
-    trunkHeight
-  )
+  // 🔥 修复：移除depthLevel参数
+  const naturalBranchLength = calculateNaturalBranchLength(trunkHeight)
 
-  // avgLength控制长度（0-20），映射到50%-100%
-  const minInitialLength = naturalBranchLength / 2
+  // avgLength控制长度（0-20），映射到60%-100%（提高最小值）
+  const minInitialLength = naturalBranchLength * 0.6  // 从50%提高到60%
   const maxInitialLength = naturalBranchLength
   const baseInitialLength = minInitialLength + (maxInitialLength - minInitialLength) * (avgLength / 20)
 
@@ -598,7 +586,7 @@ const generateBranches = (
 
   for (let i = 0; i < 3; i++) {
     const branch = mainBranches[i]
-    const width = Math.max(trunkWidth * 0.6, 2)
+    const width = Math.max(trunkWidth * 0.6, 3)  // 最小宽度从2提高到3
     const offsetX = (i - 1) * (trunkWidth / 4)
     const startX = trunkTopX + offsetX
     const startY = trunkTopY
@@ -647,11 +635,26 @@ const generateBranches = (
     const lengthMultiplier = 1 + Math.floor(i / 10) * 0.1
     const currentBaseLength = baseInitialLength * lengthMultiplier
 
-    // 🔥 选择父枝：轮流从3个主枝开始，然后考虑已生成的侧枝
-    // 优先选择level较低、且侧枝数量少的枝条
-    const availableParents = allBranches.filter(b => b.level <= 3)  // 最多3层
-    const parentIndex = i % availableParents.length
-    const parentBranch = availableParents[parentIndex]
+    // 🔥 改进父枝选择策略：优先从主枝和较粗的枝条生长
+    // 前30%的侧枝优先从主枝生长，之后从所有可用枝条（包括侧枝）生长
+    let parentBranch: SimpleBranch
+    if (i < Math.max(totalCount * 0.3, 6)) {
+      // 前30%（至少6个）：只从3个主枝生长
+      const mainBranchIndex = i % 3
+      parentBranch = allBranches[mainBranchIndex]
+    } else {
+      // 后70%：从主枝和已生成的一级侧枝中选择（优先粗枝，level<=2）
+      const availableParents = allBranches.filter(b => b.level <= 2 && b.width >= 1.5)
+      if (availableParents.length === 0) {
+        // 如果没有足够粗的枝条，就从所有level<=2的枝条中选
+        const fallbackParents = allBranches.filter(b => b.level <= 2)
+        parentBranch = fallbackParents[i % fallbackParents.length]
+      } else {
+        // 使用稳定随机选择父枝
+        const parentIndex = Math.floor(getStableRandom(branchId, 0) * availableParents.length)
+        parentBranch = availableParents[parentIndex]
+      }
+    }
 
     // 🔥 计算稳定的位置（基于branchId种子，在父枝的30%-80%位置）
     const positionRatio = 0.3 + getStableRandom(branchId, 1) * 0.5  // 0.3-0.8
@@ -665,12 +668,12 @@ const generateBranches = (
 
     const sideAngle = parentBranch.angle + angleOffset
 
-    // 🔥 侧枝长度：父枝的50-70%，再乘以lengthMultiplier
-    const sideLengthRatio = 0.5 + getStableRandom(branchId, 4) * 0.2
-    const sideLength = currentBaseLength * sideLengthRatio * (parentBranch.level === 1 ? 1 : 0.7)
+    // 🔥 侧枝长度：父枝的60-80%（提高长度比例），再乘以lengthMultiplier
+    const sideLengthRatio = 0.6 + getStableRandom(branchId, 4) * 0.2  // 从0.5-0.7提高到0.6-0.8
+    const sideLength = currentBaseLength * sideLengthRatio * (parentBranch.level === 1 ? 1 : 0.8)
 
-    // 🔥 侧枝粗度：父枝的60%
-    const sideWidth = Math.max(parentBranch.width * 0.6, 0.5)
+    // 🔥 侧枝粗度：父枝的75%（从60%提高到75%，保持更粗）
+    const sideWidth = Math.max(parentBranch.width * 0.75, 1.0)  // 最小宽度从0.5提高到1.0
 
     const sideEndX = sideStartX + Math.cos((sideAngle * Math.PI) / 180) * sideLength
     const sideEndY = sideStartY + Math.sin((sideAngle * Math.PI) / 180) * sideLength
