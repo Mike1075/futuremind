@@ -549,7 +549,7 @@ interface SimpleBranch {
   parentId: number
 }
 
-// 🌿 递归枝条生成函数（借鉴参考树的优雅算法）
+// 🌿 递归枝条生成函数（自然随机变化 + 侧枝）
 let branchCounter = 0  // 用于跟踪已生成的枝条数量
 
 const drawBranchRecursive = (
@@ -567,7 +567,8 @@ const drawBranchRecursive = (
   overallProgress: number,
   isSolid: boolean,
   particleSize: number,
-  glowIntensity: number
+  glowIntensity: number,
+  branchId: number  // 用于稳定随机
 ): void => {
   // 终止条件：深度超限或已达到count上限
   if (currentDepth > maxDepth || branchCounter >= maxCount) return
@@ -594,18 +595,65 @@ const drawBranchRecursive = (
   branchCounter++
   if (branchCounter >= maxCount) return
 
-  // 🔥 递归分叉：每层分成左右两个Y字形分支
-  const newLength = length * 0.75  // 长度衰减75%
-  const newWidth = Math.max(width * 0.7, 0.8)  // 粗度衰减70%，最小0.8
-  const branchAngle = 25  // 分叉角度
+  // 🌿 侧枝生成（在主干中段，概率随层级递减）
+  // 层级1-2：30%概率，层级3-4：20%概率，层级5+：10%概率
+  let sideShootProbability = 0
+  if (currentDepth <= 2) sideShootProbability = 0.3
+  else if (currentDepth <= 4) sideShootProbability = 0.2
+  else sideShootProbability = 0.1
 
-  // 左分支
+  const r1 = getStableRandom(branchId, 100)
+  if (r1 < sideShootProbability && branchCounter < maxCount) {
+    // 侧枝位置：主干50%-70%位置
+    const sideRatio = 0.5 + getStableRandom(branchId, 101) * 0.2
+    const sideX = startX + Math.cos((angle * Math.PI) / 180) * length * sideRatio
+    const sideY = startY + Math.sin((angle * Math.PI) / 180) * length * sideRatio
+
+    // 侧枝角度：较大角度60-90度，左右随机
+    const sideAngleBase = 60 + getStableRandom(branchId, 102) * 30  // 60-90度
+    const sideDirection = getStableRandom(branchId, 103) < 0.5 ? -1 : 1
+    const sideAngle = angle + sideAngleBase * sideDirection
+
+    // 侧枝长度：较短，40-60%
+    const sideLength = length * (0.4 + getStableRandom(branchId, 104) * 0.2)
+    const sideWidth = Math.max(width * 0.6, 0.8)
+
+    // 递归生成侧枝（深度-1，因为侧枝层级较浅）
+    drawBranchRecursive(
+      particles,
+      sideX,
+      sideY,
+      sideLength,
+      sideAngle,
+      sideWidth,
+      currentDepth + 1,
+      Math.min(maxDepth, currentDepth + 3),  // 侧枝最多再长3层
+      maxCount,
+      avgLength,
+      branchNodes,
+      overallProgress,
+      isSolid,
+      particleSize,
+      glowIntensity,
+      branchId * 1000 + 500  // 侧枝ID
+    )
+  }
+
+  // 🔥 主分叉：左右两个Y字形分支（添加自然随机变化）
+  const baseBranchAngle = 25  // 基础分叉角度
+  const newWidth = Math.max(width * 0.7, 0.8)  // 粗度衰减70%
+
+  // 左分支：角度和长度添加随机偏移
+  const leftAngleOffset = baseBranchAngle + (getStableRandom(branchId, 1) - 0.5) * 10  // ±5度
+  const leftLengthRatio = 0.75 + (getStableRandom(branchId, 2) - 0.5) * 0.15  // 0.675-0.825
+  const leftLength = length * leftLengthRatio
+
   drawBranchRecursive(
     particles,
     endX,
     endY,
-    newLength,
-    angle - branchAngle,
+    leftLength,
+    angle - leftAngleOffset,
     newWidth,
     currentDepth + 1,
     maxDepth,
@@ -615,16 +663,21 @@ const drawBranchRecursive = (
     overallProgress,
     isSolid,
     particleSize,
-    glowIntensity
+    glowIntensity,
+    branchId * 2  // 左分支ID
   )
 
-  // 右分支
+  // 右分支：角度和长度添加随机偏移
+  const rightAngleOffset = baseBranchAngle + (getStableRandom(branchId, 3) - 0.5) * 10  // ±5度
+  const rightLengthRatio = 0.75 + (getStableRandom(branchId, 4) - 0.5) * 0.15  // 0.675-0.825
+  const rightLength = length * rightLengthRatio
+
   drawBranchRecursive(
     particles,
     endX,
     endY,
-    newLength,
-    angle + branchAngle,
+    rightLength,
+    angle + rightAngleOffset,
     newWidth,
     currentDepth + 1,
     maxDepth,
@@ -634,7 +687,8 @@ const drawBranchRecursive = (
     overallProgress,
     isSolid,
     particleSize,
-    glowIntensity
+    glowIntensity,
+    branchId * 2 + 1  // 右分支ID
   )
 }
 
@@ -742,7 +796,8 @@ const generateBranches = (
         overallProgress,
         isSolid,
         particleSize,
-        glowIntensity
+        glowIntensity,
+        i + 1  // 主枝ID: 1, 2, 3
       )
     }
   }
