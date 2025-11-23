@@ -900,28 +900,49 @@ export function generateConsciousnessTree(
   const overallProgress = calculateOverallGrowthProgress(growthData)
 
   const centerX = canvasWidth / 2
-  // 🔥 修复居中问题：改为50%让树垂直居中（根系向下30%，树冠向上70%）
-  const baseY = canvasHeight * 0.5
 
-  // 🔥 优化顺序：先计算树干宽度，再按【根系→树干→枝条】顺序绘制
-
-  // 1. 预计算根系数量（用于对数增长公式）
+  // 🔥 修复居中问题：需要先计算树干高度，然后调整baseY让整树居中
+  // 预计算树干高度以确定合适的baseY位置
   const estimatedRootCount = growthData.roots.count
-
-  // 2. 预先计算树干参数（不绘制）
   const naturalWidth = calculateNaturalTrunkWidth(estimatedRootCount)
   const naturalHeight = calculateNaturalTrunkHeight(estimatedRootCount)
-
   const thickness = growthData.trunk.thickness
   const heightLevel = growthData.trunk.height_level
-
-  const minWidth = naturalWidth / 3
-  const maxWidth = naturalWidth
-  const trunkWidth = minWidth + (maxWidth - minWidth) * (thickness / 50)
-
   const minHeight = naturalHeight / 3
   const maxHeight = naturalHeight
   const actualHeight = minHeight + (maxHeight - minHeight) * (heightLevel / 100)
+
+  // baseY应该让树干+枝条向上，根系向下，整体居中
+  // 树冠大约是树干高度的1.5倍，根系大约是固定80px
+  const estimatedTreeTop = actualHeight * 2.5  // 树干 + 枝条
+  const estimatedRootDepth = 80
+  const totalTreeHeight = estimatedTreeTop + estimatedRootDepth
+
+  // 🔥 修复居中：baseY应该让整树的中心位于画布中心
+  // 树的顶部：baseY - estimatedTreeTop（从baseY向上延伸）
+  // 树的底部：baseY + estimatedRootDepth（从baseY向下延伸）
+  // 树的中心：baseY - (estimatedTreeTop - estimatedRootDepth) / 2
+  // 要让树中心在canvasHeight/2，解出baseY：
+  const baseY = canvasHeight / 2 + (estimatedTreeTop - estimatedRootDepth) / 2
+
+  console.log('[树居中调试]', {
+    canvasHeight,
+    actualHeight,
+    estimatedTreeTop,
+    estimatedRootDepth,
+    baseY,
+    treeTop: baseY - estimatedTreeTop,
+    treeBottom: baseY + estimatedRootDepth,
+    treeCenter: baseY - (estimatedTreeTop - estimatedRootDepth) / 2,
+    expectedCenter: canvasHeight / 2
+  })
+
+  // 🔥 优化顺序：先计算树干宽度，再按【根系→树干→枝条】顺序绘制
+
+  // 计算树干宽度（naturalWidth, naturalHeight等已在上面计算）
+  const minWidth = naturalWidth / 3
+  const maxWidth = naturalWidth
+  const trunkWidth = minWidth + (maxWidth - minWidth) * (thickness / 50)
 
   const topX = centerX
   const topY = baseY - actualHeight
