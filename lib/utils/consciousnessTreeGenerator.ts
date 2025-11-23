@@ -349,9 +349,9 @@ const drawRootRecursive = (
   drawLine(particles, x, y, endX, endY, width, color, isSolid, particleSize)
 
   // 4. 递归生成左右子树（强制对称分叉）
-  const newLength = length * 0.65  // 🔥 根系长度衰减更快（75%→65%），让根系更紧凑
+  const newLength = length * 0.70  // 🔥 根系长度衰减（保持适中）
   const newWidth = Math.max(width * 0.7, 0.8)  // 🔥 统一粗度衰减，最小0.8px
-  const spread = 35  // 🔥 根系分叉角度更小（40→35），让根系更向下
+  const spread = 38  // 🔥 根系分叉角度
 
   // 左分支
   drawRootRecursive(
@@ -406,8 +406,8 @@ const generateRoots = (
   // 🔥 方案F-步骤1：计算主根数量（对数增长）
   const mainRootCount = calculateMainRootCount(totalCount)
 
-  // 🔥 方案F-步骤2：计算基础参数（减小根系长度，让树冠比根系大）
-  const baseLength = 30 + growthData.roots.depth_level * 5  // 基础长度（减小系数：15→5）
+  // 🔥 方案F-步骤2：计算基础参数（树冠:根 = 5:3比例）
+  const baseLength = 40 + growthData.roots.depth_level * 8  // 基础长度
   // 🔥 修复：主根粗度与树干粗度成正比（达芬奇规则：约70%树干粗度）
   const baseWidth = Math.max(trunkWidth * 0.7, 3)  // 基础粗度
 
@@ -779,13 +779,12 @@ const generateLeaves = (
 
   if (leafCount === 0 || branchNodes.length === 0) return
 
-  // 🍃 沿着枝条线段两侧密集分布叶子
-  // 只在较外层的枝条上生成叶子（level >= 3）
-  const leafBranches = branchNodes.filter(n => n.level >= 3)
+  // 🍃 沿着枝条线段两侧密集分布叶子（所有枝条都可以长叶子）
+  const leafBranches = branchNodes
   if (leafBranches.length === 0) return
 
-  // 每个枝条线段上的叶子密度（每20像素长度1片叶子）
-  const totalBranchLength = leafBranches.reduce((sum, b) => sum + b.length, 0)
+  // 🔥 修复：确保叶子数量完全匹配leafCount
+  // 每个枝条分配的叶子数 = 总数 / 枝条数
   const leavesPerSegment = leafCount / leafBranches.length
 
   for (const branch of leafBranches) {
