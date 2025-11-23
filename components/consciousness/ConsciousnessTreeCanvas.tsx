@@ -99,6 +99,15 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       canvas.width = dimensions.width
       canvas.height = dimensions.height
 
+      console.log('[Canvas Debug]', {
+        isPreview,
+        containerWidth: container.clientWidth,
+        containerHeight: container.clientHeight,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        growthData
+      })
+
       // 清空画布
       ctx.fillStyle = '#000000'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
