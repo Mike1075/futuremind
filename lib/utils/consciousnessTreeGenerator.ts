@@ -111,6 +111,20 @@ function deterministicRandom(seed1: number, seed2: number, min: number, max: num
   return normalized * (max - min) + min
 }
 
+// ============ 动态计算枝条最大叶子容量 ============
+const calculateMaxLeafCapacity = (branchCount: number): number => {
+  // 🔥 根据枝条数量动态计算最大叶子容量
+  // 假设：每个枝条平均可以容纳 3-5 片叶子（根据枝条密度调整）
+  const leavesPerBranch = 4  // 每个枝条平均叶子数
+  const maxLeaves = Math.max(50, Math.min(branchCount * leavesPerBranch, 500))  // 最少50，最多500
+  return Math.round(maxLeaves)
+}
+
+// ============ 动态计算最大果实数量（叶子数量的1/10） ============
+const calculateMaxFruitCapacity = (maxLeaves: number): number => {
+  return Math.max(5, Math.round(maxLeaves / 10))  // 最少5个
+}
+
 // ============ 计算整体树生长进度（所有部分的平均值） ============
 const calculateOverallGrowthProgress = (growthData: TreeGrowthData): number => {
   // 各部分的最大值设定（可调整）
@@ -119,8 +133,10 @@ const calculateOverallGrowthProgress = (growthData: TreeGrowthData): number => {
   const MAX_TRUNK_HEIGHT = 100
   const MAX_BRANCH_COUNT = 100
   const MAX_BRANCH_LENGTH = 20
-  const MAX_LEAF_COUNT = 100  // 🔥 提升：叶子最大数量从50改为100
-  const MAX_FRUIT_COUNT = 50  // 🔥 提升：果实最大数量从30改为50
+
+  // 🔥 动态计算叶子和果实容量（基于枝条数量）
+  const MAX_LEAF_COUNT = calculateMaxLeafCapacity(growthData.branches.count)
+  const MAX_FRUIT_COUNT = calculateMaxFruitCapacity(MAX_LEAF_COUNT)
 
   // 计算各部分的填充百分比
   const rootProgress = Math.min(growthData.roots.count / MAX_ROOT_COUNT, 1)
@@ -288,7 +304,7 @@ const calculateRootDepth = (count: number, rootIndex: number, mainRootCount: num
 const calculateNaturalTrunkWidth = (): number => {
   // 🔥 修复：树干粗度固定，不受领域数量影响
   // 只依赖固定基础值，用户可通过thickness参数调节
-  const baseWidth = 60  // 🔥 整体放大一倍：30 → 60
+  const baseWidth = 30  // 🔥 减细：60 → 30
 
   // 确保合理范围
   return baseWidth
@@ -857,7 +873,7 @@ const generateLeaves = (
       // 计算垂直于枝条的方向（用于左右偏移）
       const perpSide = deterministicRandom(branchIdx + 1000, leafSeed, 0, 1) > 0.5 ? 90 : -90
       const perpAngle = branch.angle + perpSide  // 确定性左右选择
-      const offsetDist = deterministicRandom(branchIdx + 2000, leafSeed, 5, 15)  // 垂直偏移距离
+      const offsetDist = deterministicRandom(branchIdx + 2000, leafSeed, 1, 5)  // 🔥 减小偏移：5-15 → 1-5，让叶子更贴近枝条
       const offsetX = Math.cos((perpAngle * Math.PI) / 180) * offsetDist
       const offsetY = Math.sin((perpAngle * Math.PI) / 180) * offsetDist
 
