@@ -282,8 +282,9 @@ const calculateNaturalTrunkWidth = (rootCount: number): number => {
   // 自然粗度 = 基础 + 数量加成
   const naturalWidth = baseWidth + countBonus
 
-  // 确保最小值和合理上限（最大80px，确保粗壮的树干效果）
-  return Math.max(Math.min(naturalWidth, 80), 10)
+  // 🔥 整体放大50%
+  // 确保最小值和合理上限（最大120px，确保粗壮的树干效果）
+  return Math.max(Math.min(naturalWidth * 1.5, 120), 15)
 }
 
 // ============ 新增：根据根系计算自然树干高度 ============
@@ -302,8 +303,9 @@ const calculateNaturalTrunkHeight = (rootCount: number): number => {
   // 自然高度 = 基础 + 数量加成
   const naturalHeight = baseHeight + countBonus
 
-  // 确保合理范围
-  return Math.max(Math.min(naturalHeight, 400), 50)
+  // 🔥 整体放大50%
+  // 确保合理范围（最大600px）
+  return Math.max(Math.min(naturalHeight * 1.5, 600), 75)
 }
 
 // ============ 新增：根据树干计算自然枝条长度 ============
@@ -316,8 +318,9 @@ const calculateNaturalBranchLength = (
   // 基础长度：树干高度的90%
   const baseLength = trunkHeight * 0.9
 
-  // 确保合理范围（最小60px，最大450px）
-  return Math.max(Math.min(baseLength, 450), 60)
+  // 🔥 整体放大50%
+  // 确保合理范围（最小90px，最大675px）
+  return Math.max(Math.min(baseLength * 1.5, 675), 90)
 }
 
 // ============ 纯递归函数：生成对称二叉树根系 ============
@@ -406,10 +409,12 @@ const generateRoots = (
   // 🔥 方案F-步骤1：计算主根数量（对数增长）
   const mainRootCount = calculateMainRootCount(totalCount)
 
-  // 🔥 方案F-步骤2：计算基础参数（树冠:根 = 5:3比例）
-  const baseLength = 40 + growthData.roots.depth_level * 8  // 基础长度
-  // 🔥 修复：主根粗度与树干粗度成正比（达芬奇规则：约70%树干粗度）
-  const baseWidth = Math.max(trunkWidth * 0.7, 3)  // 基础粗度
+  // 🔥 方案G：计算基础参数（累积生长：count越多，根越长越粗）
+  // 基础长度随count增长（体现累积效应：领域越多，根系越发达）
+  const growthFactor = 0.6 + Math.min(totalCount * 0.015, 0.8)  // 0.6-1.4倍增长
+  const baseLength = (40 + growthData.roots.depth_level * 8) * growthFactor * 1.5  // 🔥 整体放大50%
+  // 🔥 修复：主根粗度也随count增长
+  const baseWidth = Math.max(trunkWidth * 0.7, 3) * growthFactor * 1.5  // 🔥 整体放大50%
 
   // 🔥 方案F-步骤3：生成主根（150°扇形分布）
   const totalSpread = 150  // 扇形总角度
@@ -425,15 +430,10 @@ const generateRoots = (
     const startX = centerX
     const startY = baseY
 
-    // 🔥 递进生长：第1个主根最长，后面的逐渐变短
-    // 长度系数：从1.3（第1根）逐渐降到0.8（最后1根）
-    const lengthRatio = 1.3 - (i / Math.max(mainRootCount - 1, 1)) * 0.5
-    const currentLength = baseLength * lengthRatio * random(0.95, 1.05)
-
-    // 🔥 递进生长：第1个主根最粗，后面的逐渐变细
-    // 粗度系数：从1.2（第1根）逐渐降到0.9（最后1根）
-    const widthRatio = 1.2 - (i / Math.max(mainRootCount - 1, 1)) * 0.3
-    const currentWidth = baseWidth * widthRatio
+    // 🔥 方案G：所有主根使用相同的基础长度和粗度（累积生长，不递减）
+    // 随着count增加，所有根一起变长变粗，体现时间累积效应
+    const currentLength = baseLength * random(0.95, 1.05)
+    const currentWidth = baseWidth
 
     // 🌳 喇叭口过渡段：从树干粗度平滑过渡到根系粗度
     const transitionLength = Math.max(trunkWidth * 0.6, 15)  // 过渡段长度随树干粗度调整

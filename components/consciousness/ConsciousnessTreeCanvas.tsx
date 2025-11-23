@@ -16,7 +16,7 @@ interface ConsciousnessTreeCanvasProps {
 
 // 默认参数（经典红色能量树 V2）
 const DEFAULT_PARAMS: TreeParams = {
-  particleSize: 2,
+  particleSize: 3,  // 🔥 整体放大50%：2 → 3
   glowIntensity: 0.5,
 }
 
