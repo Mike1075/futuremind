@@ -194,88 +194,101 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
         canvas.height
       )
 
-      // 绘制粒子（根据形状绘制不同图案）
-      particles.forEach((p) => {
+      // 🔥 性能优化：分组绘制，减少状态切换
+      // 1. 先绘制所有普通粒子（不需要发光）
+      const normalParticles = particles.filter(p => !p.shape || p.shape === 'circle')
+      const leafParticles = particles.filter(p => p.shape === 'leaf')
+      const appleParticles = particles.filter(p => p.shape === 'apple')
+
+      // 绘制普通粒子（批量处理，无阴影）
+      normalParticles.forEach((p) => {
         ctx.fillStyle = p.color
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        ctx.fill()
+      })
 
-        // 根据shape绘制不同形状
-        if (p.shape === 'leaf') {
-          // 🍃 叶子：用线条绘制尖椭圆形
-          ctx.save()
-          ctx.translate(p.x, p.y)
-          ctx.rotate((p.rotation || 0) * Math.PI / 180)
-
-          // 叶子轮廓（尖椭圆）
-          ctx.beginPath()
-          ctx.moveTo(0, -p.size * 1.5)  // 顶端尖点
-          ctx.quadraticCurveTo(p.size * 0.8, -p.size * 0.5, p.size * 0.6, 0)  // 右上
-          ctx.quadraticCurveTo(p.size * 0.8, p.size * 0.5, 0, p.size)  // 右下
-          ctx.quadraticCurveTo(-p.size * 0.8, p.size * 0.5, -p.size * 0.6, 0)  // 左下
-          ctx.quadraticCurveTo(-p.size * 0.8, -p.size * 0.5, 0, -p.size * 1.5)  // 左上回到顶点
-          ctx.closePath()
-          ctx.strokeStyle = p.color
-          ctx.lineWidth = 1
-          ctx.stroke()
-          // 🔥 增加叶子填充透明度，让叶子更明显
-          ctx.globalAlpha = 0.6
-          ctx.fill()
-          ctx.globalAlpha = 1
-
-          // 叶脉（中线）
-          ctx.beginPath()
-          ctx.moveTo(0, -p.size * 1.5)
-          ctx.lineTo(0, p.size)
-          ctx.strokeStyle = p.color
-          ctx.lineWidth = 0.5
-          ctx.stroke()
-
-          ctx.restore()
-        } else if (p.shape === 'apple') {
-          // 🍎 果实：圆形（比叶子大）+ 彩色勾边
-          ctx.save()
-
-          // 填充红色果实主体
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-          ctx.fillStyle = p.color
-          ctx.fill()
-
-          // 🔥 添加彩色渐变勾边（更明显的果实标识）
-          const gradient = ctx.createLinearGradient(
-            p.x - p.size, p.y - p.size,
-            p.x + p.size, p.y + p.size
-          )
-          gradient.addColorStop(0, 'rgba(255, 215, 0, 0.9)')    // 金色
-          gradient.addColorStop(0.25, 'rgba(255, 165, 0, 0.9)') // 橙色
-          gradient.addColorStop(0.5, 'rgba(255, 105, 180, 0.9)') // 粉色
-          gradient.addColorStop(0.75, 'rgba(138, 43, 226, 0.9)') // 紫色
-          gradient.addColorStop(1, 'rgba(255, 215, 0, 0.9)')     // 金色
-
-          ctx.strokeStyle = gradient
-          ctx.lineWidth = 2.5
-          ctx.stroke()
-
-          // 果实发光效果
-          ctx.shadowBlur = 12
+      // 🔥 只对需要发光的粒子启用阴影（减少shadowBlur切换次数）
+      const glowParticles = normalParticles.filter(p =>
+        p.color.includes('70%') || p.color.includes('72%') || p.color.includes('85%')
+      )
+      if (glowParticles.length > 0) {
+        ctx.shadowBlur = 15
+        glowParticles.forEach((p) => {
           ctx.shadowColor = p.color
-          ctx.fill()
-          ctx.shadowBlur = 0
-
-          ctx.restore()
-        } else {
-          // 默认：圆形粒子
+          ctx.fillStyle = p.color
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
           ctx.fill()
+        })
+        ctx.shadowBlur = 0
+      }
 
-          // 增强发光效果
-          if (p.color.includes('70%') || p.color.includes('72%') || p.color.includes('85%')) {
-            ctx.shadowBlur = 15
-            ctx.shadowColor = p.color
-            ctx.fill()
-            ctx.shadowBlur = 0
-          }
-        }
+      // 绘制叶子（批量处理）
+      leafParticles.forEach((p) => {
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate((p.rotation || 0) * Math.PI / 180)
+
+        // 叶子轮廓（尖椭圆）
+        ctx.beginPath()
+        ctx.moveTo(0, -p.size * 1.5)
+        ctx.quadraticCurveTo(p.size * 0.8, -p.size * 0.5, p.size * 0.6, 0)
+        ctx.quadraticCurveTo(p.size * 0.8, p.size * 0.5, 0, p.size)
+        ctx.quadraticCurveTo(-p.size * 0.8, p.size * 0.5, -p.size * 0.6, 0)
+        ctx.quadraticCurveTo(-p.size * 0.8, -p.size * 0.5, 0, -p.size * 1.5)
+        ctx.closePath()
+        ctx.strokeStyle = p.color
+        ctx.lineWidth = 1
+        ctx.stroke()
+        ctx.globalAlpha = 0.6
+        ctx.fillStyle = p.color
+        ctx.fill()
+        ctx.globalAlpha = 1
+
+        // 叶脉（中线）
+        ctx.beginPath()
+        ctx.moveTo(0, -p.size * 1.5)
+        ctx.lineTo(0, p.size)
+        ctx.strokeStyle = p.color
+        ctx.lineWidth = 0.5
+        ctx.stroke()
+
+        ctx.restore()
+      })
+
+      // 绘制果实（批量处理）
+      appleParticles.forEach((p) => {
+        ctx.save()
+
+        // 填充红色果实主体
+        ctx.fillStyle = p.color
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        ctx.fill()
+
+        // 🔥 添加彩色渐变勾边
+        const gradient = ctx.createLinearGradient(
+          p.x - p.size, p.y - p.size,
+          p.x + p.size, p.y + p.size
+        )
+        gradient.addColorStop(0, 'rgba(255, 215, 0, 0.9)')
+        gradient.addColorStop(0.25, 'rgba(255, 165, 0, 0.9)')
+        gradient.addColorStop(0.5, 'rgba(255, 105, 180, 0.9)')
+        gradient.addColorStop(0.75, 'rgba(138, 43, 226, 0.9)')
+        gradient.addColorStop(1, 'rgba(255, 215, 0, 0.9)')
+
+        ctx.strokeStyle = gradient
+        ctx.lineWidth = 2.5
+        ctx.stroke()
+
+        // 果实发光效果
+        ctx.shadowBlur = 12
+        ctx.shadowColor = p.color
+        ctx.fill()
+        ctx.shadowBlur = 0
+
+        ctx.restore()
       })
     }
 

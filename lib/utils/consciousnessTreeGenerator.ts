@@ -52,6 +52,14 @@ export interface TreeParams {
   glowIntensity: number       // 发光强度 (0-1)
 }
 
+// ============ 性能优化常量 ============
+const PERFORMANCE = {
+  MAX_ROOT_DEPTH: 6,      // 根系最大递归深度（防止2^8=256指数爆炸）
+  MAX_BRANCH_DEPTH: 6,    // 枝条最大递归深度（防止过度分叉）
+  MAX_PARTICLES: 8000,    // 最大粒子总数（超过此值停止生成）
+  SPARSE_THRESHOLD: 4000  // 达到此粒子数后开始稀疏化
+} as const
+
 // 根节点（用于多级生长）
 interface RootNode {
   x: number
@@ -179,7 +187,7 @@ const getColor = (
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
 }
 
-// ============ 绘制直线（粒子化） ============
+// ============ 绘制直线（粒子化 + 性能优化） ============
 const drawLine = (
   particles: Particle[],
   x1: number,
@@ -191,10 +199,27 @@ const drawLine = (
   isSolid: boolean,
   particleSize: number
 ): void => {
+  // 🔥 性能优化：检查粒子数量上限
+  if (particles.length >= PERFORMANCE.MAX_PARTICLES) return
+
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-  const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
+
+  // 🔥 性能优化：动态稀疏化 - 粒子多时增加步长，减少粒子密度
+  let densityMultiplier = 1
+  if (particles.length > PERFORMANCE.SPARSE_THRESHOLD) {
+    // 达到4000后逐步稀疏化：4000-8000之间，密度从1x降到0.5x
+    const sparseProgress = (particles.length - PERFORMANCE.SPARSE_THRESHOLD) / (PERFORMANCE.MAX_PARTICLES - PERFORMANCE.SPARSE_THRESHOLD)
+    densityMultiplier = 1 + sparseProgress * 1  // 1x → 2x步长（即密度减半）
+  }
+
+  const steps = isSolid
+    ? Math.ceil(distance / (particleSize * 0.8 * densityMultiplier))
+    : Math.ceil(distance / (particleSize * 3 * densityMultiplier))
 
   for (let i = 0; i <= steps; i++) {
+    // 🔥 性能优化：每次循环检查上限
+    if (particles.length >= PERFORMANCE.MAX_PARTICLES) break
+
     const t = i / steps
     const x = x1 + (x2 - x1) * t
     const y = y1 + (y2 - y1) * t
@@ -206,7 +231,7 @@ const drawLine = (
   }
 }
 
-// ============ 绘制渐变粗度线段（用于喇叭口过渡） ============
+// ============ 绘制渐变粗度线段（用于喇叭口过渡 + 性能优化） ============
 const drawTaperLine = (
   particles: Particle[],
   x1: number,
@@ -219,10 +244,26 @@ const drawTaperLine = (
   isSolid: boolean,
   particleSize: number
 ): void => {
+  // 🔥 性能优化：检查粒子数量上限
+  if (particles.length >= PERFORMANCE.MAX_PARTICLES) return
+
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-  const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
+
+  // 🔥 性能优化：动态稀疏化
+  let densityMultiplier = 1
+  if (particles.length > PERFORMANCE.SPARSE_THRESHOLD) {
+    const sparseProgress = (particles.length - PERFORMANCE.SPARSE_THRESHOLD) / (PERFORMANCE.MAX_PARTICLES - PERFORMANCE.SPARSE_THRESHOLD)
+    densityMultiplier = 1 + sparseProgress * 1
+  }
+
+  const steps = isSolid
+    ? Math.ceil(distance / (particleSize * 0.8 * densityMultiplier))
+    : Math.ceil(distance / (particleSize * 3 * densityMultiplier))
 
   for (let i = 0; i <= steps; i++) {
+    // 🔥 性能优化：每次循环检查上限
+    if (particles.length >= PERFORMANCE.MAX_PARTICLES) break
+
     const t = i / steps
     const x = x1 + (x2 - x1) * t
     const y = y1 + (y2 - y1) * t
@@ -445,7 +486,8 @@ const generateRoots = (
 
     // 🔥 方案K-Step 3：正确的控制逻辑
     // 递归深度由count决定（领域数量多 → 分支多）
-    const depthFromCount = Math.max(1, Math.min(Math.floor(1 + totalCount * 0.15), 8))  // count控制递归深度，上限8
+    // 🔥 性能优化：上限从8降到6，防止指数级爆炸（2^6=64 vs 2^8=256）
+    const depthFromCount = Math.max(1, Math.min(Math.floor(1 + totalCount * 0.15), PERFORMANCE.MAX_ROOT_DEPTH))
 
     // 先长的主根深度更深（体现先长先深）
     // 第1个主根用完整深度，后面的依次减1
@@ -709,6 +751,7 @@ const generateBranches = (
     // 🔥 count控制深度：count越大，深度越深，枝条越多
     // 每个深度需要的枝条数：depth=1→3×2=6, depth=2→3×2^2=12, depth=3→3×2^3=24
     // 反推公式：depth ≈ log2(count/3)
+    // 🔥 性能优化：最大深度限制为6（防止指数级爆炸）
     let maxDepth = 1
     if (totalCount <= 3) {
       maxDepth = 1  // 0-3个：只有主枝第一层分叉
@@ -720,12 +763,8 @@ const generateBranches = (
       maxDepth = 4  // 22-45个
     } else if (totalCount <= 93) {
       maxDepth = 5  // 46-93个
-    } else if (totalCount <= 189) {
-      maxDepth = 6  // 94-189个
-    } else if (totalCount <= 381) {
-      maxDepth = 7  // 190-381个
     } else {
-      maxDepth = 8  // 382+个：完全展开
+      maxDepth = PERFORMANCE.MAX_BRANCH_DEPTH  // 94+个：最大深度6（原来7-8，现在统一为6）
     }
 
     // 🔥 基础长度：受avgLength影响（0-20映射到50%-150%）
