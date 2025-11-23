@@ -665,33 +665,42 @@ const generateBranches = (
   branchCounter = 0  // 重置计数器
 
   if (totalCount === 0) {
-    // count=0时绘制单个虚线主干向上
+    // count=0时绘制3个虚线主枝
+    const mainBranches = [
+      { angle: -130, name: '左主枝' },
+      { angle: -90, name: '中主枝' },
+      { angle: -50, name: '右主枝' },
+    ]
+
     const naturalBranchLength = calculateNaturalBranchLength(trunkHeight)
-    const baseLength = naturalBranchLength * (0.5 + avgLength / 40)  // avgLength=0 → 50%, avgLength=20 → 100%
+    const baseLength = naturalBranchLength * (0.5 + avgLength / 40)
 
-    const angle = -90  // 向上
-    const width = Math.max(trunkWidth * 0.6, 3)
-    const startX = trunkTopX
-    const startY = trunkTopY
+    for (let i = 0; i < 3; i++) {
+      const branch = mainBranches[i]
+      const width = Math.max(trunkWidth * 0.6, 3)
+      const offsetX = (i - 1) * (trunkWidth / 4)
+      const startX = trunkTopX + offsetX
+      const startY = trunkTopY
 
-    const endX = startX + Math.cos((angle * Math.PI) / 180) * baseLength
-    const endY = startY + Math.sin((angle * Math.PI) / 180) * baseLength
+      const endX = startX + Math.cos((branch.angle * Math.PI) / 180) * baseLength
+      const endY = startY + Math.sin((branch.angle * Math.PI) / 180) * baseLength
 
-    const color = getColor('branch', overallProgress, false, glowIntensity)
-    drawLine(particles, startX, startY, endX, endY, width, color, false, particleSize)
+      const color = getColor('branch', overallProgress, false, glowIntensity)
+      drawLine(particles, startX, startY, endX, endY, width, color, false, particleSize)
 
-    branchNodes.push({
-      startX,
-      startY,
-      x: endX,
-      y: endY,
-      level: 1,
-      angle,
-      length: baseLength,
-      width,
-      isOpen: false,
-      sideShootCount: 0,
-    })
+      branchNodes.push({
+        startX,
+        startY,
+        x: endX,
+        y: endY,
+        level: 1,
+        angle: branch.angle,
+        length: baseLength,
+        width,
+        isOpen: false,
+        sideShootCount: 0,
+      })
+    }
   } else {
     // count>0时使用递归算法
 
@@ -704,29 +713,48 @@ const generateBranches = (
     const maxLength = naturalBranchLength * 1.5
     const baseLength = minLength + (maxLength - minLength) * (avgLength / 20)
 
-    // 🔥 参考tree.js：单一主干，角度-90（向上），从树干顶部中心开始
-    const width = Math.max(trunkWidth * 0.6, 3)
-    const startX = trunkTopX
-    const startY = trunkTopY
+    // 🔥 恢复3个主枝设计
+    const mainBranches = [
+      { angle: -130, name: '左主枝' },
+      { angle: -90, name: '中主枝' },
+      { angle: -50, name: '右主枝' },
+    ]
 
-    drawBranchRecursive(
-      particles,
-      startX,
-      startY,
-      baseLength,
-      -90,  // 向上（参考tree.js的angle=0，在我们的坐标系中是-90）
-      width,
-      1,  // 从深度1开始
-      maxDepth,
-      totalCount,  // count限制
-      avgLength,
-      branchNodes,
-      overallProgress,
-      isSolid,
-      particleSize,
-      glowIntensity,
-      1  // 主干ID
-    )
+    // 🔥 count控制枝条数量：为每个主枝分配count/3的预算
+    const countPerBranch = Math.ceil(totalCount / 3)
+
+    for (let i = 0; i < 3; i++) {
+      if (branchCounter >= totalCount) break
+
+      const branch = mainBranches[i]
+      const width = Math.max(trunkWidth * 0.6, 3)
+      const offsetX = (i - 1) * (trunkWidth / 4)
+      const startX = trunkTopX + offsetX
+      const startY = trunkTopY
+
+      // 每个主枝的count预算
+      const remainingCount = totalCount - branchCounter
+      const branchBudget = Math.min(countPerBranch, remainingCount)
+
+      drawBranchRecursive(
+        particles,
+        startX,
+        startY,
+        baseLength,
+        branch.angle,
+        width,
+        1,
+        maxDepth,
+        branchCounter + branchBudget,  // count限制
+        avgLength,
+        branchNodes,
+        overallProgress,
+        isSolid,
+        particleSize,
+        glowIntensity,
+        i + 1  // 主枝ID: 1, 2, 3
+      )
+    }
   }
 
   return branchNodes
