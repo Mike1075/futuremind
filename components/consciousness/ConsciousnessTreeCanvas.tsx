@@ -296,13 +296,13 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       clearTimeout(drawTimerRef.current)
     }
 
-    // 设置新的定时器，200ms后绘制（如果是预览模式，立即绘制）
+    // 设置新的定时器，300ms后绘制（如果是预览模式，立即绘制）
     if (isPreview) {
       draw()  // 预览模式立即绘制
     } else {
       drawTimerRef.current = setTimeout(() => {
         draw()
-      }, 200)  // 非预览模式延迟200ms
+      }, 300)  // 🔥 非预览模式延迟300ms（给用户更多调整时间，减少无效计算）
     }
 
     return () => {

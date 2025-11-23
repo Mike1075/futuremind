@@ -54,10 +54,12 @@ export interface TreeParams {
 
 // ============ 性能优化常量 ============
 const PERFORMANCE = {
-  MAX_ROOT_DEPTH: 7,      // 根系最大递归深度（恢复到7，让大参数时根系茂盛）
-  MAX_BRANCH_DEPTH: 5,    // 枝条最大递归深度（从4提升到5，让树冠更茂盛）
-  MAX_PARTICLES: 6000,    // 最大粒子总数（提升到6000，确保根系和枝条都够用）
-  SPARSE_THRESHOLD: 3000  // 达到此粒子数后开始稀疏化（3000开始稀疏化）
+  MAX_ROOT_DEPTH: 7,      // 根系最大递归深度
+  MAX_BRANCH_DEPTH: 5,    // 枝条最大递归深度
+  MAX_PARTICLES: Infinity,    // 🔥 移除粒子上限，让树完整生成
+  SPARSE_THRESHOLD: Infinity,  // 🔥 移除稀疏化，改用LOD策略
+  LOD_THRESHOLD: 8000,    // 🔥 LOD阈值：粒子数>8000时自动缩小粒子尺寸
+  LOD_SCALE_MIN: 0.3      // 🔥 LOD最小缩放：粒子最小缩到30%
 } as const
 
 // 根节点（用于多级生长）
@@ -187,7 +189,7 @@ const getColor = (
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
 }
 
-// ============ 绘制直线（粒子化 + 性能优化） ============
+// ============ 绘制直线（粒子化） ============
 const drawLine = (
   particles: Particle[],
   x1: number,
@@ -199,39 +201,21 @@ const drawLine = (
   isSolid: boolean,
   particleSize: number
 ): void => {
-  // 🔥 性能优化：检查粒子数量上限
-  if (particles.length >= PERFORMANCE.MAX_PARTICLES) return
-
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
-  // 🔥 性能优化：动态稀疏化 - 粒子多时增加步长，减少粒子密度
-  let densityMultiplier = 1
-  if (particles.length > PERFORMANCE.SPARSE_THRESHOLD) {
-    // 达到4000后逐步稀疏化：4000-8000之间，密度从1x降到0.5x
-    const sparseProgress = (particles.length - PERFORMANCE.SPARSE_THRESHOLD) / (PERFORMANCE.MAX_PARTICLES - PERFORMANCE.SPARSE_THRESHOLD)
-    densityMultiplier = 1 + sparseProgress * 1  // 1x → 2x步长（即密度减半）
-  }
-
-  const steps = isSolid
-    ? Math.ceil(distance / (particleSize * 0.8 * densityMultiplier))
-    : Math.ceil(distance / (particleSize * 3 * densityMultiplier))
+  const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
 
   for (let i = 0; i <= steps; i++) {
-    // 🔥 性能优化：每次循环检查上限
-    if (particles.length >= PERFORMANCE.MAX_PARTICLES) break
-
     const t = i / steps
     const x = x1 + (x2 - x1) * t
     const y = y1 + (y2 - y1) * t
 
-    // 🔥 使用粗粒子而非多层填充，避免发光叠加过强
     const size = Math.max(width / 2, 1) * (isSolid ? 1 : 0.5)
 
     particles.push({ x, y, size, color, shape: 'circle' })
   }
 }
 
-// ============ 绘制渐变粗度线段（用于喇叭口过渡 + 性能优化） ============
+// ============ 绘制渐变粗度线段（用于喇叭口过渡） ============
 const drawTaperLine = (
   particles: Particle[],
   x1: number,
@@ -244,26 +228,10 @@ const drawTaperLine = (
   isSolid: boolean,
   particleSize: number
 ): void => {
-  // 🔥 性能优化：检查粒子数量上限
-  if (particles.length >= PERFORMANCE.MAX_PARTICLES) return
-
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
-  // 🔥 性能优化：动态稀疏化
-  let densityMultiplier = 1
-  if (particles.length > PERFORMANCE.SPARSE_THRESHOLD) {
-    const sparseProgress = (particles.length - PERFORMANCE.SPARSE_THRESHOLD) / (PERFORMANCE.MAX_PARTICLES - PERFORMANCE.SPARSE_THRESHOLD)
-    densityMultiplier = 1 + sparseProgress * 1
-  }
-
-  const steps = isSolid
-    ? Math.ceil(distance / (particleSize * 0.8 * densityMultiplier))
-    : Math.ceil(distance / (particleSize * 3 * densityMultiplier))
+  const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
 
   for (let i = 0; i <= steps; i++) {
-    // 🔥 性能优化：每次循环检查上限
-    if (particles.length >= PERFORMANCE.MAX_PARTICLES) break
-
     const t = i / steps
     const x = x1 + (x2 - x1) * t
     const y = y1 + (y2 - y1) * t
@@ -833,15 +801,10 @@ const generateLeaves = (
   const leavesPerSegment = leafCount / leafBranches.length
 
   for (const branch of leafBranches) {
-    // 🔥 性能优化：检查粒子上限
-    if (particles.length >= PERFORMANCE.MAX_PARTICLES) break
-
     // 根据线段长度决定叶子数量
     const segmentLeafCount = Math.max(1, Math.round(leavesPerSegment))
 
     for (let i = 0; i < segmentLeafCount; i++) {
-      // 🔥 性能优化：每次循环检查上限
-      if (particles.length >= PERFORMANCE.MAX_PARTICLES) break
 
       // 沿着线段随机位置（10%-90%，避免起点和终点）
       const t = 0.1 + random(0, 0.8)
@@ -893,8 +856,6 @@ const generateFruits = (
   const fruitNodes = matureNodes.length > 0 ? matureNodes : branchNodes.filter(n => n.level >= 2)
 
   for (let i = 0; i < fruitCount; i++) {
-    // 🔥 性能优化：检查粒子上限
-    if (particles.length >= PERFORMANCE.MAX_PARTICLES) break
     if (fruitNodes.length === 0) break
 
     const node = fruitNodes[Math.floor(random(0, fruitNodes.length))]
@@ -1010,6 +971,22 @@ export function generateConsciousnessTree(
 
   // 7. 生成果实
   generateFruits(particles, branchNodes, growthData, overallProgress, params.particleSize, params.glowIntensity)
+
+  // 🔥 8. LOD优化：粒子多时自动缩小粒子尺寸
+  const totalParticles = particles.length
+  if (totalParticles > PERFORMANCE.LOD_THRESHOLD) {
+    // 计算缩放系数：粒子数越多，尺寸越小（最小30%）
+    // 例如：8000粒子=100%，16000粒子=65%，24000粒子=43%
+    const scale = Math.max(
+      PERFORMANCE.LOD_SCALE_MIN,
+      PERFORMANCE.LOD_THRESHOLD / totalParticles
+    )
+
+    // 应用缩放到所有粒子
+    particles.forEach(p => {
+      p.size *= scale
+    })
+  }
 
   return particles
 }
