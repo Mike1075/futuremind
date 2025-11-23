@@ -110,8 +110,8 @@ const calculateOverallGrowthProgress = (growthData: TreeGrowthData): number => {
   const MAX_TRUNK_HEIGHT = 100
   const MAX_BRANCH_COUNT = 100
   const MAX_BRANCH_LENGTH = 20
-  const MAX_LEAF_COUNT = 50
-  const MAX_FRUIT_COUNT = 30  // 🔥 修复：果实最大数量改为30
+  const MAX_LEAF_COUNT = 100  // 🔥 提升：叶子最大数量从50改为100
+  const MAX_FRUIT_COUNT = 50  // 🔥 提升：果实最大数量从30改为50
 
   // 计算各部分的填充百分比
   const rootProgress = Math.min(growthData.roots.count / MAX_ROOT_COUNT, 1)
