@@ -64,26 +64,32 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
         }
       }
 
-      // 详情页模式：计算足够大的Canvas容纳整棵树
+      // 详情页模式：根据实际参数动态计算足够大的Canvas
       const minWidth = 800
       const baseWidth = Math.max(container.clientWidth || minWidth, minWidth)
 
-      // 🔥 修复：树干高度固定估算，不依赖height_level（避免改变height_level时整树变大）
-      const trunkHeight = 150  // 固定估算
+      // 🔥 动态计算树干高度（基于height_level）
+      const trunkHeight = 50 + growthData.trunk.height_level * 2  // 50-250px范围
 
-      // 🔥 修复：根系延伸只基于count，不基于depth_level
-      // 使用固定的平均根系延伸（深度变化不影响Canvas尺寸）
+      // 🔥 动态计算根系延伸（基于count和depth_level）
       const rootCount = growthData.roots.count
-      const mainRootCount = Math.max(1, Math.ceil(Math.log2(rootCount + 1)))
-      // 平均深度估算（固定3层）
-      const estimatedRootLength = 80  // 固定估算
-      const rootTotalExtent = rootCount > 0 ? estimatedRootLength : 0
+      const rootDepth = growthData.roots.depth_level
+      // 根系基础长度 + 深度加成
+      const baseRootLength = 40 + rootDepth * 8  // 与generator中的公式一致
+      // 考虑递归衰减（0.70），估算总延伸 ≈ baseLength * (1 + 0.7 + 0.7^2 + ...)
+      const estimatedRootLength = rootCount > 0 ? baseRootLength * 2.5 : 0
+      const rootTotalExtent = estimatedRootLength
 
-      // 🔥 修复：枝条延伸固定估算，不依赖avg_length（避免改变avg_length时整树变大）
-      const branchTotalExtent = growthData.branches.count > 0 ? 200 : 0  // 固定估算
+      // 🔥 动态计算枝条延伸（基于count和avg_length）
+      const branchCount = growthData.branches.count
+      const branchLength = growthData.branches.avg_length
+      // 枝条递归深度估算：log2(count)
+      const branchDepth = Math.log2(branchCount + 1)
+      // 总延伸 = 基础长度 × 深度（考虑分叉）
+      const branchTotalExtent = branchCount > 0 ? (30 + branchLength * 10) * branchDepth : 0
 
       // 总高度 = 上边距 + 树冠延伸 + 树干 + 根系延伸 + 下边距
-      const verticalPadding = 300
+      const verticalPadding = 100  // 减小padding，让树更充分显示
       const minHeight = 600
       const totalHeight = Math.max(
         verticalPadding + branchTotalExtent + trunkHeight + rootTotalExtent + verticalPadding,
@@ -92,7 +98,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
 
       // 总宽度 = 基础宽度 + 枝条左右延伸
       const totalWidth = Math.max(
-        baseWidth + branchTotalExtent * 2,
+        baseWidth + branchTotalExtent * 1.5,  // 左右各延伸
         baseWidth
       )
 
