@@ -49,23 +49,28 @@ const PATH_POINTS = [
 ]
 
 export function ListeningCourseView({ courseSystem, contents, completionMap, scoreMap }: ListeningCourseViewProps) {
-  // 生成SVG曲线路径（使用优化的贝塞尔曲线控制点）
+  // 生成SVG曲线路径（使用Catmull-Rom样条算法，确保所有转弯都是平滑曲线）
   const generatePath = () => {
     if (PATH_POINTS.length < 2) return ''
 
     let path = `M ${PATH_POINTS[0].x} ${PATH_POINTS[0].y}`
 
     for (let i = 0; i < PATH_POINTS.length - 1; i++) {
-      const current = PATH_POINTS[i]
-      const next = PATH_POINTS[i + 1]
+      const p0 = i > 0 ? PATH_POINTS[i - 1] : PATH_POINTS[i]
+      const p1 = PATH_POINTS[i]
+      const p2 = PATH_POINTS[i + 1]
+      const p3 = i < PATH_POINTS.length - 2 ? PATH_POINTS[i + 2] : PATH_POINTS[i + 1]
 
-      // 优化的贝塞尔曲线控制点，确保平滑连接
-      const controlX1 = current.x + (next.x - current.x) * 0.4
-      const controlY1 = current.y + (next.y - current.y) * 0.2
-      const controlX2 = current.x + (next.x - current.x) * 0.6
-      const controlY2 = current.y + (next.y - current.y) * 0.8
+      // Catmull-Rom转贝塞尔曲线控制点（张力系数0.5，更平滑）
+      // 第一个控制点：从p1出发，沿着p0->p2的切线方向
+      const controlX1 = p1.x + (p2.x - p0.x) / 6
+      const controlY1 = p1.y + (p2.y - p0.y) / 6
 
-      path += ` C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${next.x} ${next.y}`
+      // 第二个控制点：到达p2前，沿着p1->p3的切线方向
+      const controlX2 = p2.x - (p3.x - p1.x) / 6
+      const controlY2 = p2.y - (p3.y - p1.y) / 6
+
+      path += ` C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${p2.x} ${p2.y}`
     }
 
     return path
@@ -218,9 +223,22 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                       <stop offset="100%" stopColor={color.from} />
                     </linearGradient>
                   </defs>
-                  {/* 实线路径 - 优化贝塞尔曲线控制点，确保平滑连接 */}
+                  {/* 实线路径 - 使用Catmull-Rom算法确保平滑曲线 */}
                   <path
-                    d={`M ${prevPoint.x} ${prevPoint.y} C ${prevPoint.x + (point.x - prevPoint.x) * 0.4} ${prevPoint.y + (point.y - prevPoint.y) * 0.2}, ${prevPoint.x + (point.x - prevPoint.x) * 0.6} ${prevPoint.y + (point.y - prevPoint.y) * 0.8}, ${point.x} ${point.y}`}
+                    d={(() => {
+                      // 计算Catmull-Rom控制点
+                      const p0 = index > 1 ? PATH_POINTS[index - 2] : PATH_POINTS[index - 1]
+                      const p1 = prevPoint
+                      const p2 = point
+                      const p3 = index < PATH_POINTS.length - 1 ? PATH_POINTS[index + 1] : point
+
+                      const cx1 = p1.x + (p2.x - p0.x) / 6
+                      const cy1 = p1.y + (p2.y - p0.y) / 6
+                      const cx2 = p2.x - (p3.x - p1.x) / 6
+                      const cy2 = p2.y - (p3.y - p1.y) / 6
+
+                      return `M ${p1.x} ${p1.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${p2.x} ${p2.y}`
+                    })()}
                     fill="none"
                     stroke={`url(#grad-${index})`}
                     strokeWidth="0.8"
