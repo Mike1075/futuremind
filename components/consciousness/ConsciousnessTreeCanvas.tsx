@@ -56,8 +56,16 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
 
     // 计算树实际需要的空间（根据growthData动态计算）
     const calculateTreeDimensions = () => {
-      // 基础宽度（预览模式用小尺寸，详情页用大尺寸）
-      const minWidth = isPreview ? 400 : 800
+      // 🔥 预览模式：直接使用容器尺寸，不需要大Canvas
+      if (isPreview) {
+        return {
+          width: container.clientWidth || 400,
+          height: container.clientHeight || 400
+        }
+      }
+
+      // 详情页模式：计算足够大的Canvas容纳整棵树
+      const minWidth = 800
       const baseWidth = Math.max(container.clientWidth || minWidth, minWidth)
 
       // 🔥 修复：树干高度固定估算，不依赖height_level（避免改变height_level时整树变大）
@@ -75,9 +83,8 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       const branchTotalExtent = growthData.branches.count > 0 ? 200 : 0  // 固定估算
 
       // 总高度 = 上边距 + 树冠延伸 + 树干 + 根系延伸 + 下边距
-      // 🔧 预览模式用更紧凑的边距
-      const verticalPadding = isPreview ? 100 : 300
-      const minHeight = isPreview ? 400 : 600
+      const verticalPadding = 300
+      const minHeight = 600
       const totalHeight = Math.max(
         verticalPadding + branchTotalExtent + trunkHeight + rootTotalExtent + verticalPadding,
         container.clientHeight || minHeight
