@@ -16,7 +16,7 @@ interface ConsciousnessTreeCanvasProps {
 
 // 默认参数（经典红色能量树 V2）
 const DEFAULT_PARAMS: TreeParams = {
-  particleSize: 3,  // 🔥 整体放大50%：2 → 3
+  particleSize: 6,  // 🔥 整体再放大一倍：3 → 6
   glowIntensity: 0.5,
 }
 
@@ -76,7 +76,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       const rootDepthLevel = growthData.roots.depth_level
 
       // 🔥 修复：长度由depth_level决定，递归深度由count决定
-      const baseRootLength = 15 + rootDepthLevel * 5  // 与generator一致
+      const baseRootLength = 30 + rootDepthLevel * 10  // 🔥 整体放大一倍，与generator一致
       const recursiveDepth = Math.floor(1 + rootCount * 0.15)  // count控制递归深度
 
       // 考虑递归衰减（0.70）+ depthBonus增益，估算总延伸

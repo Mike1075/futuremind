@@ -270,7 +270,7 @@ const calculateRootDepth = (count: number, rootIndex: number, mainRootCount: num
 const calculateNaturalTrunkWidth = (): number => {
   // 🔥 修复：树干粗度固定，不受领域数量影响
   // 只依赖固定基础值，用户可通过thickness参数调节
-  const baseWidth = 30  // 固定基础粗度
+  const baseWidth = 60  // 🔥 整体放大一倍：30 → 60
 
   // 确保合理范围
   return baseWidth
@@ -280,7 +280,7 @@ const calculateNaturalTrunkWidth = (): number => {
 const calculateNaturalTrunkHeight = (): number => {
   // 🔥 修复：树干高度固定，不受领域数量影响
   // 只依赖固定基础值，用户可通过height_level参数调节
-  const baseHeight = 150  // 固定基础高度
+  const baseHeight = 300  // 🔥 整体放大一倍：150 → 300
 
   // 确保合理范围
   return baseHeight
@@ -399,10 +399,10 @@ const generateRoots = (
 
   // Step 2: 基础参数
   // 🔥 修复：长度由depth_level参数决定（不是count）
-  const baseLength = 15 + growthData.roots.depth_level * 5  // depth_level控制根有多长
+  const baseLength = 30 + growthData.roots.depth_level * 10  // 🔥 整体放大一倍：15+depth*5 → 30+depth*10
 
   // 粗度固定（不随count变化）
-  const baseWidth = Math.max(trunkWidth * 0.4, 2)
+  const baseWidth = Math.max(trunkWidth * 0.4, 4)  // 🔥 最小值放大：2 → 4
 
   // 🔥 方案F-步骤3：生成主根（150°扇形分布）
   const totalSpread = 150  // 扇形总角度
