@@ -267,45 +267,23 @@ const calculateRootDepth = (count: number, rootIndex: number, mainRootCount: num
 }
 
 // ============ 新增：根据根系计算自然树干粗度（达芬奇规则） ============
-const calculateNaturalTrunkWidth = (rootCount: number): number => {
-  // 🌳 基于达芬奇规则：树干横截面积 ≈ 所有主根横截面积之和
-  // 🔥 修复：移除depthLevel依赖，只根据rootCount计算，避免根系深度影响树干粗度
+const calculateNaturalTrunkWidth = (): number => {
+  // 🔥 修复：树干粗度固定，不受领域数量影响
+  // 只依赖固定基础值，用户可通过thickness参数调节
+  const baseWidth = 30  // 固定基础粗度
 
-  const mainRootCount = calculateMainRootCount(rootCount)
-
-  // 基础粗度：主根数量贡献（每个主根+5px）
-  const baseWidth = mainRootCount * 5
-
-  // 领域数量加成：领域越多，树干越粗（但增长缓慢）
-  const countBonus = Math.log2(rootCount + 1) * 3
-
-  // 自然粗度 = 基础 + 数量加成
-  const naturalWidth = baseWidth + countBonus
-
-  // 🔥 整体放大50%
-  // 确保最小值和合理上限（最大120px，确保粗壮的树干效果）
-  return Math.max(Math.min(naturalWidth * 1.5, 120), 15)
+  // 确保合理范围
+  return baseWidth
 }
 
 // ============ 新增：根据根系计算自然树干高度 ============
-const calculateNaturalTrunkHeight = (rootCount: number): number => {
-  // 🌳 自然规律：树干高度与根系规模成正比
-  // 🔥 修复：移除depthLevel依赖，只根据rootCount计算
+const calculateNaturalTrunkHeight = (): number => {
+  // 🔥 修复：树干高度固定，不受领域数量影响
+  // 只依赖固定基础值，用户可通过height_level参数调节
+  const baseHeight = 150  // 固定基础高度
 
-  const mainRootCount = calculateMainRootCount(rootCount)
-
-  // 基础高度：主根数量的影响
-  const baseHeight = mainRootCount * 40
-
-  // 领域数量的对数影响（避免过度增长）
-  const countBonus = Math.log2(rootCount + 1) * 20
-
-  // 自然高度 = 基础 + 数量加成
-  const naturalHeight = baseHeight + countBonus
-
-  // 🔥 整体放大50%
-  // 确保合理范围（最大600px）
-  return Math.max(Math.min(naturalHeight * 1.5, 600), 75)
+  // 确保合理范围
+  return baseHeight
 }
 
 // ============ 新增：根据树干计算自然枝条长度 ============
@@ -412,16 +390,20 @@ const generateRoots = (
 
   if (totalCount === 0) return rootNodes
 
-  // 🔥 方案I：渐进式生长
-  // Step 1: 主根数量随count缓慢增加
+  // 🔥 方案J：借鉴对标网站的简洁性
+  // Step 1: 主根数量根据count逐步增加
   let mainRootCount = 1
   if (totalCount >= 4) mainRootCount = 2
-  if (totalCount >= 8) mainRootCount = 3
-  if (totalCount >= 15) mainRootCount = 4
+  if (totalCount >= 10) mainRootCount = 3
+  if (totalCount >= 20) mainRootCount = 4
 
-  // Step 2: 基础参数（小短根）
-  const baseLength = 25 + growthData.roots.depth_level * 4  // 🔥 减小：让初始根更短
-  const baseWidth = Math.max(trunkWidth * 0.5, 2)  // 🔥 减小：让初始根更细
+  // Step 2: 基础参数（小短根 + 随count缓慢线性增长）
+  // 长度随领域数量缓慢增长（体现累积效应）
+  const growthBonus = Math.min(totalCount * 0.8, 30)  // 最多+30px
+  const baseLength = 20 + growthData.roots.depth_level * 3 + growthBonus
+
+  // 粗度固定（不随count变化）
+  const baseWidth = Math.max(trunkWidth * 0.4, 2)
 
   // 🔥 方案F-步骤3：生成主根（150°扇形分布）
   const totalSpread = 150  // 扇形总角度
@@ -462,18 +444,16 @@ const generateRoots = (
       particleSize
     )
 
-    // 🔥 方案I-Step 3：为每个主根分配渐进深度
-    // 第1个主根深度最深，后面的逐渐变浅（体现先长先深）
-    const depthPerRoot = Math.floor((totalCount + mainRootCount - 1) / mainRootCount)  // 平均每根分配的count
-    const rootDepth = Math.max(1, Math.min(Math.floor(1 + depthPerRoot * 0.3), 6))  // 深度缓慢增长，上限6
+    // 🔥 方案J-Step 3：简化深度控制（像对标网站）
+    // 直接使用depth_level参数，不要复杂公式
+    const maxDepth = growthData.roots.depth_level
 
-    // 第1个主根最深，后面的依次减1（但至少为1）
-    const adjustedDepth = Math.max(1, rootDepth - i)
+    // 先长的主根深度更深（体现先长先深）
+    // 第1个主根用完整深度，后面的依次减1
+    const adjustedDepth = Math.max(1, maxDepth - i)
 
-    // 🔥 方案I-Step 4：计算深度增益系数
-    // 随着总深度增加，所有根都会相应增长
-    const maxDepthAcrossAllRoots = rootDepth  // 最深的那个主根的深度
-    const depthBonus = 1 + (maxDepthAcrossAllRoots - 1) * 0.08  // 每级增长8%
+    // 🔥 方案J-Step 4：深度增益（每级根增长5%）
+    const depthBonus = 1 + (maxDepth - 1) * 0.05
 
     // 为每个主根调用纯递归函数生成子树（从过渡段末端开始）
     drawRootRecursive(
@@ -517,8 +497,8 @@ const generateTrunk = (
   const isSolid = growthData.trunk.is_solid
 
   // 🌳 步骤1：计算"自然粗度Y"和"自然长度Z"（基于根系发展）
-  const naturalWidth = calculateNaturalTrunkWidth(totalRootCount)
-  const naturalHeight = calculateNaturalTrunkHeight(totalRootCount)
+  const naturalWidth = calculateNaturalTrunkWidth()
+  const naturalHeight = calculateNaturalTrunkHeight()
 
   // 🌳 步骤2：应用1/3规则
   // 默认粗度 = 1/3 × Y，最大粗度 = Y
@@ -914,8 +894,8 @@ export function generateConsciousnessTree(
   // 🔥 修复居中问题：需要先计算树干高度，然后调整baseY让整树居中
   // 预计算树干高度以确定合适的baseY位置
   const estimatedRootCount = growthData.roots.count
-  const naturalWidth = calculateNaturalTrunkWidth(estimatedRootCount)
-  const naturalHeight = calculateNaturalTrunkHeight(estimatedRootCount)
+  const naturalWidth = calculateNaturalTrunkWidth()
+  const naturalHeight = calculateNaturalTrunkHeight()
   const thickness = growthData.trunk.thickness
   const heightLevel = growthData.trunk.height_level
   const minHeight = naturalHeight / 3
