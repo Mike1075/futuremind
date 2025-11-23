@@ -345,12 +345,12 @@ const drawRootRecursive = (
   // 2. 使用整体进度决定颜色（所有部分统一）
   const color = getColor('root', overallProgress, isSolid, glowIntensity)
 
-  // 3. 绘制当前线段
-  drawLine(particles, x, y, endX, endY, width, color, isSolid, particleSize)
+  // 3. 🔥 绘制当前线段（粗细渐变：从粗到细）
+  const newWidth = Math.max(width * 0.7, 0.8)  // 末端粗度
+  drawTaperLine(particles, x, y, endX, endY, width, newWidth, color, isSolid, particleSize)
 
   // 4. 递归生成左右子树（强制对称分叉）
   const newLength = length * 0.70  // 🔥 根系长度衰减（保持适中）
-  const newWidth = Math.max(width * 0.7, 0.8)  // 🔥 统一粗度衰减，最小0.8px
   const spread = 38  // 🔥 根系分叉角度
 
   // 左分支
@@ -425,6 +425,16 @@ const generateRoots = (
     const startX = centerX
     const startY = baseY
 
+    // 🔥 递进生长：第1个主根最长，后面的逐渐变短
+    // 长度系数：从1.3（第1根）逐渐降到0.8（最后1根）
+    const lengthRatio = 1.3 - (i / Math.max(mainRootCount - 1, 1)) * 0.5
+    const currentLength = baseLength * lengthRatio * random(0.95, 1.05)
+
+    // 🔥 递进生长：第1个主根最粗，后面的逐渐变细
+    // 粗度系数：从1.2（第1根）逐渐降到0.9（最后1根）
+    const widthRatio = 1.2 - (i / Math.max(mainRootCount - 1, 1)) * 0.3
+    const currentWidth = baseWidth * widthRatio
+
     // 🌳 喇叭口过渡段：从树干粗度平滑过渡到根系粗度
     const transitionLength = Math.max(trunkWidth * 0.6, 15)  // 过渡段长度随树干粗度调整
     const transitionEndX = startX + Math.cos((angle * Math.PI) / 180) * transitionLength
@@ -439,7 +449,7 @@ const generateRoots = (
       transitionEndX,
       transitionEndY,
       trunkWidth * 0.8,   // 起始粗度 = 树干粗度的80%（避免过渡段比树干粗）
-      baseWidth,          // 结束粗度 = 根系粗度
+      currentWidth,       // 🔥 结束粗度 = 当前主根粗度（递进）
       transitionColor,
       isSolid,
       particleSize
@@ -455,8 +465,8 @@ const generateRoots = (
       transitionEndX,  // 从过渡段末端开始
       transitionEndY,
       angle,
-      baseLength * random(0.9, 1.1),  // 稍微随机化初始长度
-      baseWidth,
+      currentLength,   // 🔥 使用递进长度
+      currentWidth,    // 🔥 使用递进粗度
       1,  // 从第1层开始
       rootDepth,  // 🔥 每个主根深度不同（目标导向分配）
       isSolid,
@@ -466,9 +476,9 @@ const generateRoots = (
     )
 
     // 记录主根末端（保留接口兼容性）
-    const endX = transitionEndX + Math.cos((angle * Math.PI) / 180) * baseLength
-    const endY = transitionEndY + Math.sin((angle * Math.PI) / 180) * baseLength
-    rootNodes.push({ x: endX, y: endY, level: 1, angle, length: baseLength, width: baseWidth })
+    const endX = transitionEndX + Math.cos((angle * Math.PI) / 180) * currentLength
+    const endY = transitionEndY + Math.sin((angle * Math.PI) / 180) * currentLength
+    rootNodes.push({ x: endX, y: endY, level: 1, angle, length: currentLength, width: currentWidth })
   }
 
   return rootNodes
