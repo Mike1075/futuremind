@@ -25,6 +25,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
   const containerRef = useRef<HTMLDivElement>(null)
   const [seedOpacity, setSeedOpacity] = useState(0.3)
   const animationRef = useRef<number | undefined>(undefined)
+  const drawTimerRef = useRef<NodeJS.Timeout | undefined>(undefined)  // 🔥 防抖定时器
 
   // 🖱️ 拖拽状态
   const [offset, setOffset] = useState({ x: 0, y: 0 })
@@ -288,12 +289,29 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
     }
 
     window.addEventListener('resize', resize)
-    draw()
+
+    // 🔥 防抖优化：延迟绘制，避免频繁调整参数时卡死
+    // 清除之前的定时器
+    if (drawTimerRef.current) {
+      clearTimeout(drawTimerRef.current)
+    }
+
+    // 设置新的定时器，200ms后绘制（如果是预览模式，立即绘制）
+    if (isPreview) {
+      draw()  // 预览模式立即绘制
+    } else {
+      drawTimerRef.current = setTimeout(() => {
+        draw()
+      }, 200)  // 非预览模式延迟200ms
+    }
 
     return () => {
       window.removeEventListener('resize', resize)
+      if (drawTimerRef.current) {
+        clearTimeout(drawTimerRef.current)
+      }
     }
-  }, [growthData, techParams, seedOpacity, isEmptyTree])
+  }, [growthData, techParams, seedOpacity, isEmptyTree, isPreview])
 
   // 种子闪烁动画（更慢更优雅）
   useEffect(() => {

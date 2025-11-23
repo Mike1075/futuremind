@@ -54,10 +54,10 @@ export interface TreeParams {
 
 // ============ 性能优化常量 ============
 const PERFORMANCE = {
-  MAX_ROOT_DEPTH: 5,      // 根系最大递归深度（2^5=32，防止指数爆炸）
-  MAX_BRANCH_DEPTH: 5,    // 枝条最大递归深度（3×2^5=96个枝条）
-  MAX_PARTICLES: 6000,    // 最大粒子总数（从8000降到6000，进一步提升性能）
-  SPARSE_THRESHOLD: 3000  // 达到此粒子数后开始稀疏化（从4000降到3000）
+  MAX_ROOT_DEPTH: 4,      // 根系最大递归深度（2^4=16，大幅降低）
+  MAX_BRANCH_DEPTH: 4,    // 枝条最大递归深度（3×2^4=48个枝条）
+  MAX_PARTICLES: 3000,    // 最大粒子总数（从6000大幅降到3000）
+  SPARSE_THRESHOLD: 1500  // 达到此粒子数后开始稀疏化（从3000降到1500）
 } as const
 
 // 根节点（用于多级生长）
@@ -751,7 +751,7 @@ const generateBranches = (
     // 🔥 count控制深度：count越大，深度越深，枝条越多
     // 每个深度需要的枝条数：depth=1→3×2=6, depth=2→3×2^2=12, depth=3→3×2^3=24
     // 反推公式：depth ≈ log2(count/3)
-    // 🔥 性能优化：最大深度限制为5（防止指数级爆炸）
+    // 🔥 性能优化：最大深度限制为4（防止指数级爆炸）
     let maxDepth = 1
     if (totalCount <= 3) {
       maxDepth = 1  // 0-3个：只有主枝第一层分叉
@@ -759,10 +759,8 @@ const generateBranches = (
       maxDepth = 2  // 4-9个
     } else if (totalCount <= 21) {
       maxDepth = 3  // 10-21个
-    } else if (totalCount <= 45) {
-      maxDepth = 4  // 22-45个
     } else {
-      maxDepth = PERFORMANCE.MAX_BRANCH_DEPTH  // 46+个：最大深度5（3×2^5=96个枝条）
+      maxDepth = PERFORMANCE.MAX_BRANCH_DEPTH  // 22+个：最大深度4（3×2^4=48个枝条）
     }
 
     // 🔥 基础长度：受avgLength影响（0-20映射到50%-150%）
