@@ -812,16 +812,31 @@ const generateLeaves = (
   const leafBranches = branchNodes.filter(n => n.level >= minLeafLevel)
   if (leafBranches.length === 0) return
 
-  // 🔥 修复：确保叶子数量完全匹配leafCount
-  // 每个枝条分配的叶子数 = 总数 / 枝条数
-  const leavesPerSegment = leafCount / leafBranches.length
+  // 🔥 叶子大小随枝条数量成正比增长（枝条越多，叶子越大）
+  let leafSizeScale = 2.0  // 基础大小（枝条少时）
+  if (totalCount > 10) leafSizeScale = 2.5
+  if (totalCount > 30) leafSizeScale = 3.0
+  if (totalCount > 60) leafSizeScale = 3.5
+  if (totalCount > 100) leafSizeScale = 4.0  // 枝条很多时，叶子最大
 
-  for (const branch of leafBranches) {
-    // 根据线段长度决定叶子数量
-    const segmentLeafCount = Math.max(1, Math.round(leavesPerSegment))
+  // 🔥 修复：确保叶子数量完全匹配leafCount
+  // 使用计数器精确控制总数，而不是平均分配
+  let generatedLeafCount = 0
+  const leavesPerBranch = leafCount / leafBranches.length
+
+  for (let branchIdx = 0; branchIdx < leafBranches.length; branchIdx++) {
+    const branch = leafBranches[branchIdx]
+
+    // 计算这个枝条应该生成的叶子数
+    // 最后一个枝条生成剩余所有叶子，确保总数准确
+    let segmentLeafCount: number
+    if (branchIdx === leafBranches.length - 1) {
+      segmentLeafCount = leafCount - generatedLeafCount
+    } else {
+      segmentLeafCount = Math.max(1, Math.round(leavesPerBranch))
+    }
 
     for (let i = 0; i < segmentLeafCount; i++) {
-
       // 沿着线段随机位置（10%-90%，避免起点和终点）
       const t = 0.1 + random(0, 0.8)
       const x = branch.startX + (branch.x - branch.startX) * t
@@ -835,7 +850,8 @@ const generateLeaves = (
 
       // 使用整体生长进度决定颜色（所有部分统一）
       const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
-      const size = particleSize * random(2, 3.5)  // 增大叶子尺寸
+      // 🔥 叶子大小根据枝条数量动态调整
+      const size = particleSize * random(leafSizeScale * 0.8, leafSizeScale * 1.2)
       // 叶子旋转角度与枝条方向一致
       const rotation = branch.angle + random(-30, 30)
 
@@ -847,7 +863,15 @@ const generateLeaves = (
         shape: 'leaf',
         rotation,
       })
+
+      generatedLeafCount++
+
+      // 安全检查：如果已经达到目标数量，停止生成
+      if (generatedLeafCount >= leafCount) break
     }
+
+    // 安全检查：如果已经达到目标数量，停止外层循环
+    if (generatedLeafCount >= leafCount) break
   }
 }
 
