@@ -397,10 +397,9 @@ const generateRoots = (
   if (totalCount >= 10) mainRootCount = 3
   if (totalCount >= 20) mainRootCount = 4
 
-  // Step 2: 基础参数（小短根 + 随count缓慢线性增长）
-  // 长度随领域数量缓慢增长（体现累积效应）
-  const growthBonus = Math.min(totalCount * 0.8, 30)  // 最多+30px
-  const baseLength = 20 + growthData.roots.depth_level * 3 + growthBonus
+  // Step 2: 基础参数
+  // 🔥 修复：长度由depth_level参数决定（不是count）
+  const baseLength = 15 + growthData.roots.depth_level * 5  // depth_level控制根有多长
 
   // 粗度固定（不随count变化）
   const baseWidth = Math.max(trunkWidth * 0.4, 2)
@@ -444,16 +443,16 @@ const generateRoots = (
       particleSize
     )
 
-    // 🔥 方案J-Step 3：简化深度控制（像对标网站）
-    // 直接使用depth_level参数，不要复杂公式
-    const maxDepth = growthData.roots.depth_level
+    // 🔥 方案K-Step 3：正确的控制逻辑
+    // 递归深度由count决定（领域数量多 → 分支多）
+    const depthFromCount = Math.max(1, Math.min(Math.floor(1 + totalCount * 0.15), 8))  // count控制递归深度，上限8
 
     // 先长的主根深度更深（体现先长先深）
     // 第1个主根用完整深度，后面的依次减1
-    const adjustedDepth = Math.max(1, maxDepth - i)
+    const adjustedDepth = Math.max(1, depthFromCount - i)
 
-    // 🔥 方案J-Step 4：深度增益（每级根增长5%）
-    const depthBonus = 1 + (maxDepth - 1) * 0.05
+    // 🔥 方案K-Step 4：深度增益（随着递归深度增加，每级增长3%）
+    const depthBonus = 1 + (depthFromCount - 1) * 0.03
 
     // 为每个主根调用纯递归函数生成子树（从过渡段末端开始）
     drawRootRecursive(
