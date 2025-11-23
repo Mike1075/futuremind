@@ -56,8 +56,9 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
 
     // 计算树实际需要的空间（根据growthData动态计算）
     const calculateTreeDimensions = () => {
-      // 基础宽度（视口宽度或最小800px）
-      const baseWidth = Math.max(container.clientWidth || 800, 800)
+      // 基础宽度（预览模式用小尺寸，详情页用大尺寸）
+      const minWidth = isPreview ? 400 : 800
+      const baseWidth = Math.max(container.clientWidth || minWidth, minWidth)
 
       // 🔥 修复：树干高度固定估算，不依赖height_level（避免改变height_level时整树变大）
       const trunkHeight = 150  // 固定估算
@@ -74,10 +75,12 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       const branchTotalExtent = growthData.branches.count > 0 ? 200 : 0  // 固定估算
 
       // 总高度 = 上边距 + 树冠延伸 + 树干 + 根系延伸 + 下边距
-      // 🔧 增加上下边距，确保滚动时能看全整棵树
+      // 🔧 预览模式用更紧凑的边距
+      const verticalPadding = isPreview ? 100 : 300
+      const minHeight = isPreview ? 400 : 600
       const totalHeight = Math.max(
-        300 + branchTotalExtent + trunkHeight + rootTotalExtent + 300,
-        container.clientHeight || 600
+        verticalPadding + branchTotalExtent + trunkHeight + rootTotalExtent + verticalPadding,
+        container.clientHeight || minHeight
       )
 
       // 总宽度 = 基础宽度 + 枝条左右延伸
@@ -326,20 +329,22 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
         </div>
       )}
 
-      {/* 🔥 Canvas包装器：应用缩放和偏移 */}
+      {/* 🔥 Canvas包装器：预览模式固定位置，详情页可拖拽 */}
       <div
         style={{
           position: 'absolute',
-          left: offset.x,
-          top: offset.y,
+          left: isPreview ? 0 : offset.x,
+          top: isPreview ? 0 : offset.y,
           transform: `scale(${zoom})`,
           transformOrigin: 'top left',
-          cursor: isDragging ? 'grabbing' : 'grab'
+          cursor: isPreview ? 'default' : (isDragging ? 'grabbing' : 'grab')
         }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
+        {...(!isPreview && {
+          onMouseDown: handleMouseDown,
+          onMouseMove: handleMouseMove,
+          onMouseUp: handleMouseUp,
+          onMouseLeave: handleMouseLeave
+        })}
       >
         <canvas
           ref={canvasRef}
