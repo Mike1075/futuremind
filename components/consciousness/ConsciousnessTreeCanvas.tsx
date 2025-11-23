@@ -74,10 +74,10 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       // 🔥 动态计算根系延伸（基于count和depth_level）
       const rootCount = growthData.roots.count
       const rootDepth = growthData.roots.depth_level
-      // 根系基础长度 + 深度加成（×1.5整体放大）
-      const baseRootLength = (40 + rootDepth * 8) * 1.5  // 与generator一致
-      // 考虑递归衰减（0.70）+ depthBonus增益，估算总延伸 ≈ baseLength × 3.5
-      const estimatedRootLength = rootCount > 0 ? baseRootLength * 3.5 : 0
+      // 根系基础长度（与generator一致：减小为25 + depth*4）
+      const baseRootLength = 25 + rootDepth * 4
+      // 考虑递归衰减（0.70）+ depthBonus增益，估算总延伸 ≈ baseLength × 4
+      const estimatedRootLength = rootCount > 0 ? baseRootLength * 4 : 0
       const rootTotalExtent = estimatedRootLength
 
       // 🔥 动态计算枝条延伸（基于count和avg_length）

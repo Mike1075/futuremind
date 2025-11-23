@@ -412,13 +412,16 @@ const generateRoots = (
 
   if (totalCount === 0) return rootNodes
 
-  // 🔥 方案H-步骤1：计算主根数量（对数增长，最多4个）
-  const mainRootCount = Math.min(calculateMainRootCount(totalCount), 4)
+  // 🔥 方案I：渐进式生长
+  // Step 1: 主根数量随count缓慢增加
+  let mainRootCount = 1
+  if (totalCount >= 4) mainRootCount = 2
+  if (totalCount >= 8) mainRootCount = 3
+  if (totalCount >= 15) mainRootCount = 4
 
-  // 🔥 方案H：固定基础参数（不随count变化）
-  // 根的生长通过递归深度（rootDepth）来体现，而不是baseLength变化
-  const baseLength = (40 + growthData.roots.depth_level * 8) * 1.5  // 🔥 整体放大50%（固定）
-  const baseWidth = Math.max(trunkWidth * 0.7, 3) * 1.5  // 🔥 整体放大50%（固定）
+  // Step 2: 基础参数（小短根）
+  const baseLength = 25 + growthData.roots.depth_level * 4  // 🔥 减小：让初始根更短
+  const baseWidth = Math.max(trunkWidth * 0.5, 2)  // 🔥 减小：让初始根更细
 
   // 🔥 方案F-步骤3：生成主根（150°扇形分布）
   const totalSpread = 150  // 扇形总角度
@@ -459,13 +462,18 @@ const generateRoots = (
       particleSize
     )
 
-    // 🔥 方案H-步骤2：为每个主根动态分配深度（目标导向）
-    // 使总末端数 ≈ count × 1.3，实现"1个领域≈1个小叉"
-    const rootDepth = calculateRootDepth(totalCount, i, mainRootCount)
+    // 🔥 方案I-Step 3：为每个主根分配渐进深度
+    // 第1个主根深度最深，后面的逐渐变浅（体现先长先深）
+    const depthPerRoot = Math.floor((totalCount + mainRootCount - 1) / mainRootCount)  // 平均每根分配的count
+    const rootDepth = Math.max(1, Math.min(Math.floor(1 + depthPerRoot * 0.3), 6))  // 深度缓慢增长，上限6
 
-    // 🔥 方案H-步骤3：计算深度增益系数
-    // 每多一级根，所有现有根都会相应增长10%
-    const depthBonus = 1 + (rootDepth - 1) * 0.1
+    // 第1个主根最深，后面的依次减1（但至少为1）
+    const adjustedDepth = Math.max(1, rootDepth - i)
+
+    // 🔥 方案I-Step 4：计算深度增益系数
+    // 随着总深度增加，所有根都会相应增长
+    const maxDepthAcrossAllRoots = rootDepth  // 最深的那个主根的深度
+    const depthBonus = 1 + (maxDepthAcrossAllRoots - 1) * 0.08  // 每级增长8%
 
     // 为每个主根调用纯递归函数生成子树（从过渡段末端开始）
     drawRootRecursive(
@@ -476,7 +484,7 @@ const generateRoots = (
       currentLength,
       currentWidth,
       1,  // 从第1层开始
-      rootDepth,  // 🔥 每个主根深度不同（目标导向分配）
+      adjustedDepth,  // 🔥 渐进式深度：第1个最深，后续依次减少
       isSolid,
       overallProgress,  // 传递整体进度
       particleSize,
