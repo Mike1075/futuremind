@@ -55,9 +55,9 @@ export interface TreeParams {
 // ============ 性能优化常量 ============
 const PERFORMANCE = {
   MAX_ROOT_DEPTH: 7,      // 根系最大递归深度（恢复到7，让大参数时根系茂盛）
-  MAX_BRANCH_DEPTH: 4,    // 枝条最大递归深度（保持4，枝条是主要性能瓶颈）
-  MAX_PARTICLES: 4000,    // 最大粒子总数（提升到4000，平衡视觉和性能）
-  SPARSE_THRESHOLD: 2000  // 达到此粒子数后开始稀疏化（2000开始稀疏化）
+  MAX_BRANCH_DEPTH: 5,    // 枝条最大递归深度（从4提升到5，让树冠更茂盛）
+  MAX_PARTICLES: 6000,    // 最大粒子总数（提升到6000，确保根系和枝条都够用）
+  SPARSE_THRESHOLD: 3000  // 达到此粒子数后开始稀疏化（3000开始稀疏化）
 } as const
 
 // 根节点（用于多级生长）
@@ -486,12 +486,12 @@ const generateRoots = (
 
     // 🔥 方案K-Step 3：正确的控制逻辑
     // 递归深度由count决定（领域数量多 → 分支多）
-    // 🔥 性能优化：上限从8降到6，防止指数级爆炸（2^6=64 vs 2^8=256）
+    // 🔥 性能优化：上限为7，确保大参数时根系茂盛
     const depthFromCount = Math.max(1, Math.min(Math.floor(1 + totalCount * 0.15), PERFORMANCE.MAX_ROOT_DEPTH))
 
-    // 先长的主根深度更深（体现先长先深）
-    // 第1个主根用完整深度，后面的依次减1
-    const adjustedDepth = Math.max(1, depthFromCount - i)
+    // 🔥 修复：所有主根使用相同深度，确保左右对称茂盛
+    // 之前的"先长先深"导致左边深、右边浅，不够均匀
+    const adjustedDepth = depthFromCount
 
     // 🔥 方案K-Step 4：深度增益（随着递归深度增加，每级增长3%）
     const depthBonus = 1 + (depthFromCount - 1) * 0.03
@@ -751,7 +751,7 @@ const generateBranches = (
     // 🔥 count控制深度：count越大，深度越深，枝条越多
     // 每个深度需要的枝条数：depth=1→3×2=6, depth=2→3×2^2=12, depth=3→3×2^3=24
     // 反推公式：depth ≈ log2(count/3)
-    // 🔥 性能优化：最大深度限制为4（防止指数级爆炸）
+    // 🔥 性能优化：最大深度限制为5（平衡性能和视觉）
     let maxDepth = 1
     if (totalCount <= 3) {
       maxDepth = 1  // 0-3个：只有主枝第一层分叉
@@ -759,8 +759,10 @@ const generateBranches = (
       maxDepth = 2  // 4-9个
     } else if (totalCount <= 21) {
       maxDepth = 3  // 10-21个
+    } else if (totalCount <= 45) {
+      maxDepth = 4  // 22-45个
     } else {
-      maxDepth = PERFORMANCE.MAX_BRANCH_DEPTH  // 22+个：最大深度4（3×2^4=48个枝条）
+      maxDepth = PERFORMANCE.MAX_BRANCH_DEPTH  // 46+个：最大深度5（3×2^5=96个枝条）
     }
 
     // 🔥 基础长度：受avgLength影响（0-20映射到50%-150%）
