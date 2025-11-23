@@ -302,9 +302,10 @@ export function PortalClient({
                 <TreePine className="w-6 h-6 text-red-400 mr-3" />
                 <h3 className="text-lg font-semibold text-white">意识进化树</h3>
               </div>
-              <div className="relative h-64 w-full bg-black rounded-lg mb-4 overflow-hidden">
-                <div className="w-full h-full flex items-center justify-center">
-                  <div style={{ transform: 'scale(0.35)', transformOrigin: 'center center', width: '280%', height: '280%' }}>
+              <div className="relative h-64 w-full bg-black rounded-lg mb-4">
+                {/* 使用固定尺寸的容器，然后整体缩放 */}
+                <div className="absolute inset-0" style={{ transform: 'scale(0.4)', transformOrigin: 'center center' }}>
+                  <div style={{ width: '250%', height: '250%', position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
                     <ConsciousnessTreeView userId={userId} isPreview={true} />
                   </div>
                 </div>
