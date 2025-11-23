@@ -11,6 +11,7 @@ interface ConsciousnessTreeCanvasProps {
   growthData: TreeGrowthData
   techParams?: Partial<TreeParams>
   zoom?: number  // 缩放比例（0.5-3.0）
+  isPreview?: boolean  // 预览模式（隐藏拖拽提示）
 }
 
 // 默认参数（经典红色能量树 V2）
@@ -19,7 +20,7 @@ const DEFAULT_PARAMS: TreeParams = {
   glowIntensity: 0.5,
 }
 
-export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1 }: ConsciousnessTreeCanvasProps) {
+export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPreview = false }: ConsciousnessTreeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [seedOpacity, setSeedOpacity] = useState(0.3)
@@ -272,10 +273,12 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1 }: Co
       className="w-full h-full overflow-hidden relative"
       style={{ background: '#000' }}
     >
-      {/* 🖱️ 拖拽提示层 */}
-      <div className="absolute top-2 left-2 text-xs text-white/50 pointer-events-none z-10">
-        拖拽查看 | 滚轮缩放
-      </div>
+      {/* 🖱️ 拖拽提示层（仅在非预览模式显示） */}
+      {!isPreview && (
+        <div className="absolute top-2 left-2 text-xs text-white/50 pointer-events-none z-10">
+          拖拽查看 | 滚轮缩放
+        </div>
+      )}
 
       {/* 🔥 Canvas包装器：应用缩放和偏移 */}
       <div
