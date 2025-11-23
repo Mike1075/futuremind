@@ -572,20 +572,16 @@ const drawBranchRecursive = (
   glowIntensity: number,
   branchId: number  // 用于稳定随机
 ): void => {
-  // 🔥 只用深度限制，不用count限制（让树完全生长）
+  // 🔥 只用深度限制（深度由count决定）
   if (currentDepth > maxDepth) return
 
   // 计算当前段的终点
   const endX = startX + Math.cos((angle * Math.PI) / 180) * length
   const endY = startY + Math.sin((angle * Math.PI) / 180) * length
 
-  // 🔥 虚实状态：前totalCount个枝条是实线，后面是虚线
-  branchCounter++
-  const isCurrentSolid = branchCounter <= totalCount
-
-  // 绘制当前枝条段
-  const color = getColor('branch', overallProgress, isCurrentSolid, glowIntensity)
-  drawLine(particles, startX, startY, endX, endY, width, color, isCurrentSolid, particleSize)
+  // 绘制当前枝条段（使用传入的isSolid状态）
+  const color = getColor('branch', overallProgress, isSolid, glowIntensity)
+  drawLine(particles, startX, startY, endX, endY, width, color, isSolid, particleSize)
 
   branchNodes.push({
     startX,
@@ -705,8 +701,27 @@ const generateBranches = (
   } else {
     // count>0时使用递归算法
 
-    // 🔥 固定深度8（确保树形状稳定，不随参数变化）
-    const maxDepth = 8
+    // 🔥 count控制深度：count越大，深度越深，枝条越多
+    // 每个深度需要的枝条数：depth=1→3×2=6, depth=2→3×2^2=12, depth=3→3×2^3=24
+    // 反推公式：depth ≈ log2(count/3)
+    let maxDepth = 1
+    if (totalCount <= 3) {
+      maxDepth = 1  // 0-3个：只有主枝第一层分叉
+    } else if (totalCount <= 9) {
+      maxDepth = 2  // 4-9个
+    } else if (totalCount <= 21) {
+      maxDepth = 3  // 10-21个
+    } else if (totalCount <= 45) {
+      maxDepth = 4  // 22-45个
+    } else if (totalCount <= 93) {
+      maxDepth = 5  // 46-93个
+    } else if (totalCount <= 189) {
+      maxDepth = 6  // 94-189个
+    } else if (totalCount <= 381) {
+      maxDepth = 7  // 190-381个
+    } else {
+      maxDepth = 8  // 382+个：完全展开
+    }
 
     // 🔥 基础长度：受avgLength影响（0-20映射到50%-150%）
     const naturalBranchLength = calculateNaturalBranchLength(trunkHeight)
