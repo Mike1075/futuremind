@@ -399,12 +399,11 @@ const generateRoots = (
 
   if (totalCount === 0) return rootNodes
 
-  // 🔥 方案J：借鉴对标网站的简洁性
-  // Step 1: 主根数量根据count逐步增加
+  // 🔥 主根数量：缓慢自然增长（更平缓的曲线）
   let mainRootCount = 1
-  if (totalCount >= 4) mainRootCount = 2
-  if (totalCount >= 10) mainRootCount = 3
-  if (totalCount >= 20) mainRootCount = 4
+  if (totalCount >= 10) mainRootCount = 2  // 10个领域长出第2根
+  if (totalCount >= 30) mainRootCount = 3  // 30个领域长出第3根
+  if (totalCount >= 60) mainRootCount = 4  // 60个领域长出第4根
 
   // Step 2: 基础参数
   // 🔥 修复：长度由depth_level参数决定（不是count）
@@ -452,17 +451,19 @@ const generateRoots = (
       particleSize
     )
 
-    // 🔥 方案K-Step 3：正确的控制逻辑
-    // 递归深度由count决定（领域数量多 → 分支多）
-    // 🔥 性能优化：上限为7，确保大参数时根系茂盛
-    const depthFromCount = Math.max(1, Math.min(Math.floor(1 + totalCount * 0.15), PERFORMANCE.MAX_ROOT_DEPTH))
+    // 🔥 新增长策略：让末端数 ≈ count × 1.3（线性增长）
+    // 公式：mainRootCount × 2^depth = count × 1.3
+    // 推导：depth = log2((count × 1.3) / mainRootCount)
 
-    // 🔥 修复：所有主根使用相同深度，确保左右对称茂盛
-    // 之前的"先长先深"导致左边深、右边浅，不够均匀
-    const adjustedDepth = depthFromCount
+    const targetEndpoints = totalCount * 1.3  // 目标末端数（略多于count）
+    const endpointsPerRoot = targetEndpoints / mainRootCount  // 每个主根的末端数
+    const idealDepth = Math.log2(Math.max(1, endpointsPerRoot))  // 反推深度
 
-    // 🔥 方案K-Step 4：深度增益（随着递归深度增加，每级增长3%）
-    const depthBonus = 1 + (depthFromCount - 1) * 0.03
+    // 深度范围：1-7
+    const adjustedDepth = Math.max(1, Math.min(Math.round(idealDepth), PERFORMANCE.MAX_ROOT_DEPTH))
+
+    // 🔥 深度增益（随着递归深度增加，每级增长3%）
+    const depthBonus = 1 + (adjustedDepth - 1) * 0.03
 
     // 为每个主根调用纯递归函数生成子树（从过渡段末端开始）
     drawRootRecursive(
