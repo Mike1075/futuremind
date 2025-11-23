@@ -54,10 +54,10 @@ export interface TreeParams {
 
 // ============ 性能优化常量 ============
 const PERFORMANCE = {
-  MAX_ROOT_DEPTH: 6,      // 根系最大递归深度（防止2^8=256指数爆炸）
-  MAX_BRANCH_DEPTH: 6,    // 枝条最大递归深度（防止过度分叉）
-  MAX_PARTICLES: 8000,    // 最大粒子总数（超过此值停止生成）
-  SPARSE_THRESHOLD: 4000  // 达到此粒子数后开始稀疏化
+  MAX_ROOT_DEPTH: 5,      // 根系最大递归深度（2^5=32，防止指数爆炸）
+  MAX_BRANCH_DEPTH: 5,    // 枝条最大递归深度（3×2^5=96个枝条）
+  MAX_PARTICLES: 6000,    // 最大粒子总数（从8000降到6000，进一步提升性能）
+  SPARSE_THRESHOLD: 3000  // 达到此粒子数后开始稀疏化（从4000降到3000）
 } as const
 
 // 根节点（用于多级生长）
@@ -751,7 +751,7 @@ const generateBranches = (
     // 🔥 count控制深度：count越大，深度越深，枝条越多
     // 每个深度需要的枝条数：depth=1→3×2=6, depth=2→3×2^2=12, depth=3→3×2^3=24
     // 反推公式：depth ≈ log2(count/3)
-    // 🔥 性能优化：最大深度限制为6（防止指数级爆炸）
+    // 🔥 性能优化：最大深度限制为5（防止指数级爆炸）
     let maxDepth = 1
     if (totalCount <= 3) {
       maxDepth = 1  // 0-3个：只有主枝第一层分叉
@@ -761,10 +761,8 @@ const generateBranches = (
       maxDepth = 3  // 10-21个
     } else if (totalCount <= 45) {
       maxDepth = 4  // 22-45个
-    } else if (totalCount <= 93) {
-      maxDepth = 5  // 46-93个
     } else {
-      maxDepth = PERFORMANCE.MAX_BRANCH_DEPTH  // 94+个：最大深度6（原来7-8，现在统一为6）
+      maxDepth = PERFORMANCE.MAX_BRANCH_DEPTH  // 46+个：最大深度5（3×2^5=96个枝条）
     }
 
     // 🔥 基础长度：受avgLength影响（0-20映射到50%-150%）
@@ -835,10 +833,16 @@ const generateLeaves = (
   const leavesPerSegment = leafCount / leafBranches.length
 
   for (const branch of leafBranches) {
+    // 🔥 性能优化：检查粒子上限
+    if (particles.length >= PERFORMANCE.MAX_PARTICLES) break
+
     // 根据线段长度决定叶子数量
     const segmentLeafCount = Math.max(1, Math.round(leavesPerSegment))
 
     for (let i = 0; i < segmentLeafCount; i++) {
+      // 🔥 性能优化：每次循环检查上限
+      if (particles.length >= PERFORMANCE.MAX_PARTICLES) break
+
       // 沿着线段随机位置（10%-90%，避免起点和终点）
       const t = 0.1 + random(0, 0.8)
       const x = branch.startX + (branch.x - branch.startX) * t
@@ -889,6 +893,8 @@ const generateFruits = (
   const fruitNodes = matureNodes.length > 0 ? matureNodes : branchNodes.filter(n => n.level >= 2)
 
   for (let i = 0; i < fruitCount; i++) {
+    // 🔥 性能优化：检查粒子上限
+    if (particles.length >= PERFORMANCE.MAX_PARTICLES) break
     if (fruitNodes.length === 0) break
 
     const node = fruitNodes[Math.floor(random(0, fruitNodes.length))]
