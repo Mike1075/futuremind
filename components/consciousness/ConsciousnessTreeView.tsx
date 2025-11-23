@@ -146,7 +146,7 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
 
   return (
     <div className="w-full h-full relative">
-      <ConsciousnessTreeCanvas growthData={growthData} techParams={techParams} />
+      <ConsciousnessTreeCanvas growthData={growthData} techParams={techParams} zoom={1} />
 
       {/* 树的状态信息（仅在非预览模式显示） */}
       {!isPreview && (

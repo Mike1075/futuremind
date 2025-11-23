@@ -58,33 +58,19 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1 }: Co
       // 基础宽度（视口宽度或最小800px）
       const baseWidth = Math.max(container.clientWidth || 800, 800)
 
-      // 计算树干高度
-      const baseHeight = growthData.roots.count * 10
-      const growHeight = growthData.trunk.height_level * 2.5
-      const trunkHeight = Math.max(baseHeight + growHeight, 10)
+      // 🔥 修复：树干高度固定估算，不依赖height_level（避免改变height_level时整树变大）
+      const trunkHeight = 150  // 固定估算
 
-      // 计算根系深度（考虑递归层级）
-      const rootDepth = growthData.roots.depth_level
-      let rootMaxDepth = 1
-      if (rootDepth > 2) rootMaxDepth = 2
-      if (rootDepth > 4) rootMaxDepth = 3
-      if (rootDepth > 6) rootMaxDepth = 4
-      if (rootDepth > 8) rootMaxDepth = 5
+      // 🔥 修复：根系延伸只基于count，不基于depth_level
+      // 使用固定的平均根系延伸（深度变化不影响Canvas尺寸）
+      const rootCount = growthData.roots.count
+      const mainRootCount = Math.max(1, Math.ceil(Math.log2(rootCount + 1)))
+      // 平均深度估算（固定3层）
+      const estimatedRootLength = 80  // 固定估算
+      const rootTotalExtent = rootCount > 0 ? estimatedRootLength : 0
 
-      const rootLength = Math.max(rootDepth * 15, 5)
-      // 根系总延伸 = 主根 + 递归分支（每级0.7倍）
-      const rootTotalExtent = rootLength * (1 + 0.7 + 0.49 + 0.343 + 0.24) * (rootMaxDepth / 5)
-
-      // 🔧 修复：枝条延伸计算（匹配新的1/3规则逻辑，移除*4倍数）
-      // 基础长度更短，需要更保守的估算
-      const branchLength = Math.max(growthData.branches.avg_length * 4, 5)
-      let branchMaxDepth = 2
-      if (growthData.branches.count > 3) branchMaxDepth = 3
-      if (growthData.branches.count > 6) branchMaxDepth = 4
-      if (growthData.branches.count > 12) branchMaxDepth = 5
-
-      // 枝条总延伸 = 主枝 + 递归分支
-      const branchTotalExtent = branchLength * (1 + 0.7 + 0.49 + 0.343 + 0.24) * (branchMaxDepth / 5)
+      // 🔥 修复：枝条延伸固定估算，不依赖avg_length（避免改变avg_length时整树变大）
+      const branchTotalExtent = growthData.branches.count > 0 ? 200 : 0  // 固定估算
 
       // 总高度 = 上边距 + 树冠延伸 + 树干 + 根系延伸 + 下边距
       // 🔧 增加上下边距，确保滚动时能看全整棵树
