@@ -894,7 +894,8 @@ export function generateConsciousnessTree(
   const overallProgress = calculateOverallGrowthProgress(growthData)
 
   const centerX = canvasWidth / 2
-  const baseY = canvasHeight * 0.65
+  // 🔥 修复居中问题：改为50%让树垂直居中（根系向下30%，树冠向上70%）
+  const baseY = canvasHeight * 0.5
 
   // 🔥 优化顺序：先计算树干宽度，再按【根系→树干→枝条】顺序绘制
 

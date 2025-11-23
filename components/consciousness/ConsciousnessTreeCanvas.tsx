@@ -10,6 +10,7 @@ import {
 interface ConsciousnessTreeCanvasProps {
   growthData: TreeGrowthData
   techParams?: Partial<TreeParams>
+  zoom?: number  // 缩放比例（0.5-3.0）
 }
 
 // 默认参数（经典红色能量树 V2）
@@ -18,11 +19,16 @@ const DEFAULT_PARAMS: TreeParams = {
   glowIntensity: 0.5,
 }
 
-export function ConsciousnessTreeCanvas({ growthData, techParams }: ConsciousnessTreeCanvasProps) {
+export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1 }: ConsciousnessTreeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [seedOpacity, setSeedOpacity] = useState(0.3)
   const animationRef = useRef<number | undefined>(undefined)
+
+  // 🖱️ 拖拽状态
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
   // 检测是否为空树（种子状态）
   const isEmptyTree =
@@ -241,16 +247,70 @@ export function ConsciousnessTreeCanvas({ growthData, techParams }: Consciousnes
     }
   }, [isEmptyTree])
 
+  // 🖱️ 鼠标事件处理
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true)
+    setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y })
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = 'grabbing'
+    }
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return
+    setOffset({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    })
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = 'grab'
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (isDragging) {
+      setIsDragging(false)
+      if (canvasRef.current) {
+        canvasRef.current.style.cursor = 'grab'
+      }
+    }
+  }
+
   return (
     <div
       ref={containerRef}
-      className="w-full h-full overflow-hidden"
+      className="w-full h-full overflow-hidden relative"
       style={{ background: '#000' }}
     >
-      <canvas
-        ref={canvasRef}
-        style={{ display: 'block', background: '#000', minWidth: '100%' }}
-      />
+      {/* 🖱️ 拖拽提示层 */}
+      <div className="absolute top-2 left-2 text-xs text-white/50 pointer-events-none z-10">
+        拖拽查看 | 滚轮缩放
+      </div>
+
+      {/* 🔥 Canvas包装器：应用缩放和偏移 */}
+      <div
+        style={{
+          position: 'absolute',
+          left: offset.x,
+          top: offset.y,
+          transform: `scale(${zoom})`,
+          transformOrigin: 'top left',
+          cursor: isDragging ? 'grabbing' : 'grab'
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{ display: 'block', background: '#000' }}
+        />
+      </div>
     </div>
   )
 }
