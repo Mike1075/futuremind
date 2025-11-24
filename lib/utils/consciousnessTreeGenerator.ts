@@ -849,11 +849,9 @@ const generateLeaves = (
 
   console.log(`[叶子生成] totalCount (branches.count): ${totalCount}`)
 
-  // 计算最小叶子层级：枝条越多，叶子越只长在末端细枝上
-  let minLeafLevel = 1  // 默认所有枝条都可以长叶子
-  if (totalCount > 10) minLeafLevel = 2  // 10+个里程：从第2层开始长叶子
-  if (totalCount > 30) minLeafLevel = 3  // 30+个里程：从第3层开始长叶子
-  if (totalCount > 60) minLeafLevel = 4  // 60+个里程：只在细小末端长叶子
+  // 🔥 固定从第3层开始长叶子（不考虑枝条总数）
+  // 第1层：主枝，第2层：主要分支，第3层及以上：细枝（适合长叶子）
+  const minLeafLevel = 3
 
   // 过滤出可以长叶子的枝条（细枝）
   let leafBranches = branchNodes.filter(n => n.level >= minLeafLevel)
@@ -871,82 +869,77 @@ const generateLeaves = (
   if (totalCount > 60) leafSizeScale = 3.5
   if (totalCount > 100) leafSizeScale = 4.0  // 枝条很多时，叶子最大
 
-  // 🔥 全新算法：轮询分配叶子，确保所有枝条均匀分布
-  let generatedLeafCount = 0
-
-  // 🌿 关键修复：使用轮询算法，每轮给所有枝条各分配一片叶子
-  // 这样可以避免左边枝条用完所有叶子，右边枝条是秃的
-  const totalRounds = Math.ceil(leafCount / leafBranches.length)
-
-  console.log(`[叶子生成] 总叶子数: ${leafCount}, 可用枝条数: ${leafBranches.length}, 轮数: ${totalRounds}`)
+  // 🔥 全新算法：间隔分配，确保叶子均匀分布在所有枝条上
+  // 无论叶子多少，都能均匀分布在从左到右的枝条上
+  console.log(`[叶子生成] 总叶子数: ${leafCount}, 可用枝条数: ${leafBranches.length}`)
   console.log(`[叶子生成] particleSize: ${particleSize}, leafSizeScale: ${leafSizeScale}`)
 
-  // 外层循环：轮数（每轮给所有枝条各分配一片叶子）
-  for (let round = 0; round < totalRounds && generatedLeafCount < leafCount; round++) {
-    // 内层循环：遍历每个枝条
-    for (const branch of leafBranches) {
-      if (generatedLeafCount >= leafCount) break
+  // 🌿 间隔分配：将叶子均匀分布在所有枝条上
+  // 如果叶子少于枝条，间隔选取枝条；如果叶子多于枝条，每个枝条分配多片叶子
+  for (let leafIndex = 0; leafIndex < leafCount; leafIndex++) {
+    // 计算应该分配到哪个枝条（使用浮点数间隔确保均匀分布）
+    const branchIndexFloat = (leafIndex / leafCount) * leafBranches.length
+    const branchIndex = Math.floor(branchIndexFloat)
+    const branch = leafBranches[Math.min(branchIndex, leafBranches.length - 1)]
 
-      const leavesOnThisBranch = totalRounds  // 每个枝条总共会分配totalRounds片叶子
-      const i = round  // 当前是第几片叶子（在这个枝条上）
+    // 计算这是该枝条的第几片叶子
+    const leavesPerBranch = Math.ceil(leafCount / leafBranches.length)
+    const leafOnBranchIndex = Math.floor(leafIndex / leafBranches.length)
 
-      // 计算枝条方向向量
-      const dx = branch.x - branch.startX
-      const dy = branch.y - branch.startY
-      const branchLength = Math.sqrt(dx * dx + dy * dy)
+    // 计算枝条方向向量
+    const dx = branch.x - branch.startX
+    const dy = branch.y - branch.startY
+    const branchLength = Math.sqrt(dx * dx + dy * dy)
 
-      // 沿枝条的位置（30%到90%范围）
-      const t = 0.3 + (i / Math.max(1, leavesOnThisBranch - 1)) * 0.6
-      const baseX = branch.startX + dx * t
-      const baseY = branch.startY + dy * t
+    // 沿枝条的位置（30%到90%范围）
+    const t = 0.3 + (leafOnBranchIndex / Math.max(1, leavesPerBranch - 1)) * 0.6
+    const baseX = branch.startX + dx * t
+    const baseY = branch.startY + dy * t
 
-      // 🔥 关键修复：计算枝条的垂直向量（perpendicular），让叶子在枝条的左右两侧分布
-      const leafSeed = generatedLeafCount
+    // 🔥 关键修复：计算枝条的垂直向量（perpendicular），让叶子在枝条的左右两侧分布
+    const leafSeed = leafIndex
 
-      // 计算枝条的单位垂直向量
-      let perpX = -dy / branchLength
-      let perpY = dx / branchLength
+    // 计算枝条的单位垂直向量
+    let perpX = -dy / branchLength
+    let perpY = dx / branchLength
 
-      // 随机选择左侧或右侧（真正的50/50分布）
-      const side = deterministicRandom(leafSeed, 2000, 0, 2) < 1 ? -1 : 1
+    // 随机选择左侧或右侧（真正的50/50分布）
+    const side = deterministicRandom(leafSeed, 2000, 0, 2) < 1 ? -1 : 1
 
-      // 偏移距离
-      const randomFactor = deterministicRandom(leafSeed, 3000, 1.2, 2.0)
-      const offsetDist = particleSize * leafSizeScale * randomFactor * 2.5
+    // 偏移距离
+    const randomFactor = deterministicRandom(leafSeed, 3000, 1.2, 2.0)
+    const offsetDist = particleSize * leafSizeScale * randomFactor * 2.5
 
-      // 🌿 最终偏移量：沿着枝条的垂直方向
-      const offsetX = perpX * side * offsetDist
-      const offsetY = perpY * side * offsetDist
+    // 🌿 最终偏移量：沿着枝条的垂直方向
+    const offsetX = perpX * side * offsetDist
+    const offsetY = perpY * side * offsetDist
 
-      const finalX = baseX + offsetX
-      const finalY = baseY + offsetY
+    const finalX = baseX + offsetX
+    const finalY = baseY + offsetY
 
-      if (round === 0 && leafBranches.indexOf(branch) < 3) {
-        console.log(`    枝条${leafBranches.indexOf(branch)}: dx=${dx.toFixed(0)}, dy=${dy.toFixed(0)}, 叶子${i}: ${side > 0 ? '右侧' : '左侧'}, offsetX=${offsetX.toFixed(0)}`)
-      }
-
-      // 叶子颜色（跟随整体进度）
-      const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
-
-      // 叶子大小
-      const size = particleSize * leafSizeScale * deterministicRandom(leafSeed, 4000, 0.9, 1.1)
-
-      // 叶子旋转角度：基于枝条方向，向外生长
-      const branchAngle = Math.atan2(dy, dx)
-      const perpAngle = branchAngle + (side > 0 ? Math.PI / 2 : -Math.PI / 2)
-      const rotation = perpAngle * 180 / Math.PI + deterministicRandom(leafSeed, 5000, -20, 20)
-
-      particles.push({
-        x: finalX,
-        y: finalY,
-        size,
-        color,
-        shape: 'leaf',
-        rotation,
-      })
-
-      generatedLeafCount++
+    if (leafIndex < 3) {
+      console.log(`    叶子${leafIndex}: 枝条${branchIndex}(${branch.x.toFixed(0)}), dx=${dx.toFixed(0)}, dy=${dy.toFixed(0)}, ${side > 0 ? '右侧' : '左侧'}`)
     }
+
+    // 叶子颜色（跟随整体进度）
+    const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
+
+    // 叶子大小
+    const size = particleSize * leafSizeScale * deterministicRandom(leafSeed, 4000, 0.9, 1.1)
+
+    // 叶子旋转角度：基于枝条方向，向外生长
+    const branchAngle = Math.atan2(dy, dx)
+    const perpAngle = branchAngle + (side > 0 ? Math.PI / 2 : -Math.PI / 2)
+    const rotation = perpAngle * 180 / Math.PI + deterministicRandom(leafSeed, 5000, -20, 20)
+
+    particles.push({
+      x: finalX,
+      y: finalY,
+      size,
+      color,
+      shape: 'leaf',
+      rotation,
+    })
   }
 }
 
@@ -976,30 +969,31 @@ const generateFruits = (
   // 与叶子相同的问题：branchNodes原本是生成顺序，需要排序后才能均匀分配
   terminalBranches = terminalBranches.sort((a, b) => a.x - b.x)
 
-  // 🔥 2. 使用循环分配算法，确保果实均匀分布在所有终端枝条上
-  let generatedFruitCount = 0
-  let branchIndex = 0
-
-  while (generatedFruitCount < fruitCount) {
-    const branch = terminalBranches[branchIndex % terminalBranches.length]
+  // 🔥 2. 使用间隔分配算法，确保果实均匀分布在所有终端枝条上
+  // 与叶子相同的算法：无论果实多少，都能均匀分布
+  for (let fruitIndex = 0; fruitIndex < fruitCount; fruitIndex++) {
+    // 计算应该分配到哪个枝条（使用浮点数间隔确保均匀分布）
+    const branchIndexFloat = (fruitIndex / fruitCount) * terminalBranches.length
+    const branchIndex = Math.floor(branchIndexFloat)
+    const branch = terminalBranches[Math.min(branchIndex, terminalBranches.length - 1)]
 
     // 计算这是该枝条的第几个果实
-    const fruitIndexOnBranch = Math.floor(branchIndex / terminalBranches.length)
+    const fruitsPerBranch = Math.ceil(fruitCount / terminalBranches.length)
+    const fruitOnBranchIndex = Math.floor(fruitIndex / terminalBranches.length)
 
     // 使用确定性随机，确保位置固定
-    const fruitSeed = generatedFruitCount
+    const fruitSeed = fruitIndex
 
     // 🔥 果实沿枝条均匀分布：从70%到95%的位置
     // 如果一个枝条有多个果实，它们按顺序排列
-    const fruitsOnThisBranch = Math.ceil(fruitCount / terminalBranches.length)
     let positionRatio: number
 
-    if (fruitsOnThisBranch === 1) {
+    if (fruitsPerBranch === 1) {
       // 只有一个果实，放在80-85%位置
       positionRatio = deterministicRandom(fruitSeed, 100, 0.8, 0.85)
     } else {
       // 多个果实，从70%到95%均匀分布
-      positionRatio = 0.7 + (fruitIndexOnBranch / Math.max(1, fruitsOnThisBranch - 1)) * 0.25
+      positionRatio = 0.7 + (fruitOnBranchIndex / Math.max(1, fruitsPerBranch - 1)) * 0.25
       positionRatio = Math.min(0.95, Math.max(0.7, positionRatio))
     }
 
@@ -1025,9 +1019,6 @@ const generateFruits = (
       color,
       shape: 'apple',
     })
-
-    generatedFruitCount++
-    branchIndex++
   }
 }
 
