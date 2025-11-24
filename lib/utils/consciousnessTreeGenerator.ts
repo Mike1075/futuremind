@@ -866,28 +866,30 @@ const generateLeaves = (
   if (totalCount > 60) leafSizeScale = 3.5
   if (totalCount > 100) leafSizeScale = 4.0  // 枝条很多时，叶子最大
 
-  // 🔥 全新算法：沿着整个枝条均匀分布叶子
+  // 🔥 全新算法：轮询分配叶子，确保所有枝条均匀分布
   let generatedLeafCount = 0
 
-  // 每个枝条分配的叶子数
-  const leavesPerBranch = Math.ceil(leafCount / leafBranches.length)
+  // 🌿 关键修复：使用轮询算法，每轮给所有枝条各分配一片叶子
+  // 这样可以避免左边枝条用完所有叶子，右边枝条是秃的
+  const totalRounds = Math.ceil(leafCount / leafBranches.length)
 
-  console.log(`[叶子生成] 总叶子数: ${leafCount}, 可用枝条数: ${leafBranches.length}, 每枝叶子数: ${leavesPerBranch}`)
+  console.log(`[叶子生成] 总叶子数: ${leafCount}, 可用枝条数: ${leafBranches.length}, 轮数: ${totalRounds}`)
   console.log(`[叶子生成] particleSize: ${particleSize}, leafSizeScale: ${leafSizeScale}`)
 
-  // 遍历每个枝条
-  for (const branch of leafBranches) {
-    if (generatedLeafCount >= leafCount) break
+  // 外层循环：轮数（每轮给所有枝条各分配一片叶子）
+  for (let round = 0; round < totalRounds && generatedLeafCount < leafCount; round++) {
+    // 内层循环：遍历每个枝条
+    for (const branch of leafBranches) {
+      if (generatedLeafCount >= leafCount) break
 
-    const leavesOnThisBranch = Math.min(leavesPerBranch, leafCount - generatedLeafCount)
+      const leavesOnThisBranch = totalRounds  // 每个枝条总共会分配totalRounds片叶子
+      const i = round  // 当前是第几片叶子（在这个枝条上）
 
-    // 计算枝条方向向量
-    const dx = branch.x - branch.startX
-    const dy = branch.y - branch.startY
-    const branchLength = Math.sqrt(dx * dx + dy * dy)
+      // 计算枝条方向向量
+      const dx = branch.x - branch.startX
+      const dy = branch.y - branch.startY
+      const branchLength = Math.sqrt(dx * dx + dy * dy)
 
-    // 沿枝条均匀分布叶子（从30%到90%）
-    for (let i = 0; i < leavesOnThisBranch && generatedLeafCount < leafCount; i++) {
       // 沿枝条的位置（30%到90%范围）
       const t = 0.3 + (i / Math.max(1, leavesOnThisBranch - 1)) * 0.6
       const baseX = branch.startX + dx * t
@@ -914,8 +916,8 @@ const generateLeaves = (
       const finalX = baseX + offsetX
       const finalY = baseY + offsetY
 
-      if (i < 3) {
-        console.log(`    枝条方向: dx=${dx.toFixed(0)}, dy=${dy.toFixed(0)}, 叶子${i}: ${side > 0 ? '右侧' : '左侧'}, offsetX=${offsetX.toFixed(0)}`)
+      if (round === 0 && leafBranches.indexOf(branch) < 3) {
+        console.log(`    枝条${leafBranches.indexOf(branch)}: dx=${dx.toFixed(0)}, dy=${dy.toFixed(0)}, 叶子${i}: ${side > 0 ? '右侧' : '左侧'}, offsetX=${offsetX.toFixed(0)}`)
       }
 
       // 叶子颜色（跟随整体进度）

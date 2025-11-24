@@ -8,7 +8,6 @@ interface Submission {
   content: string
   feedback: string | null
   score: number | null
-  consciousness_growth_points: number | null
   submitted_at: string | null
   reviewed_at: string | null
   is_public: boolean | null
@@ -48,7 +47,7 @@ export default function SubmissionHistory({
     try {
       const { data, error } = await supabase
         .from('user_submissions')
-        .select('id, content, feedback, score, consciousness_growth_points, submitted_at, reviewed_at, is_public')
+        .select('id, content, feedback, score, submitted_at, reviewed_at, is_public')
         .eq('user_id', userId)
         .eq('course_content_id', contentId)
         .order('submitted_at', { ascending: false })
@@ -143,7 +142,7 @@ export default function SubmissionHistory({
     }
   }
 
-  const handleDelete = async (submissionId: string, growthPoints: number | null) => {
+  const handleDelete = async (submissionId: string) => {
     setDeletingId(submissionId)
     try {
       const response = await fetch(
@@ -246,12 +245,9 @@ export default function SubmissionHistory({
                           <span className="text-white font-bold text-lg">{submission.score || 0}</span>
                         </div>
 
-                        {/* 时间和成长点 */}
+                        {/* 提交时间 */}
                         <div>
                           <p className="text-white font-medium">{formatDate(submission.submitted_at)}</p>
-                          <p className="text-sm text-gray-400">
-                            意识成长点数: +{submission.consciousness_growth_points || 0}
-                          </p>
                         </div>
                       </div>
 
@@ -354,7 +350,7 @@ export default function SubmissionHistory({
                         {confirmDeleteId === submission.id ? (
                           <div className="flex gap-2">
                             <button
-                              onClick={() => handleDelete(submission.id, submission.consciousness_growth_points)}
+                              onClick={() => handleDelete(submission.id)}
                               disabled={deletingId === submission.id}
                               className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
                             >
@@ -383,23 +379,6 @@ export default function SubmissionHistory({
                           </button>
                         )}
                       </div>
-
-                      {/* 删除警告提示 */}
-                      {confirmDeleteId === submission.id && submission.consciousness_growth_points != null && submission.consciousness_growth_points > 0 && (
-                        <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
-                          <div className="flex items-start gap-3">
-                            <svg className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                            <div>
-                              <p className="text-yellow-400 font-semibold mb-1">谨慎删除</p>
-                              <p className="text-yellow-200 text-sm">
-                                删除此提交将扣除 <strong>{submission.consciousness_growth_points}</strong> 点意识成长点数，此操作不可撤销！
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

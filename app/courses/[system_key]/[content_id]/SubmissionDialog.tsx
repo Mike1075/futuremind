@@ -327,30 +327,6 @@ export default function SubmissionDialog({
                 </p>
               </div>
 
-              {/* 意识树生长提示 */}
-              {result.growth_impact && Object.keys(result.growth_impact).length > 0 && (
-                <div className="bg-gradient-to-r from-green-900/20 to-blue-900/20 border border-green-800/30 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <span className="text-2xl mr-2">🌱</span>
-                    你的意识树正在生长
-                  </h3>
-                  <div className="space-y-2 text-sm text-green-300">
-                    {result.growth_impact.roots_growth && (
-                      <p>✨ 根系深度增加：{JSON.stringify(result.growth_impact.roots_growth)}</p>
-                    )}
-                    {result.growth_impact.trunk_growth && (
-                      <p>💪 树干强化：稳定性+{result.growth_impact.trunk_growth.stability || 0}，厚度+{result.growth_impact.trunk_growth.thickness || 0}</p>
-                    )}
-                    {result.growth_impact.new_leaf_generated && (
-                      <p>🍃 新叶生成：+{result.growth_impact.new_leaf_generated.count || 0} 片</p>
-                    )}
-                    {result.growth_impact.fruit_generated && (
-                      <p>🍎 果实收获：{result.growth_impact.fruit_generated.title || '新成果'}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {/* 关闭按钮 */}
               <button
                 onClick={() => {
