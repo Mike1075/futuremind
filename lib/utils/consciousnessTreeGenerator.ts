@@ -847,6 +847,8 @@ const generateLeaves = (
   // 🍃 自然规律：根据枝条数量决定叶子生长位置
   const totalCount = growthData.branches.count
 
+  console.log(`[叶子生成] totalCount (branches.count): ${totalCount}`)
+
   // 计算最小叶子层级：枝条越多，叶子越只长在末端细枝上
   let minLeafLevel = 1  // 默认所有枝条都可以长叶子
   if (totalCount > 10) minLeafLevel = 2  // 10+个里程：从第2层开始长叶子
@@ -871,6 +873,7 @@ const generateLeaves = (
   const leavesPerBranch = Math.ceil(leafCount / leafBranches.length)
 
   console.log(`[叶子生成] 总叶子数: ${leafCount}, 可用枝条数: ${leafBranches.length}, 每枝叶子数: ${leavesPerBranch}`)
+  console.log(`[叶子生成] particleSize: ${particleSize}, leafSizeScale: ${leafSizeScale}`)
 
   // 遍历每个枝条
   for (const branch of leafBranches) {
@@ -902,7 +905,9 @@ const generateLeaves = (
 
       // 使用确定性随机偏移，使叶子看起来更自然
       const leafSeed = generatedLeafCount
-      const offsetDist = particleSize * leafSizeScale * deterministicRandom(leafSeed, 3000, 1.2, 1.8)
+      const randomFactor = deterministicRandom(leafSeed, 3000, 1.2, 1.8)
+      // 🔥 增大偏移距离5倍，让叶子明显分布在枝条两侧
+      const offsetDist = particleSize * leafSizeScale * randomFactor * 5
 
       // 叶子位置：枝条垂直方向偏移
       const offsetX = perpX * side * offsetDist
@@ -912,7 +917,7 @@ const generateLeaves = (
       const finalY = baseY + offsetY
 
       if (i < 3) {  // 只打印前3个叶子的信息
-        console.log(`    叶子 ${i}: side=${side}, baseX=${baseX.toFixed(0)}, offsetX=${offsetX.toFixed(0)}, finalX=${finalX.toFixed(0)}`)
+        console.log(`    叶子 ${i}: side=${side}, randomFactor=${randomFactor.toFixed(2)}, offsetDist=${offsetDist.toFixed(1)}, offsetX=${offsetX.toFixed(0)}, finalX=${finalX.toFixed(0)}`)
       }
 
       // 叶子颜色（跟随整体进度）
