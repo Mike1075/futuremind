@@ -168,49 +168,56 @@ const getColor = (
   type: 'root' | 'trunk' | 'branch' | 'leaf' | 'fruit',
   overallProgress: number,  // 整体生长进度 (0-1)，0=刚开始，1=接近升级
   isSolid: boolean,
-  glowIntensity: number = 0.5
+  glowIntensity: number = 0.5,
+  seed: number = 0  // 用于果实的随机颜色
 ): string => {
-  // 🎨 基于整体生长进度的颜色演变
-  // 0-90%: 从暗红 → 亮红 → 金边红
-  // 90%+: 第二级树（换颜色，暂时保持红色系）
+  // 🌿 叶子：绿色
+  if (type === 'leaf') {
+    const hue = 120  // 绿色
+    const saturation = 60 + overallProgress * 30  // 60-90%，越成熟越鲜艳
+    const lightness = 35 + overallProgress * 15   // 35-50%，越成熟越亮
+    const alpha = isSolid ? 0.95 : 0.85
+    return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
+  }
 
+  // 🍎 果实：随机彩色（红、橙、黄、紫、粉、青）
+  if (type === 'fruit') {
+    const fruitHues = [0, 30, 60, 280, 320, 180]  // 红、橙、黄、紫、粉、青
+    const hue = fruitHues[seed % fruitHues.length]
+    const saturation = 80 + (seed % 20)  // 80-100%
+    const lightness = 50 + (seed % 15)   // 50-65%
+    const alpha = isSolid ? 0.95 : 0.7
+    return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
+  }
+
+  // 🌳 树干/树枝/树根：暗红到亮红的渐变
   let hue = 0       // 纯红色
   let saturation = 70
   let lightness = 20
 
-  // 🌳 整体进度影响颜色演变（所有部分统一）
   if (overallProgress < 0.9) {
     // 第一级树：0-90%
-    // 色相：纯红色 (0)
     hue = 0
 
     // 饱和度：70 → 95 (逐渐鲜艳)
-    saturation = 70 + overallProgress * 28  // 0% → 70, 90% → 95
+    saturation = 70 + overallProgress * 28
 
     // 亮度：根据部位基础值 + 整体进度加成
     const baseLight = type === 'trunk' ? 15 :
-                      type === 'root' ? 20 :
-                      type === 'branch' ? 20 :
-                      type === 'leaf' ? 30 : 35  // fruit
+                      type === 'root' ? 20 : 20  // branch
 
-    // 进度越高，亮度提升越多（0-90%提升20-30个亮度点）
+    // 进度越高，亮度提升越多
     const progressBonus = overallProgress * 30
     lightness = Math.min(baseLight + progressBonus, 50)
 
   } else {
     // 第二级树：90%+（亮红色为主 + 金边点缀）
-    // 🔥 修复：保持红色为主，只在边缘添加金色光晕效果
-    // 色相：纯红色 (0)，不变金黄
     hue = 0
-    // 饱和度：保持高饱和红色
     saturation = 95
-    // 亮度：亮红色（比之前稍亮，但不是金色）
-    lightness = 55  // 亮红色（原来50%，现在55%更亮一点）
-    // 注意：金边效果应该通过后续的发光/描边实现，而不是改变主色调
+    lightness = 55
   }
 
-  // 🔥 提高叶子的不透明度，使其更显眼
-  const alpha = isSolid ? 0.95 : (type === 'leaf' ? 0.85 : 0.5)
+  const alpha = isSolid ? 0.95 : 0.5
 
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
 }
@@ -845,23 +852,31 @@ const generateLeaves = (
   if (totalCount > 60) leafSizeScale = 3.5
   if (totalCount > 100) leafSizeScale = 4.0  // 枝条很多时，叶子最大
 
-  // 🔥 簇状生成算法：2-3片叶子组成一簇，簇沿枝条两侧分布
-  const leavesPerCluster = 3 // 每簇3片叶子
+  // 🔥 簇状生成算法：4-5片叶子组成一簇，簇沿枝条两侧分布
+  const leavesPerCluster = 5 // 每簇5片叶子，增加密度
   const clusterCount = Math.ceil(leafCount / leavesPerCluster)
 
   let generatedLeafCount = 0
   let clusterIndex = 0
 
-  while (generatedLeafCount < leafCount && clusterIndex < clusterCount * 2) {
+  // 🔥 修复：只用generatedLeafCount作为主要终止条件，添加安全上限防止死循环
+  const maxIterations = leafCount * 2
+  while (generatedLeafCount < leafCount && clusterIndex < maxIterations) {
     const branch = leafBranches[clusterIndex % leafBranches.length]
 
-    // 计算这是该枝条的第几簇
+    // 计算这是该枝条上的第几簇（循环分配）
+    const clustersPerBranch = Math.ceil(clusterCount / leafBranches.length)
     const clusterIndexOnBranch = Math.floor(clusterIndex / leafBranches.length)
 
+    // 如果已经超过了该枝条应该有的簇数，跳到下一个枝条
+    if (clusterIndexOnBranch >= clustersPerBranch) {
+      clusterIndex++
+      continue
+    }
+
     // 计算簇的中心位置（沿枝条分布）
-    const clustersOnThisBranch = Math.ceil(clusterCount / leafBranches.length)
-    const positionRatio = 0.25 + (clusterIndexOnBranch / Math.max(1, clustersOnThisBranch)) * 0.6
-    const t = Math.min(0.85, Math.max(0.25, positionRatio))
+    const positionRatio = 0.3 + (clusterIndexOnBranch / Math.max(1, clustersPerBranch - 1)) * 0.5
+    const t = Math.min(0.85, Math.max(0.3, positionRatio))
 
     const clusterX = branch.startX + (branch.x - branch.startX) * t
     const clusterY = branch.startY + (branch.y - branch.startY) * t
@@ -876,15 +891,16 @@ const generateLeaves = (
     // 确定簇的位置（左侧或右侧交替）
     const side = clusterIndex % 2 === 0 ? 1 : -1
 
-    // 生成该簇的叶子（2-3片）
+    // 生成该簇的叶子（4-5片）
     const leavesInThisCluster = Math.min(leavesPerCluster, leafCount - generatedLeafCount)
 
     for (let leafInCluster = 0; leafInCluster < leavesInThisCluster; leafInCluster++) {
       const leafSeed = generatedLeafCount
 
-      // 🔥 簇内叶子的相对位置：呈扇形散开
-      const angleOffset = (leafInCluster - 1) * 25 // -25°, 0°, +25°
-      const spreadDistance = particleSize * leafSizeScale * (0.6 + leafInCluster * 0.2)
+      // 🔥 簇内叶子的相对位置：呈扇形散开（扩大角度范围）
+      // 5片叶子：-60°, -30°, 0°, +30°, +60°
+      const angleOffset = (leafInCluster - 2) * 30 // 从中间向两侧散开
+      const spreadDistance = particleSize * leafSizeScale * (0.5 + leafInCluster * 0.15)
 
       // 簇的基础偏移
       const baseOffsetX = perpX * side * particleSize * 1.2
@@ -983,8 +999,8 @@ const generateFruits = (
     const offsetX = deterministicRandom(fruitSeed, 200, -3, 3)
     const offsetY = deterministicRandom(fruitSeed, 300, 10, 16)
 
-    // 使用整体生长进度决定颜色（所有部分统一）
-    const color = getColor('fruit', overallProgress, isSolid, glowIntensity)
+    // 🍎 使用种子生成随机彩色果实
+    const color = getColor('fruit', overallProgress, isSolid, glowIntensity, fruitSeed)
 
     // 🔥 果实大小使用确定性随机
     const size = particleSize * deterministicRandom(fruitSeed, 400, 3.2, 4.2)
