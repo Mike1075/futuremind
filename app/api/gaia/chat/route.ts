@@ -11,6 +11,9 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server'
  */
 export async function POST(req: NextRequest) {
   try {
+    const startTime = Date.now()  // 🔥 开始计时
+    console.log('[Gaia API] ⏱️  请求开始')
+
     const N8N_CHAT_WEBHOOK = process.env.N8N_CHAT_WEBHOOK_URL
       || 'https://n8n.aifunbox.com/webhook/79cbcc7c-fcff-4ab4-9a4e-c5a6f14b3024'
 
@@ -26,6 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { message, conversationId, currentMessages } = await req.json()
+    console.log(`[Gaia API] ⏱️  解析请求: +${Date.now() - startTime}ms`)
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return new Response(JSON.stringify({ error: 'Message is required' }), {
@@ -134,6 +138,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`[Gaia Chat] 发送给N8N: conversation_id=${conversation.id}`)
+    console.log(`[Gaia API] ⏱️  数据库操作完成: +${Date.now() - startTime}ms`)
 
     // 5. 调用N8N获取流式响应
     const n8nRes = await fetch(N8N_CHAT_WEBHOOK, {
@@ -144,6 +149,8 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify(payload)
     })
+
+    console.log(`[Gaia API] ⏱️  N8N响应到达: +${Date.now() - startTime}ms`)
 
     if (!n8nRes.ok) {
       const errorText = await n8nRes.text()
@@ -170,6 +177,7 @@ export async function POST(req: NextRequest) {
         }
 
         try {
+          let firstChunkReceived = false  // 🔥 追踪第一个chunk
           while (true) {
             const { done, value } = await reader.read()
             if (done) break
@@ -184,6 +192,11 @@ export async function POST(req: NextRequest) {
 
                 // 处理type: "item"的流式数据
                 if (json.type === 'item' && json.content) {
+                  if (!firstChunkReceived) {
+                    console.log(`[Gaia API] ⏱️  首个chunk到达: +${Date.now() - startTime}ms`)
+                    firstChunkReceived = true
+                  }
+
                   const content = json.content
 
                   // 尝试解析content
