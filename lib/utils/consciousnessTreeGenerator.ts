@@ -249,9 +249,11 @@ const drawLine = (
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
   const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
 
-  // 只打印前几次调用，避免刷屏
-  if (particles.length < 50) {
-    console.log('[drawLine] isSolid:', isSolid, 'distance:', distance.toFixed(1), 'steps:', steps, 'particleSize:', particleSize)
+  // 🔥 强制打印前3次调用，无论 particles.length
+  const drawLineCallCount = (window as any).__drawLineCallCount || 0
+  if (drawLineCallCount < 3) {
+    console.log(`[drawLine 第${drawLineCallCount + 1}次调用] isSolid:`, isSolid, 'distance:', distance.toFixed(1), 'steps:', steps, 'particleSize:', particleSize, 'particles.length:', particles.length)
+    ;(window as any).__drawLineCallCount = drawLineCallCount + 1
   }
 
   for (let i = 0; i <= steps; i++) {
@@ -587,6 +589,16 @@ const generateTrunk = (
 
   // 使用整体进度决定颜色（所有部分统一）
   const color = getColor('trunk', overallProgress, drawSolid, glowIntensity)
+
+  console.log('[树干绘制调用] 即将调用 drawLine，参数:', {
+    x1: centerX.toFixed(1),
+    y1: baseY.toFixed(1),
+    x2: topX.toFixed(1),
+    y2: topY.toFixed(1),
+    width: actualWidth.toFixed(1),
+    drawSolid,
+    particleSize
+  })
 
   // 使用粗粒子绘制树干
   drawLine(
