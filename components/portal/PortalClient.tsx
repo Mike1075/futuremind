@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { usePortalCourses } from '@/lib/hooks/usePortalCourses'
 import { ConsciousnessTreeView } from '@/components/consciousness/ConsciousnessTreeView'
+import UserProfileButton from '@/components/UserProfileButton'
 
 interface PortalClientProps {
   userId: string
@@ -119,6 +120,9 @@ export function PortalClient({
           />
         ))}
       </div>
+
+      {/* 用户资料按钮（左上角） */}
+      <UserProfileButton />
 
       {/* 顶部导航栏 */}
       <motion.nav
