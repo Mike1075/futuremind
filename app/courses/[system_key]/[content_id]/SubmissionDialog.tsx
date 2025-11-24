@@ -54,6 +54,12 @@ export default function SubmissionDialog({
       return
     }
 
+    // 检查字数是否达到最低要求
+    if (submissionContent.length < 10) {
+      alert('提交失败：作业内容至少需要10个字才能提交')
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
 
@@ -178,7 +184,7 @@ export default function SubmissionDialog({
                     {submissionContent.length} 字
                   </span>
                   <span className="text-sm text-gray-500">
-                    建议至少 100 字
+                    建议至少 50 字
                   </span>
                 </div>
               </div>
@@ -277,7 +283,7 @@ export default function SubmissionDialog({
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting || submissionContent.length < 10}
+                  disabled={isSubmitting}
                   className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
