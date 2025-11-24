@@ -179,24 +179,12 @@ export function PBLProjectDetail({
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null)
   const [historyDayKey, setHistoryDayKey] = useState<string | null>(null)
+  const [historyDayLabel, setHistoryDayLabel] = useState<string | null>(null) // 存储实际的day标签（如"Day 2-4"）
   const [isPublic, setIsPublic] = useState(false) // 作业是否公开（默认私密）
   const [togglingId, setTogglingId] = useState<string | null>(null) // 正在切换可见性的作业ID
 
   // 公开作业刷新机制
   const [publicSubmissionsRefreshKey, setPublicSubmissionsRefreshKey] = useState(0)
-
-  // 将 dayKey 转换为友好的标题显示
-  const getDayTitle = (dayKey: string) => {
-    // dayKey 格式: "project_1_week1_day1"
-    const match = dayKey.match(/project_(\d+)_week(\d+)_day(\d+)/)
-    if (!match) return dayKey
-
-    const [, , weekNum, dayNum] = match
-    const weekNames = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
-    const weekName = weekNames[parseInt(weekNum) - 1] || weekNum
-
-    return `${project.title} - 第${weekName}周 第${dayNum}天`
-  }
 
   // 未选择项目提示弹窗
   const [showSelectProjectModal, setShowSelectProjectModal] = useState(false)
@@ -304,7 +292,7 @@ export function PBLProjectDetail({
   }
 
   // 打开提交对话框
-  const openSubmitDialog = (weekNumber: number, dayNumber: number) => {
+  const openSubmitDialog = (weekNumber: number, dayNumber: number, dayLabel?: string) => {
     // 检查是否已选择项目
     if (!isSelected) {
       setShowSelectProjectModal(true)
@@ -313,6 +301,7 @@ export function PBLProjectDetail({
 
     const dayKey = `project_${project.sequence_number}_week${weekNumber}_day${dayNumber}`
     setCurrentDayKey(dayKey)
+    setHistoryDayLabel(dayLabel || `Day ${dayNumber}`) // 存储day标签用于对话框标题
     setSubmissionContent('')
     setUploadedFiles([])
     setSubmissionResult(null)
@@ -810,7 +799,7 @@ export function PBLProjectDetail({
                           {isUnlocked && (
                             <div className="px-4 pb-3 flex gap-2">
                               <button
-                                onClick={() => openSubmitDialog(week.week, dayNumber)}
+                                onClick={() => openSubmitDialog(week.week, dayNumber, activityDayLabel)}
                                 className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                               >
                                 {isCompleted ? '再次提交' : '提交任务'}
@@ -822,6 +811,7 @@ export function PBLProjectDetail({
                                     return
                                   }
                                   setHistoryDayKey(dayKey)
+                                  setHistoryDayLabel(activityDayLabel) // 存储实际的day标签
                                   setShowSubmissionsHistory(true)
                                   fetchSubmissionsHistory(dayKey)
                                 }}
@@ -937,7 +927,7 @@ export function PBLProjectDetail({
       {showSubmitDialog && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-gray-900 border border-gray-800 rounded-lg max-w-2xl w-full p-6 my-8">
-            <h3 className="text-xl font-bold mb-4">提交今日任务</h3>
+            <h3 className="text-xl font-bold mb-4">{historyDayLabel ? `${historyDayLabel} - 提交任务` : '提交任务'}</h3>
 
             {/* 如果没有AI评估结果，显示提交表单 */}
             {!submissionResult && (
@@ -1080,7 +1070,10 @@ export function PBLProjectDetail({
                     {uploading ? '上传中...' : submittingDay ? '提交中...' : '确认提交'}
                   </button>
                   <button
-                    onClick={() => setShowSubmitDialog(false)}
+                    onClick={() => {
+                      setShowSubmitDialog(false)
+                      setHistoryDayLabel(null)
+                    }}
                     disabled={!!submittingDay || uploading}
                     className="px-4 py-2 bg-gray-800 rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
                   >
@@ -1138,6 +1131,7 @@ export function PBLProjectDetail({
                     setSubmissionResult(null)
                     setSubmissionContent('')
                     setUploadedFiles([])
+                    setHistoryDayLabel(null)
                     router.refresh()
                   }}
                   className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity"
@@ -1157,6 +1151,7 @@ export function PBLProjectDetail({
           onClick={() => {
             setShowSubmissionsHistory(false)
             setSelectedSubmission(null)
+            setHistoryDayLabel(null)
           }}
         >
           <div
@@ -1165,12 +1160,13 @@ export function PBLProjectDetail({
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-white">
-                {historyDayKey ? `${getDayTitle(historyDayKey)} - 提交记录` : '我的提交记录'}
+                {historyDayLabel ? `${project.title} - ${historyDayLabel} - 提交记录` : '我的提交记录'}
               </h3>
               <button
                 onClick={() => {
                   setShowSubmissionsHistory(false)
                   setSelectedSubmission(null)
+                  setHistoryDayLabel(null)
                 }}
                 className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
               >
