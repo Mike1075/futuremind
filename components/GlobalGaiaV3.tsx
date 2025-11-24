@@ -383,7 +383,7 @@ export function GlobalGaiaV3() {
       let pendingChunks: string[] = []
       let displayInterval: NodeJS.Timeout | null = null
 
-      // 🔥 启动显示定时器（每10ms显示一些字符，快速流畅）
+      // 🔥 启动显示定时器（复刻Seth：每50ms显示3个字符）
       const startDisplayTimer = () => {
         if (displayInterval) return
 
@@ -400,7 +400,7 @@ export function GlobalGaiaV3() {
             return
           }
 
-          // 从队列中取出内容进行显示（每次显示一个chunk）
+          // 从队列中取出内容进行显示（每次显示3个字符，平衡速度和流畅度）
           const chunkToDisplay = pendingChunks.shift() || ''
           displayedAnswer += chunkToDisplay
 
@@ -413,7 +413,7 @@ export function GlobalGaiaV3() {
             }
             return newMessages
           })
-        }, 10) // 🔥 每10ms更新一次（加速5倍）
+        }, 50) // 每50ms更新一次显示（复刻Seth标准）
       }
 
       try {
@@ -445,9 +445,9 @@ export function GlobalGaiaV3() {
                 const newContent = fullAnswer.slice(lastFullAnswerLength)
                 lastFullAnswerLength = fullAnswer.length
 
-                // 🔥 每次显示8个字符（加快显示速度）
-                for (let i = 0; i < newContent.length; i += 8) {
-                  pendingChunks.push(newContent.slice(i, i + 8))
+                // 🔥 每次显示3个字符（复刻Seth标准，平衡速度和流畅度）
+                for (let i = 0; i < newContent.length; i += 3) {
+                  pendingChunks.push(newContent.slice(i, i + 3))
                 }
 
                 // 🔥 启动显示定时器
@@ -501,8 +501,8 @@ export function GlobalGaiaV3() {
                     const newContent = fullAnswer.slice(lastFullAnswerLength)
                     lastFullAnswerLength = fullAnswer.length
 
-                    for (let i = 0; i < newContent.length; i += 8) {
-                      pendingChunks.push(newContent.slice(i, i + 8))
+                    for (let i = 0; i < newContent.length; i += 3) {
+                      pendingChunks.push(newContent.slice(i, i + 3))
                     }
                     startDisplayTimer()
                   } else if (json.type === 'done') {
@@ -527,8 +527,8 @@ export function GlobalGaiaV3() {
               const newContent = fullAnswer.slice(lastFullAnswerLength)
               lastFullAnswerLength = fullAnswer.length
 
-              for (let i = 0; i < newContent.length; i += 8) {
-                pendingChunks.push(newContent.slice(i, i + 8))
+              for (let i = 0; i < newContent.length; i += 3) {
+                pendingChunks.push(newContent.slice(i, i + 3))
               }
               startDisplayTimer()
             } else if (json.type === 'done') {
