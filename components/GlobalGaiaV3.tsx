@@ -375,7 +375,36 @@ export function GlobalGaiaV3() {
       }
 
       let accumulatedContent = ''
+      let displayedContent = ''
       let buffer = '' // 🔥 缓冲区，用于处理不完整的JSON
+      let typewriterInterval: NodeJS.Timeout | null = null
+
+      // 🔥 打字机效果：逐字显示
+      const startTypewriter = () => {
+        if (typewriterInterval) return // 已经在运行
+
+        typewriterInterval = setInterval(() => {
+          if (displayedContent.length < accumulatedContent.length) {
+            // 每次显示3-5个字符，模拟打字速度
+            const charsToAdd = Math.min(5, accumulatedContent.length - displayedContent.length)
+            displayedContent = accumulatedContent.slice(0, displayedContent.length + charsToAdd)
+
+            setMessages(prev => {
+              const newMessages = [...prev]
+              newMessages[assistantMessageIndex] = {
+                role: 'assistant',
+                content: displayedContent,
+                timestamp: new Date().toISOString()
+              }
+              return newMessages
+            })
+          } else if (typewriterInterval) {
+            // 已经追上了，暂停打字机
+            clearInterval(typewriterInterval)
+            typewriterInterval = null
+          }
+        }, 30) // 每30ms显示一批字符
+      }
 
       try {
         while (true) {
@@ -398,17 +427,9 @@ export function GlobalGaiaV3() {
               const json = JSON.parse(trimmedLine)
 
               if (json.type === 'chunk') {
-                // 🔥 立即更新显示内容（真正的实时流式输出）
+                // 🔥 更新完整内容，启动打字机效果
                 accumulatedContent = json.content
-                setMessages(prev => {
-                  const newMessages = [...prev]
-                  newMessages[assistantMessageIndex] = {
-                    role: 'assistant',
-                    content: accumulatedContent,
-                    timestamp: json.timestamp
-                  }
-                  return newMessages
-                })
+                startTypewriter()
               } else if (json.type === 'done') {
                 if (json.conversationId && !currentConversationId) {
                   setCurrentConversationId(json.conversationId)
@@ -455,15 +476,7 @@ export function GlobalGaiaV3() {
                   const json = JSON.parse(jsonStr)
                   if (json.type === 'chunk') {
                     accumulatedContent = json.content
-                    setMessages(prev => {
-                      const newMessages = [...prev]
-                      newMessages[assistantMessageIndex] = {
-                        role: 'assistant',
-                        content: accumulatedContent,
-                        timestamp: json.timestamp
-                      }
-                      return newMessages
-                    })
+                    startTypewriter()
                   } else if (json.type === 'done') {
                     if (json.conversationId && !currentConversationId) {
                       setCurrentConversationId(json.conversationId)
@@ -483,15 +496,7 @@ export function GlobalGaiaV3() {
             const json = JSON.parse(buffer.trim())
             if (json.type === 'chunk') {
               accumulatedContent = json.content
-              setMessages(prev => {
-                const newMessages = [...prev]
-                newMessages[assistantMessageIndex] = {
-                  role: 'assistant',
-                  content: accumulatedContent,
-                  timestamp: json.timestamp
-                }
-                return newMessages
-              })
+              startTypewriter()
             } else if (json.type === 'done') {
               if (json.conversationId && !currentConversationId) {
                 setCurrentConversationId(json.conversationId)
@@ -501,7 +506,27 @@ export function GlobalGaiaV3() {
             // 忽略缓冲区中的无效JSON
           }
         }
+
+        // 🔥 确保打字机效果显示完所有内容
+        if (typewriterInterval) {
+          clearInterval(typewriterInterval)
+        }
+        // 立即显示剩余内容
+        if (displayedContent !== accumulatedContent) {
+          setMessages(prev => {
+            const newMessages = [...prev]
+            newMessages[assistantMessageIndex] = {
+              role: 'assistant',
+              content: accumulatedContent,
+              timestamp: new Date().toISOString()
+            }
+            return newMessages
+          })
+        }
       } finally {
+        if (typewriterInterval) {
+          clearInterval(typewriterInterval)
+        }
         reader.releaseLock()
       }
 

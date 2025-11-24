@@ -49,6 +49,7 @@ export function StageNode({
   const videoLink = firstContent?.documentary_url || ''
   const preWatchGuide = firstContent?.pre_watch_guide || ''
   const stageTitle = firstContent?.title || `第${stage.stageNumber}阶段`
+  const subtitle = firstContent?.subtitle || ''
 
   // 处理点击事件
   const handleClick = (e: React.MouseEvent) => {
@@ -220,6 +221,7 @@ export function StageNode({
         videoLink={videoLink}
         preWatchGuide={preWatchGuide}
         stageTitle={stageTitle}
+        subtitle={subtitle}
       />
     </>
   )

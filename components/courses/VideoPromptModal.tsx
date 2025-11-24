@@ -10,6 +10,7 @@ interface VideoPromptModalProps {
   videoLink: string
   preWatchGuide: string
   stageTitle: string
+  subtitle?: string // 副标题
 }
 
 export function VideoPromptModal({
@@ -18,7 +19,8 @@ export function VideoPromptModal({
   onProceed,
   videoLink,
   preWatchGuide,
-  stageTitle
+  stageTitle,
+  subtitle
 }: VideoPromptModalProps) {
   if (!isOpen) return null
 
@@ -70,7 +72,7 @@ export function VideoPromptModal({
               {/* 视频链接卡片 */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  📺 视频地址
+                  📺 视频内容
                 </label>
                 <a
                   href={videoLink}
@@ -79,20 +81,20 @@ export function VideoPromptModal({
                   className="block p-4 bg-gray-800/50 border border-gray-700 rounded-lg hover:border-blue-500/50 hover:bg-gray-800/70 transition-all group"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
                         <Play className="w-5 h-5 text-blue-400" />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="text-white font-medium group-hover:text-blue-400 transition-colors">
-                          点击观看视频
+                          {subtitle || '点击观看视频'}
                         </p>
-                        <p className="text-xs text-gray-500 mt-0.5 truncate max-w-md">
-                          {videoLink}
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          点击跳转到视频平台观看
                         </p>
                       </div>
                     </div>
-                    <ExternalLink className="w-5 h-5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                    <ExternalLink className="w-5 h-5 text-gray-500 group-hover:text-blue-400 transition-colors flex-shrink-0" />
                   </div>
                 </a>
               </div>
