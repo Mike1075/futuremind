@@ -852,92 +852,81 @@ const generateLeaves = (
   if (totalCount > 60) leafSizeScale = 3.5
   if (totalCount > 100) leafSizeScale = 4.0  // 枝条很多时，叶子最大
 
-  // 🔥 簇状生成算法：4-5片叶子组成一簇，簇沿枝条两侧分布
-  const leavesPerCluster = 5 // 每簇5片叶子，增加密度
-  const clusterCount = Math.ceil(leafCount / leavesPerCluster)
+  // 🔥 新算法：简单直接的均匀分配，确保所有叶子都生成且分布均匀
+  // 每个枝条分配的叶子数（向上取整，确保所有叶子都分配出去）
+  const leavesPerBranch = Math.ceil(leafCount / leafBranches.length)
 
   let generatedLeafCount = 0
-  let clusterIndex = 0
 
-  // 🔥 修复：只用generatedLeafCount作为主要终止条件，添加安全上限防止死循环
-  const maxIterations = leafCount * 2
-  while (generatedLeafCount < leafCount && clusterIndex < maxIterations) {
-    const branch = leafBranches[clusterIndex % leafBranches.length]
+  // 遍历每个可以长叶子的枝条
+  for (let branchIdx = 0; branchIdx < leafBranches.length; branchIdx++) {
+    const branch = leafBranches[branchIdx]
 
-    // 计算这是该枝条上的第几簇（循环分配）
-    const clustersPerBranch = Math.ceil(clusterCount / leafBranches.length)
-    const clusterIndexOnBranch = Math.floor(clusterIndex / leafBranches.length)
+    // 计算这个枝条实际要生成多少片叶子（避免超过总数）
+    const leavesOnThisBranch = Math.min(leavesPerBranch, leafCount - generatedLeafCount)
+    if (leavesOnThisBranch <= 0) break
 
-    // 如果已经超过了该枝条应该有的簇数，跳到下一个枝条
-    if (clusterIndexOnBranch >= clustersPerBranch) {
-      clusterIndex++
-      continue
-    }
-
-    // 计算簇的中心位置（沿枝条分布）
-    const positionRatio = 0.3 + (clusterIndexOnBranch / Math.max(1, clustersPerBranch - 1)) * 0.5
-    const t = Math.min(0.85, Math.max(0.3, positionRatio))
-
-    const clusterX = branch.startX + (branch.x - branch.startX) * t
-    const clusterY = branch.startY + (branch.y - branch.startY) * t
-
-    // 计算垂直于枝条的方向
+    // 计算枝条方向
     const dx = branch.x - branch.startX
     const dy = branch.y - branch.startY
     const length = Math.sqrt(dx * dx + dy * dy)
-    const perpX = -dy / length
+    const perpX = -dy / length  // 垂直方向
     const perpY = dx / length
 
-    // 确定簇的位置（左侧或右侧交替）
-    const side = clusterIndex % 2 === 0 ? 1 : -1
+    // 沿枝条均匀生成叶子簇（2-3片一簇）
+    const clustersOnBranch = Math.ceil(leavesOnThisBranch / 3)
 
-    // 生成该簇的叶子（4-5片）
-    const leavesInThisCluster = Math.min(leavesPerCluster, leafCount - generatedLeafCount)
+    for (let clusterIdx = 0; clusterIdx < clustersOnBranch; clusterIdx++) {
+      // 叶簇位置（从30%到85%沿枝条分布）
+      const t = 0.3 + (clusterIdx / Math.max(1, clustersOnBranch - 1)) * 0.55
+      const clusterX = branch.startX + dx * t
+      const clusterY = branch.startY + dy * t
 
-    for (let leafInCluster = 0; leafInCluster < leavesInThisCluster; leafInCluster++) {
-      const leafSeed = generatedLeafCount
+      // 这一簇有几片叶子
+      const leavesInCluster = Math.min(3, leavesOnThisBranch - (clusterIdx * 3))
 
-      // 🔥 簇内叶子的相对位置：呈扇形散开（扩大角度范围）
-      // 5片叶子：-60°, -30°, 0°, +30°, +60°
-      const angleOffset = (leafInCluster - 2) * 30 // 从中间向两侧散开
-      const spreadDistance = particleSize * leafSizeScale * (0.5 + leafInCluster * 0.15)
+      // 左右两侧各生成叶子
+      for (let side = -1; side <= 1; side += 2) {  // side = -1 或 1
+        const leavesOnThisSide = Math.ceil(leavesInCluster / 2)
 
-      // 簇的基础偏移
-      const baseOffsetX = perpX * side * particleSize * 1.2
-      const baseOffsetY = perpY * side * particleSize * 1.2
+        for (let i = 0; i < leavesOnThisSide && generatedLeafCount < leafCount; i++) {
+          const leafSeed = generatedLeafCount
 
-      // 叶子在簇内的微小偏移（形成扇形）
-      const branchAngle = Math.atan2(dy, dx)
-      const spreadAngle = branchAngle + (90 + angleOffset) * side * Math.PI / 180
-      const spreadX = Math.cos(spreadAngle) * spreadDistance
-      const spreadY = Math.sin(spreadAngle) * spreadDistance
+          // 叶子角度：从枝条垂直方向散开
+          const angleSpread = (i - 0.5) * 40  // -20°, +20° 散开
+          const branchAngle = Math.atan2(dy, dx)
+          const leafAngle = branchAngle + (90 + angleSpread) * side * Math.PI / 180
 
-      const finalX = clusterX + baseOffsetX + spreadX
-      const finalY = clusterY + baseOffsetY + spreadY
+          // 叶子位置偏移
+          const offsetDistance = particleSize * leafSizeScale * (1.5 + i * 0.5)
+          const offsetX = Math.cos(leafAngle) * offsetDistance
+          const offsetY = Math.sin(leafAngle) * offsetDistance
 
-      // 使用整体生长进度决定颜色
-      const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
+          const finalX = clusterX + offsetX
+          const finalY = clusterY + offsetY
 
-      // 叶子大小
-      const size = particleSize * leafSizeScale * deterministicRandom(leafSeed, 4000, 0.9, 1.1)
+          // 叶子颜色
+          const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
 
-      // 叶子旋转角度：与簇的方向对齐
-      const leafBaseAngle = (branchAngle + 90 * side) * 180 / Math.PI
-      const rotation = leafBaseAngle + angleOffset + deterministicRandom(leafSeed, 5000, -5, 5)
+          // 叶子大小（增加变化）
+          const size = particleSize * leafSizeScale * deterministicRandom(leafSeed, 4000, 0.8, 1.2)
 
-      particles.push({
-        x: finalX,
-        y: finalY,
-        size,
-        color,
-        shape: 'leaf',
-        rotation,
-      })
+          // 叶子旋转角度（指向生长方向）
+          const rotation = (leafAngle * 180 / Math.PI) + deterministicRandom(leafSeed, 5000, -15, 15)
 
-      generatedLeafCount++
+          particles.push({
+            x: finalX,
+            y: finalY,
+            size,
+            color,
+            shape: 'leaf',
+            rotation,
+          })
+
+          generatedLeafCount++
+        }
+      }
     }
-
-    clusterIndex++
   }
 }
 
