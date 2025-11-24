@@ -331,6 +331,15 @@ export function GlobalGaiaV3() {
     setInput('')
     setIsLoading(true)
 
+    // 🔥 创建占位AI消息用于流式更新
+    const assistantMessageIndex = messages.length + 1
+    const placeholderMessage: Message = {
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString()
+    }
+    setMessages(prev => [...prev, placeholderMessage])
+
     try {
       // 需要发送当前所有消息的情况：
       // 1. 第一次发送消息（包含欢迎语）
@@ -353,31 +362,221 @@ export function GlobalGaiaV3() {
         })
       })
 
-      if (response.ok) {
-        const data = await response.json()
-
-        if (data.conversationId && !currentConversationId) {
-          setCurrentConversationId(data.conversationId)
-        }
-
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: data.reply || '抱歉，我现在无法回应。',
-          timestamp: new Date().toISOString()
-        }
-
-        setMessages(prev => [...prev, assistantMessage])
-      } else {
+      if (!response.ok) {
         throw new Error('Failed to get response')
+      }
+
+      // 🔥 流式读取响应
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error('No reader available')
+      }
+
+      let accumulatedContent = ''
+      let buffer = '' // 🔥 缓冲区，用于处理不完整的JSON
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          buffer += chunk // 🔥 添加到缓冲区
+
+          // 🔥 新方法：处理可能连在一起的JSON对象
+          // 先按换行符分割
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || '' // 保留最后一个可能不完整的行
+
+          for (const line of lines) {
+            const trimmedLine = line.trim()
+            if (!trimmedLine) continue
+
+            // 🔥 处理同一行中可能连在一起的多个JSON对象
+            // 例如: {"type":"chunk"}{"type":"chunk"}
+            const jsonObjects: string[] = []
+            let currentObj = ''
+            let braceCount = 0
+            let inString = false
+            let escapeNext = false
+
+            for (let i = 0; i < trimmedLine.length; i++) {
+              const char = trimmedLine[i]
+
+              if (escapeNext) {
+                currentObj += char
+                escapeNext = false
+                continue
+              }
+
+              if (char === '\\') {
+                currentObj += char
+                escapeNext = true
+                continue
+              }
+
+              if (char === '"') {
+                inString = !inString
+                currentObj += char
+                continue
+              }
+
+              if (!inString) {
+                if (char === '{') {
+                  braceCount++
+                } else if (char === '}') {
+                  braceCount--
+                }
+              }
+
+              currentObj += char
+
+              // 🔥 当大括号平衡时，说明一个完整的JSON对象结束了
+              if (!inString && braceCount === 0 && currentObj.trim()) {
+                jsonObjects.push(currentObj.trim())
+                currentObj = ''
+              }
+            }
+
+            // 🔥 处理每个分离出来的JSON对象
+            for (const jsonStr of jsonObjects) {
+              try {
+                const json = JSON.parse(jsonStr)
+
+                if (json.type === 'chunk') {
+                  // 🔥 实时更新AI消息内容
+                  accumulatedContent = json.content
+                  setMessages(prev => {
+                    const newMessages = [...prev]
+                    newMessages[assistantMessageIndex] = {
+                      role: 'assistant',
+                      content: accumulatedContent,
+                      timestamp: json.timestamp
+                    }
+                    return newMessages
+                  })
+                } else if (json.type === 'done') {
+                  // 🔥 流结束，保存conversationId
+                  if (json.conversationId && !currentConversationId) {
+                    setCurrentConversationId(json.conversationId)
+                  }
+                }
+              } catch (parseError) {
+                // 🔥 JSON解析失败，静默忽略（可能是不完整的JSON）
+                console.error('[GlobalGaia] ❌ JSON解析失败:', {
+                  json: jsonStr.substring(0, 100),
+                  error: parseError instanceof Error ? parseError.message : String(parseError)
+                })
+              }
+            }
+          }
+        }
+
+        // 🔥 处理缓冲区中剩余的数据
+        if (buffer.trim()) {
+          const trimmedBuffer = buffer.trim()
+
+          // 🔥 同样处理可能连在一起的多个JSON对象
+          const jsonObjects: string[] = []
+          let currentObj = ''
+          let braceCount = 0
+          let inString = false
+          let escapeNext = false
+
+          for (let i = 0; i < trimmedBuffer.length; i++) {
+            const char = trimmedBuffer[i]
+
+            if (escapeNext) {
+              currentObj += char
+              escapeNext = false
+              continue
+            }
+
+            if (char === '\\') {
+              currentObj += char
+              escapeNext = true
+              continue
+            }
+
+            if (char === '"') {
+              inString = !inString
+              currentObj += char
+              continue
+            }
+
+            if (!inString) {
+              if (char === '{') {
+                braceCount++
+              } else if (char === '}') {
+                braceCount--
+              }
+            }
+
+            currentObj += char
+
+            if (!inString && braceCount === 0 && currentObj.trim()) {
+              jsonObjects.push(currentObj.trim())
+              currentObj = ''
+            }
+          }
+
+          for (const jsonStr of jsonObjects) {
+            try {
+              const json = JSON.parse(jsonStr)
+              if (json.type === 'chunk') {
+                accumulatedContent = json.content
+                setMessages(prev => {
+                  const newMessages = [...prev]
+                  newMessages[assistantMessageIndex] = {
+                    role: 'assistant',
+                    content: accumulatedContent,
+                    timestamp: json.timestamp
+                  }
+                  return newMessages
+                })
+              } else if (json.type === 'done') {
+                if (json.conversationId && !currentConversationId) {
+                  setCurrentConversationId(json.conversationId)
+                }
+              }
+            } catch (parseError) {
+              console.warn('[GlobalGaia] ⚠️ 跳过缓冲区中的无效JSON:', {
+                json: jsonStr.substring(0, 100),
+                error: parseError instanceof Error ? parseError.message : String(parseError)
+              })
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
+      }
+
+      // 🔥 如果没有收到任何内容，显示默认消息
+      if (!accumulatedContent) {
+        setMessages(prev => {
+          const newMessages = [...prev]
+          newMessages[assistantMessageIndex] = {
+            role: 'assistant',
+            content: '抱歉，我现在无法回应。',
+            timestamp: new Date().toISOString()
+          }
+          return newMessages
+        })
       }
     } catch (error) {
       console.error('Chat error:', error)
-      const errorMessage: Message = {
-        role: 'assistant',
-        content: '抱歉，我遇到了一些问题。请稍后再试。',
-        timestamp: new Date().toISOString()
-      }
-      setMessages(prev => [...prev, errorMessage])
+      // 🔥 出错时更新占位消息为错误消息
+      setMessages(prev => {
+        const newMessages = [...prev]
+        newMessages[assistantMessageIndex] = {
+          role: 'assistant',
+          content: '抱歉，我遇到了一些问题。请稍后再试。',
+          timestamp: new Date().toISOString()
+        }
+        return newMessages
+      })
     } finally {
       setIsLoading(false)
       // 重置知识点标记
