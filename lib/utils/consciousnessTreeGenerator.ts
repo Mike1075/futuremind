@@ -920,9 +920,8 @@ const generateLeaves = (
       // 叶子大小
       const size = particleSize * leafSizeScale * deterministicRandom(leafSeed, 4000, 0.9, 1.1)
 
-      // 叶子旋转角度：指向枝条外侧
-      const branchAngle = Math.atan2(dy, dx)
-      const rotation = (branchAngle + 90 * side) * 180 / Math.PI + deterministicRandom(leafSeed, 5000, -20, 20)
+      // 叶子旋转角度：指向偏移的方向
+      const rotation = angleOffset * 180 / Math.PI + deterministicRandom(leafSeed, 5000, -20, 20)
 
       particles.push({
         x: finalX,
