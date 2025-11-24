@@ -377,6 +377,7 @@ export function GlobalGaiaV3() {
       let buffer = '' // 🔥 缓冲区，用于处理不完整的JSON
       let fullAnswer = ''  // 🔥 从后端接收到的完整内容
       let displayedAnswer = ''  // 🔥 已经显示在界面上的内容
+      let lastFullAnswerLength = 0  // 🔥 记录上次接收到的完整内容长度，避免重复
 
       // 🔥 视觉缓冲队列：用于控制显示速度（复刻Seth项目）
       let pendingChunks: string[] = []
@@ -440,8 +441,10 @@ export function GlobalGaiaV3() {
                 fullAnswer = json.content
 
                 // 🔥 将新内容按字符分割加入队列（控制显示粒度）
-                // 计算新增的部分
-                const newContent = fullAnswer.slice(displayedAnswer.length)
+                // 计算新增的部分（使用lastFullAnswerLength避免重复）
+                const newContent = fullAnswer.slice(lastFullAnswerLength)
+                lastFullAnswerLength = fullAnswer.length
+
                 for (let i = 0; i < newContent.length; i += 3) {
                   pendingChunks.push(newContent.slice(i, i + 3))
                 }
@@ -494,7 +497,9 @@ export function GlobalGaiaV3() {
                   const json = JSON.parse(jsonStr)
                   if (json.type === 'chunk') {
                     fullAnswer = json.content
-                    const newContent = fullAnswer.slice(displayedAnswer.length)
+                    const newContent = fullAnswer.slice(lastFullAnswerLength)
+                    lastFullAnswerLength = fullAnswer.length
+
                     for (let i = 0; i < newContent.length; i += 3) {
                       pendingChunks.push(newContent.slice(i, i + 3))
                     }
@@ -518,7 +523,9 @@ export function GlobalGaiaV3() {
             const json = JSON.parse(buffer.trim())
             if (json.type === 'chunk') {
               fullAnswer = json.content
-              const newContent = fullAnswer.slice(displayedAnswer.length)
+              const newContent = fullAnswer.slice(lastFullAnswerLength)
+              lastFullAnswerLength = fullAnswer.length
+
               for (let i = 0; i < newContent.length; i += 3) {
                 pendingChunks.push(newContent.slice(i, i + 3))
               }
