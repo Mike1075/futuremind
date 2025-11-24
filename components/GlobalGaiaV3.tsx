@@ -374,36 +374,45 @@ export function GlobalGaiaV3() {
         throw new Error('No reader available')
       }
 
-      let accumulatedContent = ''
-      let displayedContent = ''
       let buffer = '' // 🔥 缓冲区，用于处理不完整的JSON
-      let typewriterInterval: NodeJS.Timeout | null = null
+      let fullAnswer = ''  // 🔥 从后端接收到的完整内容
+      let displayedAnswer = ''  // 🔥 已经显示在界面上的内容
 
-      // 🔥 打字机效果：逐字显示
-      const startTypewriter = () => {
-        if (typewriterInterval) return // 已经在运行
+      // 🔥 视觉缓冲队列：用于控制显示速度（复刻Seth项目）
+      let pendingChunks: string[] = []
+      let displayInterval: NodeJS.Timeout | null = null
 
-        typewriterInterval = setInterval(() => {
-          if (displayedContent.length < accumulatedContent.length) {
-            // 每次显示3-5个字符，模拟打字速度
-            const charsToAdd = Math.min(5, accumulatedContent.length - displayedContent.length)
-            displayedContent = accumulatedContent.slice(0, displayedContent.length + charsToAdd)
+      // 🔥 启动显示定时器（每50ms显示一些字符）
+      const startDisplayTimer = () => {
+        if (displayInterval) return
 
-            setMessages(prev => {
-              const newMessages = [...prev]
-              newMessages[assistantMessageIndex] = {
-                role: 'assistant',
-                content: displayedContent,
-                timestamp: new Date().toISOString()
+        displayInterval = setInterval(() => {
+          if (pendingChunks.length === 0) {
+            // 没有待显示内容，但检查是否已经全部接收完成
+            if (displayedAnswer === fullAnswer && fullAnswer.length > 0) {
+              // 全部显示完成，清除定时器
+              if (displayInterval) {
+                clearInterval(displayInterval)
+                displayInterval = null
               }
-              return newMessages
-            })
-          } else if (typewriterInterval) {
-            // 已经追上了，暂停打字机
-            clearInterval(typewriterInterval)
-            typewriterInterval = null
+            }
+            return
           }
-        }, 30) // 每30ms显示一批字符
+
+          // 从队列中取出内容进行显示（每次显示一个chunk）
+          const chunkToDisplay = pendingChunks.shift() || ''
+          displayedAnswer += chunkToDisplay
+
+          setMessages(prev => {
+            const newMessages = [...prev]
+            newMessages[assistantMessageIndex] = {
+              role: 'assistant',
+              content: displayedAnswer,
+              timestamp: new Date().toISOString()
+            }
+            return newMessages
+          })
+        }, 50) // 每50ms更新一次显示
       }
 
       try {
@@ -427,9 +436,18 @@ export function GlobalGaiaV3() {
               const json = JSON.parse(trimmedLine)
 
               if (json.type === 'chunk') {
-                // 🔥 更新完整内容，启动打字机效果
-                accumulatedContent = json.content
-                startTypewriter()
+                // 🔥 收到增量内容，添加到完整答案和待显示队列
+                fullAnswer = json.content
+
+                // 🔥 将新内容按字符分割加入队列（控制显示粒度）
+                // 计算新增的部分
+                const newContent = fullAnswer.slice(displayedAnswer.length)
+                for (let i = 0; i < newContent.length; i += 3) {
+                  pendingChunks.push(newContent.slice(i, i + 3))
+                }
+
+                // 🔥 启动显示定时器
+                startDisplayTimer()
               } else if (json.type === 'done') {
                 if (json.conversationId && !currentConversationId) {
                   setCurrentConversationId(json.conversationId)
@@ -475,8 +493,12 @@ export function GlobalGaiaV3() {
                 try {
                   const json = JSON.parse(jsonStr)
                   if (json.type === 'chunk') {
-                    accumulatedContent = json.content
-                    startTypewriter()
+                    fullAnswer = json.content
+                    const newContent = fullAnswer.slice(displayedAnswer.length)
+                    for (let i = 0; i < newContent.length; i += 3) {
+                      pendingChunks.push(newContent.slice(i, i + 3))
+                    }
+                    startDisplayTimer()
                   } else if (json.type === 'done') {
                     if (json.conversationId && !currentConversationId) {
                       setCurrentConversationId(json.conversationId)
@@ -495,8 +517,12 @@ export function GlobalGaiaV3() {
           try {
             const json = JSON.parse(buffer.trim())
             if (json.type === 'chunk') {
-              accumulatedContent = json.content
-              startTypewriter()
+              fullAnswer = json.content
+              const newContent = fullAnswer.slice(displayedAnswer.length)
+              for (let i = 0; i < newContent.length; i += 3) {
+                pendingChunks.push(newContent.slice(i, i + 3))
+              }
+              startDisplayTimer()
             } else if (json.type === 'done') {
               if (json.conversationId && !currentConversationId) {
                 setCurrentConversationId(json.conversationId)
@@ -507,31 +533,19 @@ export function GlobalGaiaV3() {
           }
         }
 
-        // 🔥 确保打字机效果显示完所有内容
-        if (typewriterInterval) {
-          clearInterval(typewriterInterval)
-        }
-        // 立即显示剩余内容
-        if (displayedContent !== accumulatedContent) {
-          setMessages(prev => {
-            const newMessages = [...prev]
-            newMessages[assistantMessageIndex] = {
-              role: 'assistant',
-              content: accumulatedContent,
-              timestamp: new Date().toISOString()
-            }
-            return newMessages
-          })
+        // 🔥 等待所有内容显示完成（复刻Seth项目）
+        while (displayedAnswer !== fullAnswer) {
+          await new Promise(resolve => setTimeout(resolve, 100))
         }
       } finally {
-        if (typewriterInterval) {
-          clearInterval(typewriterInterval)
+        if (displayInterval) {
+          clearInterval(displayInterval)
         }
         reader.releaseLock()
       }
 
       // 🔥 如果没有收到任何内容，显示默认消息
-      if (!accumulatedContent) {
+      if (!fullAnswer) {
         setMessages(prev => {
           const newMessages = [...prev]
           newMessages[assistantMessageIndex] = {
