@@ -119,7 +119,17 @@ export async function POST(req: NextRequest) {
 
     const updatedMessages = [...conversationHistory, userMessage]
 
-    // 4. 准备发送给N8N的数据
+    // 4. 从profiles表获取用户姓名
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', userId)
+      .single()
+
+    const userName = profileData?.full_name || profileData?.email?.split('@')[0] || '用户'
+    console.log(`[Gaia API] 👤 用户姓名: ${userName} (来自profiles.full_name)`)
+
+    // 5. 准备发送给N8N的数据
     const defaultProjectId = process.env.DEFAULT_PROJECT_ID || 'p001'
     const defaultOrganizationId = process.env.DEFAULT_ORGANIZATION_ID || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
 
@@ -127,6 +137,8 @@ export async function POST(req: NextRequest) {
       chatInput: message,
       session_id: conversation.session_id || conversation.id,
       user_id: userId,
+      user_name: userName,  // 🔥 添加用户姓名
+      user_email: profileData?.email || user.email,  // 🔥 添加用户邮箱
       project_id: defaultProjectId,
       organization_id: defaultOrganizationId,
       conversation_history: conversationHistory.slice(-5).map((m: any) => ({
@@ -137,6 +149,13 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Gaia API] ⏱️  数据库操作完成: +${Date.now() - startTime}ms`)
     console.log(`[Gaia API] 📤 发送N8N请求: ${N8N_CHAT_WEBHOOK}`)
+    console.log(`[Gaia API] 📊 Payload详情:`, {
+      chatInput: message,
+      session_id: payload.session_id,
+      user_id: userId,
+      conversation_history_length: payload.conversation_history.length,
+      payload_size_bytes: JSON.stringify(payload).length
+    })
 
     // 5. 调用N8N获取流式响应（添加60秒超时）
     const controller = new AbortController()
@@ -145,6 +164,7 @@ export async function POST(req: NextRequest) {
     let n8nRes: Response
     try {
       const n8nFetchStart = Date.now()
+      console.log(`[Gaia API] 🚀 开始调用N8N...`)
       n8nRes = await fetch(N8N_CHAT_WEBHOOK, {
         method: 'POST',
         headers: {
