@@ -206,14 +206,16 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
 
               const isCompleted = completionMap.get(content.id) === true
               const prevCompleted = completionMap.get(contents[index - 1]?.id) === true
-              const isUnlocked = completionMap.get(contents[index - 1]?.id) === true
+              // 🔥 修复：路径显示也要检查前一个课程的分数>=60
+              const prevScore = scoreMap.get(contents[index - 1]?.id) || 0
+              const isUnlocked = prevScore >= 60
               const point = PATH_POINTS[index]
               const prevPoint = PATH_POINTS[index - 1]
               const color = COURSE_COLORS[index]
               const prevColor = COURSE_COLORS[index - 1]
 
-              // 只要前一个节点已完成（当前节点自动解锁），就绘制实线路径
-              if (!prevCompleted) return null
+              // 只要前一个节点得分>=60（当前节点自动解锁），就绘制实线路径
+              if (!isUnlocked) return null
 
               return (
                 <g key={`path-${index}`}>
@@ -253,7 +255,9 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
           <div className="absolute inset-0">
             {contents.map((content, index) => {
               const isCompleted = completionMap.get(content.id) === true
-              const isUnlocked = index === 0 || completionMap.get(contents[index - 1]?.id) === true
+              // 🔥 修复：解锁条件改为前一个课程的分数>=60
+              const prevScore = index > 0 ? (scoreMap.get(contents[index - 1]?.id) || 0) : 0
+              const isUnlocked = index === 0 || prevScore >= 60
               const score = scoreMap.get(content.id) || 0
               const isPassed = score >= 60  // 及格标准
               const point = PATH_POINTS[index]
