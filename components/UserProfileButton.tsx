@@ -15,6 +15,16 @@ export default function UserProfileButton() {
 
   useEffect(() => {
     loadUser()
+
+    // 🔥 监听用户资料更新事件
+    const handleProfileUpdate = () => {
+      loadUser()
+    }
+
+    window.addEventListener('userProfileUpdated', handleProfileUpdate)
+    return () => {
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate)
+    }
   }, [])
 
   const loadUser = async () => {
@@ -29,7 +39,7 @@ export default function UserProfileButton() {
 
   if (!user) return null
 
-  const displayName = user.user_metadata?.nickname || user.user_metadata?.full_name || user.email?.split('@')[0] || '用户'
+  const displayName = user.user_metadata?.full_name || user.user_metadata?.nickname || user.email?.split('@')[0] || '用户'
 
   return (
     <>

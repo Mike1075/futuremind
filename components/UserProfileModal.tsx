@@ -32,8 +32,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setEmail(user.email || '')
-        // 从 user_metadata 中获取昵称
-        setNickname(user.user_metadata?.nickname || user.user_metadata?.full_name || '')
+        // 从 user_metadata 中获取姓名（full_name）
+        setNickname(user.user_metadata?.full_name || user.user_metadata?.nickname || '')
       }
     } catch (error) {
       console.error('加载用户信息失败:', error)
@@ -47,10 +47,10 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
     try {
       const supabase = createClient()
 
-      // 1. 更新昵称（保存到 user_metadata）
+      // 1. 更新姓名（保存到 user_metadata 的 full_name 字段）
       if (nickname.trim()) {
         const { error: updateError } = await supabase.auth.updateUser({
-          data: { nickname: nickname.trim() }
+          data: { full_name: nickname.trim() }
         })
 
         if (updateError) {
@@ -82,6 +82,9 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
       }
 
       setMessage({ type: 'success', text: '保存成功！' })
+
+      // 🔥 触发自定义事件通知其他组件刷新用户信息
+      window.dispatchEvent(new CustomEvent('userProfileUpdated'))
 
       // 清空密码字段
       setCurrentPassword('')
@@ -131,16 +134,16 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
             />
           </div>
 
-          {/* 昵称 */}
+          {/* 姓名 */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              昵称
+              姓名
             </label>
             <input
               type="text"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              placeholder="请输入昵称"
+              placeholder="请输入您的姓名"
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
