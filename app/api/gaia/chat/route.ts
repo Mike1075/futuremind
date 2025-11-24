@@ -101,10 +101,8 @@ export async function POST(req: NextRequest) {
     }> = []
 
     if (currentMessages && Array.isArray(currentMessages) && currentMessages.length > 0) {
-      console.log('[Gaia Chat] 使用前端传来的消息历史（包含欢迎语）:', currentMessages.length, '条')
       conversationHistory = currentMessages
     } else {
-      console.log('[Gaia Chat] 使用数据库的消息历史')
       conversationHistory = (conversation.messages as any[] || []) as Array<{
         role: string
         content: string
@@ -137,7 +135,6 @@ export async function POST(req: NextRequest) {
       }))
     }
 
-    console.log(`[Gaia Chat] 发送给N8N: conversation_id=${conversation.id}`)
     console.log(`[Gaia API] ⏱️  数据库操作完成: +${Date.now() - startTime}ms`)
 
     // 5. 调用N8N获取流式响应

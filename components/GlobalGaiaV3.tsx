@@ -17,8 +17,6 @@ interface Message {
 }
 
 export function GlobalGaiaV3() {
-  console.log('[GlobalGaia] 🚀 组件初始化/重新渲染')
-
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -35,19 +33,9 @@ export function GlobalGaiaV3() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [selectedMessages, setSelectedMessages] = useState<Set<number>>(new Set())
 
-  console.log('[GlobalGaia] 当前状态:', {
-    isOpen,
-    messagesCount: messages.length,
-    hasInput: !!input,
-    isLoading,
-    currentConversationId,
-    isFromKnowledgePoint
-  })
-
   // 监听GaiaDialog打开事件，自动关闭侧边栏
   useEffect(() => {
     const handleGaiaDialogOpened = () => {
-      console.log('[GlobalGaia] 📢 收到主页盖亚对话框打开事件，关闭侧边栏')
       setIsOpen(false)
     }
 
@@ -60,29 +48,17 @@ export function GlobalGaiaV3() {
   // 当侧边栏打开时，通知其他组件
   useEffect(() => {
     if (isOpen) {
-      console.log('[GlobalGaia] 📢 侧边栏盖亚打开，发送事件通知其他组件')
       window.dispatchEvent(new CustomEvent('globalGaiaOpened'))
     }
   }, [isOpen])
 
   // 监听来自知识点的打开请求
   useEffect(() => {
-    console.log('[GlobalGaia] 🎯 useEffect执行：注册事件监听器')
-    console.log('[GlobalGaia] window对象:', typeof window !== 'undefined' ? '存在' : '不存在')
 
     const handleOpenWithQuestion = (event: CustomEvent) => {
-      console.log('[GlobalGaia] 🔔 收到事件 openGaiaWithQuestion')
-      console.log('[GlobalGaia] Event对象:', event)
-      console.log('[GlobalGaia] Event detail:', event.detail)
 
       const { question } = event.detail
-      console.log('[GlobalGaia] 提取的问题:', question)
 
-      console.log('[GlobalGaia] 新的处理逻辑:')
-      console.log('  - 保留历史记录（不清空messages）')
-      console.log('  - 将问题作为assistant消息添加到对话')
-      console.log('  - 不预填输入框')
-      console.log('  - 打开盖亚对话框')
 
       setIsFromKnowledgePoint(true)
       setIsOpen(true)
@@ -98,20 +74,14 @@ export function GlobalGaiaV3() {
       }
 
       setMessages(prev => {
-        console.log('[GlobalGaia] 当前消息数:', prev.length)
-        console.log('[GlobalGaia] 添加知识点问题到对话')
         return [...prev, knowledgePointMessage]
       })
 
-      console.log('[GlobalGaia] ✅ 状态设置完成')
     }
 
-    console.log('[GlobalGaia] 添加事件监听器...')
     window.addEventListener('openGaiaWithQuestion', handleOpenWithQuestion as EventListener)
-    console.log('[GlobalGaia] ✅ 事件监听器已注册')
 
     return () => {
-      console.log('[GlobalGaia] 🧹 清理事件监听器')
       window.removeEventListener('openGaiaWithQuestion', handleOpenWithQuestion as EventListener)
     }
   }, [])
@@ -120,11 +90,7 @@ export function GlobalGaiaV3() {
   useEffect(() => {
     const handleScrollToDiscussion = (event: Event) => {
       const customEvent = event as CustomEvent
-      console.log('[GlobalGaia] 📜 收到滚动到讨论事件')
       const { conversationId, messageIndex, totalMessages } = customEvent.detail
-      console.log('  - conversationId:', conversationId)
-      console.log('  - messageIndex:', messageIndex)
-      console.log('  - totalMessages:', totalMessages)
 
       setIsOpen(true)
 
@@ -149,7 +115,6 @@ export function GlobalGaiaV3() {
             // 设置折叠点：如果messageIndex之后超过10条消息，则折叠
             const remainingMessages = totalMessages - messageIndex - 1
             if (remainingMessages > 10) {
-              console.log('[GlobalGaia] 📦 设置折叠点:', messageIndex + 10)
               setCollapsedAfterIndex(messageIndex + 10)
               setShowCollapsed(false)
             } else {
@@ -160,7 +125,6 @@ export function GlobalGaiaV3() {
             setTimeout(() => {
               const targetRef = messageRefs.current[messageIndex]
               if (targetRef) {
-                console.log('[GlobalGaia] ✅ 滚动到消息', messageIndex)
                 targetRef.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
                 // 3秒后移除高亮
@@ -195,30 +159,20 @@ export function GlobalGaiaV3() {
 
   // 打开盖亚时，加载最近10条消息或显示欢迎语
   useEffect(() => {
-    console.log('[GlobalGaia] 💬 打开盖亚useEffect触发')
-    console.log('[GlobalGaia] 状态检查:')
-    console.log('  - isOpen:', isOpen)
-    console.log('  - messages.length:', messages.length)
-    console.log('  - currentConversationId:', currentConversationId)
-    console.log('  - isFromKnowledgePoint:', isFromKnowledgePoint)
 
     if (isOpen && messages.length === 0 && !isFromKnowledgePoint) {
-      console.log('[GlobalGaia] 📥 加载最近的聊天记录...')
 
       // 加载历史消息
       fetch('/api/gaia/recent-messages')
         .then(res => res.json())
         .then(data => {
-          console.log('[GlobalGaia] 收到历史消息:', data)
 
           if (data.messages && data.messages.length > 0) {
             // 有消息，直接显示
-            console.log('[GlobalGaia] ✅ 显示历史消息:', data.messages.length, '条')
             setMessages(data.messages)
             setCurrentConversationId(data.conversationId)
           } else if (data.conversationId === null) {
             // 完全没有对话记录，第一次使用，显示欢迎消息
-            console.log('[GlobalGaia] ✅ 第一次使用，显示欢迎消息')
             const welcomeMessage: Message = {
               role: 'assistant',
               content: `🌟 你好！我是盖亚（Gaia），你的AI学习伙伴。
@@ -235,7 +189,6 @@ export function GlobalGaiaV3() {
             setMessages([welcomeMessage])
           } else {
             // 有对话ID但消息为空（用户删除了所有消息），不显示欢迎语
-            console.log('[GlobalGaia] ✅ 对话存在但无消息，显示空白')
             setMessages([])
             setCurrentConversationId(data.conversationId)
           }
@@ -246,7 +199,6 @@ export function GlobalGaiaV3() {
           setMessages([])
         })
     } else {
-      console.log('[GlobalGaia] ⏭️ 跳过加载历史（条件不满足）')
     }
   }, [isOpen, isFromKnowledgePoint])
 
@@ -255,12 +207,10 @@ export function GlobalGaiaV3() {
   // 重新加载当前对话的消息（用于同步）
   const reloadCurrentConversation = async () => {
     try {
-      console.log('[GlobalGaia] 🔄 重新加载对话消息...')
       const response = await fetch('/api/gaia/recent-messages')
       const data = await response.json()
 
       if (data.messages && data.messages.length > 0) {
-        console.log('[GlobalGaia] ✅ 同步成功，更新消息:', data.messages.length, '条')
         setMessages(data.messages)
         setCurrentConversationId(data.conversationId)
       }
@@ -272,7 +222,6 @@ export function GlobalGaiaV3() {
   // 监听来自其他组件的消息同步事件
   useEffect(() => {
     const handleMessagesSync = () => {
-      console.log('[GlobalGaia] 📢 收到消息同步事件')
       reloadCurrentConversation()
     }
 
@@ -310,16 +259,11 @@ export function GlobalGaiaV3() {
     const messageText = input.trim()
     if (!messageText || isLoading) return
 
-    console.log('[GlobalGaia] 📤 发送消息:', messageText)
-    console.log('[GlobalGaia] 当前消息数:', messages.length)
-    console.log('[GlobalGaia] conversationId:', currentConversationId)
 
     // 检查最后一条消息是否是知识点问题
     const lastMessage = messages[messages.length - 1]
     const isReplyingToKnowledgePoint = lastMessage?.metadata?.source === 'knowledge_point'
 
-    console.log('[GlobalGaia] 最后一条消息:', lastMessage)
-    console.log('[GlobalGaia] 是否回复知识点问题:', isReplyingToKnowledgePoint)
 
     const userMessage: Message = {
       role: 'user',
@@ -346,9 +290,7 @@ export function GlobalGaiaV3() {
       // 2. 回复知识点问题（包含知识点问题+用户回答）
       const shouldSendCurrentMessages = messages.length <= 1 || isReplyingToKnowledgePoint
 
-      console.log('[GlobalGaia] shouldSendCurrentMessages:', shouldSendCurrentMessages)
       if (isReplyingToKnowledgePoint) {
-        console.log('[GlobalGaia] 💡 检测到回复知识点问题，将问题和回答一起发送')
       }
 
       const response = await fetch('/api/gaia/chat', {
@@ -580,7 +522,6 @@ export function GlobalGaiaV3() {
       setIsLoading(false)
       // 重置知识点标记
       if (isFromKnowledgePoint) {
-        console.log('[GlobalGaia] 🔄 重置知识点标记')
         setIsFromKnowledgePoint(false)
       }
     }
@@ -680,10 +621,8 @@ export function GlobalGaiaV3() {
         if (error) {
           console.error('[GlobalGaia] 保存删除后的消息失败:', error)
         } else {
-          console.log('[GlobalGaia] ✅ 成功保存删除后的消息')
           // 触发同步事件，通知其他盖亚组件更新
           window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
-          console.log('[GlobalGaia] 📢 已触发消息同步事件')
         }
       }
     } catch (error) {
