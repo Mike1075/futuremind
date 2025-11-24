@@ -249,6 +249,11 @@ const drawLine = (
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
   const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
 
+  // 只打印前几次调用，避免刷屏
+  if (particles.length < 50) {
+    console.log('[drawLine] isSolid:', isSolid, 'distance:', distance.toFixed(1), 'steps:', steps, 'particleSize:', particleSize)
+  }
+
   for (let i = 0; i <= steps; i++) {
     const t = i / steps
     const x = x1 + (x2 - x1) * t
@@ -442,6 +447,8 @@ const generateRoots = (
   const isSolid = growthData.roots.is_solid
   const rootNodes: RootNode[] = []
 
+  console.log('[根系生成] totalCount:', totalCount, 'depth_level:', growthData.roots.depth_level, 'isSolid:', isSolid)
+
   if (totalCount === 0) return rootNodes
 
   // 🔥 主根数量：缓慢自然增长（更平缓的曲线）
@@ -551,6 +558,8 @@ const generateTrunk = (
   const heightLevel = growthData.trunk.height_level
   const isSolid = growthData.trunk.is_solid
 
+  console.log('[树干生成] thickness:', thickness, 'heightLevel:', heightLevel, 'isSolid:', isSolid)
+
   // 🌳 步骤1：计算"自然粗度Y"和"自然长度Z"（基于根系发展）
   const naturalWidth = calculateNaturalTrunkWidth()
   const naturalHeight = calculateNaturalTrunkHeight()
@@ -573,6 +582,8 @@ const generateTrunk = (
 
   // 关键：thickness > 0 绘制实线，thickness == 0 绘制虚线
   const drawSolid = thickness > 0 && isSolid
+
+  console.log('[树干生成] drawSolid判断:', 'thickness > 0:', thickness > 0, 'isSolid:', isSolid, '=> drawSolid:', drawSolid)
 
   // 使用整体进度决定颜色（所有部分统一）
   const color = getColor('trunk', overallProgress, drawSolid, glowIntensity)
