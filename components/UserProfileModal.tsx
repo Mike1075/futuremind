@@ -47,14 +47,31 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
     try {
       const supabase = createClient()
 
-      // 1. 更新姓名（保存到 user_metadata 的 full_name 字段）
+      // 🔥 获取当前用户ID
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('未找到用户信息')
+      }
+
+      // 1. 更新姓名（同时保存到 auth.users.user_metadata 和 profiles.full_name）
       if (nickname.trim()) {
-        const { error: updateError } = await supabase.auth.updateUser({
+        // 1.1 更新 auth.users.user_metadata.full_name
+        const { error: authUpdateError } = await supabase.auth.updateUser({
           data: { full_name: nickname.trim() }
         })
 
-        if (updateError) {
-          throw updateError
+        if (authUpdateError) {
+          throw authUpdateError
+        }
+
+        // 1.2 更新 profiles.full_name（N8N从这里读取姓名）
+        const { error: profileUpdateError } = await supabase
+          .from('profiles')
+          .update({ full_name: nickname.trim() })
+          .eq('id', user.id)
+
+        if (profileUpdateError) {
+          throw profileUpdateError
         }
       }
 
