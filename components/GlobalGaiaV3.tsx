@@ -295,6 +295,9 @@ export function GlobalGaiaV3() {
     const messageText = input.trim()
     if (!messageText || isLoading) return
 
+    // 🔥 性能监控：开始时间
+    const perfStart = Date.now()
+    console.log('[Gaia前端] ⏱️  用户点击发送')
 
     // 检查最后一条消息是否是知识点问题
     const lastMessage = messages[messages.length - 1]
@@ -329,6 +332,9 @@ export function GlobalGaiaV3() {
       if (isReplyingToKnowledgePoint) {
       }
 
+      console.log(`[Gaia前端] ⏱️  准备发送请求: +${Date.now() - perfStart}ms`)
+      const fetchStart = Date.now()
+
       const response = await fetch('/api/gaia/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -339,6 +345,8 @@ export function GlobalGaiaV3() {
           currentMessages: shouldSendCurrentMessages ? messages : undefined
         })
       })
+
+      console.log(`[Gaia前端] ⏱️  收到响应头: +${Date.now() - perfStart}ms (fetch耗时: ${Date.now() - fetchStart}ms)`)
 
       if (!response.ok) {
         throw new Error('Failed to get response')
@@ -356,6 +364,7 @@ export function GlobalGaiaV3() {
       let fullAnswer = ''  // 🔥 从后端接收到的完整内容
       let displayedAnswer = ''  // 🔥 已经显示在界面上的内容
       let lastFullAnswerLength = 0  // 🔥 记录上次接收到的完整内容长度，避免重复
+      let firstChunkReceived = false  // 🔥 标记是否收到首个内容chunk
 
       // 🔥 视觉缓冲队列：用于控制显示速度（复刻Seth项目）
       let pendingChunks: string[] = []
@@ -415,6 +424,12 @@ export function GlobalGaiaV3() {
               const json = JSON.parse(trimmedLine)
 
               if (json.type === 'chunk') {
+                // 🔥 性能监控：首个内容chunk
+                if (!firstChunkReceived) {
+                  console.log(`[Gaia前端] ⏱️  收到首个内容chunk: +${Date.now() - perfStart}ms`)
+                  firstChunkReceived = true
+                }
+
                 // 🔥 收到增量内容，添加到完整答案和待显示队列
                 fullAnswer = json.content
 
