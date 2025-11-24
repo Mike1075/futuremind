@@ -150,6 +150,7 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
   }, [userId]) // 只在userId改变时加载，techParams改变不触发
 
   const loadTreeData = async () => {
+    console.log('🔄 [loadTreeData] 开始加载意识树数据，userId:', userId)
     try {
       setLoading(true)
       setError(null)
@@ -168,16 +169,24 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
         .eq('id', userId)
         .single()
 
+      console.log('📡 [loadTreeData] 正在从 Supabase 查询数据...')
       const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any
+      console.log('📥 [loadTreeData] Supabase 返回结果:', { data, error })
 
       if (error) throw error
 
       if (data?.consciousness_tree_view) {
         // 使用迁移函数自动处理新旧格式
         const migratedData = migrateOldFormat(data.consciousness_tree_view)
+        console.log('🌳 [意识树数据] 从数据库加载:', {
+          原始数据: data.consciousness_tree_view,
+          迁移后: migratedData,
+          userId: userId
+        })
         setGrowthData(migratedData)
       } else {
         // 🔥 如果没有数据，使用种子状态（而不是报错）
+        console.log('⚠️ [意识树数据] 没有数据，使用种子状态')
         setGrowthData(INITIAL_GROWTH_DATA)
       }
     } catch (err) {
