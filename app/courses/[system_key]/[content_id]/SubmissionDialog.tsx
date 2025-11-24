@@ -21,6 +21,7 @@ interface EvaluationResult {
       title?: string
     }
   }
+  unlocked_next?: boolean  // 🔥 是否解锁下一课
   error?: string
 }
 
@@ -326,6 +327,39 @@ export default function SubmissionDialog({
                   {result.evaluation?.feedback || ''}
                 </p>
               </div>
+
+              {/* 🔥 解锁状态提示 */}
+              {result.unlocked_next ? (
+                <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-600/50 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-green-400 font-semibold mb-1">🎉 恭喜！已解锁下一课</p>
+                      <p className="text-green-200 text-sm">
+                        你的分数达到60分以上，下一节课已自动解锁！关闭对话框后即可看到新课程。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                (result.evaluation?.score || 0) < 60 && (
+                  <div className="bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border border-yellow-600/50 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="text-yellow-400 font-semibold mb-1">💪 继续努力</p>
+                        <p className="text-yellow-200 text-sm">
+                          需要获得60分及以上才能解锁下一课。请根据AI导师的反馈改进后重新提交！
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              )}
 
               {/* 关闭按钮 */}
               <button
