@@ -886,18 +886,6 @@ const generateLeaves = (
     const dy = branch.y - branch.startY
     const branchLength = Math.sqrt(dx * dx + dy * dy)
 
-    // 🌿 计算垂直方向（用于左右分布）- 垂直于枝条方向
-    // 垂直向量：如果枝条是(dx,dy)，垂直向量是(-dy,dx)或(dy,-dx)
-    let perpX = -dy / branchLength
-    let perpY = dx / branchLength
-
-    // 🔥 关键修复：确保垂直向量始终指向屏幕右侧（perpX > 0）
-    // 如果perpX < 0，翻转整个垂直向量
-    if (perpX < 0) {
-      perpX = -perpX
-      perpY = -perpY
-    }
-
     // 沿枝条均匀分布叶子（从30%到90%）
     for (let i = 0; i < leavesOnThisBranch && generatedLeafCount < leafCount; i++) {
       // 沿枝条的位置（30%到90%范围）
@@ -905,24 +893,25 @@ const generateLeaves = (
       const baseX = branch.startX + dx * t
       const baseY = branch.startY + dy * t
 
-      // 🔥 严格交替左右：i为偶数向右(+1)，i为奇数向左(-1)
-      // 现在perpX确保>0（指向右侧），所以side=1是右，side=-1是左
-      const side = i % 2 === 0 ? 1 : -1
-
-      // 🌿 较小的随机偏移（1.2-2.0倍），让叶子紧贴树枝
+      // 🔥 新方法：让叶子在枝条周围随机分布（不限于垂直方向）
+      // 使用确定性随机生成角度（-150度到+150度，避开枝条延伸方向）
       const leafSeed = generatedLeafCount
+      const angleOffset = deterministicRandom(leafSeed, 2000, -150, 150) * Math.PI / 180
+
+      // 🌿 偏移距离：较小的随机值，让叶子紧贴树枝
       const randomFactor = deterministicRandom(leafSeed, 3000, 1.2, 2.0)
       const offsetDist = particleSize * leafSizeScale * randomFactor * 2.5
 
-      // 🌿 叶子位置：垂直于枝条方向偏移
-      const offsetX = perpX * side * offsetDist
-      const offsetY = perpY * side * offsetDist
+      // 🔥 根据随机角度计算偏移量
+      const offsetX = Math.cos(angleOffset) * offsetDist
+      const offsetY = Math.sin(angleOffset) * offsetDist
 
       const finalX = baseX + offsetX
       const finalY = baseY + offsetY
 
       if (i < 3) {
-        console.log(`    叶子 ${i}: side=${side > 0 ? '右' : '左'}, perpX=${perpX.toFixed(2)}, offsetX=${offsetX.toFixed(0)}`)
+        const side = offsetX > 0 ? '右' : '左'
+        console.log(`    叶子 ${i}: ${side}, angle=${(angleOffset * 180 / Math.PI).toFixed(0)}°, offsetX=${offsetX.toFixed(0)}`)
       }
 
       // 叶子颜色（跟随整体进度）
