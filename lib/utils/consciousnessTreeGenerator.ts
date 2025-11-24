@@ -856,8 +856,13 @@ const generateLeaves = (
   if (totalCount > 60) minLeafLevel = 4  // 60+个里程：只在细小末端长叶子
 
   // 过滤出可以长叶子的枝条（细枝）
-  const leafBranches = branchNodes.filter(n => n.level >= minLeafLevel)
+  let leafBranches = branchNodes.filter(n => n.level >= minLeafLevel)
   if (leafBranches.length === 0) return
+
+  // 🔥 关键修复：按X坐标排序，确保从左到右均匀分配叶子
+  // branchNodes原本的顺序是生成顺序（左主枝所有子枝→中主枝所有子枝→右主枝所有子枝）
+  // 排序后可以确保轮询时真正地从左到右均匀分配
+  leafBranches = leafBranches.sort((a, b) => a.x - b.x)
 
   // 🔥 叶子大小随枝条数量成正比增长（枝条越多，叶子越大）
   let leafSizeScale = 2.0  // 基础大小（枝条少时）
@@ -961,11 +966,15 @@ const generateFruits = (
 
   // 🔥 1. 识别终端枝条：不再生长的枝条（isOpen = false）或最高层级的枝条
   const maxLevel = Math.max(...branchNodes.map(n => n.level))
-  const terminalBranches = branchNodes.filter(
+  let terminalBranches = branchNodes.filter(
     n => !n.isOpen || n.level === maxLevel
   )
 
   if (terminalBranches.length === 0) return
+
+  // 🔥 关键修复：按X坐标排序，确保从左到右均匀分配果实
+  // 与叶子相同的问题：branchNodes原本是生成顺序，需要排序后才能均匀分配
+  terminalBranches = terminalBranches.sort((a, b) => a.x - b.x)
 
   // 🔥 2. 使用循环分配算法，确保果实均匀分布在所有终端枝条上
   let generatedFruitCount = 0
