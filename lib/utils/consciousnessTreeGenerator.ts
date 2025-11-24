@@ -247,7 +247,8 @@ const drawLine = (
   particleSize: number
 ): void => {
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-  const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
+  // 🔥 统一视觉效果：实线超密集（固定间距1.6），虚线正常稀疏（间距18）
+  const steps = isSolid ? Math.ceil(distance / 1.6) : Math.ceil(distance / 18)
 
   for (let i = 0; i <= steps; i++) {
     const t = i / steps
@@ -274,7 +275,8 @@ const drawTaperLine = (
   particleSize: number
 ): void => {
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-  const steps = isSolid ? Math.ceil(distance / (particleSize * 0.8)) : Math.ceil(distance / (particleSize * 3))
+  // 🔥 统一视觉效果：实线超密集（固定间距1.6），虚线正常稀疏（间距18）
+  const steps = isSolid ? Math.ceil(distance / 1.6) : Math.ceil(distance / 18)
 
   for (let i = 0; i <= steps; i++) {
     const t = i / steps
