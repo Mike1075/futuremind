@@ -893,25 +893,29 @@ const generateLeaves = (
       const baseX = branch.startX + dx * t
       const baseY = branch.startY + dy * t
 
-      // 🔥 新方法：让叶子在枝条周围随机分布（不限于垂直方向）
-      // 使用确定性随机生成角度（-150度到+150度，避开枝条延伸方向）
+      // 🔥 关键修复：计算枝条的垂直向量（perpendicular），让叶子在枝条的左右两侧分布
       const leafSeed = generatedLeafCount
-      const angleOffset = deterministicRandom(leafSeed, 2000, -150, 150) * Math.PI / 180
 
-      // 🌿 偏移距离：较小的随机值，让叶子紧贴树枝
+      // 计算枝条的单位垂直向量
+      let perpX = -dy / branchLength
+      let perpY = dx / branchLength
+
+      // 随机选择左侧或右侧（真正的50/50分布）
+      const side = deterministicRandom(leafSeed, 2000, 0, 2) < 1 ? -1 : 1
+
+      // 偏移距离
       const randomFactor = deterministicRandom(leafSeed, 3000, 1.2, 2.0)
       const offsetDist = particleSize * leafSizeScale * randomFactor * 2.5
 
-      // 🔥 根据随机角度计算偏移量
-      const offsetX = Math.cos(angleOffset) * offsetDist
-      const offsetY = Math.sin(angleOffset) * offsetDist
+      // 🌿 最终偏移量：沿着枝条的垂直方向
+      const offsetX = perpX * side * offsetDist
+      const offsetY = perpY * side * offsetDist
 
       const finalX = baseX + offsetX
       const finalY = baseY + offsetY
 
       if (i < 3) {
-        const side = offsetX > 0 ? '右' : '左'
-        console.log(`    叶子 ${i}: ${side}, angle=${(angleOffset * 180 / Math.PI).toFixed(0)}°, offsetX=${offsetX.toFixed(0)}`)
+        console.log(`    枝条方向: dx=${dx.toFixed(0)}, dy=${dy.toFixed(0)}, 叶子${i}: ${side > 0 ? '右侧' : '左侧'}, offsetX=${offsetX.toFixed(0)}`)
       }
 
       // 叶子颜色（跟随整体进度）
@@ -920,8 +924,10 @@ const generateLeaves = (
       // 叶子大小
       const size = particleSize * leafSizeScale * deterministicRandom(leafSeed, 4000, 0.9, 1.1)
 
-      // 叶子旋转角度：指向偏移的方向
-      const rotation = angleOffset * 180 / Math.PI + deterministicRandom(leafSeed, 5000, -20, 20)
+      // 叶子旋转角度：基于枝条方向，向外生长
+      const branchAngle = Math.atan2(dy, dx)
+      const perpAngle = branchAngle + (side > 0 ? Math.PI / 2 : -Math.PI / 2)
+      const rotation = perpAngle * 180 / Math.PI + deterministicRandom(leafSeed, 5000, -20, 20)
 
       particles.push({
         x: finalX,
