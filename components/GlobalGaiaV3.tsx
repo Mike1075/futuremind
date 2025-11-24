@@ -383,7 +383,7 @@ export function GlobalGaiaV3() {
       let pendingChunks: string[] = []
       let displayInterval: NodeJS.Timeout | null = null
 
-      // 🔥 启动显示定时器（每50ms显示一些字符）
+      // 🔥 启动显示定时器（每10ms显示一些字符，快速流畅）
       const startDisplayTimer = () => {
         if (displayInterval) return
 
@@ -413,7 +413,7 @@ export function GlobalGaiaV3() {
             }
             return newMessages
           })
-        }, 50) // 每50ms更新一次显示
+        }, 10) // 🔥 每10ms更新一次（加速5倍）
       }
 
       try {
@@ -445,8 +445,9 @@ export function GlobalGaiaV3() {
                 const newContent = fullAnswer.slice(lastFullAnswerLength)
                 lastFullAnswerLength = fullAnswer.length
 
-                for (let i = 0; i < newContent.length; i += 3) {
-                  pendingChunks.push(newContent.slice(i, i + 3))
+                // 🔥 每次显示8个字符（加快显示速度）
+                for (let i = 0; i < newContent.length; i += 8) {
+                  pendingChunks.push(newContent.slice(i, i + 8))
                 }
 
                 // 🔥 启动显示定时器
@@ -500,8 +501,8 @@ export function GlobalGaiaV3() {
                     const newContent = fullAnswer.slice(lastFullAnswerLength)
                     lastFullAnswerLength = fullAnswer.length
 
-                    for (let i = 0; i < newContent.length; i += 3) {
-                      pendingChunks.push(newContent.slice(i, i + 3))
+                    for (let i = 0; i < newContent.length; i += 8) {
+                      pendingChunks.push(newContent.slice(i, i + 8))
                     }
                     startDisplayTimer()
                   } else if (json.type === 'done') {
@@ -526,8 +527,8 @@ export function GlobalGaiaV3() {
               const newContent = fullAnswer.slice(lastFullAnswerLength)
               lastFullAnswerLength = fullAnswer.length
 
-              for (let i = 0; i < newContent.length; i += 3) {
-                pendingChunks.push(newContent.slice(i, i + 3))
+              for (let i = 0; i < newContent.length; i += 8) {
+                pendingChunks.push(newContent.slice(i, i + 8))
               }
               startDisplayTimer()
             } else if (json.type === 'done') {
