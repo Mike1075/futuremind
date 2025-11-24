@@ -129,36 +129,58 @@ export async function POST(req: NextRequest) {
       user_id: userId,
       project_id: defaultProjectId,
       organization_id: defaultOrganizationId,
-      conversation_history: conversationHistory.slice(-10).map((m: any) => ({
+      conversation_history: conversationHistory.slice(-5).map((m: any) => ({
         role: m.role,
         content: m.content
       }))
     }
 
     console.log(`[Gaia API] ⏱️  数据库操作完成: +${Date.now() - startTime}ms`)
+    console.log(`[Gaia API] 📤 发送N8N请求: ${N8N_CHAT_WEBHOOK}`)
 
-    // 5. 调用N8N获取流式响应
-    const n8nRes = await fetch(N8N_CHAT_WEBHOOK, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
+    // 5. 调用N8N获取流式响应（添加60秒超时）
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 60000) // 60秒超时
 
-    console.log(`[Gaia API] ⏱️  N8N响应到达: +${Date.now() - startTime}ms`)
-
-    if (!n8nRes.ok) {
-      const errorText = await n8nRes.text()
-      console.error('[Gaia Chat] N8N error:', errorText)
-      return new Response(JSON.stringify({
-        error: 'Failed to get response from Gaia',
-        status: n8nRes.status
-      }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' }
+    let n8nRes: Response
+    try {
+      const n8nFetchStart = Date.now()
+      n8nRes = await fetch(N8N_CHAT_WEBHOOK, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
+      console.log(`[Gaia API] ⏱️  N8N响应到达: +${Date.now() - startTime}ms (N8N耗时: ${Date.now() - n8nFetchStart}ms)`)
+
+      if (!n8nRes.ok) {
+        const errorText = await n8nRes.text()
+        console.error('[Gaia Chat] N8N error:', errorText)
+        return new Response(JSON.stringify({
+          error: 'Failed to get response from Gaia',
+          status: n8nRes.status
+        }), {
+          status: 502,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        console.error('[Gaia API] ⏱️  N8N请求超时 (60秒)')
+        return new Response(JSON.stringify({
+          error: 'N8N request timeout (60s)'
+        }), {
+          status: 504,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+      throw error
     }
 
     // 6. 创建流式响应并转发给前端
