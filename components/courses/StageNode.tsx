@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { VideoPromptModal } from './VideoPromptModal'
 
 interface Stage {
   stageNumber: number
@@ -32,12 +34,43 @@ export function StageNode({
   firstContentId,
   systemKey
 }: StageNodeProps) {
+  const router = useRouter()
+  const [showModal, setShowModal] = useState(false)
+
   const isCompleted = progress === 100
   const isUnlocked = stage.isUnlocked
 
   // 节点尺寸
   const nodeSize = 60
   const iconSize = 24
+
+  // 获取第一个内容的视频信息
+  const firstContent = stage.contents.length > 0 ? stage.contents[0] : null
+  const videoLink = firstContent?.documentary_url || ''
+  const preWatchGuide = firstContent?.pre_watch_guide || ''
+  const stageTitle = firstContent?.title || `第${stage.stageNumber}阶段`
+
+  // 处理点击事件
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!isUnlocked || !firstContentId) return
+
+    // 如果有视频链接或观看前思考内容，显示模态框
+    if (videoLink || preWatchGuide) {
+      setShowModal(true)
+    } else {
+      // 否则直接跳转
+      router.push(`/courses/${systemKey}/${firstContentId}`)
+    }
+  }
+
+  // 处理继续学习
+  const handleProceed = () => {
+    setShowModal(false)
+    if (firstContentId) {
+      router.push(`/courses/${systemKey}/${firstContentId}`)
+    }
+  }
 
   const NodeContent = (
     <motion.div
@@ -172,15 +205,22 @@ export function StageNode({
     </motion.div>
   )
 
-  // 如果解锁且有内容，包裹Link组件用于导航
-  if (isUnlocked && firstContentId) {
-    return (
-      <Link href={`/courses/${systemKey}/${firstContentId}`}>
+  return (
+    <>
+      {/* 节点内容 - 添加点击事件 */}
+      <div onClick={handleClick}>
         {NodeContent}
-      </Link>
-    )
-  }
+      </div>
 
-  // 否则返回普通节点
-  return NodeContent
+      {/* 视频提示框 */}
+      <VideoPromptModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onProceed={handleProceed}
+        videoLink={videoLink}
+        preWatchGuide={preWatchGuide}
+        stageTitle={stageTitle}
+      />
+    </>
+  )
 }

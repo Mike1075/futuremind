@@ -67,12 +67,12 @@ export function VideoSection({
 
   return (
     <div className="space-y-6">
-      {/* 观前指南 */}
+      {/* 观看前思考 */}
       {preWatchGuide && (
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6">
           <h3 className="text-lg font-bold text-blue-400 mb-3 flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
-            观前指南
+            观看前思考
           </h3>
           <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
             {preWatchGuide}

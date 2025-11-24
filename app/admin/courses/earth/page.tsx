@@ -664,13 +664,13 @@ export default function EarthCoursePage() {
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">观前指南</label>
+                  <label className="block text-white font-medium mb-2">观看前思考</label>
                   <textarea
                     value={formData.pre_watch_guide}
                     onChange={(e) => setFormData({ ...formData, pre_watch_guide: e.target.value })}
                     rows={6}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入观前指南..."
+                    placeholder="输入观看前思考..."
                   />
                 </div>
 

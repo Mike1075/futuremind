@@ -844,63 +844,70 @@ const generateLeaves = (
   if (totalCount > 60) leafSizeScale = 3.5
   if (totalCount > 100) leafSizeScale = 4.0  // 枝条很多时，叶子最大
 
-  // 🔥 修复：确保叶子数量完全匹配leafCount
-  // 使用计数器精确控制总数，而不是平均分配
+  // 🔥 新的均匀分布算法：循环分配叶子到每个枝条
+  // 这样确保每个枝条都有叶子，且分布均匀
   let generatedLeafCount = 0
-  const leavesPerBranch = leafCount / leafBranches.length
+  let branchIndex = 0
 
-  for (let branchIdx = 0; branchIdx < leafBranches.length; branchIdx++) {
-    const branch = leafBranches[branchIdx]
+  while (generatedLeafCount < leafCount) {
+    const branch = leafBranches[branchIndex % leafBranches.length]
 
-    // 计算这个枝条应该生成的叶子数
-    // 最后一个枝条生成剩余所有叶子，确保总数准确
-    let segmentLeafCount: number
-    if (branchIdx === leafBranches.length - 1) {
-      segmentLeafCount = leafCount - generatedLeafCount
-    } else {
-      segmentLeafCount = Math.max(1, Math.round(leavesPerBranch))
-    }
+    // 计算这是该枝条的第几片叶子
+    const leafIndexOnBranch = Math.floor(branchIndex / leafBranches.length)
 
-    for (let i = 0; i < segmentLeafCount; i++) {
-      // 🔥 使用确定性随机数：基于枝条索引和叶子总计数，确保位置固定
-      const leafSeed = generatedLeafCount  // 使用全局叶子计数作为唯一标识
+    // 使用确定性随机数确保位置固定
+    const leafSeed = generatedLeafCount
 
-      // 沿着线段随机位置（10%-90%，避免起点和终点）
-      const t = 0.1 + deterministicRandom(branchIdx, leafSeed, 0, 0.8)
-      const x = branch.startX + (branch.x - branch.startX) * t
-      const y = branch.startY + (branch.y - branch.startY) * t
+    // 🔥 叶子沿枝条均匀分布：根据叶子索引计算位置
+    // 每个枝条上的叶子从20%到80%均匀分布
+    const leavesOnThisBranch = Math.ceil(leafCount / leafBranches.length)
+    const positionRatio = 0.2 + (leafIndexOnBranch / Math.max(1, leavesOnThisBranch - 1)) * 0.6
 
-      // 计算垂直于枝条的方向（用于左右偏移）
-      const perpSide = deterministicRandom(branchIdx + 1000, leafSeed, 0, 1) > 0.5 ? 90 : -90
-      const perpAngle = branch.angle + perpSide  // 确定性左右选择
-      const offsetDist = deterministicRandom(branchIdx + 2000, leafSeed, 1, 5)  // 🔥 减小偏移：5-15 → 1-5，让叶子更贴近枝条
-      const offsetX = Math.cos((perpAngle * Math.PI) / 180) * offsetDist
-      const offsetY = Math.sin((perpAngle * Math.PI) / 180) * offsetDist
+    // 限制在0.2-0.8范围内，避免在端点
+    const t = Math.min(0.8, Math.max(0.2, positionRatio))
 
-      // 使用整体生长进度决定颜色（所有部分统一）
-      const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
-      // 🔥 叶子大小根据枝条数量动态调整（使用确定性随机）
-      const size = particleSize * deterministicRandom(branchIdx + 3000, leafSeed, leafSizeScale * 0.8, leafSizeScale * 1.2)
-      // 叶子旋转角度与枝条方向一致（使用确定性随机）
-      const rotation = branch.angle + deterministicRandom(branchIdx + 4000, leafSeed, -30, 30)
+    const x = branch.startX + (branch.x - branch.startX) * t
+    const y = branch.startY + (branch.y - branch.startY) * t
 
-      particles.push({
-        x: x + offsetX,
-        y: y + offsetY,
-        size,
-        color,
-        shape: 'leaf',
-        rotation,
-      })
+    // 🔥 计算垂直于枝条的方向（用于叶子偏移）
+    const dx = branch.x - branch.startX
+    const dy = branch.y - branch.startY
+    const length = Math.sqrt(dx * dx + dy * dy)
 
-      generatedLeafCount++
+    // 垂直向量（逆时针旋转90度）
+    const perpX = -dy / length
+    const perpY = dx / length
 
-      // 安全检查：如果已经达到目标数量，停止生成
-      if (generatedLeafCount >= leafCount) break
-    }
+    // 🔥 叶子紧贴枝条，垂直方向有固定偏移
+    // 使用确定性随机决定在枝条的左侧还是右侧
+    const side = deterministicRandom(leafSeed, 1000, 0, 1) > 0.5 ? 1 : -1
+    const perpOffset = side * particleSize * 0.8 // 叶子紧贴枝条，偏移0.8个粒子大小
 
-    // 安全检查：如果已经达到目标数量，停止外层循环
-    if (generatedLeafCount >= leafCount) break
+    const offsetX = perpX * perpOffset + deterministicRandom(leafSeed, 2000, -0.3, 0.3)
+    const offsetY = perpY * perpOffset + deterministicRandom(leafSeed, 3000, -0.3, 0.3)
+
+    // 使用整体生长进度决定颜色（所有部分统一）
+    const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
+
+    // 🔥 叶子大小根据枝条数量动态调整
+    const size = particleSize * deterministicRandom(leafSeed, 4000, leafSizeScale * 0.9, leafSizeScale * 1.1)
+
+    // 🔥 叶子旋转角度：与枝条垂直方向对齐（±10度小偏移）
+    const branchAngle = Math.atan2(dy, dx) * 180 / Math.PI
+    const leafBaseAngle = branchAngle + 90 * side // 垂直于枝条
+    const rotation = leafBaseAngle + deterministicRandom(leafSeed, 5000, -10, 10)
+
+    particles.push({
+      x: x + offsetX,
+      y: y + offsetY,
+      size,
+      color,
+      shape: 'leaf',
+      rotation,
+    })
+
+    generatedLeafCount++
+    branchIndex++
   }
 }
 
@@ -918,31 +925,74 @@ const generateFruits = (
 
   if (fruitCount === 0 || branchNodes.length === 0) return
 
-  // 🔥 优化果实位置：果实长在成熟的外层枝条上（level >= 3），更符合植物学规律
-  const matureNodes = branchNodes.filter(n => n.level >= 3)
+  // 🔥 1. 识别终端枝条：不再生长的枝条（isOpen = false）或最高层级的枝条
+  const maxLevel = Math.max(...branchNodes.map(n => n.level))
+  const terminalBranches = branchNodes.filter(
+    n => !n.isOpen || n.level === maxLevel
+  )
 
-  // 如果没有足够成熟的枝条，降级到level >= 2
-  const fruitNodes = matureNodes.length > 0 ? matureNodes : branchNodes.filter(n => n.level >= 2)
+  if (terminalBranches.length === 0) return
 
-  for (let i = 0; i < fruitCount; i++) {
-    if (fruitNodes.length === 0) break
+  // 🔥 2. 每个终端枝条最多2-3个果实
+  const maxFruitsPerBranch = 3
 
-    const node = fruitNodes[Math.floor(random(0, fruitNodes.length))]
-    // 🔥 果实垂挂效果：X轴小幅偏移，Y轴向下垂挂
-    const offsetX = random(-5, 5)
-    const offsetY = random(8, 18)  // 果实自然下垂
+  // 🔥 3. 计算每个终端枝条应该分配的果实数量
+  const fruitsPerBranch = Math.min(
+    maxFruitsPerBranch,
+    Math.ceil(fruitCount / terminalBranches.length)
+  )
 
-    // 使用整体生长进度决定颜色（所有部分统一）
-    const color = getColor('fruit', overallProgress, isSolid, glowIntensity)
-    const size = particleSize * random(2.8, 4.0)  // 🔥 果实稍大更明显
+  let generatedFruitCount = 0
 
-    particles.push({
-      x: node.x + offsetX,
-      y: node.y + offsetY,
-      size,
-      color,
-      shape: 'apple',
-    })
+  // 🔥 4. 遍历终端枝条，在每个枝条末端分布果实
+  for (let branchIdx = 0; branchIdx < terminalBranches.length; branchIdx++) {
+    if (generatedFruitCount >= fruitCount) break
+
+    const branch = terminalBranches[branchIdx]
+
+    // 🔥 5. 当前枝条最多生成的果实数量
+    const currentBranchFruitCount = Math.min(
+      fruitsPerBranch,
+      fruitCount - generatedFruitCount
+    )
+
+    // 🔥 6. 在枝条末端70-90%的位置分布果实
+    for (let fruitIdx = 0; fruitIdx < currentBranchFruitCount; fruitIdx++) {
+      // 使用确定性随机，确保位置稳定
+      const fruitSeed = branchIdx * 1000 + fruitIdx
+
+      // 沿着枝条的位置比例（70%-90%，靠近末端）
+      const positionRatio = deterministicRandom(
+        fruitSeed,
+        100,
+        0.7,
+        0.9
+      )
+
+      // 计算果实在枝条上的位置
+      const x = branch.startX + (branch.x - branch.startX) * positionRatio
+      const y = branch.startY + (branch.y - branch.startY) * positionRatio
+
+      // 🔥 果实垂挂效果：X轴小幅偏移，Y轴向下垂挂
+      const offsetX = deterministicRandom(fruitSeed, 200, -5, 5)
+      const offsetY = deterministicRandom(fruitSeed, 300, 8, 18)
+
+      // 使用整体生长进度决定颜色（所有部分统一）
+      const color = getColor('fruit', overallProgress, isSolid, glowIntensity)
+
+      // 🔥 果实大小使用确定性随机
+      const size = particleSize * deterministicRandom(fruitSeed, 400, 2.8, 4.0)
+
+      particles.push({
+        x: x + offsetX,
+        y: y + offsetY,
+        size,
+        color,
+        shape: 'apple',
+      })
+
+      generatedFruitCount++
+    }
   }
 }
 
