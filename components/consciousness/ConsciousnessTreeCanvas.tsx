@@ -222,78 +222,39 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
         ctx.translate(p.x, p.y)
         ctx.rotate((p.rotation || 0) * Math.PI / 180)
 
-        // 🍃 优化叶子形状：更宽更圆的自然叶片
+        // 🍃 简单椭圆带尖的叶子形状
         ctx.beginPath()
         // 叶尖（顶部）
-        ctx.moveTo(0, -p.size * 1.2)
-        // 右上部分（更圆润的曲线）
-        ctx.bezierCurveTo(
-          p.size * 0.4, -p.size * 0.9,  // 控制点1
-          p.size * 1.0, -p.size * 0.3,  // 控制点2
-          p.size * 1.0, 0               // 终点（右侧最宽处）
-        )
-        // 右下部分
-        ctx.bezierCurveTo(
-          p.size * 1.0, p.size * 0.3,   // 控制点1
-          p.size * 0.4, p.size * 0.7,   // 控制点2
-          0, p.size * 0.8               // 终点（叶柄）
-        )
-        // 左下部分
-        ctx.bezierCurveTo(
-          -p.size * 0.4, p.size * 0.7,  // 控制点1
-          -p.size * 1.0, p.size * 0.3,  // 控制点2
-          -p.size * 1.0, 0              // 终点（左侧最宽处）
-        )
-        // 左上部分
-        ctx.bezierCurveTo(
-          -p.size * 1.0, -p.size * 0.3, // 控制点1
-          -p.size * 0.4, -p.size * 0.9, // 控制点2
-          0, -p.size * 1.2              // 终点（回到叶尖）
-        )
+        ctx.moveTo(0, -p.size * 1.5)
+        // 右侧弧线（椭圆）
+        ctx.quadraticCurveTo(p.size * 0.7, -p.size * 0.5, p.size * 0.6, 0)
+        ctx.quadraticCurveTo(p.size * 0.7, p.size * 0.5, 0, p.size)
+        // 左侧弧线（椭圆）
+        ctx.quadraticCurveTo(-p.size * 0.7, p.size * 0.5, -p.size * 0.6, 0)
+        ctx.quadraticCurveTo(-p.size * 0.7, -p.size * 0.5, 0, -p.size * 1.5)
         ctx.closePath()
 
         // 填充叶子
         ctx.fillStyle = p.color
-        ctx.globalAlpha = 0.9  // 高透明度，显示绿色
+        ctx.globalAlpha = 0.85  // 稍微透明，显示绿色
         ctx.fill()
         ctx.globalAlpha = 1
 
         // 叶子轮廓
         ctx.strokeStyle = p.color
-        ctx.lineWidth = 1.2
+        ctx.lineWidth = 1
         ctx.stroke()
 
-        // 🍃 叶脉：主脉 + 侧脉
+        // 🍃 叶脉（简单中线）
         ctx.strokeStyle = p.color
-        ctx.lineWidth = 0.6
+        ctx.lineWidth = 0.5
         ctx.globalAlpha = 0.6
-
-        // 主脉（中线）
         ctx.beginPath()
-        ctx.moveTo(0, -p.size * 1.2)
-        ctx.lineTo(0, p.size * 0.8)
+        ctx.moveTo(0, -p.size * 1.5)
+        ctx.lineTo(0, p.size)
         ctx.stroke()
-
-        // 侧脉（左右对称）
-        const veinCount = 3
-        for (let i = 1; i <= veinCount; i++) {
-          const y = -p.size * 0.8 + (i / veinCount) * p.size * 1.3
-          const xOffset = p.size * 0.7 * (i / veinCount)
-
-          // 右侧脉
-          ctx.beginPath()
-          ctx.moveTo(0, y)
-          ctx.quadraticCurveTo(xOffset * 0.5, y + p.size * 0.1, xOffset, y + p.size * 0.2)
-          ctx.stroke()
-
-          // 左侧脉
-          ctx.beginPath()
-          ctx.moveTo(0, y)
-          ctx.quadraticCurveTo(-xOffset * 0.5, y + p.size * 0.1, -xOffset, y + p.size * 0.2)
-          ctx.stroke()
-        }
-
         ctx.globalAlpha = 1
+
         ctx.restore()
       })
 
