@@ -870,6 +870,8 @@ const generateLeaves = (
   // 每个枝条分配的叶子数
   const leavesPerBranch = Math.ceil(leafCount / leafBranches.length)
 
+  console.log(`[叶子生成] 总叶子数: ${leafCount}, 可用枝条数: ${leafBranches.length}, 每枝叶子数: ${leavesPerBranch}`)
+
   // 遍历每个枝条
   for (const branch of leafBranches) {
     if (generatedLeafCount >= leafCount) break
@@ -884,6 +886,9 @@ const generateLeaves = (
     // 计算垂直方向（用于左右分布）
     const perpX = -dy / branchLength
     const perpY = dx / branchLength
+
+    console.log(`[枝条 ${branch.level}] 起点: (${branch.startX.toFixed(0)}, ${branch.startY.toFixed(0)}), 终点: (${branch.x.toFixed(0)}, ${branch.y.toFixed(0)})`)
+    console.log(`  方向向量: dx=${dx.toFixed(2)}, dy=${dy.toFixed(2)}, 垂直向量: perpX=${perpX.toFixed(2)}, perpY=${perpY.toFixed(2)}`)
 
     // 沿枝条均匀分布叶子（从40%到90%）
     for (let i = 0; i < leavesOnThisBranch && generatedLeafCount < leafCount; i++) {
@@ -905,6 +910,10 @@ const generateLeaves = (
 
       const finalX = baseX + offsetX
       const finalY = baseY + offsetY
+
+      if (i < 3) {  // 只打印前3个叶子的信息
+        console.log(`    叶子 ${i}: side=${side}, baseX=${baseX.toFixed(0)}, offsetX=${offsetX.toFixed(0)}, finalX=${finalX.toFixed(0)}`)
+      }
 
       // 叶子颜色（跟随整体进度）
       const color = getColor('leaf', overallProgress, isSolid, glowIntensity)

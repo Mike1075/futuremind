@@ -33,6 +33,11 @@ export function GlobalGaiaV3() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [selectedMessages, setSelectedMessages] = useState<Set<number>>(new Set())
 
+  // 分页相关状态
+  const [hasMore, setHasMore] = useState(false)  // 是否还有更多消息
+  const [isLoadingMore, setIsLoadingMore] = useState(false)  // 是否正在加载更多
+  const [loadedCount, setLoadedCount] = useState(0)  // 已加载的消息数量
+
   // 监听GaiaDialog打开事件，自动关闭侧边栏
   useEffect(() => {
     const handleGaiaDialogOpened = () => {
@@ -159,18 +164,17 @@ export function GlobalGaiaV3() {
 
   // 打开盖亚时，加载最近10条消息或显示欢迎语
   useEffect(() => {
-
     if (isOpen && messages.length === 0 && !isFromKnowledgePoint) {
-
-      // 加载历史消息
-      fetch('/api/gaia/recent-messages')
+      // 加载最近10条历史消息（分页）
+      fetch('/api/gaia/recent-messages?limit=10&offset=0')
         .then(res => res.json())
         .then(data => {
-
           if (data.messages && data.messages.length > 0) {
             // 有消息，直接显示
             setMessages(data.messages)
             setCurrentConversationId(data.conversationId)
+            setHasMore(data.hasMore)
+            setLoadedCount(data.messages.length)
           } else if (data.conversationId === null) {
             // 完全没有对话记录，第一次使用，显示欢迎消息
             const welcomeMessage: Message = {
@@ -187,18 +191,23 @@ export function GlobalGaiaV3() {
               timestamp: new Date().toISOString()
             }
             setMessages([welcomeMessage])
+            setHasMore(false)
+            setLoadedCount(1)
           } else {
             // 有对话ID但消息为空（用户删除了所有消息），不显示欢迎语
             setMessages([])
             setCurrentConversationId(data.conversationId)
+            setHasMore(false)
+            setLoadedCount(0)
           }
         })
         .catch(error => {
           console.error('[GlobalGaia] ❌ 加载历史消息失败:', error)
           // 失败时显示空白，不显示欢迎消息
           setMessages([])
+          setHasMore(false)
+          setLoadedCount(0)
         })
-    } else {
     }
   }, [isOpen, isFromKnowledgePoint])
 
@@ -231,17 +240,44 @@ export function GlobalGaiaV3() {
     }
   }, [])
 
-  // 加载所有历史消息（合并所有对话）
+  // 加载更多历史消息（每次20条）
+  const loadMoreMessages = async () => {
+    if (isLoadingMore || !hasMore) return
+
+    try {
+      setIsLoadingMore(true)
+      const response = await fetch(`/api/gaia/recent-messages?limit=20&offset=${loadedCount}`)
+      const data = await response.json()
+
+      if (data.messages && data.messages.length > 0) {
+        // 将新消息添加到现有消息前面（因为是更早的消息）
+        setMessages(prev => [...data.messages, ...prev])
+        setHasMore(data.hasMore)
+        setLoadedCount(prev => prev + data.messages.length)
+      } else {
+        setHasMore(false)
+      }
+    } catch (error) {
+      console.error('[GlobalGaia] ❌ 加载更多消息失败:', error)
+      alert('加载更多消息失败')
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
+
+  // 加载所有历史消息（点击历史记录按钮，初始20条）
   const loadAllHistoryMessages = async () => {
     try {
-      const response = await fetch('/api/gaia/all-messages')
+      // 加载最近20条历史消息（分页）
+      const response = await fetch('/api/gaia/recent-messages?limit=20&offset=0')
       if (response.ok) {
         const data = await response.json()
         if (data.messages && data.messages.length > 0) {
-          // 设置所有历史消息
+          // 设置历史消息
           setMessages(data.messages)
-          // 清空当前对话ID，因为显示的是所有对话的合并视图
-          setCurrentConversationId(null)
+          setCurrentConversationId(data.conversationId)
+          setHasMore(data.hasMore)
+          setLoadedCount(data.messages.length)
         } else {
           // 没有历史记录
           alert('暂无历史记录')
@@ -719,6 +755,29 @@ export function GlobalGaiaV3() {
           {/* 消息列表 */}
             <>
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-black">
+                {/* 加载更多按钮（在消息列表顶部） */}
+                {hasMore && (
+                  <div className="flex justify-center py-2">
+                    <button
+                      onClick={loadMoreMessages}
+                      disabled={isLoadingMore}
+                      className="px-6 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-full text-sm border border-purple-500/30 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          加载中...
+                        </>
+                      ) : (
+                        <>
+                          <History className="w-4 h-4" />
+                          加载更多 (已加载 {loadedCount} 条)
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
                 {messages.map((message, index) => {
                   // 检查是否应该显示这条消息（折叠机制）
                   if (collapsedAfterIndex !== null && !showCollapsed) {
