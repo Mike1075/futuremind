@@ -185,6 +185,9 @@ export function PBLProjectDetail({
   // 公开作业刷新机制
   const [publicSubmissionsRefreshKey, setPublicSubmissionsRefreshKey] = useState(0)
 
+  // 未选择项目提示弹窗
+  const [showSelectProjectModal, setShowSelectProjectModal] = useState(false)
+
   // 获取用户ID
   useEffect(() => {
     const fetchUser = async () => {
@@ -289,6 +292,12 @@ export function PBLProjectDetail({
 
   // 打开提交对话框
   const openSubmitDialog = (weekNumber: number, dayNumber: number) => {
+    // 检查是否已选择项目
+    if (!isSelected) {
+      setShowSelectProjectModal(true)
+      return
+    }
+
     const dayKey = `project_${project.sequence_number}_week${weekNumber}_day${dayNumber}`
     setCurrentDayKey(dayKey)
     setSubmissionContent('')
@@ -864,28 +873,30 @@ export function PBLProjectDetail({
                               )}
 
                               {/* 提交和查看记录按钮 */}
-                              {isSelected && (
-                                <div className="flex gap-2 mt-3">
-                                  {!isCompleted && (
-                                    <button
-                                      onClick={() => openSubmitDialog(week.week, dayNumber)}
-                                      className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-                                    >
-                                      提交今日任务
-                                    </button>
-                                  )}
+                              <div className="flex gap-2 mt-3">
+                                {!isCompleted && (
                                   <button
-                                    onClick={() => {
-                                      setHistoryDayKey(dayKey)
-                                      setShowSubmissionsHistory(true)
-                                      fetchSubmissionsHistory(dayKey)
-                                    }}
-                                    className={`${isCompleted ? 'flex-1' : 'flex-shrink-0'} px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm font-medium transition-colors`}
+                                    onClick={() => openSubmitDialog(week.week, dayNumber)}
+                                    className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                                   >
-                                    查看提交记录
+                                    提交今日任务
                                   </button>
-                                </div>
-                              )}
+                                )}
+                                <button
+                                  onClick={() => {
+                                    if (!isSelected) {
+                                      setShowSelectProjectModal(true)
+                                      return
+                                    }
+                                    setHistoryDayKey(dayKey)
+                                    setShowSubmissionsHistory(true)
+                                    fetchSubmissionsHistory(dayKey)
+                                  }}
+                                  className={`${isCompleted ? 'flex-1' : 'flex-shrink-0'} px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm font-medium transition-colors`}
+                                >
+                                  查看提交记录
+                                </button>
+                              </div>
                             </div>
                           )}
 
@@ -1400,6 +1411,96 @@ export function PBLProjectDetail({
           refreshKey={publicSubmissionsRefreshKey}
         />
       </div>
+
+      {/* 未选择项目提示弹窗 */}
+      {showSelectProjectModal && (
+        <div
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setShowSelectProjectModal(false)}
+        >
+          <div
+            className="bg-gradient-to-br from-gray-900 via-gray-900 to-purple-900/30 border-2 border-purple-500/50 rounded-2xl max-w-md w-full p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 顶部图标和关闭按钮 */}
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1 flex justify-center">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSelectProjectModal(false)}
+                className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 标题 */}
+            <h3 className="text-2xl font-bold text-center mb-4 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              请先选择项目
+            </h3>
+
+            {/* 说明文字 */}
+            <p className="text-gray-300 text-center mb-6 leading-relaxed">
+              在提交作业之前，您需要先点击页面顶部的 <span className="text-purple-400 font-semibold">「选择这个项目」</span> 按钮来激活该项目。
+            </p>
+
+            {/* 特性说明 */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mb-6 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <p className="text-sm text-gray-300">选择项目后，您可以按顺序完成每日任务</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <p className="text-sm text-gray-300">系统会追踪您的学习进度和成就</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <p className="text-sm text-gray-300">AI助教会实时评估您的作业</p>
+              </div>
+            </div>
+
+            {/* 按钮组 */}
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowSelectProjectModal(false)
+                  // 滚动到页面顶部（项目选择按钮位置）
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 rounded-lg font-semibold transition-all shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50"
+              >
+                前往选择项目
+              </button>
+              <button
+                onClick={() => setShowSelectProjectModal(false)}
+                className="w-full px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors text-gray-300"
+              >
+                我知道了
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
