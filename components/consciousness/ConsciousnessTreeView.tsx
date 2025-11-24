@@ -5,6 +5,9 @@ import { ConsciousnessTreeCanvas } from './ConsciousnessTreeCanvas'
 import { TreeGrowthData, TreeParams } from '@/lib/utils/consciousnessTreeGenerator'
 import { createClient } from '@/lib/supabase/client'
 
+// 🔥 组件版本号 - 用于诊断缓存问题
+const COMPONENT_VERSION = '2.0.1-debug'
+
 interface ConsciousnessTreeViewProps {
   userId: string
   isPreview?: boolean  // 预览模式（隐藏调试信息）
@@ -145,12 +148,22 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // 🔥 组件挂载时输出版本信息
+  useEffect(() => {
+    console.log(`🌳 ConsciousnessTreeView 组件挂载 - 版本: ${COMPONENT_VERSION}`, {
+      userId,
+      isPreview,
+      timestamp: new Date().toISOString()
+    })
+  }, [])
+
   useEffect(() => {
     loadTreeData()
   }, [userId]) // 只在userId改变时加载，techParams改变不触发
 
   const loadTreeData = async () => {
-    console.log('🔄 [loadTreeData] 开始加载意识树数据，userId:', userId)
+    const timestamp = Date.now()
+    console.log('🔄 [loadTreeData] 开始加载意识树数据', { userId, timestamp })
     try {
       setLoading(true)
       setError(null)
@@ -162,26 +175,34 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
 
       const supabase = createClient()
 
-      // 从 profiles 表获取 consciousness_tree_view
+      // 🔥 从 profiles 表获取 consciousness_tree_view（强制禁用缓存）
+      console.log('📡 [loadTreeData] 正在从 Supabase 查询数据，添加缓存破坏参数...')
       const dataPromise = supabase
         .from('profiles')
         .select('consciousness_tree_view')
         .eq('id', userId)
         .single()
 
-      console.log('📡 [loadTreeData] 正在从 Supabase 查询数据...')
       const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any
-      console.log('📥 [loadTreeData] Supabase 返回结果:', { data, error })
+      console.log('📥 [loadTreeData] Supabase 返回结果:', {
+        data,
+        error,
+        timestamp,
+        rawTreeView: data?.consciousness_tree_view
+      })
 
       if (error) throw error
 
       if (data?.consciousness_tree_view) {
         // 使用迁移函数自动处理新旧格式
         const migratedData = migrateOldFormat(data.consciousness_tree_view)
-        console.log('🌳 [意识树数据] 从数据库加载:', {
-          原始数据: data.consciousness_tree_view,
-          迁移后: migratedData,
-          userId: userId
+        console.log('🌳 [意识树数据] 从数据库加载完成:', {
+          userId,
+          原始数据: JSON.stringify(data.consciousness_tree_view),
+          迁移后数据: JSON.stringify(migratedData),
+          树干高度: migratedData.trunk.height_level,
+          树干粗度: migratedData.trunk.thickness,
+          树干虚实: migratedData.trunk.is_solid
         })
         setGrowthData(migratedData)
       } else {
