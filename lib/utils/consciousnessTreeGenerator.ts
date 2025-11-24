@@ -886,44 +886,35 @@ const generateLeaves = (
     const dy = branch.y - branch.startY
     const branchLength = Math.sqrt(dx * dx + dy * dy)
 
-    // 计算垂直方向（用于左右分布）
+    // 🌿 计算垂直方向（用于左右分布）- 垂直于枝条方向
     const perpX = -dy / branchLength
     const perpY = dx / branchLength
 
-    console.log(`[枝条 ${branch.level}] 起点: (${branch.startX.toFixed(0)}, ${branch.startY.toFixed(0)}), 终点: (${branch.x.toFixed(0)}, ${branch.y.toFixed(0)})`)
-    console.log(`  方向向量: dx=${dx.toFixed(2)}, dy=${dy.toFixed(2)}, 垂直向量: perpX=${perpX.toFixed(2)}, perpY=${perpY.toFixed(2)}`)
-
-    // 沿枝条均匀分布叶子（从20%到95%，覆盖更长的范围）
+    // 沿枝条均匀分布叶子（从30%到90%）
     for (let i = 0; i < leavesOnThisBranch && generatedLeafCount < leafCount; i++) {
-      // 沿枝条的位置（20%到95%范围，让叶子分布更广）
-      const t = 0.2 + (i / Math.max(1, leavesOnThisBranch - 1)) * 0.75
+      // 沿枝条的位置（30%到90%范围）
+      const t = 0.3 + (i / Math.max(1, leavesOnThisBranch - 1)) * 0.6
       const baseX = branch.startX + dx * t
       const baseY = branch.startY + dy * t
 
-      // 🔥 使用确定性随机决定左右侧（而非固定交替），确保真正的50/50分布
+      // 🌿 随机决定左右侧
       const leafSeed = generatedLeafCount
-      const sideRandom = deterministicRandom(leafSeed, 2001, 0, 2)
-      const side = sideRandom < 1 ? 1 : -1
+      const sideRandom = deterministicRandom(leafSeed, 2001, 0, 1)
+      const side = sideRandom < 0.5 ? 1 : -1
 
-      // 使用确定性随机偏移，使叶子看起来更自然
-      const randomFactor = deterministicRandom(leafSeed, 3000, 1.5, 2.5)
-      // 🔥 增大偏移距离7倍，让叶子更明显地分布在枝条两侧
-      const offsetDist = particleSize * leafSizeScale * randomFactor * 7
+      // 🌿 较小的随机偏移（1.2-2.0倍），让叶子紧贴树枝
+      const randomFactor = deterministicRandom(leafSeed, 3000, 1.2, 2.0)
+      const offsetDist = particleSize * leafSizeScale * randomFactor * 2.5
 
-      // 🔥 添加一些角度变化，让叶子分布更自然
-      const angleVariation = deterministicRandom(leafSeed, 4000, -0.3, 0.3)
-      const rotatedPerpX = perpX * Math.cos(angleVariation) - perpY * Math.sin(angleVariation)
-      const rotatedPerpY = perpX * Math.sin(angleVariation) + perpY * Math.cos(angleVariation)
-
-      // 叶子位置：枝条垂直方向偏移（带角度变化）
-      const offsetX = rotatedPerpX * side * offsetDist
-      const offsetY = rotatedPerpY * side * offsetDist
+      // 🌿 叶子位置：垂直于枝条方向偏移（不添加角度变化，保持紧贴）
+      const offsetX = perpX * side * offsetDist
+      const offsetY = perpY * side * offsetDist
 
       const finalX = baseX + offsetX
       const finalY = baseY + offsetY
 
-      if (i < 3) {  // 只打印前3个叶子的信息
-        console.log(`    叶子 ${i}: side=${side}, randomFactor=${randomFactor.toFixed(2)}, offsetDist=${offsetDist.toFixed(1)}, offsetX=${offsetX.toFixed(0)}, finalX=${finalX.toFixed(0)}`)
+      if (i < 3) {
+        console.log(`    叶子 ${i}: side=${side}, t=${t.toFixed(2)}, offsetDist=${offsetDist.toFixed(1)}, offset=(${offsetX.toFixed(0)},${offsetY.toFixed(0)})`)
       }
 
       // 叶子颜色（跟随整体进度）
