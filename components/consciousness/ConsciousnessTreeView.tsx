@@ -175,6 +175,8 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
       if (data?.consciousness_tree_view) {
         // 使用迁移函数自动处理新旧格式
         const migratedData = migrateOldFormat(data.consciousness_tree_view)
+        console.log('[意识树数据加载] 原始数据:', data.consciousness_tree_view)
+        console.log('[意识树数据加载] 迁移后数据:', migratedData)
         setGrowthData(migratedData)
       } else {
         // 🔥 如果没有数据，使用种子状态（而不是报错）
