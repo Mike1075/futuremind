@@ -57,6 +57,13 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
 
     // 计算树实际需要的空间（根据growthData动态计算）
     const calculateTreeDimensions = () => {
+      // 🔥 种子状态：使用固定合理尺寸，避免容器尺寸未就绪问题
+      if (isEmptyTree) {
+        const width = container.clientWidth || 800
+        const height = container.clientHeight || 800
+        return { width, height }
+      }
+
       // 🔥 预览模式：直接使用容器尺寸，不需要大Canvas
       if (isPreview) {
         return {
@@ -305,13 +312,23 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       clearTimeout(drawTimerRef.current)
     }
 
-    // 设置新的定时器，300ms后绘制（如果是预览模式，立即绘制）
-    if (isPreview) {
-      draw()  // 预览模式立即绘制
+    // 🔥 确保容器尺寸已就绪再绘制
+    const ensureContainerReady = () => {
+      if (!container.clientWidth || !container.clientHeight) {
+        console.log('[Canvas] 容器尺寸未就绪，延迟50ms重试')
+        drawTimerRef.current = setTimeout(ensureContainerReady, 50)
+        return
+      }
+      draw()
+    }
+
+    // 设置新的定时器
+    if (isPreview || isEmptyTree) {
+      // 预览模式和种子状态：稍微延迟确保容器就绪
+      drawTimerRef.current = setTimeout(ensureContainerReady, 100)
     } else {
-      drawTimerRef.current = setTimeout(() => {
-        draw()
-      }, 300)  // 🔥 非预览模式延迟300ms（给用户更多调整时间，减少无效计算）
+      // 非预览模式延迟300ms（给用户更多调整时间，减少无效计算）
+      drawTimerRef.current = setTimeout(ensureContainerReady, 300)
     }
 
     return () => {

@@ -45,6 +45,24 @@ function migrateOldFormat(dbData: any): TreeGrowthData {
     const totalLeaves = dbData?.branches_and_leaves?.total_leaves ?? 0
     const fruitsCount = Array.isArray(dbData?.fruits) ? dbData.fruits.length : 0
 
+    // 🔥 检测是否为初始空状态（新用户默认值）
+    const isInitialEmptyState =
+      totalRootLength === 0 &&
+      totalLeaves === 0 &&
+      fruitsCount === 0 &&
+      (trunkThickness <= 1 && trunkStability <= 1)
+
+    if (isInitialEmptyState) {
+      console.log('[数据迁移] 检测到初始空状态，返回种子状态')
+      return {
+        roots: { count: 0, depth_level: 0, is_solid: false },
+        trunk: { thickness: 0, height_level: 0, is_solid: false },
+        branches: { count: 0, avg_length: 0, is_solid: false },
+        leaves: { count: 0, is_solid: false },
+        fruits: { count: 0, is_solid: false },
+      }
+    }
+
     // 根据依赖链计算虚实
     const rootsSolid = totalRootLength > 0
     const trunkSolid = rootsSolid && trunkThickness > 0
