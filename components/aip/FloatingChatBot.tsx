@@ -84,14 +84,37 @@ export function FloatingChatBot({
   useEffect(() => {
     if (!isOpen) return
 
-    let welcomeContent = '您好！我是您的AI项目管理助手。'
+    let welcomeContent = '🚀 欢迎来到探索者联盟！我是您的AI探索伙伴。'
 
     if (currentProject && organization) {
-      welcomeContent = `您好！当前已为您选择了项目「${currentProject.name}」（${organization.name}组织）。您可以直接询问该项目的相关问题。`
+      welcomeContent = `🚀 探索者你好！我看到你正在探索「${currentProject.name}」项目（${organization.name}组织）。
+
+让我们一起：
+✨ 深入挖掘项目的创新潜力
+🧠 设计独特的研究方案
+🤝 连接志同道合的探索伙伴
+💡 突破思维边界，做真正创新的事情
+
+有什么想探讨的吗？`
     } else if (organization) {
-      welcomeContent = `您好！当前已为您选择了「${organization.name}」组织。您可以询问组织相关问题或选择特定项目。`
+      welcomeContent = `🚀 探索者你好！当前已为您选择了「${organization.name}」组织。
+
+在探索者联盟，我们鼓励你：
+🌟 创建属于自己的原创PBL项目
+🔬 探索未知的边界
+🤝 与伙伴协作，共同突破
+
+选择一个项目开始探索，或告诉我你想创建什么样的项目！`
     } else {
-      welcomeContent = '您好！我是您的AI项目管理助手。我可以帮您回答问题、分析项目进度、分配任务等。'
+      welcomeContent = `🚀 欢迎来到探索者联盟！我是您的AI探索伙伴。
+
+这里是属于你的创新天地：
+🌟 **创建原创项目** - 把你的奇思妙想变成真实的探索
+🔬 **探索未知边界** - 突破常规，做真正创新的事情
+🤝 **协作共创** - 与志同道合的伙伴一起成长
+💡 **项目式学习** - 在实践中获得真知
+
+告诉我，你想创建什么样的项目？或者需要我帮你找到合适的探索方向？`
     }
 
     setMessages([{
