@@ -34,6 +34,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // SEC-05: 验证用户角色（仅教师和校长可创建项目）
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!profile?.role || !['teacher', 'principal'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden: Only teachers and principals can create projects' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { title, description, max_participants = 10 } = body
 

@@ -20,43 +20,42 @@ export default function ExplorerAlliancePage() {
   const [isMounted, setIsMounted] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
-  // 确保只在客户端渲染并检查权限
+  // 确保只在客户端渲染并检查权限（带cleanup防止内存泄漏）
   useEffect(() => {
-    console.time('[探索者联盟] 页面总加载时间')
+    let isCancelled = false
     setIsMounted(true)
-    checkAdminStatus()
-  }, [])
 
-  // 检查管理员权限
-  const checkAdminStatus = async () => {
-    console.time('[探索者联盟] 检查管理员权限')
-    try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+    const checkAdminStatus = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
 
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
+        if (user && !isCancelled) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle()
 
-        const userRole = (profile as unknown as { role?: string })?.role
-        setIsAdmin(userRole === 'principal' || userRole === 'teacher')
+          if (!isCancelled) {
+            const userRole = (profile as unknown as { role?: string })?.role
+            setIsAdmin(userRole === 'principal' || userRole === 'teacher')
+          }
+        }
+      } catch (error) {
+        // 静默失败，不影响页面加载
+        if (!isCancelled) {
+          setIsAdmin(false)
+        }
       }
-    } catch (error) {
-      // 静默失败，不影响页面加载
-      setIsAdmin(false)
     }
-    console.timeEnd('[探索者联盟] 检查管理员权限')
-  }
 
-  // 监听加载状态变化，加载完成时打印总时间
-  useEffect(() => {
-    if (!orgsLoading && isMounted) {
-      console.timeEnd('[探索者联盟] 页面总加载时间')
+    checkAdminStatus()
+
+    return () => {
+      isCancelled = true
     }
-  }, [orgsLoading, isMounted])
+  }, [])
 
 
   // 生成固定的星空粒子配置
