@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { Heart, MessageCircle, Trash2, User } from 'lucide-react'
 import { CommentForm } from './CommentForm'
 
@@ -132,12 +133,14 @@ export function DiscussionCard({
       <div className="p-4">
         {/* User Info */}
         <div className="flex items-start gap-3 mb-3">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+          <div className="relative flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center overflow-hidden">
             {discussion.user.avatar_url ? (
-              <img
+              <Image
                 src={discussion.user.avatar_url}
                 alt={discussion.user.username || '用户'}
-                className="w-full h-full rounded-full object-cover"
+                fill
+                className="object-cover"
+                sizes="40px"
               />
             ) : (
               <User className="w-5 h-5 text-white" />

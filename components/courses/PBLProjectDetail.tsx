@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
@@ -1424,12 +1425,15 @@ export function PBLProjectDetail({
                       attachment.type === 'image' && (
                         <div
                           key={index}
-                          className="relative group overflow-hidden rounded-lg border border-gray-700 hover:border-blue-500/50 transition-colors"
+                          className="relative group overflow-hidden rounded-lg border border-gray-700 hover:border-blue-500/50 transition-colors h-48"
                         >
-                          <img
+                          <Image
                             src={attachment.url}
                             alt={attachment.name || `图片 ${index + 1}`}
-                            className="w-full h-48 object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 50vw, 25vw"
+                            loading="lazy"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                             <div className="absolute bottom-0 left-0 right-0 p-3">

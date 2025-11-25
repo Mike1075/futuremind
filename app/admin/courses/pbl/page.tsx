@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -683,15 +684,18 @@ export default function IcarusAdminPage() {
                 {formData.project_cover_image && (
                   <div className="mt-3">
                     <p className="text-xs text-gray-500 mb-2">封面图片预览：</p>
-                    <img
-                      src={formData.project_cover_image}
-                      alt="封面预览"
-                      className="max-w-sm h-48 object-cover rounded-lg border border-white/10"
-                      onError={(e) => {
-                        e.currentTarget.src = ''
-                        e.currentTarget.alt = '图片加载失败'
-                      }}
-                    />
+                    <div className="relative max-w-sm h-48 rounded-lg border border-white/10 overflow-hidden">
+                      <Image
+                        src={formData.project_cover_image}
+                        alt="封面预览"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 384px"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>

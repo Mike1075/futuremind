@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Bot, X, Send, Trash2, Check, FolderOpen, Building2, Loader2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { createClient } from '@/lib/supabase/client'
@@ -38,13 +38,13 @@ export function FloatingChatBot({
   const hasLoadedHistory = useRef(false)
 
   // 自动滚动到底部
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  }, [])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, scrollToBottom])
 
   // 初始化时预选当前项目
   useEffect(() => {
@@ -53,57 +53,10 @@ export function FloatingChatBot({
     }
   }, [currentProject])
 
-  // 加载用户项目
-  useEffect(() => {
-    if (!isOpen) return
-
-    const loadProjects = async () => {
-      setIsLoadingProjects(true)
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        // 统一查询用户参与的所有项目（包括发起的和参与的）
-        const { data: projectMembers } = await supabase
-          .from('project_members')
-          .select('*, project:projects(*)')
-          .eq('user_id', user.id)
-
-        const projects = projectMembers?.map(pm => pm.project).filter(Boolean) || []
-
-        setUserProjects(projects as Project[])
-      } catch (err) {
-        console.error('加载项目失败:', err)
-      } finally {
-        setIsLoadingProjects(false)
-      }
-    }
-
-    loadProjects()
-  }, [isOpen])
-
-  // 加载聊天历史记录
-  useEffect(() => {
-    if (!isOpen || hasLoadedHistory.current) return
-
-    const loadHistory = async () => {
-      setIsLoadingHistory(true)
-      hasLoadedHistory.current = true
-
-      try {
-        const result = await aipChatAPI.loadChatHistory()
-
-        if (result.success && result.data) {
-          if (result.data.messages.length > 0) {
-            // 有历史记录，直接加载
-            setMessages(result.data.messages)
-          } else {
-            // 没有历史记录，显示欢迎消息
-            let welcomeContent = '🚀 欢迎来到探索者联盟！我是您的AI探索伙伴。'
-
-            if (currentProject && organization) {
-              welcomeContent = `🚀 探索者你好！我看到你正在探索「${currentProject.name}」项目（${organization.name}组织）。
+  // 生成欢迎消息
+  const getWelcomeMessage = useCallback(() => {
+    if (currentProject && organization) {
+      return `🚀 探索者你好！我看到你正在探索「${currentProject.name}」项目（${organization.name}组织）。
 
 让我们一起：
 ✨ 深入挖掘项目的创新潜力
@@ -112,8 +65,8 @@ export function FloatingChatBot({
 💡 突破思维边界，做真正创新的事情
 
 有什么想探讨的吗？`
-            } else if (organization) {
-              welcomeContent = `🚀 探索者你好！当前已为您选择了「${organization.name}」组织。
+    } else if (organization) {
+      return `🚀 探索者你好！当前已为您选择了「${organization.name}」组织。
 
 在探索者联盟，我们鼓励你：
 🌟 创建属于自己的原创PBL项目
@@ -121,8 +74,8 @@ export function FloatingChatBot({
 🤝 与伙伴协作，共同突破
 
 选择一个项目开始探索，或告诉我你想创建什么样的项目！`
-            } else {
-              welcomeContent = `🚀 欢迎来到探索者联盟！我是您的AI探索伙伴。
+    }
+    return `🚀 欢迎来到探索者联盟！我是您的AI探索伙伴。
 
 这里是属于你的创新天地：
 🌟 **创建原创项目** - 把你的奇思妙想变成真实的探索
@@ -131,27 +84,73 @@ export function FloatingChatBot({
 💡 **项目式学习** - 在实践中获得真知
 
 告诉我，你想创建什么样的项目？或者需要我帮你找到合适的探索方向？`
-            }
+  }, [currentProject, organization])
 
+  // 合并：加载用户项目和聊天历史（只在打开时执行一次）
+  useEffect(() => {
+    if (!isOpen) return
+
+    let isMounted = true
+
+    const initializeChatBot = async () => {
+      // 并行加载项目列表和聊天历史
+      setIsLoadingProjects(true)
+      if (!hasLoadedHistory.current) {
+        setIsLoadingHistory(true)
+        hasLoadedHistory.current = true
+      }
+
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user || !isMounted) return
+
+        // 并行执行两个查询
+        const [projectsResult, historyResult] = await Promise.all([
+          supabase
+            .from('project_members')
+            .select('*, project:projects(*)')
+            .eq('user_id', user.id),
+          aipChatAPI.loadChatHistory()
+        ])
+
+        if (!isMounted) return
+
+        // 处理项目数据
+        const projects = projectsResult.data?.map(pm => pm.project).filter(Boolean) || []
+        setUserProjects(projects as Project[])
+
+        // 处理聊天历史
+        if (historyResult.success && historyResult.data) {
+          if (historyResult.data.messages.length > 0) {
+            setMessages(historyResult.data.messages)
+          } else {
             setMessages([{
               id: 'welcome',
               role: 'assistant',
-              content: welcomeContent,
+              content: getWelcomeMessage(),
               timestamp: new Date()
             }])
           }
-        } else {
-          console.error('加载聊天历史失败:', result.error)
         }
       } catch (error) {
-        console.error('加载聊天历史失败:', error)
+        console.error('初始化聊天机器人失败:', error)
       } finally {
-        setIsLoadingHistory(false)
+        if (isMounted) {
+          setIsLoadingProjects(false)
+          setIsLoadingHistory(false)
+        }
       }
     }
 
-    loadHistory()
-  }, [isOpen, currentProject, organization])
+    initializeChatBot()
+
+    // Cleanup防止内存泄漏
+    return () => {
+      isMounted = false
+    }
+  }, [isOpen, getWelcomeMessage])
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return

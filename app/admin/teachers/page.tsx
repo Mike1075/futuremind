@@ -39,7 +39,7 @@ export default function TeachersPage() {
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (!profile || profile.role !== 'principal') {
         alert('⚠️ 只有校长可以访问教师管理')

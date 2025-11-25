@@ -22,12 +22,12 @@ async function PortalContent() {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single(),
+      .maybeSingle(),
     supabase
       .from('user_progress')
       .select('consciousness_growth')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
   ])
 
   const userRole = profileResult.data?.role || null

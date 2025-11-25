@@ -58,7 +58,7 @@ export default function GaiaKnowledgeBasePage() {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!profile || !profile.role || !['teacher', 'principal'].includes(profile.role)) {
       router.push('/')
@@ -297,11 +297,15 @@ export default function GaiaKnowledgeBasePage() {
     setSelectedDocs(newSelected)
   }
 
-  const formatFileSize = (bytes: number) => {
+  const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B'
+    if (bytes < 0) return 'Invalid size'
+
     const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1)
+
+    if (i < 0) return '0 B'
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
   }
 

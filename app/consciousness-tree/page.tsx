@@ -15,7 +15,7 @@ export default async function ConsciousnessTreePage() {
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   const userRole = profile?.role || null
 
