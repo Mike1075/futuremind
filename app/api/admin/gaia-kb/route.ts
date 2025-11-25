@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // GET: 获取盖亚知识库文档列表
 export async function GET() {
@@ -35,8 +36,8 @@ export async function GET() {
     if (error) throw error
 
     // 智能更新状态：检查是否有对应的向量块（使用Admin客户端）
-    console.log(`[盖亚知识库] ========== 开始智能状态检测 ==========`)
-    console.log(`[盖亚知识库] 获取到文档数量: ${documents?.length || 0}`)
+    logger.debug(`[盖亚知识库] ========== 开始智能状态检测 ==========`)
+    logger.debug(`[盖亚知识库] 获取到文档数量: ${documents?.length || 0}`)
 
     if (documents && documents.length > 0) {
       for (const doc of documents) {
@@ -44,15 +45,15 @@ export async function GET() {
         const projectId = metadata?.custom_project_id || metadata?.project_id
         const currentStatus = metadata?.status
 
-        console.log(`[盖亚知识库] 检查文档: ${doc.id}, title: ${doc.title}, status: ${currentStatus}, project_id: ${projectId}`)
+        logger.debug(`[盖亚知识库] 检查文档: ${doc.id}, title: ${doc.title}, status: ${currentStatus}, project_id: ${projectId}`)
 
         // 如果状态是processing，检查是否实际已完成
         if (currentStatus === 'processing' && projectId) {
-          console.log(`[盖亚知识库] >>> 发现processing状态文档，开始查询向量块，project_id: ${projectId}`)
+          logger.debug(`[盖亚知识库] >>> 发现processing状态文档，开始查询向量块，project_id: ${projectId}`)
 
           try {
             // 🔧 修复：.neq()不匹配NULL，需要查询所有然后手动过滤
-            console.log(`[盖亚知识库] 开始查询向量块...`)
+            logger.debug(`[盖亚知识库] 开始查询向量块...`)
 
             const { data: allDocs, error: vectorError } = await supabase
               .from('documents')
@@ -61,7 +62,7 @@ export async function GET() {
 
             let vectorCount = 0
             if (vectorError) {
-              console.error(`[盖亚知识库] ❌ 查询失败:`, vectorError)
+              logger.error(`[盖亚知识库] ❌ 查询失败:`, vectorError)
             } else if (allDocs) {
               // 手动过滤掉主文档（type = 'gaia_knowledge_base'）
               const vectors = allDocs.filter((d: any) => {
@@ -69,9 +70,9 @@ export async function GET() {
                 return meta?.type !== 'gaia_knowledge_base'
               })
               vectorCount = vectors.length
-              console.log(`[盖亚知识库] ✅ 查询成功，总文档: ${allDocs.length}, 向量块: ${vectorCount}`)
+              logger.debug(`[盖亚知识库] ✅ 查询成功，总文档: ${allDocs.length}, 向量块: ${vectorCount}`)
             } else {
-              console.log(`[盖亚知识库] ⚠️ 查询返回null`)
+              logger.debug(`[盖亚知识库] ⚠️ 查询返回null`)
             }
 
             // 如果有向量块，更新状态
@@ -80,7 +81,7 @@ export async function GET() {
               metadata.vector_count = vectorCount
               const now = new Date().toISOString()
 
-              console.log(`[盖亚知识库] ✅ 准备更新文档${doc.id}，向量块数: ${vectorCount}`)
+              logger.debug(`[盖亚知识库] ✅ 准备更新文档${doc.id}，向量块数: ${vectorCount}`)
 
               const { error: updateError } = await supabase
                 .from('documents')
@@ -91,18 +92,18 @@ export async function GET() {
                 .eq('id', doc.id)
 
               if (updateError) {
-                console.error(`[盖亚知识库] ❌ 更新失败:`, updateError)
+                logger.error(`[盖亚知识库] ❌ 更新失败:`, updateError)
               } else {
-                console.log(`[盖亚知识库] ✅ 成功更新状态为completed`)
+                logger.debug(`[盖亚知识库] ✅ 成功更新状态为completed`)
                 // 同步更新内存对象
                 doc.metadata = metadata
                 doc.updated_at = now
               }
             } else {
-              console.log(`[盖亚知识库] ⚠️ 向量块数为0，保持processing状态`)
+              logger.debug(`[盖亚知识库] ⚠️ 向量块数为0，保持processing状态`)
             }
           } catch (err) {
-            console.error(`[盖亚知识库] ❌ 查询异常:`, err)
+            logger.error(`[盖亚知识库] ❌ 查询异常:`, err)
           }
         }
       }
@@ -110,7 +111,7 @@ export async function GET() {
 
     return NextResponse.json({ documents })
   } catch (error) {
-    console.error('[盖亚知识库] 获取列表失败:', error)
+    logger.error('[盖亚知识库] 获取列表失败:', error)
     return NextResponse.json(
       { error: '获取文档列表失败' },
       { status: 500 }
@@ -178,11 +179,11 @@ export async function POST(request: Request) {
       .single()
 
     if (insertError) {
-      console.error('[盖亚知识库] 数据库插入失败:', insertError)
+      logger.error('[盖亚知识库] 数据库插入失败:', insertError)
       throw insertError
     }
 
-    console.log('[盖亚知识库] 已保存到数据库，document_id:', newDoc.id, 'course_id:', courseId)
+    logger.debug('[盖亚知识库] 已保存到数据库', { document_id: newDoc.id, course_id: courseId })
 
     // 异步上传到N8N（不等待结果，让N8N在后台处理）
     const webhookUrl = 'https://n8n.aifunbox.com/webhook/fca634ab-8e03-4a6f-99f3-c7dc46e772ae'
@@ -216,7 +217,7 @@ export async function POST(request: Request) {
     n8nFormData.append('title', title)
     n8nFormData.append('document_id', newDoc.id) // 传递document_id，供N8N回调使用
 
-    console.log('[盖亚知识库] 开始上传到N8N（后台处理）:', {
+    logger.debug('[盖亚知识库] 开始上传到N8N（后台处理）:', {
       url: webhookUrl,
       project_id: courseId,
       document_id: newDoc.id,
@@ -233,7 +234,7 @@ export async function POST(request: Request) {
       body: n8nFormData,
     })
       .then(async (response) => {
-        console.log('[盖亚知识库] N8N webhook响应:', {
+        logger.debug('[盖亚知识库] N8N webhook响应:', {
           status: response.status,
           statusText: response.statusText,
           document_id: newDoc.id
@@ -244,13 +245,13 @@ export async function POST(request: Request) {
         }
 
         const responseText = await response.text()
-        console.log('[盖亚知识库] N8N webhook成功，响应内容:', responseText)
+        logger.debug('[盖亚知识库] N8N webhook成功', { responseText })
       })
       .catch(async (error) => {
-        console.error('[盖亚知识库] N8N webhook调用失败（异步）:', error)
+        logger.error('[盖亚知识库] N8N webhook调用失败（异步）:', error)
         // 仅在开发环境记录详细错误
         if (process.env.NODE_ENV === 'development') {
-          console.error('[盖亚知识库] 错误详情:', {
+          logger.error('[盖亚知识库] 错误详情:', {
             message: error.message,
             stack: error.stack,
             document_id: newDoc.id
@@ -273,12 +274,12 @@ export async function POST(request: Request) {
             .eq('id', newDoc.id)
 
           if (updateError) {
-            console.error('[盖亚知识库] 更新错误状态失败:', updateError)
+            logger.error('[盖亚知识库] 更新错误状态失败:', updateError)
           } else {
-            console.log('[盖亚知识库] 已将文档状态更新为error:', newDoc.id)
+            logger.debug('[盖亚知识库] 已将文档状态更新为error', { document_id: newDoc.id })
           }
         } catch (updateErr) {
-          console.error('[盖亚知识库] 捕获更新异常:', updateErr)
+          logger.error('[盖亚知识库] 捕获更新异常:', updateErr)
         }
       })
 
@@ -290,7 +291,7 @@ export async function POST(request: Request) {
       message: '文档已提交，正在后台处理向量化...'
     })
   } catch (error: any) {
-    console.error('[盖亚知识库] 上传失败:', error)
+    logger.error('[盖亚知识库] 上传失败:', error)
     return NextResponse.json(
       { error: process.env.NODE_ENV === 'development' ? (error.message || '上传失败') : '上传失败' },
       { status: 500 }
@@ -300,20 +301,17 @@ export async function POST(request: Request) {
 
 // DELETE: 删除文档
 export async function DELETE(request: Request) {
-  console.log('[后端DELETE] ========== 开始删除操作 ==========')
-  console.log('[后端DELETE] 请求URL:', request.url)
+  logger.debug('[后端DELETE] 开始删除操作', { url: request.url })
 
   try {
     // 先用普通客户端验证权限
     const authClient = await createClient()
-    console.log('[后端DELETE] 身份验证客户端已创建')
 
     // 验证用户权限
     const { data: { user } } = await authClient.auth.getUser()
-    console.log('[后端DELETE] 用户验证结果:', user ? `用户ID: ${user.id}` : '未登录')
+    logger.debug('[后端DELETE] 用户验证', { userId: user?.id || '未登录' })
 
     if (!user) {
-      console.log('[后端DELETE] 用户未授权，返回401')
       return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
 
@@ -323,28 +321,21 @@ export async function DELETE(request: Request) {
       .eq('id', user.id)
       .single()
 
-    console.log('[后端DELETE] 用户角色:', profile?.role || '未知')
+    logger.debug('[后端DELETE] 用户角色', { role: profile?.role || '未知' })
 
     if (!profile || !profile.role || !['teacher', 'principal'].includes(profile.role)) {
-      console.log('[后端DELETE] 权限不足，返回403')
       return NextResponse.json({ error: '权限不足' }, { status: 403 })
     }
 
     // ✅ 使用Admin客户端进行删除操作（绕过RLS）
     const supabase = createAdminClient()
-    console.log('[后端DELETE] Admin客户端已创建（绕过RLS）')
 
     const { searchParams } = new URL(request.url)
     const documentId = searchParams.get('id')
 
-    console.log('[后端DELETE] 提取的文档ID:', documentId)
-
     if (!documentId) {
-      console.log('[后端DELETE] 缺少文档ID，返回400')
       return NextResponse.json({ error: '缺少文档ID' }, { status: 400 })
     }
-
-    console.log('[后端DELETE] ===== 步骤1: 查询文档信息 =====')
 
     // 第一步：获取文档的project_id
     const { data: doc, error: fetchError } = await supabase
@@ -354,93 +345,49 @@ export async function DELETE(request: Request) {
       .eq('metadata->>type', 'gaia_knowledge_base')
       .single()
 
-    console.log('[后端DELETE] 查询结果:', {
-      找到文档: !!doc,
-      错误: fetchError,
-      文档数据: doc
-    })
+    logger.debug('[后端DELETE] 查询结果', { found: !!doc, documentId })
 
     if (fetchError) {
-      console.error('[后端DELETE] 查询文档失败，错误详情:', fetchError)
+      logger.error('[后端DELETE] 查询文档失败', fetchError)
       throw fetchError
     }
 
     if (!doc) {
-      console.log('[后端DELETE] 文档不存在，返回404')
       return NextResponse.json({ error: '文档不存在' }, { status: 404 })
     }
 
     const metadata = doc.metadata as any
     const projectId = metadata?.custom_project_id
 
-    console.log('[后端DELETE] 文档元数据:', {
-      documentId,
-      projectId,
-      filename: metadata?.filename,
-      完整metadata: metadata
-    })
-
     // 第二步：删除所有关联的向量块
     if (projectId) {
-      console.log('[后端DELETE] ===== 步骤2: 删除向量块 =====')
-      console.log('[后端DELETE] 查询条件: metadata->>project_id =', projectId)
-
-      // 先查询有多少向量块
-      const { data: countData, error: countError } = await supabase
-        .from('documents')
-        .select('id', { count: 'exact', head: true })
-        .eq('metadata->>project_id', projectId)
-
-      console.log('[后端DELETE] 向量块查询结果:', {
-        数量: (countData as any)?.count || 0,
-        错误: countError
-      })
-
       const { data: vectorChunks, error: deleteVectorError } = await supabase
         .from('documents')
         .delete()
         .eq('metadata->>project_id', projectId)
         .select('id')
 
-      console.log('[后端DELETE] 向量块删除结果:', {
-        已删除数量: vectorChunks?.length || 0,
-        删除的ID列表: vectorChunks?.map(v => v.id),
-        错误: deleteVectorError
-      })
+      logger.debug('[后端DELETE] 向量块删除', { count: vectorChunks?.length || 0 })
 
       if (deleteVectorError) {
-        console.error('[后端DELETE] 删除向量块失败，错误详情:', deleteVectorError)
+        logger.error('[后端DELETE] 删除向量块失败', deleteVectorError)
         throw deleteVectorError
       }
-    } else {
-      console.log('[后端DELETE] 无project_id，跳过向量块删除')
     }
 
     // 第三步：删除主记录
-    console.log('[后端DELETE] ===== 步骤3: 删除主记录 =====')
-    console.log('[后端DELETE] 删除条件:', {
-      id: documentId,
-      'metadata->>type': 'gaia_knowledge_base'
-    })
-
-    const { error: deleteMainError, data: deleteMainData } = await supabase
+    const { error: deleteMainError } = await supabase
       .from('documents')
       .delete()
       .eq('id', documentId)
       .eq('metadata->>type', 'gaia_knowledge_base')
-      .select()
-
-    console.log('[后端DELETE] 主记录删除结果:', {
-      删除的记录: deleteMainData,
-      错误: deleteMainError
-    })
 
     if (deleteMainError) {
-      console.error('[后端DELETE] 删除主记录失败，错误详情:', deleteMainError)
+      logger.error('[后端DELETE] 删除主记录失败', deleteMainError)
       throw deleteMainError
     }
 
-    console.log('[后端DELETE] ========== 删除完成 ==========')
+    logger.debug('[后端DELETE] 删除完成', { documentId })
 
     return NextResponse.json({
       success: true,
@@ -448,10 +395,7 @@ export async function DELETE(request: Request) {
       message: '删除成功'
     })
   } catch (error: any) {
-    console.error('[后端DELETE] ========== 删除失败 ==========')
-    console.error('[后端DELETE] 错误类型:', error?.constructor?.name)
-    console.error('[后端DELETE] 错误消息:', error?.message)
-    console.error('[后端DELETE] 完整错误:', error)
+    logger.error('[后端DELETE] 删除失败', error)
     return NextResponse.json({
       error: error?.message || '删除失败',
       details: error?.toString()

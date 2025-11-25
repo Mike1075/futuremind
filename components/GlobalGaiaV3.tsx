@@ -370,7 +370,7 @@ export function GlobalGaiaV3() {
       let pendingChunks: string[] = []
       let displayInterval: NodeJS.Timeout | null = null
 
-      // 🔥 启动显示定时器（复刻Seth：每50ms显示3个字符）
+      // 🔥 启动显示定时器（PF-03性能优化：每100ms显示5个字符，减少渲染频率）
       const startDisplayTimer = () => {
         if (displayInterval) return
 
@@ -387,7 +387,7 @@ export function GlobalGaiaV3() {
             return
           }
 
-          // 从队列中取出内容进行显示（每次显示3个字符，平衡速度和流畅度）
+          // 从队列中取出内容进行显示（每次显示5个字符，平衡速度和流畅度）
           const chunkToDisplay = pendingChunks.shift() || ''
           displayedAnswer += chunkToDisplay
 
@@ -400,7 +400,7 @@ export function GlobalGaiaV3() {
             }
             return newMessages
           })
-        }, 50) // 每50ms更新一次显示（复刻Seth标准）
+        }, 100) // PF-03: 每100ms更新一次显示（从50ms优化，减少渲染次数50%）
       }
 
       try {
