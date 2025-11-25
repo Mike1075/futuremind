@@ -170,28 +170,34 @@ ${conversationText.slice(0, 12000)} // 限制长度避免超过token限制
     logger.info(`提取到 ${qualityInsights.length} 条高质量洞见`)
 
     // 5. 保存洞见到数据库
-    const savedInsights = []
-    for (const insight of qualityInsights) {
-      const { data: saved, error: insertError } = await supabase
-        .from('insight_leaves')
-        .insert({
-          user_id: user.id,
-          content: insight.content,
-          insight_type: insight.insight_type || 'general',
-          source_type: 'gaia_chat',
-          related_domains: insight.related_domains || [],
-          depth_score: insight.depth_score || 0,
-          originality_score: insight.originality_score || 0,
-          ai_reasoning: insight.reasoning || '',
-          color: getInsightColor(insight.insight_type),
-          is_public: false,
-        })
-        .select()
-        .single()
+    // DB-01: 使用批量插入替代循环插入，避免N+1问题
+    const insightsToInsert = qualityInsights.map((insight: {
+      content: string
+      insight_type?: string
+      related_domains?: string[]
+      depth_score?: number
+      originality_score?: number
+      reasoning?: string
+    }) => ({
+      user_id: user.id,
+      content: insight.content,
+      insight_type: insight.insight_type || 'general',
+      source_type: 'gaia_chat',
+      related_domains: insight.related_domains || [],
+      depth_score: insight.depth_score || 0,
+      originality_score: insight.originality_score || 0,
+      ai_reasoning: insight.reasoning || '',
+      color: getInsightColor(insight.insight_type || 'general'),
+      is_public: false,
+    }))
 
-      if (!insertError && saved) {
-        savedInsights.push(saved)
-      }
+    const { data: savedInsights, error: insertError } = await supabase
+      .from('insight_leaves')
+      .insert(insightsToInsert)
+      .select()
+
+    if (insertError) {
+      logger.error('Failed to batch insert insights:', insertError)
     }
 
     // 6. 更新 consciousness_tree_view 中的叶子数据
@@ -201,12 +207,14 @@ ${conversationText.slice(0, 12000)} // 限制长度避免超过token限制
       .eq('id', user.id)
       .single()
 
-    const existingTreeView = (profile?.consciousness_tree_view as Record<string, any>) || {}
+    // DB-01: 处理批量插入结果
+    const validInsights = savedInsights || []
+    const existingTreeView = (profile?.consciousness_tree_view as Record<string, unknown>) || {}
     const updatedTreeView = {
       ...existingTreeView,
       branches_and_leaves: {
-        total_leaves: savedInsights.length,
-        insights: savedInsights.slice(0, 10).map(i => ({ // 只保存最近10条到视图
+        total_leaves: validInsights.length,
+        insights: validInsights.slice(0, 10).map((i: { id: string; content: string; insight_type: string }) => ({ // 只保存最近10条到视图
           id: i.id,
           content: i.content.slice(0, 100) + '...', // 截断过长内容
           type: i.insight_type,
@@ -224,13 +232,13 @@ ${conversationText.slice(0, 12000)} // 限制长度避免超过token限制
 
     return NextResponse.json({
       success: true,
-      insights: savedInsights,
+      insights: validInsights,
       stats: {
         total_messages_analyzed: messages.length,
         insights_extracted: qualityInsights.length,
-        insights_saved: savedInsights.length,
+        insights_saved: validInsights.length,
       },
-      message: `成功提取 ${savedInsights.length} 条洞见`,
+      message: `成功提取 ${validInsights.length} 条洞见`,
     })
   } catch (error: any) {
     logger.error('提取洞见失败:', error)
