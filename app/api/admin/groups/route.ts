@@ -5,6 +5,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // GET - 获取分组列表
 export async function GET(request: Request) {
@@ -86,9 +87,9 @@ export async function GET(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('[API Error] /api/admin/groups:', error)
+    logger.error('[API] /api/admin/groups GET失败', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -155,9 +156,9 @@ export async function POST(request: Request) {
     }, { status: 201 })
 
   } catch (error: any) {
-    console.error('[API Error] POST /api/admin/groups:', error)
+    logger.error('[API] POST /api/admin/groups失败', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

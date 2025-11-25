@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/pbl/my-projects
@@ -63,8 +64,8 @@ export async function GET(request: NextRequest) {
     const { data: myProjects, error } = (await query) as any
 
     if (error) {
-      console.error('[API Error] Failed to fetch user projects:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('[API] 获取用户项目失败', error)
+      return NextResponse.json({ error: '获取项目失败' }, { status: 500 })
     }
 
     // 统计各状态的项目数量

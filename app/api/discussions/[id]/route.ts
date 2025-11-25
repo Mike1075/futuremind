@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 /**
  * PUT /api/discussions/[id]
@@ -95,13 +96,13 @@ export async function PUT(
       .single()
 
     if (error) {
-      console.error('[Discussions API] Error updating discussion:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('[Discussions API] 更新讨论失败', error)
+      return NextResponse.json({ error: '更新失败' }, { status: 500 })
     }
 
     return NextResponse.json({ discussion })
   } catch (error) {
-    console.error('[Discussions API] Unexpected error:', error)
+    logger.error('[Discussions API] 意外错误', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -167,13 +168,13 @@ export async function DELETE(
       .eq('id', id)
 
     if (error) {
-      console.error('[Discussions API] Error deleting discussion:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('[Discussions API] 删除讨论失败', error)
+      return NextResponse.json({ error: '删除失败' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Discussions API] Unexpected error:', error)
+    logger.error('[Discussions API] 意外错误', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

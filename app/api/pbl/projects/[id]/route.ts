@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
@@ -16,8 +17,8 @@ export async function GET(
       .single()
 
     if (error) {
-      console.error('Error fetching project:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('获取项目失败', error)
+      return NextResponse.json({ error: '获取项目失败' }, { status: 500 })
     }
 
     if (!project) {
@@ -26,7 +27,7 @@ export async function GET(
 
     return NextResponse.json({ project })
   } catch (error) {
-    console.error('API Error:', error)
+    logger.error('API错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -74,8 +75,8 @@ export async function PUT(
       .single()
 
     if (error) {
-      console.error('Error updating project:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('更新项目失败', error)
+      return NextResponse.json({ error: '更新项目失败' }, { status: 500 })
     }
 
     if (!project) {
@@ -84,7 +85,7 @@ export async function PUT(
 
     return NextResponse.json({ project })
   } catch (error) {
-    console.error('API Error:', error)
+    logger.error('API错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -110,13 +111,13 @@ export async function DELETE(
       .eq('id', params.id)
 
     if (error) {
-      console.error('Error deleting project:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('删除项目失败', error)
+      return NextResponse.json({ error: '删除项目失败' }, { status: 500 })
     }
 
     return NextResponse.json({ message: 'Project deleted successfully' })
   } catch (error) {
-    console.error('API Error:', error)
+    logger.error('API错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
