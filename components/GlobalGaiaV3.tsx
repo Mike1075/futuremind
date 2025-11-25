@@ -59,11 +59,8 @@ export function GlobalGaiaV3() {
 
   // 监听来自知识点的打开请求
   useEffect(() => {
-
     const handleOpenWithQuestion = (event: CustomEvent) => {
-
       const { question } = event.detail
-
 
       setIsFromKnowledgePoint(true)
       setIsOpen(true)
@@ -81,7 +78,6 @@ export function GlobalGaiaV3() {
       setMessages(prev => {
         return [...prev, knowledgePointMessage]
       })
-
     }
 
     window.addEventListener('openGaiaWithQuestion', handleOpenWithQuestion as EventListener)
@@ -140,7 +136,7 @@ export function GlobalGaiaV3() {
             }, 100)
           }
         } catch (error) {
-          console.error('[GlobalGaia] ❌ 加载对话失败:', error)
+          // 静默处理错误
         }
       }
 
@@ -202,7 +198,7 @@ export function GlobalGaiaV3() {
           }
         })
         .catch(() => {
-          // CQ-04: 错误已处理，失败时显示空白
+          // 失败时显示空白
           setMessages([])
           setHasMore(false)
           setLoadedCount(0)
@@ -223,7 +219,7 @@ export function GlobalGaiaV3() {
         setCurrentConversationId(data.conversationId)
       }
     } catch (error) {
-      console.error('[GlobalGaia] ❌ 重新加载消息失败:', error)
+      // 静默处理错误
     }
   }
 
@@ -257,7 +253,6 @@ export function GlobalGaiaV3() {
         setHasMore(false)
       }
     } catch (error) {
-      console.error('[GlobalGaia] ❌ 加载更多消息失败:', error)
       alert('加载更多消息失败')
     } finally {
       setIsLoadingMore(false)
@@ -283,7 +278,6 @@ export function GlobalGaiaV3() {
         }
       }
     } catch (error) {
-      console.error('Failed to load history:', error)
       alert('加载历史记录失败')
     }
   }
@@ -293,10 +287,6 @@ export function GlobalGaiaV3() {
   const handleSend = async () => {
     const messageText = input.trim()
     if (!messageText || isLoading) return
-
-    // 🔥 性能监控：开始时间
-    const perfStart = Date.now()
-    console.log('[Gaia前端] ⏱️  用户点击发送')
 
     // 检查最后一条消息是否是知识点问题
     const lastMessage = messages[messages.length - 1]
@@ -328,12 +318,6 @@ export function GlobalGaiaV3() {
       // 2. 回复知识点问题（包含知识点问题+用户回答）
       const shouldSendCurrentMessages = messages.length <= 1 || isReplyingToKnowledgePoint
 
-      if (isReplyingToKnowledgePoint) {
-      }
-
-      console.log(`[Gaia前端] ⏱️  准备发送请求: +${Date.now() - perfStart}ms`)
-      const fetchStart = Date.now()
-
       const response = await fetch('/api/gaia/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -344,8 +328,6 @@ export function GlobalGaiaV3() {
           currentMessages: shouldSendCurrentMessages ? messages : undefined
         })
       })
-
-      console.log(`[Gaia前端] ⏱️  收到响应头: +${Date.now() - perfStart}ms (fetch耗时: ${Date.now() - fetchStart}ms)`)
 
       if (!response.ok) {
         throw new Error('Failed to get response')
@@ -423,9 +405,8 @@ export function GlobalGaiaV3() {
               const json = JSON.parse(trimmedLine)
 
               if (json.type === 'chunk') {
-                // 🔥 性能监控：首个内容chunk
+                // 标记首个内容chunk
                 if (!firstChunkReceived) {
-                  console.log(`[Gaia前端] ⏱️  收到首个内容chunk: +${Date.now() - perfStart}ms`)
                   firstChunkReceived = true
                 }
 
@@ -557,8 +538,7 @@ export function GlobalGaiaV3() {
         })
       }
     } catch (error) {
-      console.error('Chat error:', error)
-      // 🔥 出错时更新占位消息为错误消息
+      // 出错时更新占位消息为错误消息
       setMessages(prev => {
         const newMessages = [...prev]
         newMessages[assistantMessageIndex] = {
@@ -669,14 +649,13 @@ export function GlobalGaiaV3() {
           .eq('id', currentConversationId)
 
         if (error) {
-          console.error('[GlobalGaia] 保存删除后的消息失败:', error)
+          // 静默处理错误
         } else {
           // 触发同步事件，通知其他盖亚组件更新
           window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
         }
       }
     } catch (error) {
-      console.error('[GlobalGaia] 删除消息失败:', error)
       alert('删除消息失败，请重试')
     }
   }

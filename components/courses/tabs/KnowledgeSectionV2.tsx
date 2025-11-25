@@ -13,10 +13,6 @@ export function KnowledgeSectionV2({
   knowledgePoints,
   contentId
 }: KnowledgeSectionV2Props) {
-  console.log('[KnowledgeSection] 组件初始化')
-  console.log('[KnowledgeSection] contentId:', contentId)
-  console.log('[KnowledgeSection] knowledgePoints数量:', knowledgePoints.length)
-
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
   const [questions, setQuestions] = useState<Record<number, string>>({})
@@ -55,7 +51,6 @@ export function KnowledgeSectionV2({
         }))
       }
     } catch (error) {
-      console.error('Failed to generate question:', error)
       setQuestions(prev => ({
         ...prev,
         [index]: `很开心你对这个话题感兴趣！😊\n\n你有什么想法吗？`
@@ -67,17 +62,12 @@ export function KnowledgeSectionV2({
 
   // 点击问题，打开全局盖亚（先检查是否已讨论过）
   const handleClickQuestion = async (question: string) => {
-    console.log('[KnowledgeSection] 点击"与盖亚深入探讨"按钮')
-    console.log('[KnowledgeSection] 问题内容:', question)
-
     if (typeof window === 'undefined') {
-      console.error('[KnowledgeSection] ❌ window对象不存在')
       return
     }
 
     try {
       // 先检查这个问题是否已经讨论过
-      console.log('[KnowledgeSection] 🔍 检查问题是否已讨论...')
       const response = await fetch('/api/gaia/check-discussed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,12 +76,9 @@ export function KnowledgeSectionV2({
 
       if (response.ok) {
         const data = await response.json()
-        console.log('[KnowledgeSection] 检查结果:', data)
 
         if (data.discussed) {
           // 问题已讨论过，触发跳转到历史记录的事件
-          console.log('[KnowledgeSection] ✅ 问题已讨论过，触发跳转事件')
-
           const shouldContinue = window.confirm(
             '💡 这个话题我们之前聊过哦！\n\n要不要回顾一下之前的讨论，继续深入探讨呢？'
           )
@@ -110,12 +97,9 @@ export function KnowledgeSectionV2({
       }
 
       // 问题未讨论过，正常触发新问题事件
-      console.log('[KnowledgeSection] ❌ 问题未讨论过，触发新问题事件')
       const event = new CustomEvent('openGaiaWithQuestion', { detail: { question } })
       window.dispatchEvent(event)
-      console.log('[KnowledgeSection] ✅ 事件已派发')
     } catch (error) {
-      console.error('[KnowledgeSection] 检查失败，fallback到正常流程:', error)
       // 出错时 fallback 到正常流程
       const event = new CustomEvent('openGaiaWithQuestion', { detail: { question } })
       window.dispatchEvent(event)
@@ -199,10 +183,7 @@ export function KnowledgeSectionV2({
                   </div>
 
                   <button
-                    onClick={() => {
-                      console.log('[KnowledgeSection] 按钮被点击，index:', index)
-                      handleClickQuestion(question)
-                    }}
+                    onClick={() => handleClickQuestion(question)}
                     className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
                   >
                     <MessageSquare className="w-4 h-4" />

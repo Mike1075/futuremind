@@ -298,7 +298,6 @@ export function PBLProjectDetail({
         })
       }
     } catch (error) {
-      console.error('Failed to cancel project:', error)
       setToast({
         show: true,
         message: '取消项目失败，请重试',
@@ -336,7 +335,6 @@ export function PBLProjectDetail({
         })
       }
     } catch (error) {
-      console.error('Failed to select project:', error)
       setToast({
         show: true,
         message: '选择项目失败，请重试',
@@ -375,8 +373,6 @@ export function PBLProjectDetail({
     for (const file of filesArray) {
       // 如果是图片且大于1MB，自动压缩
       if (file.type.startsWith('image/') && file.size > 1024 * 1024) {
-        console.log(`📦 压缩图片: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
-
         try {
           const options = {
             maxSizeMB: 1,          // 压缩到最大1MB
@@ -386,13 +382,12 @@ export function PBLProjectDetail({
           }
 
           const compressedFile = await imageCompression(file, options)
-          console.log(`✅ 压缩完成: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`)
 
           // 保持原文件名
           const renamedFile = new File([compressedFile], file.name, { type: compressedFile.type })
           processedFiles.push(renamedFile)
         } catch (error) {
-          console.error('❌ 图片压缩失败，使用原图:', error)
+          // 压缩失败，使用原图
           processedFiles.push(file)
         }
       } else {
@@ -413,18 +408,13 @@ export function PBLProjectDetail({
   const fetchSubmissionsHistory = async (dayKey: string) => {
     setLoadingHistory(true)
     try {
-      console.log('📋 获取提交记录，dayKey:', dayKey)
-
       const response = await fetch(`/api/submissions?contentId=${project.id}&dayKey=${encodeURIComponent(dayKey)}`)
       if (response.ok) {
         const { submissions } = await response.json()
-        console.log(`✅ 找到 ${submissions?.length || 0} 条提交记录`)
         setSubmissionsHistory(submissions || [])
-      } else {
-        console.error('Failed to fetch submissions')
       }
     } catch (error) {
-      console.error('Error fetching submissions:', error)
+      // 静默处理错误
     } finally {
       setLoadingHistory(false)
     }
@@ -448,7 +438,6 @@ export function PBLProjectDetail({
         alert(`删除失败: ${error.error || '请重试'}`)
       }
     } catch (error) {
-      console.error('Error deleting submission:', error)
       alert('删除失败，请重试')
     }
   }
@@ -488,7 +477,6 @@ export function PBLProjectDetail({
       // 触发公开作业列表刷新
       setPublicSubmissionsRefreshKey(prev => prev + 1)
     } catch (err) {
-      console.error('切换作业可见性失败:', err)
       alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
     } finally {
       setTogglingId(null)
@@ -511,14 +499,10 @@ export function PBLProjectDetail({
       setSubmittingDay(currentDayKey)
       setUploading(true)
 
-      console.log('📎 准备上传文件，数量:', uploadedFiles.length)
-
       // 上传文件（如果有）
       const attachments: any[] = []
       if (uploadedFiles.length > 0) {
         for (const file of uploadedFiles) {
-          console.log('📤 上传文件:', file.name, '类型:', file.type)
-
           const formData = new FormData()
           formData.append('file', file)
 
@@ -529,35 +513,17 @@ export function PBLProjectDetail({
 
           if (uploadResponse.ok) {
             const { fileUrl, fileName } = await uploadResponse.json()
-            console.log('✅ 文件上传成功:', fileName, 'URL:', fileUrl)
 
             attachments.push({
               type: file.type.startsWith('image/') ? 'image' : 'file',
               url: fileUrl,
               name: fileName
             })
-          } else {
-            console.error('❌ 文件上传失败:', file.name)
-            const errorText = await uploadResponse.text()
-            console.error('错误详情:', errorText)
           }
         }
       }
 
-      console.log('📎 最终attachments数组:', attachments)
-      console.log('📎 attachments数量:', attachments.length)
-
       // 调用边缘函数进行评估
-      console.log('🚀 即将调用边缘函数，参数:', {
-        user_id: userId,
-        content_id: project.id,
-        day_key: currentDayKey,
-        submission_content: submissionContent,
-        submission_type: 'project_deliverable',
-        attachments,
-        is_public: isPublic
-      })
-
       const { data, error: functionError } = await supabase.functions.invoke('evaluate-pbl-task', {
         body: {
           user_id: userId,
@@ -569,8 +535,6 @@ export function PBLProjectDetail({
           is_public: isPublic
         }
       })
-
-      console.log('📨 边缘函数返回结果:', data)
 
       if (functionError) {
         throw functionError
@@ -587,7 +551,6 @@ export function PBLProjectDetail({
       router.refresh()
 
     } catch (error) {
-      console.error('Failed to submit task:', error)
       alert('提交失败，请重试')
     } finally {
       setSubmittingDay(null)

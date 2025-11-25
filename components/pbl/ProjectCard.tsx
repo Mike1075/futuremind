@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { memo } from 'react'
 import { PBLProject } from '@/lib/pbl-data'
 import {
   Users,
@@ -20,96 +20,61 @@ interface ProjectCardProps {
   onClick: () => void
 }
 
-export function ProjectCard({ project, viewMode, onClick }: ProjectCardProps) {
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'consciousness':
-        return <Brain className="w-5 h-5" />
-      case 'science':
-        return <Zap className="w-5 h-5" />
-      case 'creative':
-        return <Palette className="w-5 h-5" />
-      case 'guidance':
-        return <BookOpen className="w-5 h-5" />
-      default:
-        return <Target className="w-5 h-5" />
-    }
-  }
+// PF-13: 将样式配置提取到组件外部，避免每次渲染重新创建
+const CATEGORY_COLORS: Record<string, string> = {
+  consciousness: 'bg-resonance-600',
+  science: 'bg-blue-600',
+  creative: 'bg-purple-600',
+  guidance: 'bg-green-600',
+  default: 'bg-primary-600'
+}
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'consciousness':
-        return 'bg-resonance-600'
-      case 'science':
-        return 'bg-blue-600'
-      case 'creative':
-        return 'bg-purple-600'
-      case 'guidance':
-        return 'bg-green-600'
-      default:
-        return 'bg-primary-600'
-    }
-  }
+const DIFFICULTY_COLORS: Record<string, string> = {
+  beginner: 'text-green-400',
+  intermediate: 'text-yellow-400',
+  advanced: 'text-orange-400',
+  expert: 'text-red-400',
+  default: 'text-cosmic-400'
+}
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'beginner':
-        return 'text-green-400'
-      case 'intermediate':
-        return 'text-yellow-400'
-      case 'advanced':
-        return 'text-orange-400'
-      case 'expert':
-        return 'text-red-400'
-      default:
-        return 'text-cosmic-400'
-    }
-  }
+const STATUS_COLORS: Record<string, string> = {
+  recruiting: 'bg-green-600',
+  active: 'bg-blue-600',
+  completed: 'bg-cosmic-600',
+  paused: 'bg-yellow-600',
+  default: 'bg-cosmic-600'
+}
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'recruiting':
-        return 'bg-green-600'
-      case 'active':
-        return 'bg-blue-600'
-      case 'completed':
-        return 'bg-cosmic-600'
-      case 'paused':
-        return 'bg-yellow-600'
-      default:
-        return 'bg-cosmic-600'
-    }
-  }
+const STATUS_TEXT: Record<string, string> = {
+  recruiting: '招募中',
+  active: '进行中',
+  completed: '已完成',
+  paused: '暂停'
+}
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'recruiting':
-        return '招募中'
-      case 'active':
-        return '进行中'
-      case 'completed':
-        return '已完成'
-      case 'paused':
-        return '暂停'
-      default:
-        return status
-    }
-  }
+const DIFFICULTY_TEXT: Record<string, string> = {
+  beginner: '初学者',
+  intermediate: '中级',
+  advanced: '高级',
+  expert: '专家'
+}
 
-  const getDifficultyText = (difficulty: string) => {
-    switch (difficulty) {
-      case 'beginner':
-        return '初学者'
-      case 'intermediate':
-        return '中级'
-      case 'advanced':
-        return '高级'
-      case 'expert':
-        return '专家'
-      default:
-        return difficulty
-    }
-  }
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  consciousness: <Brain className="w-5 h-5" />,
+  science: <Zap className="w-5 h-5" />,
+  creative: <Palette className="w-5 h-5" />,
+  guidance: <BookOpen className="w-5 h-5" />,
+  default: <Target className="w-5 h-5" />
+}
+
+// PF-13: 使用memo优化组件，避免不必要的重渲染
+export const ProjectCard = memo(function ProjectCard({ project, viewMode, onClick }: ProjectCardProps) {
+  const getCategoryIcon = (category: string) => CATEGORY_ICONS[category] || CATEGORY_ICONS.default
+  const getCategoryColor = (category: string) => CATEGORY_COLORS[category] || CATEGORY_COLORS.default
+  const getDifficultyColor = (difficulty: string) => DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.default
+  const getStatusColor = (status: string) => STATUS_COLORS[status] || STATUS_COLORS.default
+  const getStatusText = (status: string) => STATUS_TEXT[status] || status
+  const getDifficultyText = (difficulty: string) => DIFFICULTY_TEXT[difficulty] || difficulty
 
   const participationRate = (project.current_participants / project.max_participants) * 100
 
@@ -228,4 +193,4 @@ export function ProjectCard({ project, viewMode, onClick }: ProjectCardProps) {
       </button>
     </div>
   )
-}
+})

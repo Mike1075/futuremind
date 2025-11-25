@@ -60,7 +60,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       getUserAndLoadHistory()
       // 通知GlobalGaiaV3关闭
       window.dispatchEvent(new CustomEvent('gaiaDialogOpened'))
-      console.log('[GaiaDialog] 📢 已发送打开事件，通知侧边栏盖亚关闭')
     }
   }, [isOpen])
 
@@ -87,11 +86,9 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             timestamp: new Date()
           }])
         }
-      } else {
-        console.error('切换对话失败:', result.error)
       }
     } catch (error) {
-      console.error('切换对话失败:', error)
+      // 静默处理错误
     } finally {
       setIsLoading(false)
     }
@@ -128,14 +125,13 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         }
       }
     } catch (error) {
-      console.error('从 Supabase 加载聊天记录失败:', error)
+      // 静默处理错误
     }
   }
 
   // 监听来自其他组件的消息同步事件
   useEffect(() => {
     const handleMessagesSync = () => {
-      console.log('[GaiaDialog] 📢 收到消息同步事件')
       if (isOpen) {
         loadChatHistory()
       }
@@ -162,10 +158,10 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       }
 
       if (!result.success) {
-        console.error('保存聊天记录到 Supabase 失败:', result.error)
+        // 静默处理错误
       }
     } catch (error) {
-      console.error('保存聊天记录到 Supabase 失败:', error)
+      // 静默处理错误
     }
   }
 
@@ -344,9 +340,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
 
       // 触发同步事件，通知其他盖亚组件更新
       window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
-      console.log('[GaiaDialog] 📢 已触发消息同步事件')
     } catch (error) {
-      console.error('删除消息失败:', error)
       alert('删除消息失败，请重试')
     }
   }
@@ -439,11 +433,9 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                               timestamp: new Date()
                             }])
                           } else {
-                            console.error('清除聊天记录失败:', result.error)
                             alert('清除聊天记录失败: ' + result.error)
                           }
                         } catch (error) {
-                          console.error('清除聊天记录时发生错误:', error)
                           alert('清除聊天记录时发生错误')
                         }
                       }}

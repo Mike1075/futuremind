@@ -45,17 +45,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
     const canvas = canvasRef.current
     const container = containerRef.current
 
-    console.log('[Canvas] useEffect触发', {
-      hasCanvas: !!canvas,
-      hasContainer: !!container,
-      containerWidth: container?.clientWidth,
-      containerHeight: container?.clientHeight,
-      isEmptyTree,
-      isPreview
-    })
-
     if (!canvas || !container) {
-      console.log('[Canvas] 缺少canvas或container，跳过渲染')
       return
     }
 
@@ -64,7 +54,6 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       willReadFrequently: false
     })
     if (!ctx) {
-      console.log('[Canvas] 无法获取2d context')
       return
     }
 
@@ -73,18 +62,10 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
 
     // 计算树实际需要的空间（根据growthData动态计算）
     const calculateTreeDimensions = () => {
-      console.log('[Canvas] calculateTreeDimensions调用', {
-        isEmptyTree,
-        isPreview,
-        containerWidth: container.clientWidth,
-        containerHeight: container.clientHeight
-      })
-
       // 🔥 种子状态：使用固定合理尺寸，避免容器尺寸未就绪问题
       if (isEmptyTree) {
         const width = container.clientWidth || 800
         const height = container.clientHeight || 800
-        console.log('[Canvas] 种子状态尺寸', { width, height })
         return { width, height }
       }
 
@@ -141,24 +122,11 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
     }
 
     const draw = () => {
-      console.log('[Canvas] draw函数开始', {
-        isEmptyTree,
-        containerWidth: container.clientWidth,
-        containerHeight: container.clientHeight
-      })
-
       const dimensions = calculateTreeDimensions()
-
-      console.log('[Canvas] 计算得到的dimensions', dimensions)
 
       // 设置Canvas尺寸为足够大
       canvas.width = dimensions.width
       canvas.height = dimensions.height
-
-      console.log('[Canvas] Canvas实际尺寸', {
-        canvasWidth: canvas.width,
-        canvasHeight: canvas.height
-      })
 
       // 清空画布
       ctx.fillStyle = '#000000'
@@ -166,11 +134,6 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
 
       // 如果是空树，绘制闪烁的种子
       if (isEmptyTree) {
-        console.log('[Canvas] 开始绘制种子', {
-          centerX: canvas.width / 2,
-          centerY: canvas.height / 2,
-          seedOpacity
-        })
         const centerX = canvas.width / 2
         const centerY = canvas.height / 2
 
@@ -359,17 +322,9 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
     const maxRetries = 20  // 最多重试20次（1秒）
 
     const ensureContainerReady = () => {
-      console.log('[Canvas] ensureContainerReady检查', {
-        retryCount,
-        containerWidth: container.clientWidth,
-        containerHeight: container.clientHeight,
-        isReady: !!(container.clientWidth && container.clientHeight)
-      })
-
       if (!container.clientWidth || !container.clientHeight) {
         retryCount++
         if (retryCount > maxRetries) {
-          console.error('[Canvas] 容器尺寸一直未就绪，放弃重试。强制绘制。')
           // 强制使用默认尺寸绘制
           canvas.width = 800
           canvas.height = 800
@@ -377,14 +332,12 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
           return
         }
 
-        console.log('[Canvas] 容器尺寸未就绪，使用RAF+延迟50ms重试')
         drawTimerRef.current = setTimeout(() => {
           requestAnimationFrame(ensureContainerReady)
         }, 50)
         return
       }
 
-      console.log('[Canvas] 容器尺寸已就绪，开始绘制')
       retryCount = 0
       draw()
     }
@@ -392,13 +345,11 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
     // 设置新的定时器（使用RAF确保DOM渲染完成）
     if (isPreview || isEmptyTree) {
       // 预览模式和种子状态：立即检查，使用RAF确保容器就绪
-      console.log('[Canvas] 使用RAF立即开始检查（预览/种子模式）')
       requestAnimationFrame(() => {
         ensureContainerReady()
       })
     } else {
       // 非预览模式延迟300ms（给用户更多调整时间，减少无效计算）
-      console.log('[Canvas] 设置300ms延迟绘制（详情页模式）')
       drawTimerRef.current = setTimeout(() => {
         requestAnimationFrame(ensureContainerReady)
       }, 300)

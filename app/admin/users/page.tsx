@@ -90,7 +90,6 @@ export default function UsersManagementPage() {
         .single()
 
       if (profileError) {
-        console.error('无法验证用户权限:', profileError)
         alert('❌ 系统错误\n\n无法验证您的权限，请稍后重试。')
         router.push('/admin')
         return
@@ -105,7 +104,6 @@ export default function UsersManagementPage() {
       setUserEmail(user.email || '')
       await fetchAllUsers()
     } catch (error) {
-      console.error('认证失败:', error)
       alert('❌ 系统错误\n\n无法验证您的身份，请稍后重试。')
       router.push('/login')
     } finally {
@@ -117,8 +115,6 @@ export default function UsersManagementPage() {
     try {
       setLoading(true)
       const supabase = createClient()
-
-      console.log('[人员管理] 🔄 开始获取所有用户...')
 
       // 获取所有用户（不做角色过滤）
       const { data, error } = await supabase
@@ -136,18 +132,12 @@ export default function UsersManagementPage() {
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('[人员管理] ❌ 获取用户失败:', error)
         return
       }
 
-      console.log('[人员管理] ✅ 成功获取用户数据:', {
-        总数: data?.length,
-        用户列表: data?.map(u => ({ 姓名: u.full_name || u.email, 角色: u.role }))
-      })
-
       setAllUsers(data || [])
     } catch (error) {
-      console.error('[人员管理] ❌ 获取用户失败:', error)
+      // 静默处理错误
     } finally {
       setLoading(false)
     }
@@ -155,12 +145,6 @@ export default function UsersManagementPage() {
 
   // 过滤和分组用户
   const { principals, teachers, students, filteredUsers } = useMemo(() => {
-    console.log('[人员管理] 🔍 开始计算角色分组...', {
-      总用户数: allUsers.length,
-      搜索词: searchTerm,
-      当前标签: selectedTab
-    })
-
     let filtered = allUsers
 
     // 搜索过滤
@@ -176,46 +160,26 @@ export default function UsersManagementPage() {
     const teachers = filtered.filter(u => u.role === 'teacher')
     const students = filtered.filter(u => u.role === 'student' || !u.role || u.role === null)
 
-    console.log('[人员管理] 📊 角色分组结果:', {
-      校长: principals.length,
-      校长列表: principals.map(u => u.email),
-      教师: teachers.length,
-      教师列表: teachers.map(u => u.email),
-      学员: students.length,
-      学员列表: students.map(u => u.email)
-    })
-
     // 标签页过滤
     if (selectedTab === 'principal') filtered = principals
     else if (selectedTab === 'teacher') filtered = teachers
     else if (selectedTab === 'student') filtered = students
 
-    console.log('[人员管理] 🎯 最终显示用户数:', filtered.length)
-
     return { principals, teachers, students, filteredUsers: filtered }
   }, [allUsers, searchTerm, selectedTab])
 
   const handleChangeRole = async (userId: string, userName: string, currentRole: string, newRole: string) => {
-    console.log('[人员管理] 🔄 准备修改角色:', {
-      用户ID: userId,
-      用户名: userName,
-      当前角色: currentRole,
-      新角色: newRole
-    })
-
     const confirmed = confirm(
       `确定要将「${userName}」的角色从「${ROLE_CONFIG[currentRole as keyof typeof ROLE_CONFIG]?.label || currentRole}」改为「${ROLE_CONFIG[newRole as keyof typeof ROLE_CONFIG]?.label}」吗？`
     )
 
     if (!confirmed) {
-      console.log('[人员管理] ❌ 用户取消操作')
       return
     }
 
     try {
       const supabase = createClient()
 
-      console.log('[人员管理] 📤 发送数据库更新请求...')
       const { data, error } = await supabase
         .from('profiles')
         .update({ role: newRole })
@@ -223,32 +187,22 @@ export default function UsersManagementPage() {
         .select()
 
       if (error) {
-        console.error('[人员管理] ❌ 数据库更新失败:', error)
         throw error
       }
 
-      console.log('[人员管理] ✅ 数据库更新成功，返回数据:', data)
-
       // 立即更新本地状态
-      console.log('[人员管理] 🔄 更新本地状态...')
       setAllUsers(prevUsers => {
         const updatedUsers = prevUsers.map(user =>
           user.id === userId ? { ...user, role: newRole } : user
         )
-        console.log('[人员管理] ✅ 本地状态已更新:', {
-          更新前角色数: prevUsers.filter(u => u.id === userId)[0]?.role,
-          更新后角色数: updatedUsers.filter(u => u.id === userId)[0]?.role
-        })
         return updatedUsers
       })
 
       alert('✅ 角色修改成功')
 
       // 后台重新获取数据以确保同步
-      console.log('[人员管理] 🔄 重新获取所有用户数据...')
       await fetchAllUsers()
     } catch (error) {
-      console.error('[人员管理] ❌ 修改角色失败:', error)
       alert('❌ 修改失败，请稍后重试')
     }
   }
@@ -298,7 +252,6 @@ export default function UsersManagementPage() {
         alert('❌ 该用户尚未注册\n\n请让用户先注册账号，然后再在此处修改其角色。')
       }
     } catch (error) {
-      console.error('操作失败:', error)
       alert('❌ 操作失败，请稍后重试')
     } finally {
       setSubmitting(false)

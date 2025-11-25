@@ -119,7 +119,7 @@ export function EarthContentDetail({
 
       setIsUnlocked(shouldUnlock)
     } catch (error) {
-      console.error('Failed to fetch stage progress:', error)
+      // 静默处理错误
     }
   }
 
@@ -215,14 +215,11 @@ export function EarthContentDetail({
       // 验证文件类型：只允许图片
       if (!file.type.startsWith('image/') || !allowedImageTypes.includes(file.type)) {
         alert(`❌ 不支持的文件格式: ${file.name}\n\n只支持图片格式: JPG, PNG, GIF, WEBP`)
-        console.warn('❌ 拒绝非图片文件:', file.name, file.type)
         continue
       }
 
       // 如果图片大于1MB，自动压缩
       if (file.size > 1024 * 1024) {
-        console.log(`📦 压缩图片: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
-
         try {
           const options = {
             maxSizeMB: 1,          // 压缩到最大1MB
@@ -232,13 +229,12 @@ export function EarthContentDetail({
           }
 
           const compressedFile = await imageCompression(file, options)
-          console.log(`✅ 压缩完成: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`)
 
           // 保持原文件名
           const renamedFile = new File([compressedFile], file.name, { type: compressedFile.type })
           processedFiles.push(renamedFile)
         } catch (error) {
-          console.error('❌ 图片压缩失败，使用原图:', error)
+          // 压缩失败，使用原图
           processedFiles.push(file)
         }
       } else {
@@ -266,19 +262,14 @@ export function EarthContentDetail({
       // 计算项目的唯一标识（与提交时一致）
       const projectKey = `explorer_project_${project.id || project.title.replace(/\s+/g, '_')}`
 
-      console.log('📋 获取提交记录，项目key:', projectKey)
-
       // 使用dayKey参数过滤特定项目的提交
       const response = await fetch(`/api/submissions?contentId=${content.id}&dayKey=${encodeURIComponent(projectKey)}`)
       if (response.ok) {
         const { submissions } = await response.json()
-        console.log(`✅ 找到 ${submissions?.length || 0} 条提交记录`)
         setSubmissionsHistory(submissions || [])
-      } else {
-        console.error('Failed to fetch submissions')
       }
     } catch (error) {
-      console.error('Error fetching submissions:', error)
+      // 静默处理错误
     } finally {
       setLoadingHistory(false)
     }
@@ -302,7 +293,6 @@ export function EarthContentDetail({
         alert(`删除失败: ${error.error || '请重试'}`)
       }
     } catch (error) {
-      console.error('Error deleting submission:', error)
       alert('删除失败，请重试')
     }
   }
@@ -342,7 +332,6 @@ export function EarthContentDetail({
       // 触发公开作业列表刷新
       setPublicSubmissionsRefreshKey(prev => prev + 1)
     } catch (err) {
-      console.error('切换作业可见性失败:', err)
       alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
     } finally {
       setTogglingId(null)
@@ -372,11 +361,9 @@ export function EarthContentDetail({
 
       // 上传文件（如果有）
       const attachments: any[] = []
-      console.log('📎 准备上传文件，数量:', uploadedFiles.length)
 
       if (uploadedFiles.length > 0) {
         for (const file of uploadedFiles) {
-          console.log('📤 上传文件:', file.name, '类型:', file.type)
           const formData = new FormData()
           formData.append('file', file)
 
@@ -387,43 +374,17 @@ export function EarthContentDetail({
 
           if (uploadResponse.ok) {
             const { fileUrl, fileName } = await uploadResponse.json()
-            console.log('✅ 文件上传成功:', fileName, 'URL:', fileUrl)
             attachments.push({
               type: file.type.startsWith('image/') ? 'image' : 'file',
               url: fileUrl,
               name: fileName
             })
-          } else {
-            const errorData = await uploadResponse.json()
-            console.error('❌ 文件上传失败:', file.name, uploadResponse.status, errorData)
           }
         }
       }
 
-      console.log('📎 最终attachments数组:', attachments)
-      console.log('📎 attachments数量:', attachments.length)
-
-      if (attachments.length > 0) {
-        console.log('✅ 有图片！第一张图片信息:', {
-          type: attachments[0].type,
-          url: attachments[0].url,
-          name: attachments[0].name
-        })
-      } else {
-        console.warn('⚠️ 警告：attachments数组为空！没有图片会被发送给AI！')
-      }
-
       // 使用项目ID作为唯一标识
       const projectKey = `explorer_project_${selectedProject.id || selectedProject.title.replace(/\s+/g, '_')}`
-
-      console.log('🚀 即将调用边缘函数，参数:', {
-        user_id: userId,
-        content_id: content.id,
-        day_key: projectKey,
-        submission_content: submissionContent.substring(0, 50) + '...',
-        submission_type: 'project_deliverable',
-        attachments_count: attachments.length
-      })
 
       // 调用边缘函数进行评估
       const { data, error: functionError } = await supabase.functions.invoke('evaluate-pbl-task', {
@@ -438,11 +399,6 @@ export function EarthContentDetail({
         }
       })
 
-      console.log('📨 边缘函数返回结果:', data)
-      if (functionError) {
-        console.error('❌ 边缘函数错误:', functionError)
-      }
-
       if (functionError) {
         throw functionError
       }
@@ -455,7 +411,6 @@ export function EarthContentDetail({
       setSubmissionResult(data)
 
     } catch (error) {
-      console.error('Failed to submit task:', error)
       alert('提交失败，请重试')
     } finally {
       setSubmitting(false)
