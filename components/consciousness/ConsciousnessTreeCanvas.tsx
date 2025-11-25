@@ -400,12 +400,6 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       className="w-full h-full relative"
       style={{ background: '#000' }}
     >
-      {/* 🖱️ 拖拽提示层（仅在非预览模式显示） */}
-      {!isPreview && (
-        <div className="absolute top-2 left-2 text-xs text-white/50 pointer-events-none z-10">
-          拖拽查看 | 滚轮缩放
-        </div>
-      )}
 
       {/* 🔥 Canvas包装器：预览模式固定位置，详情页可拖拽 */}
       <div

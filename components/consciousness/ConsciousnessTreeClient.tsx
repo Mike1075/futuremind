@@ -166,11 +166,8 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
             >
               <div
                 style={{
-                  width: '100%',
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  position: 'absolute',
+                  inset: 0,
                   transform: `scale(${zoom})`,
                   transformOrigin: 'center center'
                 }}
