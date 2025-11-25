@@ -3,6 +3,21 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
+import type { GaiaMessage } from '@/lib/supabase/database.types'
+import type { Json } from '@/types/database'
+
+// CQ-02: 定义对话记录类型（匹配数据库schema）
+interface GaiaConversation {
+  id: string
+  user_id: string | null
+  session_id?: string
+  messages: GaiaMessage[] | unknown
+  title: string | null
+  is_active: boolean | null
+  message_count: number | null
+  updated_at?: string | null
+  created_at?: string | null
+}
 
 /**
  * POST /api/gaia/chat
@@ -58,7 +73,8 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
     const userId = user.id
 
     // 1. 查找或创建用户的全局对话记录
-    let conversation: any = null
+    // CQ-02: 使用明确类型替代any
+    let conversation: GaiaConversation | null = null
     let isNewConversation = false
 
     if (conversationId) {
@@ -108,20 +124,13 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
     }
 
     // 2. 获取历史消息
-    let conversationHistory: Array<{
-      role: string
-      content: string
-      timestamp: string
-    }> = []
+    // CQ-02: 使用GaiaMessage类型
+    let conversationHistory: GaiaMessage[] = []
 
     if (currentMessages && Array.isArray(currentMessages) && currentMessages.length > 0) {
-      conversationHistory = currentMessages
+      conversationHistory = currentMessages as GaiaMessage[]
     } else {
-      conversationHistory = (conversation.messages as any[] || []) as Array<{
-        role: string
-        content: string
-        timestamp: string
-      }>
+      conversationHistory = (conversation?.messages || []) as GaiaMessage[]
     }
 
     // 3. 添加用户消息
@@ -149,13 +158,14 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
 
     const payload = {
       chatInput: message,
-      session_id: conversation.session_id || conversation.id,
+      session_id: conversation?.session_id || conversation?.id,
       user_id: userId,
       user_name: userName,
       user_email: profileData?.email || user.email,
       project_id: defaultProjectId,
       organization_id: defaultOrganizationId,
-      conversation_history: conversationHistory.slice(-5).map((m: any) => ({
+      // CQ-02: 使用GaiaMessage类型
+      conversation_history: conversationHistory.slice(-5).map((m: GaiaMessage) => ({
         role: m.role,
         content: m.content
       }))
@@ -311,15 +321,16 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
           }
 
           // 更新数据库
+          // CQ-02: 将消息数组转换为JSON格式存储
           await supabase
             .from('gaia_conversations')
             .update({
               title,
-              messages: finalMessages,
+              messages: finalMessages as unknown as Json,
               message_count: finalMessages.length,
               updated_at: new Date().toISOString()
             })
-            .eq('id', conversation.id)
+            .eq('id', conversation?.id)
 
           // 发送完成标记
           const doneData = JSON.stringify({
