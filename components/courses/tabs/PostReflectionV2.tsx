@@ -13,8 +13,6 @@ export function PostReflectionV2({
 }: PostReflectionV2Props) {
   // 点击反思问题，打开盖亚（先检查是否已讨论过）
   const handleClickReflection = async (reflection: string) => {
-    console.log('[PostReflection] 点击反思问题:', reflection)
-
     if (typeof window === 'undefined') return
 
     try {

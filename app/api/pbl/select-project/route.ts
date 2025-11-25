@@ -27,15 +27,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
-    // 验证项目是否存在且可选
+    // CQ-03: 使用maybeSingle()验证项目是否存在且可选
     const { data: project, error: projectError } = (await (supabase
       .from('course_contents') as any)
       .select('id, title, project_visibility, review_status, is_published')
       .eq('id', projectId)
       .eq('content_type', 'icarus')
-      .single()) as any
+      .maybeSingle()) as any
 
-    if (projectError || !project) {
+    if (projectError) {
+      logger.error('[PBL] 查询项目失败', projectError)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+
+    if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
@@ -45,14 +50,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!['system', 'public'].includes(project.project_visibility)) {
-      // 如果是私有项目，检查是否是创建者本人
+      // CQ-03: 如果是私有项目，检查是否是创建者本人
       const { data: privateProject } = (await (supabase
         .from('course_contents') as any)
         .select('created_by_user')
         .eq('id', projectId)
-        .single()) as any
+        .maybeSingle()) as any
 
-      if (privateProject?.created_by_user !== user.id) {
+      if (!privateProject || privateProject.created_by_user !== user.id) {
         return NextResponse.json({ error: 'This project is private' }, { status: 403 })
       }
     }
@@ -78,13 +83,13 @@ export async function POST(request: NextRequest) {
       .single()) as any
 
     if (upsertError) {
-      // 检查是否是因为已存在active/completed状态的记录
+      // CQ-03: 使用maybeSingle()检查是否是因为已存在active/completed状态的记录
       const { data: existing } = (await (supabase
         .from('user_selected_projects') as any)
         .select('id, status')
         .eq('user_id', user.id)
         .eq('project_id', projectId)
-        .single()) as any
+        .maybeSingle()) as any
 
       if (existing && existing.status !== 'cancelled') {
         return NextResponse.json({

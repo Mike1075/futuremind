@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -257,8 +257,8 @@ export function PBLProjectDetail({
     return (userProgress[prevDayKey] || 0) > 0  // 有得分就算完成
   }
 
-  // 处理选择/取消项目 - 显示确认对话框
-  const handleToggleSelection = () => {
+  // PF-02: 使用useCallback优化handleToggleSelection
+  const handleToggleSelection = useCallback(() => {
     if (isSelected && selectionId) {
       // 显示取消确认对话框
       setShowCancelConfirm(true)
@@ -266,10 +266,10 @@ export function PBLProjectDetail({
       // 显示选择确认对话框
       setShowSelectConfirm(true)
     }
-  }
+  }, [isSelected, selectionId])
 
-  // 确认取消项目
-  const confirmCancelProject = async () => {
+  // PF-02: 使用useCallback优化confirmCancelProject
+  const confirmCancelProject = useCallback(async () => {
     setIsProcessing(true)
     try {
       const response = await fetch('/api/pbl/update-status', {
@@ -306,10 +306,10 @@ export function PBLProjectDetail({
     } finally {
       setIsProcessing(false)
     }
-  }
+  }, [selectionId, router])
 
-  // 确认选择项目
-  const confirmSelectProject = async () => {
+  // PF-02: 使用useCallback优化confirmSelectProject
+  const confirmSelectProject = useCallback(async () => {
     setIsProcessing(true)
     try {
       const response = await fetch('/api/pbl/select-project', {
@@ -343,7 +343,7 @@ export function PBLProjectDetail({
     } finally {
       setIsProcessing(false)
     }
-  }
+  }, [project.id, router])
 
   // 打开提交对话框
   const openSubmitDialog = (weekNumber: number, dayNumber: number, dayLabel?: string) => {

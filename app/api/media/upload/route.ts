@@ -27,6 +27,15 @@ async function handleUpload(request: NextRequest) {
     const admin = getAdminClient()
     const supabase = await getClient()
 
+    // SEC-05: 强制认证 - 必须登录才能上传文件
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     const module_id = (formData.get('module_id') as string) || null
@@ -48,11 +57,6 @@ async function handleUpload(request: NextRequest) {
         error: `不支持的文件类型: ${file.type}。允许的类型: 图片、视频、音频、PDF、Office文档`
       }, { status: 400 })
     }
-
-    // Get current user for auditing (optional)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
 
     // Generate unique filename
     const fileExt = file.name.split('.').pop()
@@ -95,7 +99,7 @@ async function handleUpload(request: NextRequest) {
           mimetype: file.type,
           uploadPath: filePath,
         },
-        created_by: user?.id ?? null,
+        created_by: user.id,
       })
       .select()
       .single()

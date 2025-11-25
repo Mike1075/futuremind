@@ -35,15 +35,20 @@ export async function PATCH(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // 验证该选择记录是否属于当前用户
+    // CQ-03: 使用maybeSingle()验证该选择记录是否属于当前用户
     const { data: selection, error: fetchError } = (await (supabase
       .from('user_selected_projects') as any)
       .select('id, user_id, project_id, status')
       .eq('id', selectionId)
       .eq('user_id', user.id)
-      .single()) as any
+      .maybeSingle()) as any
 
-    if (fetchError || !selection) {
+    if (fetchError) {
+      logger.error('[PBL] 查询项目选择记录失败', fetchError)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+
+    if (!selection) {
       return NextResponse.json({ error: 'Selection not found' }, { status: 404 })
     }
 
@@ -71,7 +76,7 @@ export async function PATCH(request: NextRequest) {
       updateData.completion_percentage = 100
     }
 
-    // 更新记录
+    // CQ-03: 使用maybeSingle()更新记录
     const { data: updated, error: updateError } = (await (supabase
       .from('user_selected_projects') as any)
       .update(updateData)
@@ -85,11 +90,12 @@ export async function PATCH(request: NextRequest) {
           module_name
         )
       `)
-      .single()) as any
+      .maybeSingle()) as any
 
     if (updateError) {
       logger.error('[PBL] 更新项目状态失败', updateError)
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      // SEC-01: 生产环境不泄露详细错误信息
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     return NextResponse.json({

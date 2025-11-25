@@ -113,15 +113,6 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
 
           // 更新回原数组（保持原有顺序）
           projects = sortedProjects
-
-          // 🐛 调试日志：打印伊卡洛斯项目的进度数据
-          console.log('[数据加载] 合并后的项目进度:', projects.map((p: Project) => ({
-            title: p.title,
-            sequence: p.sequence_number,
-            progress: p.progress,
-            is_completed: p.is_completed,
-            is_unlocked: p.is_unlocked
-          })))
         } else {
           // 如果未登录或无法获取用户数据，所有项目都默认解锁
           const sortedProjects = [...projects].sort((a, b) => a.sequence_number - b.sequence_number)

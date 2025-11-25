@@ -76,8 +76,8 @@ export default function CoursesPage() {
         ) || []
 
       setEnrolledCourses(enrolled)
-    } catch (error) {
-      console.error('加载失败:', error)
+    } catch {
+      // 静默处理加载失败
     } finally {
       setLoading(false)
     }
@@ -107,8 +107,7 @@ export default function CoursesPage() {
 
       alert('✅ 选课成功！')
       await loadData()
-    } catch (error) {
-      console.error('选课失败:', error)
+    } catch {
       alert('❌ 选课失败，请重试')
     } finally {
       setEnrolling(false)

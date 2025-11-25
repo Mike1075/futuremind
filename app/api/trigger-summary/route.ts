@@ -24,12 +24,12 @@ export async function POST(request: Request) {
       )
     }
 
-    // 检查上次总结时间
+    // CQ-03: 使用maybeSingle()检查上次总结时间（可能不存在）
     const { data: summary } = await supabase
       .from('student_summaries')
       .select('generated_at')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     // 如果有总结且在24小时内，跳过
     if (summary?.generated_at) {

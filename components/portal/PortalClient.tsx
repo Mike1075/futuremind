@@ -50,12 +50,9 @@ export function PortalClient({
           method: 'POST'
         })
 
-        if (response.ok) {
-          const result = await response.json()
-          console.log('[Portal] 总结触发结果:', result.message)
-        }
-      } catch (error) {
-        console.error('[Portal] 触发总结失败:', error)
+        // 静默处理结果
+      } catch {
+        // 静默处理错误
       }
     }
 

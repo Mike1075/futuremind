@@ -112,13 +112,17 @@ async function handleDeleteSubmission(req: NextRequest) {
       )
     }
 
-    // 验证这个提交记录属于当前用户，并获取day_key和content_id
+    // CQ-03: 使用maybeSingle()避免记录不存在时抛出错误
     logger.dbQuery('user_submissions', 'SELECT')
-    const { data: submission } = await supabase
+    const { data: submission, error: fetchError } = await supabase
       .from('user_submissions')
       .select('user_id, day_key, course_content_id')
       .eq('id', submissionId)
-      .single()
+      .maybeSingle()
+
+    if (fetchError) {
+      throw fetchError
+    }
 
     const typedSubmission = submission as Pick<Submission, 'user_id' | 'day_key' | 'course_content_id'> | null
 
@@ -167,14 +171,14 @@ async function handleDeleteSubmission(req: NextRequest) {
 
       logger.debug('New highest score calculated', { dayKey, score: newHighestScore })
 
-      // 更新user_selected_projects的progress
+      // CQ-03: 使用maybeSingle()避免项目不存在时抛出错误
       const { data: selection } = await supabase
         .from('user_selected_projects')
         .select('id, progress')
         .eq('user_id', user.id)
         .eq('project_id', contentId)
         .in('status', ['active', 'paused', 'completed'])
-        .single()
+        .maybeSingle()
 
       if (selection) {
         const typedSelection = selection as UserSelectedProject

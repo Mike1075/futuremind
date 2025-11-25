@@ -161,16 +161,6 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       formData.append('user_id', userId)
       formData.append('title', uploadFile.title)
 
-      // 验证FormData内容
-      console.log('[FileUpload] 上传文件到后端API:', {
-        filename: uploadFile.file.name,
-        size: uploadFile.file.size,
-        type: uploadFile.file.type,
-        project_id: projectId,
-        user_id: userId,
-        title: uploadFile.title
-      })
-
       // 调用后端API代理（避免CORS问题）
       const n8nResponse = await fetch('/api/aip/upload-document', {
         method: 'POST',
@@ -183,19 +173,9 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       // 后端API响应处理
       const responseData = await n8nResponse.json()
 
-      console.log('[FileUpload] 后端API响应:', {
-        status: n8nResponse.status,
-        success: n8nResponse.ok,
-        data: responseData
-      })
-
       if (!n8nResponse.ok) {
-        const errorMsg = `上传失败: ${n8nResponse.status}\n${JSON.stringify(responseData)}`
-        console.error('[FileUpload] 上传失败:', errorMsg)
-        throw new Error(responseData.error || errorMsg)
+        throw new Error(responseData.error || `上传失败: ${n8nResponse.status}`)
       }
-
-      console.log('[FileUpload] ✅ 文档上传成功，已保存到数据库')
 
       setUploadFiles(prev => prev.map(f =>
         f.id === uploadFile.id

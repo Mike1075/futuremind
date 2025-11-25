@@ -557,13 +557,15 @@ const generateTrunk = (
   const naturalWidth = calculateNaturalTrunkWidth()
   const naturalHeight = calculateNaturalTrunkHeight()
 
-  // 🌳 步骤2：应用1/3规则
-  // 默认粗度 = 1/3 × Y，最大粗度 = Y
-  const minWidth = naturalWidth / 3
-  const maxWidth = naturalWidth
-  // 🔥 修复：使用平方曲线让粗度变化更明显（小值增长慢，大值增长快）
-  const thicknessRatio = Math.pow(thickness / 50, 1.5)  // 指数曲线，让变化更敏感
-  const actualWidth = minWidth + (maxWidth - minWidth) * thicknessRatio  // thickness: 0-50
+  // 🌳 步骤2：树干粗度计算
+  // 🔥 修复：thickness=1时应该非常细（约2-3像素，和根一样细）
+  // thickness=50时才达到最大粗度
+  const minWidth = 2  // 🔥 最细时只有2像素（和根一样细）
+  const maxWidth = naturalWidth  // 最粗时30像素
+  // 🔥 使用平方根曲线：小值增长较快，大值增长较慢，让初期变化更明显
+  // thickness: 1-50 映射到 minWidth-maxWidth
+  const thicknessRatio = thickness <= 1 ? 0 : Math.pow((thickness - 1) / 49, 0.7)
+  const actualWidth = minWidth + (maxWidth - minWidth) * thicknessRatio
 
   // 默认长度 = 1/3 × Z，最大长度 = Z
   const minHeight = naturalHeight / 3
@@ -849,8 +851,6 @@ const generateLeaves = (
   // 🍃 自然规律：根据枝条数量决定叶子生长位置
   const totalCount = growthData.branches.count
 
-  console.log(`[叶子生成] totalCount (branches.count): ${totalCount}`)
-
   // 🔥 固定从第3层开始长叶子（不考虑枝条总数）
   // 第1层：主枝，第2层：主要分支，第3层及以上：细枝（适合长叶子）
   const minLeafLevel = 3
@@ -873,8 +873,6 @@ const generateLeaves = (
 
   // 🔥 全新算法：间隔分配，确保叶子均匀分布在所有枝条上
   // 无论叶子多少，都能均匀分布在从左到右的枝条上
-  console.log(`[叶子生成] 总叶子数: ${leafCount}, 可用枝条数: ${leafBranches.length}`)
-  console.log(`[叶子生成] particleSize: ${particleSize}, leafSizeScale: ${leafSizeScale}`)
 
   // 🌿 间隔分配：将叶子均匀分布在所有枝条上
   // 如果叶子少于枝条，间隔选取枝条；如果叶子多于枝条，每个枝条分配多片叶子
@@ -918,10 +916,6 @@ const generateLeaves = (
 
     const finalX = baseX + offsetX
     const finalY = baseY + offsetY
-
-    if (leafIndex < 3) {
-      console.log(`    叶子${leafIndex}: 枝条${branchIndex}(${branch.x.toFixed(0)}), dx=${dx.toFixed(0)}, dy=${dy.toFixed(0)}, ${side > 0 ? '右侧' : '左侧'}`)
-    }
 
     // 叶子颜色（跟随整体进度）
     const color = getColor('leaf', overallProgress, isSolid, glowIntensity)
@@ -1068,10 +1062,12 @@ export function generateConsciousnessTree(
 
   // 🔥 优化顺序：先计算树干宽度，再按【根系→树干→枝条】顺序绘制
 
-  // 计算树干宽度（naturalWidth, naturalHeight等已在上面计算）
-  const minWidth = naturalWidth / 3
-  const maxWidth = naturalWidth
-  const trunkWidth = minWidth + (maxWidth - minWidth) * (thickness / 50)
+  // 计算树干宽度（与generateTrunk中的公式保持一致）
+  // 🔥 修复：thickness=1时应该非常细（约2像素），thickness=50时达到最大粗度
+  const minWidth = 2  // 最细时只有2像素
+  const maxWidth = naturalWidth  // 最粗时30像素
+  const thicknessRatioMain = thickness <= 1 ? 0 : Math.pow((thickness - 1) / 49, 0.7)
+  const trunkWidth = minWidth + (maxWidth - minWidth) * thicknessRatioMain
 
   const topX = centerX
   const topY = baseY - actualHeight

@@ -21,16 +21,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'conversationId is required' }, { status: 400 })
     }
 
-    // 获取对话详情
+    // CQ-03: 使用maybeSingle()避免对话不存在时抛出错误
     const { data: conversation, error } = await supabase
       .from('gaia_conversations')
       .select('*')
       .eq('id', conversationId)
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (error || !conversation) {
+    if (error) {
       logger.error('[Conversation Detail] 查询对话失败', error)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+
+    if (!conversation) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 

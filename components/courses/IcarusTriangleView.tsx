@@ -92,33 +92,13 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [hoveredModule, setHoveredModule] = useState<number | null>(null)
 
-  // 🐛 调试日志：打印接收到的modules数据
-  useEffect(() => {
-    console.log('[IcarusTriangleView] 接收到的modules数据:', modules.map(m => ({
-      moduleId: m.id,
-      moduleName: m.name,
-      projects: m.projects.map(p => ({
-        title: p.title,
-        sequence: p.sequence_number,
-        progress: p.progress,
-        is_completed: p.is_completed,
-        is_unlocked: p.is_unlocked
-      }))
-    })))
-  }, [modules])
-
   // 全局旋转控制 - 控制所有模块的公转和自转
   const shouldPause = activeModule !== null || selectedProject !== null
 
   const handleModuleClick = (moduleId: number) => {
-    console.log('[点击调试] 模块被点击:', moduleId)
-    console.log('[点击调试] 当前activeModule:', activeModule)
-
     if (activeModule === moduleId) {
-      console.log('[点击调试] 关闭当前模块')
       setActiveModule(null)
     } else {
-      console.log('[点击调试] 打开新模块:', moduleId)
       setActiveModule(moduleId)
       setSelectedProject(null)
     }
@@ -286,7 +266,6 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                     }}
                     className="cursor-pointer group"
                     onClick={(e) => {
-                      console.log('[点击调试] 外层容器被点击, moduleId:', module.id, 'event:', e.type)
                       e.stopPropagation()
                       handleModuleClick(module.id)
                     }}
@@ -329,7 +308,6 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           boxShadow: `0 0 50px ${currentColors[0]}`,
                         }}
                         onClick={(e) => {
-                          console.log('[点击调试] 主圆形被点击, moduleId:', module.id, 'event:', e.type)
                           e.stopPropagation()
                           handleModuleClick(module.id)
                         }}
@@ -498,19 +476,6 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                           const bothCompleted = currentCompleted && nextCompleted
                           // 虚线样式：1.5 1.5 表示 1.5单位实线 + 1.5单位间隔（非常密集的虚线效果）
                           const strokeDasharray = bothCompleted ? "0" : "1.5 1.5"
-
-                          // 🐛 调试日志：打印虚线计算详情
-                          console.log(`[虚线调试] 模块${module.id} 连接线${projectIndex}→${nextIndex}:`, {
-                            currentProject: currentProject.title,
-                            currentProgress: currentProject.progress,
-                            currentCompleted,
-                            nextProject: nextProject.title,
-                            nextProgress: nextProject.progress,
-                            nextCompleted,
-                            bothCompleted,
-                            strokeDasharray,
-                            '⚠️ 注意': bothCompleted ? '实线(0)' : '虚线(4 3)'
-                          })
 
                           return (
                             <motion.line

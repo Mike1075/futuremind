@@ -82,19 +82,6 @@ export function ChatBot() {
         currentOrgId = 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
       }
 
-      console.log('[ChatBot] 组织ID获取:', {
-        从项目获取: selectedProjects.length > 0 ? projects.find(p => p.id === (Array.isArray(projectIdValue) ? projectIdValue[0] : projectIdValue))?.organization_id : null,
-        从用户组织获取: organizations?.[0]?.organization_id,
-        最终使用: currentOrgId
-      })
-
-      console.log('[ChatBot] 发送消息到API:', {
-        chatInput: input.trim(),
-        project_id: projectIdValue,
-        organization_id: currentOrgId,
-        selectedProjectsCount: selectedProjects.length
-      })
-
       const response = await fetch('/api/aip/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -105,12 +92,8 @@ export function ChatBot() {
         })
       })
 
-      console.log('[ChatBot] API响应状态:', response.status, response.statusText)
-
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('[ChatBot] API返回错误:', errorText)
-
         let errorData
         try {
           errorData = JSON.parse(errorText)
@@ -122,13 +105,7 @@ export function ChatBot() {
       }
 
       const data = await response.json()
-      console.log('[ChatBot] API返回数据:', data)
-
       const aiResponse = data.response || data.output || data.message
-
-      if (!aiResponse) {
-        console.warn('[ChatBot] API未返回有效的响应内容:', data)
-      }
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -137,14 +114,7 @@ export function ChatBot() {
       }
 
       setMessages(prev => [...prev, assistantMessage])
-      console.log('[ChatBot] 消息添加成功')
     } catch (error: any) {
-      console.error('[ChatBot] ❌ 发送消息失败:', error)
-      console.error('[ChatBot] 错误详情:', {
-        message: error.message,
-        stack: error.stack
-      })
-
       const errorMessage: Message = {
         role: 'assistant',
         content: `❌ 抱歉，发生了错误：\n\n${error.message || '未知错误'}\n\n请检查：\n1. 网络连接是否正常\n2. N8N服务是否可用\n3. 查看浏览器控制台获取详细日志`,

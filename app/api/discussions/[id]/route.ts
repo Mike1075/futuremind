@@ -48,14 +48,19 @@ export async function PUT(
       )
     }
 
-    // 检查讨论是否存在且属于当前用户
+    // CQ-03: 使用maybeSingle()避免记录不存在时抛出错误
     const { data: existingDiscussion, error: fetchError } = await admin
       .from('course_discussions')
       .select('id, user_id, is_deleted')
       .eq('id', id)
-      .single()
+      .maybeSingle()
 
-    if (fetchError || !existingDiscussion) {
+    if (fetchError) {
+      logger.error('[Discussions API] 查询讨论失败', fetchError)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+
+    if (!existingDiscussion) {
       return NextResponse.json(
         { error: 'Discussion not found' },
         { status: 404 }
@@ -76,7 +81,7 @@ export async function PUT(
       )
     }
 
-    // 更新讨论
+    // CQ-03: 更新后使用maybeSingle()
     const { data: discussion, error } = await admin
       .from('course_discussions')
       .update({
@@ -93,7 +98,7 @@ export async function PUT(
           user_type
         )
       `)
-      .single()
+      .maybeSingle()
 
     if (error) {
       logger.error('[Discussions API] 更新讨论失败', error)
@@ -130,14 +135,19 @@ export async function DELETE(
 
     const { id } = params
 
-    // 检查讨论是否存在且属于当前用户
+    // CQ-03: 使用maybeSingle()避免记录不存在时抛出错误
     const { data: existingDiscussion, error: fetchError } = await admin
       .from('course_discussions')
       .select('id, user_id, is_deleted')
       .eq('id', id)
-      .single()
+      .maybeSingle()
 
-    if (fetchError || !existingDiscussion) {
+    if (fetchError) {
+      logger.error('[Discussions API] 查询讨论失败', fetchError)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+
+    if (!existingDiscussion) {
       return NextResponse.json(
         { error: 'Discussion not found' },
         { status: 404 }

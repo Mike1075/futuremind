@@ -23,14 +23,19 @@ export async function POST(
 
     const { id: discussionId } = params
 
-    // 检查讨论是否存在
+    // CQ-03: 使用maybeSingle()避免记录不存在时抛出错误
     const { data: discussion, error: discussionError } = await admin
       .from('course_discussions')
       .select('id, is_deleted')
       .eq('id', discussionId)
-      .single()
+      .maybeSingle()
 
-    if (discussionError || !discussion) {
+    if (discussionError) {
+      logger.error('[Discussions API] 查询讨论失败', discussionError)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+
+    if (!discussion) {
       return NextResponse.json(
         { error: 'Discussion not found' },
         { status: 404 }
@@ -44,13 +49,13 @@ export async function POST(
       )
     }
 
-    // 检查是否已经点赞
+    // CQ-03: 使用maybeSingle()检查是否已经点赞
     const { data: existingLike } = await admin
       .from('discussion_likes')
       .select('id')
       .eq('discussion_id', discussionId)
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (existingLike) {
       return NextResponse.json(
@@ -79,12 +84,12 @@ export async function POST(
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
-    // 获取更新后的点赞数
+    // CQ-03: 使用maybeSingle()获取更新后的点赞数
     const { data: updatedDiscussion } = await admin
       .from('course_discussions')
       .select('likes_count')
       .eq('id', discussionId)
-      .single()
+      .maybeSingle()
 
     return NextResponse.json({
       success: true,
@@ -131,12 +136,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
-    // 获取更新后的点赞数
+    // CQ-03: 使用maybeSingle()获取更新后的点赞数
     const { data: updatedDiscussion } = await admin
       .from('course_discussions')
       .select('likes_count')
       .eq('id', discussionId)
-      .single()
+      .maybeSingle()
 
     return NextResponse.json({
       success: true,

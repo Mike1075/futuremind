@@ -24,7 +24,6 @@ export default function Home() {
   // 监听侧边栏盖亚打开事件，自动关闭主页盖亚对话框
   useEffect(() => {
     const handleGlobalGaiaOpened = () => {
-      console.log('[首页] 📢 收到侧边栏盖亚打开事件，关闭主页对话框')
       setShowGaiaDialog(false)
     }
 
@@ -44,17 +43,17 @@ export default function Home() {
       if (user) {
         setIsLoggedIn(true)
 
-        // 从profiles表查询role字段
-        const { data: profile, error: profileError } = await supabase
+        // CQ-03: 使用maybeSingle()避免profile不存在时抛出错误
+        const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
 
         // 检查role字段是否为principal或teacher
         // principal: 校长，拥有最高管理员权限
         // teacher: 老师，拥有部分管理权限
-        const userRole = (profile as unknown as { role?: string })?.role
+        const userRole = profile?.role
 
         if (userRole === 'principal' || userRole === 'teacher') {
           setIsAdmin(true)

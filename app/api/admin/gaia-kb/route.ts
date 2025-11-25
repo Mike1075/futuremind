@@ -267,7 +267,10 @@ export async function POST(request: Request) {
         try {
           const metadata = newDoc.metadata as any
           metadata.status = 'error'
-          metadata.error_message = `N8N调用失败: ${error.message}`
+          // SEC-01: 生产环境不泄露详细错误信息
+          metadata.error_message = process.env.NODE_ENV === 'development'
+            ? `N8N调用失败: ${error.message}`
+            : 'N8N服务处理失败，请稍后重试'
           metadata.error_time = new Date().toISOString()
 
           const { error: updateError } = await supabase

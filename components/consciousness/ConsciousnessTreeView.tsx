@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { ConsciousnessTreeCanvas } from './ConsciousnessTreeCanvas'
 import { TreeGrowthData, TreeParams } from '@/lib/utils/consciousnessTreeGenerator'
 import { createClient } from '@/lib/supabase/client'
@@ -166,16 +166,8 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // 组件挂载时的初始化
-  useEffect(() => {
-    // 版本: COMPONENT_VERSION - 用于调试时启用日志
-  }, [])
-
-  useEffect(() => {
-    loadTreeData()
-  }, [userId]) // 只在userId改变时加载，techParams改变不触发
-
-  const loadTreeData = async () => {
+  // PF-08: 使用useCallback优化loadTreeData，避免不必要的重新创建
+  const loadTreeData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -217,7 +209,12 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId, isPreview]) // PF-08: 添加useCallback依赖
+
+  // 组件挂载和userId变化时加载数据
+  useEffect(() => {
+    loadTreeData()
+  }, [loadTreeData])
 
   if (loading) {
     return (

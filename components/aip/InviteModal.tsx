@@ -219,7 +219,6 @@ export function InviteModal({ onClose }: InviteModalProps) {
       }
 
       const inviteeId = inviteeProfile?.id || null
-      console.log('被邀请者ID:', inviteeId)
 
       // 2. 创建邀请记录
       const { data: invitationData, error: inviteError } = await supabase
@@ -238,11 +237,8 @@ export function InviteModal({ onClose }: InviteModalProps) {
         .single()
 
       if (inviteError) {
-        console.error('创建邀请记录失败:', inviteError)
         throw new Error(`创建邀请失败：${inviteError.message}`)
       }
-
-      console.log('邀请记录已创建:', invitationData)
 
       // 3. 创建发送者的通知记录（失败不阻断流程）
       const { error: notifySenderError } = await supabase
@@ -260,15 +256,11 @@ export function InviteModal({ onClose }: InviteModalProps) {
           }
         })
 
-      if (notifySenderError) {
-        console.warn('创建发送者通知失败:', notifySenderError)
-      } else {
-        console.log('发送者通知已创建')
-      }
+      // 通知发送者（失败不阻断流程，静默处理）
 
       // 4. 如果被邀请者已注册，创建接收者的通知记录（失败不阻断流程）
       if (inviteeId) {
-        const { error: notifyReceiverError } = await supabase
+        await supabase
           .from('notifications')
           .insert({
             user_id: inviteeId,
@@ -283,14 +275,6 @@ export function InviteModal({ onClose }: InviteModalProps) {
               inviter_id: userId
             }
           })
-
-        if (notifyReceiverError) {
-          console.warn('创建接收者通知失败:', notifyReceiverError)
-        } else {
-          console.log('接收者通知已创建')
-        }
-      } else {
-        console.log('被邀请者未注册，跳过通知创建')
       }
 
       setIsSuccess(true)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -86,8 +86,8 @@ export function EarthContentDetail({
   // 公开作业刷新机制
   const [publicSubmissionsRefreshKey, setPublicSubmissionsRefreshKey] = useState(0)
 
-  // 刷新阶段进度（独立函数，可被多处调用）
-  const fetchStageProgress = async () => {
+  // PF-02: 使用useCallback优化fetchStageProgress
+  const fetchStageProgress = useCallback(async () => {
     if (!stageContentIds || stageContentIds.length === 0) return
 
     try {
@@ -121,12 +121,12 @@ export function EarthContentDetail({
     } catch (error) {
       // 静默处理错误
     }
-  }
+  }, [stageContentIds, isUnlocked])
 
   // 计算阶段进度（使用新的进度系统）
   useEffect(() => {
     fetchStageProgress()
-  }, [stageContentIds, isUnlocked])
+  }, [fetchStageProgress])
 
   const knowledgePoints = (content.knowledge_points as string[]) || []
   const socraticQuestions = (content.socratic_questions as SocraticQuestions) || {}

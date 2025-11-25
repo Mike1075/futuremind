@@ -19,10 +19,6 @@ export function SocraticQuestionsV2({
 }: SocraticQuestionsV2Props) {
   // 点击问题，打开盖亚（先检查是否已讨论过）
   const handleClickQuestion = async (question: string, stage: string) => {
-    console.log('[SocraticQuestions] 点击问题')
-    console.log('  - stage:', stage)
-    console.log('  - question:', question)
-
     if (typeof window === 'undefined') return
 
     try {
