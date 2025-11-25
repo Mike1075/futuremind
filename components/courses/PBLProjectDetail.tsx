@@ -8,6 +8,8 @@ import imageCompression from 'browser-image-compression'
 import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Toast } from '@/components/ui/Toast'
 
 // 伊卡洛斯项目模块名称映射（与主界面保持一致）
 const MODULE_NAMES: Record<number, string> = {
@@ -173,6 +175,16 @@ export function PBLProjectDetail({
   const [submissionResult, setSubmissionResult] = useState<any | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
 
+  // 项目选择/取消相关状态
+  const [showSelectConfirm, setShowSelectConfirm] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [toast, setToast] = useState<{show: boolean, message: string, type: 'success'|'error'|'info'|'warning'}>({
+    show: false,
+    message: '',
+    type: 'success'
+  })
+
   // 提交记录相关状态
   const [showSubmissionsHistory, setShowSubmissionsHistory] = useState(false)
   const [submissionsHistory, setSubmissionsHistory] = useState<any[]>([])
@@ -244,50 +256,93 @@ export function PBLProjectDetail({
     return (userProgress[prevDayKey] || 0) > 0  // 有得分就算完成
   }
 
-  // 处理选择/取消项目
-  const handleToggleSelection = async () => {
+  // 处理选择/取消项目 - 显示确认对话框
+  const handleToggleSelection = () => {
     if (isSelected && selectionId) {
-      // 取消项目
-      if (!confirm('确定要取消这个项目吗？')) return
-
-      try {
-        const response = await fetch('/api/pbl/update-status', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            selectionId,
-            status: 'cancelled'
-          })
-        })
-
-        if (response.ok) {
-          router.push(`/courses/${systemKey}`)
-        } else {
-          alert('取消项目失败')
-        }
-      } catch (error) {
-        console.error('Failed to cancel project:', error)
-        alert('取消项目失败，请重试')
-      }
+      // 显示取消确认对话框
+      setShowCancelConfirm(true)
     } else {
-      // 选择项目
-      try {
-        const response = await fetch('/api/pbl/select-project', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectId: project.id })
-        })
+      // 显示选择确认对话框
+      setShowSelectConfirm(true)
+    }
+  }
 
-        if (response.ok) {
-          router.refresh()
-        } else {
-          const error = await response.json()
-          alert(error.error || '选择项目失败')
-        }
-      } catch (error) {
-        console.error('Failed to select project:', error)
-        alert('选择项目失败，请重试')
+  // 确认取消项目
+  const confirmCancelProject = async () => {
+    setIsProcessing(true)
+    try {
+      const response = await fetch('/api/pbl/update-status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selectionId,
+          status: 'cancelled'
+        })
+      })
+
+      if (response.ok) {
+        setShowCancelConfirm(false)
+        setToast({
+          show: true,
+          message: '项目已取消',
+          type: 'success'
+        })
+        // 刷新当前页面，不跳转
+        router.refresh()
+      } else {
+        setToast({
+          show: true,
+          message: '取消项目失败，请重试',
+          type: 'error'
+        })
       }
+    } catch (error) {
+      console.error('Failed to cancel project:', error)
+      setToast({
+        show: true,
+        message: '取消项目失败，请重试',
+        type: 'error'
+      })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // 确认选择项目
+  const confirmSelectProject = async () => {
+    setIsProcessing(true)
+    try {
+      const response = await fetch('/api/pbl/select-project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: project.id })
+      })
+
+      if (response.ok) {
+        setShowSelectConfirm(false)
+        setToast({
+          show: true,
+          message: '项目选择成功！',
+          type: 'success'
+        })
+        router.refresh()
+      } else {
+        const error = await response.json()
+        setToast({
+          show: true,
+          message: error.error || '选择项目失败',
+          type: 'error'
+        })
+      }
+    } catch (error) {
+      console.error('Failed to select project:', error)
+      setToast({
+        show: true,
+        message: '选择项目失败，请重试',
+        type: 'error'
+      })
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -1516,6 +1571,41 @@ export function PBLProjectDetail({
           </div>
         </div>
       )}
+
+      {/* 选择项目确认对话框 */}
+      <ConfirmDialog
+        isOpen={showSelectConfirm}
+        onClose={() => setShowSelectConfirm(false)}
+        onConfirm={confirmSelectProject}
+        title="确认选择项目"
+        message={`确定要选择「${project.title}」这个项目吗？选择后，您将开始这个项目的学习之旅。`}
+        confirmText="确认选择"
+        cancelText="取消"
+        type="info"
+        loading={isProcessing}
+      />
+
+      {/* 取消项目确认对话框 */}
+      <ConfirmDialog
+        isOpen={showCancelConfirm}
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={confirmCancelProject}
+        title="确认取消项目"
+        message={`确定要取消「${project.title}」这个项目吗？您的学习进度将会保留。`}
+        confirmText="确认取消"
+        cancelText="不取消"
+        type="warning"
+        loading={isProcessing}
+      />
+
+      {/* Toast 通知 */}
+      <Toast
+        isOpen={toast.show}
+        onClose={() => setToast({ ...toast, show: false })}
+        message={toast.message}
+        type={toast.type}
+        duration={3000}
+      />
     </div>
   )
 }
