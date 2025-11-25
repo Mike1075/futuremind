@@ -1,0 +1,273 @@
+/**
+ * API工具函数 - 统一错误处理、响应格式、权限验证
+ */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { logger } from './logger'
+
+/**
+ * 统一的API响应格式
+ */
+export interface ApiResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: {
+    code: string
+    message: string
+    details?: any
+  }
+  pagination?: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+  }
+}
+
+/**
+ * 安全的错误响应（生产环境不泄露敏感信息）
+ */
+export function errorResponse(
+  message: string,
+  error?: Error | unknown,
+  statusCode: number = 500
+): NextResponse<ApiResponse> {
+  const isDev = process.env.NODE_ENV === 'development'
+
+  // 记录完整错误
+  logger.error(message, error)
+
+  // 生产环境返回通用错误
+  const response: ApiResponse = {
+    success: false,
+    error: {
+      code: `ERROR_${statusCode}`,
+      message: isDev && error instanceof Error
+        ? error.message
+        : message,
+      ...(isDev && error instanceof Error ? { details: error.stack } : {})
+    }
+  }
+
+  return NextResponse.json(response, { status: statusCode })
+}
+
+/**
+ * 成功响应
+ */
+export function successResponse<T>(
+  data: T,
+  pagination?: ApiResponse['pagination']
+): NextResponse<ApiResponse<T>> {
+  const response: ApiResponse<T> = {
+    success: true,
+    data,
+    ...(pagination ? { pagination } : {})
+  }
+
+  return NextResponse.json(response)
+}
+
+/**
+ * 权限验证中间件
+ */
+export async function requireAuth(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  if (error || !user) {
+    return {
+      authorized: false,
+      response: NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required'
+          }
+        },
+        { status: 401 }
+      )
+    }
+  }
+
+  return { authorized: true, user, supabase }
+}
+
+/**
+ * 角色验证中间件
+ */
+export async function requireRole(
+  req: NextRequest,
+  allowedRoles: string[]
+) {
+  const authResult = await requireAuth(req)
+
+  if (!authResult.authorized) {
+    return authResult
+  }
+
+  const { user, supabase } = authResult
+
+  // 查询用户角色
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (error) {
+    logger.error('Failed to fetch user profile', error)
+    return {
+      authorized: false,
+      response: errorResponse('Failed to verify user role', error, 500)
+    }
+  }
+
+  if (!profile || !allowedRoles.includes(profile.role)) {
+    logger.warn('Unauthorized access attempt', {
+      userId: user.id,
+      userRole: profile?.role,
+      requiredRoles: allowedRoles
+    })
+
+    return {
+      authorized: false,
+      response: NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Insufficient permissions'
+          }
+        },
+        { status: 403 }
+      )
+    }
+  }
+
+  return {
+    authorized: true,
+    user,
+    profile,
+    supabase
+  }
+}
+
+/**
+ * 请求参数验证
+ */
+export function validateParams(
+  params: Record<string, any>,
+  schema: Record<string, {
+    required?: boolean
+    type?: 'string' | 'number' | 'boolean' | 'array' | 'object'
+    maxLength?: number
+    minLength?: number
+    pattern?: RegExp
+  }>
+): { valid: boolean; errors?: string[]; response?: NextResponse } {
+  const errors: string[] = []
+
+  for (const [key, rules] of Object.entries(schema)) {
+    const value = params[key]
+
+    // 检查必填
+    if (rules.required && (value === undefined || value === null || value === '')) {
+      errors.push(`${key} is required`)
+      continue
+    }
+
+    // 如果不是必填且值为空，跳过其他检查
+    if (!rules.required && (value === undefined || value === null)) {
+      continue
+    }
+
+    // 检查类型
+    if (rules.type) {
+      const actualType = Array.isArray(value) ? 'array' : typeof value
+
+      if (actualType !== rules.type) {
+        errors.push(`${key} must be of type ${rules.type}`)
+      }
+    }
+
+    // 检查字符串长度
+    if (rules.type === 'string' && typeof value === 'string') {
+      if (rules.maxLength && value.length > rules.maxLength) {
+        errors.push(`${key} exceeds maximum length of ${rules.maxLength}`)
+      }
+
+      if (rules.minLength && value.length < rules.minLength) {
+        errors.push(`${key} must be at least ${rules.minLength} characters`)
+      }
+
+      if (rules.pattern && !rules.pattern.test(value)) {
+        errors.push(`${key} format is invalid`)
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return {
+      valid: false,
+      errors,
+      response: NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid request parameters',
+            details: errors
+          }
+        },
+        { status: 400 }
+      )
+    }
+  }
+
+  return { valid: true }
+}
+
+/**
+ * API路由包装器 - 统一错误处理
+ */
+export function withErrorHandling<T extends (...args: any[]) => Promise<NextResponse>>(
+  handler: T
+): T {
+  return (async (...args: any[]) => {
+    try {
+      return await handler(...args)
+    } catch (error) {
+      logger.error('Unhandled API error', error)
+      return errorResponse('Internal server error', error, 500)
+    }
+  }) as T
+}
+
+/**
+ * 白名单验证（防止SQL注入）
+ */
+export function validateSortField(
+  field: string,
+  allowedFields: string[]
+): { valid: boolean; response?: NextResponse } {
+  if (!allowedFields.includes(field)) {
+    return {
+      valid: false,
+      response: NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_SORT_FIELD',
+            message: `Invalid sort field. Allowed fields: ${allowedFields.join(', ')}`
+          }
+        },
+        { status: 400 }
+      )
+    }
+  }
+
+  return { valid: true }
+}
