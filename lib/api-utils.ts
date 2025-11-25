@@ -7,21 +7,25 @@ import { createClient } from '@/lib/supabase/server'
 import { logger } from './logger'
 
 /**
- * 统一的API响应格式
+ * DB-04: 统一的API响应格式
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
   error?: {
     code: string
     message: string
-    details?: any
+    details?: string[] | string
   }
   pagination?: {
     page: number
     pageSize: number
     total: number
     totalPages: number
+  }
+  meta?: {
+    timestamp: string
+    requestId?: string
   }
 }
 
@@ -70,11 +74,20 @@ export function successResponse<T>(
 }
 
 /**
+ * 用户类型
+ */
+interface AuthUser {
+  id: string
+  email?: string
+  [key: string]: unknown
+}
+
+/**
  * 权限验证中间件返回类型
  */
 type AuthResult =
   | { authorized: false; response: NextResponse }
-  | { authorized: true; user: any; supabase: Awaited<ReturnType<typeof createClient>> }
+  | { authorized: true; user: AuthUser; supabase: Awaited<ReturnType<typeof createClient>> }
 
 /**
  * 权限验证中间件
@@ -99,7 +112,22 @@ export async function requireAuth(req: NextRequest): Promise<AuthResult> {
     }
   }
 
-  return { authorized: true, user, supabase }
+  // DB-04: 将Supabase User转换为AuthUser（先展开再覆盖确保必需属性）
+  const authUser: AuthUser = {
+    ...user,
+    id: user.id,
+    email: user.email
+  }
+
+  return { authorized: true, user: authUser, supabase }
+}
+
+/**
+ * 用户Profile类型
+ */
+interface UserProfile {
+  role: string | null
+  [key: string]: unknown
 }
 
 /**
@@ -107,7 +135,7 @@ export async function requireAuth(req: NextRequest): Promise<AuthResult> {
  */
 type RoleAuthResult =
   | { authorized: false; response: NextResponse }
-  | { authorized: true; user: any; profile: any; supabase: Awaited<ReturnType<typeof createClient>> }
+  | { authorized: true; user: AuthUser; profile: UserProfile; supabase: Awaited<ReturnType<typeof createClient>> }
 
 /**
  * 角色验证中间件
@@ -170,17 +198,22 @@ export async function requireRole(
 }
 
 /**
+ * DB-04: 参数验证Schema类型
+ */
+interface ParamSchema {
+  required?: boolean
+  type?: 'string' | 'number' | 'boolean' | 'array' | 'object'
+  maxLength?: number
+  minLength?: number
+  pattern?: RegExp
+}
+
+/**
  * 请求参数验证
  */
 export function validateParams(
-  params: Record<string, any>,
-  schema: Record<string, {
-    required?: boolean
-    type?: 'string' | 'number' | 'boolean' | 'array' | 'object'
-    maxLength?: number
-    minLength?: number
-    pattern?: RegExp
-  }>
+  params: Record<string, unknown>,
+  schema: Record<string, ParamSchema>
 ): { valid: boolean; errors?: string[]; response?: NextResponse } {
   const errors: string[] = []
 
@@ -246,11 +279,12 @@ export function validateParams(
 
 /**
  * API路由包装器 - 统一错误处理
+ * DB-04: 使用泛型参数约束替代any
  */
-export function withErrorHandling<T extends (...args: any[]) => Promise<NextResponse>>(
+export function withErrorHandling<T extends (...args: unknown[]) => Promise<NextResponse>>(
   handler: T
 ): T {
-  return (async (...args: any[]) => {
+  return (async (...args: unknown[]) => {
     try {
       return await handler(...args)
     } catch (error) {
@@ -258,6 +292,30 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<NextResp
       return errorResponse('Internal server error', error, 500)
     }
   }) as T
+}
+
+/**
+ * DB-04: 列表响应辅助函数
+ */
+export function listResponse<T>(
+  items: T[],
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+  }
+): NextResponse<ApiResponse<T[]>> {
+  return NextResponse.json({
+    success: true,
+    data: items,
+    pagination: {
+      ...pagination,
+      totalPages: Math.ceil(pagination.total / pagination.pageSize)
+    },
+    meta: {
+      timestamp: new Date().toISOString()
+    }
+  })
 }
 
 /**
