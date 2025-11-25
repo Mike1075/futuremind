@@ -62,7 +62,10 @@ export async function POST(request: NextRequest) {
     const n8nStartTime = Date.now()
     const n8nResponse = await fetch(webhookUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
       body: JSON.stringify(n8nPayload)
     })
 
@@ -93,59 +96,129 @@ export async function POST(request: NextRequest) {
       throw new Error(`N8N webhook失败 (${n8nResponse.status}): ${errorText}`)
     }
 
-    const responseText = await n8nResponse.text()
-    console.log('[AIP Chat] N8N原始响应:', responseText.substring(0, 500))
+    // 🔥 创建流式响应并转发给前端
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = n8nResponse.body?.getReader()
+        const decoder = new TextDecoder()
+        let fullContent = ''
 
-    let n8nData
-    try {
-      n8nData = JSON.parse(responseText)
-      console.log('[AIP Chat] N8N解析后的数据:', JSON.stringify(n8nData, null, 2).substring(0, 500))
-    } catch (parseError) {
-      console.error('[AIP Chat] N8N响应JSON解析失败:', parseError)
-      console.error('[AIP Chat] 原始响应内容:', responseText)
-      throw new Error('N8N返回的不是有效的JSON格式')
-    }
+        if (!reader) {
+          controller.close()
+          return
+        }
 
-    // 提取AI响应 - 尝试多个可能的字段名
-    const aiResponse = n8nData.ai_content || n8nData.response || n8nData.output || n8nData.text || n8nData.message
-    console.log('[AIP Chat] AI响应内容:', aiResponse?.substring(0, 200))
+        try {
+          let firstChunkReceived = false
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
 
-    // 保存聊天记录到数据库
-    console.log('[AIP Chat] 开始保存聊天记录到数据库...')
-    const { error: dbError } = await supabase.from('chat_history').insert({
-      user_id: user.id,
-      content: chatInput,
-      role: 'user',
-      agent_type: 'member',  // 默认使用member类型
-      project_id: projectIdsArray[0] || null, // 使用第一个项目ID作为主项目
-      ai_content: aiResponse || JSON.stringify(n8nData),
-      metadata: {
-        organization_id,
-        project_ids: projectIdsArray, // 保存所有项目ID
-        project_count: projectIdsArray.length, // 保存项目数量
-        n8n_raw_response: n8nData
+            const chunk = decoder.decode(value, { stream: true })
+
+            // 解析每行JSON
+            const lines = chunk.split('\n').filter(line => line.trim())
+            for (const line of lines) {
+              try {
+                const json = JSON.parse(line)
+
+                // 处理type: "item"的流式数据
+                if (json.type === 'item' && json.content) {
+                  if (!firstChunkReceived) {
+                    console.log(`[AIP Chat] ⏱️  首个chunk到达: +${Date.now() - startTime}ms`)
+                    firstChunkReceived = true
+                  }
+
+                  const content = json.content
+
+                  // 尝试解析content
+                  try {
+                    const innerJson = JSON.parse(content)
+                    // 如果有output字段，使用完整回复
+                    if (innerJson.output) {
+                      fullContent = innerJson.output
+                    }
+                  } catch {
+                    // content是纯文本，累加
+                    fullContent += content
+                  }
+
+                  // 🔥 清理markdown格式：移除多余的星号
+                  const cleanedContent = fullContent
+                    .replace(/\*\*/g, '')  // 移除加粗标记 **
+                    .replace(/\*/g, '')    // 移除斜体标记 *
+
+                  // 🔥 实时发送给前端（流式输出）
+                  const streamData = JSON.stringify({
+                    type: 'chunk',
+                    content: cleanedContent,
+                    timestamp: new Date().toISOString()
+                  }) + '\n'
+
+                  controller.enqueue(new TextEncoder().encode(streamData))
+                }
+              } catch {
+                // 继续处理下一行
+              }
+            }
+          }
+
+          // 🔥 流结束后，保存到数据库
+          const finalReply = fullContent
+            .replace(/\*\*/g, '')
+            .replace(/\*/g, '')
+            .trim() || '抱歉，我现在无法回应。请稍后再试。'
+
+          console.log('[AIP Chat] AI响应内容:', finalReply.substring(0, 200))
+
+          // 保存聊天记录到数据库
+          console.log('[AIP Chat] 开始保存聊天记录到数据库...')
+          const { error: dbError } = await supabase.from('chat_history').insert({
+            user_id: user.id,
+            content: chatInput,
+            role: 'user',
+            agent_type: 'member',
+            project_id: projectIdsArray[0] || null,
+            ai_content: finalReply,
+            metadata: {
+              organization_id,
+              project_ids: projectIdsArray,
+              project_count: projectIdsArray.length
+            }
+          })
+
+          if (dbError) {
+            console.error('[AIP Chat] 保存聊天记录失败:', dbError)
+          } else {
+            console.log('[AIP Chat] 聊天记录保存成功')
+          }
+
+          const totalDuration = Date.now() - startTime
+          console.log('[AIP Chat] 总处理时间:', totalDuration, 'ms')
+
+          // 发送完成标记
+          const doneData = JSON.stringify({
+            type: 'done',
+            timestamp: new Date().toISOString()
+          }) + '\n'
+
+          controller.enqueue(new TextEncoder().encode(doneData))
+          controller.close()
+        } catch (error) {
+          console.error('[AIP Chat] Stream error:', error)
+          controller.error(error)
+        } finally {
+          reader.releaseLock()
+        }
       }
     })
 
-    if (dbError) {
-      console.error('[AIP Chat] 保存聊天记录失败:', dbError)
-      // 不阻断流程，继续返回响应
-    } else {
-      console.log('[AIP Chat] 聊天记录保存成功')
-    }
-
-    const totalDuration = Date.now() - startTime
-    console.log('[AIP Chat] 总处理时间:', totalDuration, 'ms')
-
-    const finalResponse = aiResponse || '收到您的消息，但AI未返回有效响应'
-    console.log('[AIP Chat] 返回给客户端的响应:', finalResponse.substring(0, 100))
-
-    return NextResponse.json({
-      response: finalResponse,
-      metadata: {
-        duration: totalDuration,
-        n8n_duration: n8nDuration,
-        timestamp: new Date().toISOString()
+    // 返回流式响应
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
       }
     })
   } catch (error: any) {

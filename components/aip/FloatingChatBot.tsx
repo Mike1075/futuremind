@@ -163,7 +163,7 @@ export function FloatingChatBot({
         selectedProjectsCount: selectedProjects.length
       })
 
-      // 调用N8N ChatBot API
+      // 调用流式API
       const response = await fetch('/api/aip/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -178,16 +178,118 @@ export function FloatingChatBot({
         throw new Error('AI响应失败')
       }
 
-      const data = await response.json()
+      // 🔥 流式读取响应
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
 
-      const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.response || '抱歉，我无法回答这个问题。',
-        timestamp: new Date()
+      if (!reader) {
+        throw new Error('No reader available')
       }
 
-      setMessages(prev => [...prev, aiMessage])
+      // 创建一个AI消息占位符
+      const assistantMessageId = (Date.now() + 1).toString()
+      setMessages(prev => [...prev, {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date()
+      }])
+
+      let buffer = ''
+      let fullAnswer = ''
+      let displayedAnswer = ''
+      let lastFullAnswerLength = 0
+
+      // 🔥 视觉缓冲队列：控制显示速度
+      let pendingChunks: string[] = []
+      let displayInterval: NodeJS.Timeout | null = null
+
+      // 启动显示定时器（每50ms显示3个字符）
+      const startDisplayTimer = () => {
+        if (displayInterval) return
+
+        displayInterval = setInterval(() => {
+          if (pendingChunks.length === 0) {
+            if (displayedAnswer === fullAnswer && fullAnswer.length > 0) {
+              if (displayInterval) {
+                clearInterval(displayInterval)
+                displayInterval = null
+              }
+            }
+            return
+          }
+
+          const chunkToDisplay = pendingChunks.shift() || ''
+          displayedAnswer += chunkToDisplay
+
+          setMessages(prev => prev.map(msg =>
+            msg.id === assistantMessageId
+              ? { ...msg, content: displayedAnswer }
+              : msg
+          ))
+        }, 50)
+      }
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          buffer += chunk
+
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            const trimmedLine = line.trim()
+            if (!trimmedLine) continue
+
+            try {
+              const json = JSON.parse(trimmedLine)
+
+              if (json.type === 'chunk') {
+                fullAnswer = json.content
+
+                // 计算新增内容
+                const newContent = fullAnswer.slice(lastFullAnswerLength)
+                lastFullAnswerLength = fullAnswer.length
+
+                // 每次显示3个字符
+                for (let i = 0; i < newContent.length; i += 3) {
+                  pendingChunks.push(newContent.slice(i, i + 3))
+                }
+
+                startDisplayTimer()
+              } else if (json.type === 'done') {
+                // 流式传输完成
+                console.log('[FloatingChatBot] 流式传输完成')
+              }
+            } catch {
+              // 忽略解析错误
+            }
+          }
+        }
+
+        // 确保所有内容都显示完毕
+        while (pendingChunks.length > 0 || displayedAnswer !== fullAnswer) {
+          await new Promise(resolve => setTimeout(resolve, 50))
+        }
+
+        if (displayInterval) {
+          clearInterval(displayInterval)
+        }
+
+        // 最终更新消息
+        setMessages(prev => prev.map(msg =>
+          msg.id === assistantMessageId
+            ? { ...msg, content: fullAnswer || '抱歉，我无法回答这个问题。' }
+            : msg
+        ))
+      } catch (error) {
+        console.error('[FloatingChatBot] Stream error:', error)
+        throw error
+      }
     } catch (err) {
       console.error('发送消息失败:', err)
 
