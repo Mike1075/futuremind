@@ -3,6 +3,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { z } from 'zod'
+
+// DB-06: 使用Zod进行请求验证
+const createDiscussionSchema = z.object({
+  course_content_id: z.string().uuid('无效的课程内容ID'),
+  content: z.string()
+    .min(5, '内容至少需要5个字符')
+    .max(2000, '内容不能超过2000个字符')
+    .transform(val => val.trim()),
+  parent_id: z.string().uuid('无效的父评论ID').optional().nullable()
+})
 
 /**
  * GET /api/discussions?course_content_id={id}&parent_id={id}
@@ -91,30 +102,15 @@ async function handlePost(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { course_content_id, content, parent_id = null } = body
 
-    // 验证必填字段
-    if (!course_content_id || !content?.trim()) {
-      return NextResponse.json(
-        { error: 'course_content_id and content are required' },
-        { status: 400 }
-      )
+    // DB-06: 使用Zod验证请求参数
+    const parseResult = createDiscussionSchema.safeParse(body)
+    if (!parseResult.success) {
+      const errorMessage = parseResult.error.errors[0]?.message || '请求参数无效'
+      return NextResponse.json({ error: errorMessage }, { status: 400 })
     }
 
-    // 内容长度限制
-    if (content.trim().length < 5) {
-      return NextResponse.json(
-        { error: 'Content must be at least 5 characters' },
-        { status: 400 }
-      )
-    }
-
-    if (content.trim().length > 2000) {
-      return NextResponse.json(
-        { error: 'Content must be less than 2000 characters' },
-        { status: 400 }
-      )
-    }
+    const { course_content_id, content, parent_id } = parseResult.data
 
     // 如果是回复，验证父评论是否存在
     if (parent_id) {

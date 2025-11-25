@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useCallback } from 'react'
 import {
   Folder,
   Lock,
@@ -32,7 +33,44 @@ interface ProjectGridProps {
   showCreatorBadge?: boolean  // 是否显示创建者徽章（针对自己创建的项目）
 }
 
-export function ProjectGrid({
+// PF-04: 将状态配置移到组件外部，避免每次渲染都重新创建
+const STATUS_CONFIG = {
+  active: {
+    label: '进行中',
+    icon: Clock,
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/20'
+  },
+  completed: {
+    label: '已完成',
+    icon: CheckCircle2,
+    color: 'text-blue-500',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20'
+  },
+  paused: {
+    label: '暂停',
+    icon: Pause,
+    color: 'text-yellow-500',
+    bg: 'bg-yellow-500/10',
+    border: 'border-yellow-500/20'
+  },
+  default: {
+    label: '计划中',
+    icon: AlertCircle,
+    color: 'text-gray-500',
+    bg: 'bg-gray-500/10',
+    border: 'border-gray-500/20'
+  }
+} as const
+
+const getStatusConfig = (status: string) => {
+  return STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.default
+}
+
+// PF-04: 使用memo包装组件，避免不必要的重新渲染
+export const ProjectGrid = memo(function ProjectGrid({
   projects,
   onProjectClick,
   onDeleteProject,
@@ -47,46 +85,10 @@ export function ProjectGrid({
   showCreatorBadge = false,
 }: ProjectGridProps) {
 
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'active':
-        return {
-          label: '进行中',
-          icon: Clock,
-          color: 'text-emerald-500',
-          bg: 'bg-emerald-500/10',
-          border: 'border-emerald-500/20'
-        }
-      case 'completed':
-        return {
-          label: '已完成',
-          icon: CheckCircle2,
-          color: 'text-blue-500',
-          bg: 'bg-blue-500/10',
-          border: 'border-blue-500/20'
-        }
-      case 'paused':
-        return {
-          label: '暂停',
-          icon: Pause,
-          color: 'text-yellow-500',
-          bg: 'bg-yellow-500/10',
-          border: 'border-yellow-500/20'
-        }
-      default:
-        return {
-          label: '计划中',
-          icon: AlertCircle,
-          color: 'text-gray-500',
-          bg: 'bg-gray-500/10',
-          border: 'border-gray-500/20'
-        }
-    }
-  }
-
-  const canEdit = (projectId: string) => {
+  // PF-04: 使用useCallback优化canEdit函数
+  const canEdit = useCallback((projectId: string) => {
     return userProjectPermissions[projectId] === 'owner' || userProjectPermissions[projectId] === 'manager'
-  }
+  }, [userProjectPermissions])
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -284,4 +286,4 @@ export function ProjectGrid({
       })}
     </div>
   )
-}
+})

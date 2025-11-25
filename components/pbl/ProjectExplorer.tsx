@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useDeferredValue } from 'react'
 import { PBLProject } from '@/lib/pbl-data'
 import { pblDataService } from '@/lib/pbl-real-data'
 import { ProjectCard } from './ProjectCard'
@@ -30,6 +30,8 @@ export function ProjectExplorer({ onProjectSelect }: ProjectExplorerProps) {
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState('')
+  // PF-11: 使用useDeferredValue实现搜索防抖，避免每次按键都触发过滤
+  const deferredSearchQuery = useDeferredValue(searchQuery)
   const [showFilters, setShowFilters] = useState(false)
   const [showCreateProject, setShowCreateProject] = useState(false)
 
@@ -82,13 +84,13 @@ export function ProjectExplorer({ onProjectSelect }: ProjectExplorerProps) {
     }
   }
 
-  // 筛选和排序逻辑
+  // 筛选和排序逻辑（使用deferredSearchQuery实现防抖）
   const filteredProjects = useMemo(() => {
     let result = [...projects]
 
-    // 搜索过滤
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+    // 搜索过滤（使用延迟值，避免频繁过滤）
+    if (deferredSearchQuery) {
+      const query = deferredSearchQuery.toLowerCase()
       result = result.filter(p =>
         p.title.toLowerCase().includes(query) ||
         p.description.toLowerCase().includes(query) ||
@@ -138,7 +140,7 @@ export function ProjectExplorer({ onProjectSelect }: ProjectExplorerProps) {
     }
 
     return result
-  }, [projects, searchQuery, selectedCategory, selectedDifficulty, selectedStatus, selectedStage, sortBy])
+  }, [projects, deferredSearchQuery, selectedCategory, selectedDifficulty, selectedStatus, selectedStage, sortBy])
 
   // 按年龄阶段分组
   const groupedProjects = useMemo(() => {
