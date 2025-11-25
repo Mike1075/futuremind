@@ -13,9 +13,12 @@ const envSchema = z.object({
   // Google Gemini AI配置
   GEMINI_API_KEY: z.string().min(1, 'Gemini API密钥不能为空').optional(),
 
-  // N8N Webhook配置
+  // N8N Webhook配置 (SEC-03: 所有N8N URL必须通过环境变量配置，不允许硬编码)
   N8N_CHAT_WEBHOOK_URL: z.string().url('N8N聊天Webhook URL必须是有效的URL').optional(),
   N8N_UPLOAD_WEBHOOK_URL: z.string().url('N8N上传Webhook URL必须是有效的URL').optional(),
+  N8N_GAIA_KB_WEBHOOK_URL: z.string().url('N8N盖亚知识库Webhook URL必须是有效的URL').optional(),
+  N8N_AIP_UPLOAD_WEBHOOK_URL: z.string().url('N8N AIP上传Webhook URL必须是有效的URL').optional(),
+  N8N_AIP_CHAT_WEBHOOK_URL: z.string().url('N8N AIP聊天Webhook URL必须是有效的URL').optional(),
 
   // Next.js配置
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

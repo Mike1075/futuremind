@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
+    // SEC-03: 不使用硬编码URL，必须通过环境变量配置
     const N8N_CHAT_WEBHOOK = process.env.N8N_CHAT_WEBHOOK_URL
-      || 'https://n8n.aifunbox.com/webhook/79cbcc7c-fcff-4ab4-9a4e-c5a6f14b3024'
+    if (!N8N_CHAT_WEBHOOK) {
+      logger.error('[N8N Chat] N8N_CHAT_WEBHOOK_URL环境变量未配置')
+      return NextResponse.json({ error: 'Service configuration error' }, { status: 503 })
+    }
 
     // 获取登录用户（失败不阻塞，以便未登录也可体验对话）
     let userId: string | null = null
@@ -43,8 +48,8 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       const errorText = await res.text()
-      console.error('[N8N Chat] 错误响应:', errorText)
-      return NextResponse.json({ error: 'N8N_CHAT_FAILED', status: res.status, body: errorText }, { status: 502 })
+      logger.error('[N8N Chat] 错误响应', { status: res.status })
+      return NextResponse.json({ error: 'N8N_CHAT_FAILED' }, { status: 502 })
     }
 
     // 🔥 创建真正的流式响应 - 边读边发送，不等待完整内容
@@ -113,7 +118,7 @@ export async function POST(req: NextRequest) {
           controller.enqueue(new TextEncoder().encode(doneData))
           controller.close()
         } catch (error) {
-          console.error('[N8N Chat] Stream error:', error)
+          logger.error('[N8N Chat] Stream error', error)
           controller.error(error)
         } finally {
           reader.releaseLock()

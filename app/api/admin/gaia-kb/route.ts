@@ -185,8 +185,12 @@ export async function POST(request: Request) {
 
     logger.debug('[盖亚知识库] 已保存到数据库', { document_id: newDoc.id, course_id: courseId })
 
-    // 异步上传到N8N（不等待结果，让N8N在后台处理）
-    const webhookUrl = 'https://n8n.aifunbox.com/webhook/fca634ab-8e03-4a6f-99f3-c7dc46e772ae'
+    // SEC-03: N8N webhook URL必须通过环境变量配置
+    const webhookUrl = process.env.N8N_GAIA_KB_WEBHOOK_URL
+    if (!webhookUrl) {
+      logger.error('[盖亚知识库] N8N_GAIA_KB_WEBHOOK_URL环境变量未配置')
+      return NextResponse.json({ error: '服务配置错误' }, { status: 503 })
+    }
     const n8nFormData = new FormData()
 
     // 🔧 修复：根据文件扩展名设置正确的MIME类型
@@ -396,9 +400,7 @@ export async function DELETE(request: Request) {
     })
   } catch (error: any) {
     logger.error('[后端DELETE] 删除失败', error)
-    return NextResponse.json({
-      error: error?.message || '删除失败',
-      details: error?.toString()
-    }, { status: 500 })
+    // SEC-01: 不暴露错误详情
+    return NextResponse.json({ error: '删除失败' }, { status: 500 })
   }
 }
