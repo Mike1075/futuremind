@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const UpdateVideoLinkSchema = z.object({
   title: z.string().min(1).optional(),
@@ -12,13 +13,13 @@ const UpdateVideoLinkSchema = z.object({
   item_id: z.string().uuid().optional(),
 })
 
-function err(status: number, message: string) {
-  return NextResponse.json({ error: { code: status, message } }, { status })
-}
-
-function getErrorMessage(e: unknown): string {
-  if (e instanceof Error) return e.message
-  try { return JSON.stringify(e) } catch { return String(e) }
+// SEC-01: 不在生产环境暴露错误详情
+function err(status: number, message: string, internalError?: unknown) {
+  if (internalError) {
+    logger.error(`[CMS video-links/id] ${message}`, internalError)
+  }
+  const safeMessage = status >= 500 ? 'Internal server error' : message
+  return NextResponse.json({ error: { code: status, message: safeMessage } }, { status })
 }
 
 export async function GET(
@@ -48,7 +49,7 @@ export async function GET(
       .single()
 
     if (error) {
-      return err(500, error.message)
+      return err(500, 'Failed to fetch video link', error)
     }
 
     if (!videoLink) {
@@ -57,7 +58,7 @@ export async function GET(
 
     return NextResponse.json({ data: videoLink })
   } catch (e: unknown) {
-    return err(500, getErrorMessage(e))
+    return err(500, 'Internal server error', e)
   }
 }
 
@@ -106,7 +107,7 @@ export async function PUT(
       .single()
 
     if (error) {
-      return err(500, error.message)
+      return err(500, 'Failed to update video link', error)
     }
 
     if (!videoLink) {
@@ -115,7 +116,7 @@ export async function PUT(
 
     return NextResponse.json({ data: videoLink })
   } catch (e: unknown) {
-    return err(500, getErrorMessage(e))
+    return err(500, 'Internal server error', e)
   }
 }
 
@@ -151,7 +152,7 @@ export async function DELETE(
       .eq('id', params.id)
 
     if (deleteError) {
-      return err(500, deleteError.message)
+      return err(500, 'Failed to delete video link', deleteError)
     }
 
     return NextResponse.json({
@@ -159,6 +160,6 @@ export async function DELETE(
       deleted_video_link: existingVideoLink,
     })
   } catch (e: unknown) {
-    return err(500, getErrorMessage(e))
+    return err(500, 'Internal server error', e)
   }
 }

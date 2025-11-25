@@ -5,6 +5,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // POST - 添加学员到分组
 export async function POST(
@@ -68,9 +69,9 @@ export async function POST(
     return NextResponse.json({ success: true })
 
   } catch (error: any) {
-    console.error('[API Error] POST /api/admin/groups/[id]/members:', error)
+    logger.error('[API] POST /api/admin/groups/[id]/members失败', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -136,9 +137,9 @@ export async function DELETE(
     return NextResponse.json({ success: true })
 
   } catch (error: any) {
-    console.error('[API Error] DELETE /api/admin/groups/[id]/members:', error)
+    logger.error('[API] DELETE /api/admin/groups/[id]/members失败', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

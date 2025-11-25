@@ -5,6 +5,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 export async function GET(
   request: Request,
@@ -198,9 +199,9 @@ export async function GET(
     })
 
   } catch (error: any) {
-    console.error(`[API Error] /api/admin/students/${params.id}:`, error)
+    logger.error('[API] GET /api/admin/students/[id]失败', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

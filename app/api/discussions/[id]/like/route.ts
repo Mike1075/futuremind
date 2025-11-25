@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/discussions/[id]/like
@@ -74,8 +75,8 @@ export async function POST(
           { status: 400 }
         )
       }
-      console.error('[Discussions API] Error adding like:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('[Discussions API] Error adding like', error)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     // 获取更新后的点赞数
@@ -90,7 +91,7 @@ export async function POST(
       likes_count: updatedDiscussion?.likes_count || 0,
     })
   } catch (error) {
-    console.error('[Discussions API] Unexpected error:', error)
+    logger.error('[Discussions API] POST like unexpected error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -126,8 +127,8 @@ export async function DELETE(
       .eq('user_id', user.id)
 
     if (error) {
-      console.error('[Discussions API] Error removing like:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('[Discussions API] Error removing like', error)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     // 获取更新后的点赞数
@@ -142,7 +143,7 @@ export async function DELETE(
       likes_count: updatedDiscussion?.likes_count || 0,
     })
   } catch (error) {
-    console.error('[Discussions API] Unexpected error:', error)
+    logger.error('[Discussions API] DELETE like unexpected error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

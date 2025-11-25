@@ -5,6 +5,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // GET - 获取分组详情
 export async function GET(
@@ -69,7 +70,7 @@ export async function GET(
         .order('composite_score', { ascending: false })
 
       if (studentsError) {
-        console.error('Error fetching students:', studentsError)
+        logger.error('Error fetching students', studentsError)
       } else {
         students = data || []
         studentCount = students.length
@@ -105,9 +106,9 @@ export async function GET(
     })
 
   } catch (error: any) {
-    console.error(`[API Error] /api/admin/groups/${params.id}:`, error)
+    logger.error('[API] GET /api/admin/groups/[id]失败', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -180,9 +181,9 @@ export async function PUT(
     })
 
   } catch (error: any) {
-    console.error(`[API Error] PUT /api/admin/groups/${params.id}:`, error)
+    logger.error('[API] PUT /api/admin/groups/[id]失败', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -249,9 +250,9 @@ export async function DELETE(
     return NextResponse.json({ success: true })
 
   } catch (error: any) {
-    console.error(`[API Error] DELETE /api/admin/groups/${params.id}:`, error)
+    logger.error('[API] DELETE /api/admin/groups/[id]失败', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

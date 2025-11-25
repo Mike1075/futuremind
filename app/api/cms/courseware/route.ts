@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const CoursewareSchema = z.object({
   title: z.string().min(1),
@@ -12,13 +13,13 @@ const CoursewareSchema = z.object({
   file_type: z.enum(['pdf', 'doc', 'ppt', 'txt', 'other']).default('other'),
 })
 
-function err(status: number, message: string) {
-  return NextResponse.json({ error: { code: status, message } }, { status })
-}
-
-function getErrorMessage(e: unknown): string {
-  if (e instanceof Error) return e.message
-  try { return JSON.stringify(e) } catch { return String(e) }
+// SEC-01: 不在生产环境暴露错误详情
+function err(status: number, message: string, internalError?: unknown) {
+  if (internalError) {
+    logger.error(`[CMS courseware] ${message}`, internalError)
+  }
+  const safeMessage = status >= 500 ? 'Internal server error' : message
+  return NextResponse.json({ error: { code: status, message: safeMessage } }, { status })
 }
 
 export async function GET(req: NextRequest) {
@@ -51,12 +52,12 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query
 
     if (error) {
-      return err(500, error.message)
+      return err(500, 'Failed to fetch courseware', error)
     }
 
     return NextResponse.json({ data: data || [] })
   } catch (e: unknown) {
-    return err(500, getErrorMessage(e))
+    return err(500, 'Internal server error', e)
   }
 }
 
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error) {
-      return err(500, error.message)
+      return err(500, 'Failed to create courseware', error)
     }
 
     // Fire N8N webhook if configured
@@ -132,6 +133,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ data: courseware }, { status: 201 })
   } catch (e: unknown) {
-    return err(500, getErrorMessage(e))
+    return err(500, 'Internal server error', e)
   }
 }

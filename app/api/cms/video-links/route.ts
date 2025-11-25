@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const VideoLinkSchema = z.object({
   title: z.string().min(1),
@@ -12,13 +13,14 @@ const VideoLinkSchema = z.object({
   item_id: z.string().uuid().optional(),
 })
 
-function err(status: number, message: string) {
-  return NextResponse.json({ error: { code: status, message } }, { status })
-}
-
-function getErrorMessage(e: unknown): string {
-  if (e instanceof Error) return e.message
-  try { return JSON.stringify(e) } catch { return String(e) }
+// SEC-01: 不在生产环境暴露错误详情
+function err(status: number, message: string, internalError?: unknown) {
+  if (internalError) {
+    logger.error(`[CMS video-links] ${message}`, internalError)
+  }
+  // 对外只返回通用错误信息
+  const safeMessage = status >= 500 ? 'Internal server error' : message
+  return NextResponse.json({ error: { code: status, message: safeMessage } }, { status })
 }
 
 export async function GET(req: NextRequest) {
@@ -51,12 +53,12 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query
 
     if (error) {
-      return err(500, error.message)
+      return err(500, 'Failed to fetch video links', error)
     }
 
     return NextResponse.json({ data: data || [] })
   } catch (e: unknown) {
-    return err(500, getErrorMessage(e))
+    return err(500, 'Internal server error', e)
   }
 }
 
@@ -109,7 +111,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error) {
-      return err(500, error.message)
+      return err(500, 'Failed to create video link', error)
     }
 
     // Fire N8N webhook if configured
@@ -131,6 +133,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ data: videoLink }, { status: 201 })
   } catch (e: unknown) {
-    return err(500, getErrorMessage(e))
+    return err(500, 'Internal server error', e)
   }
 }

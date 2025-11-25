@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClient } from '@/lib/supabase'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const UpdateItemSchema = z.object({
   module_id: z.string().uuid().optional(),
@@ -11,13 +12,13 @@ const UpdateItemSchema = z.object({
   default_locale: z.string().optional(),
 })
 
-function err(status: number, message: string) {
-  return NextResponse.json({ error: { code: status, message } }, { status })
-}
-
-function getErrorMessage(e: unknown): string {
-  if (e instanceof Error) return e.message
-  try { return JSON.stringify(e) } catch { return String(e) }
+// SEC-01: 不在生产环境暴露错误详情
+function err(status: number, message: string, internalError?: unknown) {
+  if (internalError) {
+    logger.error(`[CMS items/id] ${message}`, internalError)
+  }
+  const safeMessage = status >= 500 ? 'Internal server error' : message
+  return NextResponse.json({ error: { code: status, message: safeMessage } }, { status })
 }
 
 export async function GET(
@@ -42,7 +43,7 @@ export async function GET(
       .single()
 
     if (error) {
-      return err(500, error.message)
+      return err(500, 'Failed to fetch item', error)
     }
 
     if (!item) {
@@ -51,7 +52,7 @@ export async function GET(
 
     return NextResponse.json({ data: item })
   } catch (e: unknown) {
-    return err(500, getErrorMessage(e))
+    return err(500, 'Internal server error', e)
   }
 }
 
@@ -95,7 +96,7 @@ export async function PUT(
       .single()
 
     if (error) {
-      return err(500, error.message)
+      return err(500, 'Failed to update item', error)
     }
 
     if (!item) {
@@ -104,7 +105,7 @@ export async function PUT(
 
     return NextResponse.json({ data: item })
   } catch (e: unknown) {
-    return err(500, getErrorMessage(e))
+    return err(500, 'Internal server error', e)
   }
 }
 
@@ -140,7 +141,7 @@ export async function DELETE(
       .eq('id', id)
 
     if (deleteError) {
-      return err(500, deleteError.message)
+      return err(500, 'Failed to delete item', deleteError)
     }
 
     return NextResponse.json({
@@ -148,6 +149,6 @@ export async function DELETE(
       deleted_item: existingItem
     })
   } catch (e: unknown) {
-    return err(500, getErrorMessage(e))
+    return err(500, 'Internal server error', e)
   }
 }

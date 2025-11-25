@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 // ✅ 性能优化：启用60秒缓存，PBL项目列表不需要实时更新
 export const revalidate = 60
@@ -73,8 +74,8 @@ export async function GET(request: NextRequest) {
     const { data: projects, error } = (await query) as any
 
     if (error) {
-      console.error('[API Error] Failed to fetch public projects:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('[PBL] Failed to fetch public projects', error)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     // 获取每个项目的参与人数
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
       total: projectsWithStats?.length || 0
     })
   } catch (error) {
-    console.error('[API Error] Internal error in public-projects:', error)
+    logger.error('[PBL] Internal error in public-projects', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

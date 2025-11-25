@@ -14,13 +14,13 @@ export async function GET() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      logger.error('Error fetching projects:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('Error fetching projects', error)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     return NextResponse.json({ projects })
   } catch (error) {
-    logger.error('API Error:', error)
+    logger.error('[PBL] GET projects error', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -69,13 +69,13 @@ async function handleCreateProject(request: NextRequest) {
       .single()
 
     if (error) {
-      logger.error('Error creating project:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('[PBL] Error creating project', error)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     return NextResponse.json({ project }, { status: 201 })
   } catch (error) {
-    logger.error('API Error:', error)
+    logger.error('[PBL] POST project error', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

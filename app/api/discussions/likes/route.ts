@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/discussions/likes?discussion_ids=id1,id2,id3
@@ -42,8 +43,8 @@ export async function GET(request: NextRequest) {
       .in('discussion_id', discussionIds)
 
     if (error) {
-      console.error('[Discussions API] Error fetching likes:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('[Discussions API] Error fetching likes', error)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     // 构建返回对象 { discussion_id: true/false }
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ likes })
   } catch (error) {
-    console.error('[Discussions API] Unexpected error:', error)
+    logger.error('[Discussions API] Unexpected error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

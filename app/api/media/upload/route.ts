@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
 import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 // DB-14: 允许的文件类型白名单
 const ALLOWED_MIME_TYPES = [
@@ -67,8 +68,8 @@ async function handleUpload(request: NextRequest) {
       })
 
     if (uploadError) {
-      console.error('Upload error:', uploadError)
-      return NextResponse.json({ error: uploadError.message }, { status: 500 })
+      logger.error('[Media] Upload error', uploadError)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     // Get public URL
@@ -100,10 +101,10 @@ async function handleUpload(request: NextRequest) {
       .single()
 
     if (dbError) {
-      console.error('Database error:', dbError)
+      logger.error('[Media] Database error', dbError)
       // Try to clean up uploaded file
       await admin.storage.from('media').remove([filePath])
-      return NextResponse.json({ error: dbError.message }, { status: 500 })
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     // Fire N8N webhook if configured
@@ -131,7 +132,7 @@ async function handleUpload(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('API Error:', error)
+    logger.error('[Media] Upload handler error', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -149,13 +150,13 @@ export async function GET() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching media assets:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      logger.error('[Media] Error fetching media assets', error)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     return NextResponse.json({ assets })
   } catch (error) {
-    console.error('API Error:', error)
+    logger.error('[Media] GET handler error', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
