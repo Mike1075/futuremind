@@ -34,7 +34,9 @@ async function handleGetStudents(request: NextRequest) {
     const { searchParams } = new URL(request.url)
 
     // 2. Parse and validate query parameters
-    const search = searchParams.get('search') || ''
+    // SEC-07: 限制搜索参数长度（防止DoS攻击）
+    const searchRaw = searchParams.get('search') || ''
+    const search = searchRaw.slice(0, 100)
     const levelFilter = searchParams.get('level') || ''
     const sortByParam = searchParams.get('sortBy') || 'composite_score'
     const sortOrderParam = searchParams.get('sortOrder') || 'desc'

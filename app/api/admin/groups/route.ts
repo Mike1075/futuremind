@@ -29,7 +29,9 @@ export async function GET(request: Request) {
     }
 
     // 2. 获取查询参数
-    const search = searchParams.get('search') || ''
+    // SEC-07: 限制搜索参数长度（防止DoS攻击）
+    const searchRaw = searchParams.get('search') || ''
+    const search = searchRaw.slice(0, 100)
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 

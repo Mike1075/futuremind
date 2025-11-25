@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import OpenAI from 'openai'
+import { logger } from '@/lib/logger'
 
 // 延迟初始化OpenAI客户端，避免构建时出错
 function getOpenAI() {
@@ -12,7 +13,7 @@ function getOpenAI() {
       throw new Error('OPENAI_API_KEY is not configured')
     }
     // 开发环境允许使用dummy key（但会失败）
-    console.warn('[Insights] Using dummy OpenAI API key in development')
+    logger.warn('[Insights] Using dummy OpenAI API key in development')
   }
 
   return new OpenAI({
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { days = 30, min_depth_score = 60 } = body
 
-    console.log(`🌿 开始提取洞见：user_id=${user.id}, 分析${days}天内的对话`)
+    logger.debug(`开始提取洞见：user_id=${user.id}, 分析${days}天内的对话`)
 
     // 1. 获取最近N天的Gaia对话
     const startDate = new Date()
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log(`📊 找到 ${messages.length} 条Gaia对话`)
+    logger.debug(`找到 ${messages.length} 条Gaia对话`)
 
     // 2. 格式化对话内容供AI分析
     const conversationText = messages
@@ -144,8 +145,8 @@ ${conversationText.slice(0, 12000)} // 限制长度避免超过token限制
     try {
       extractedInsights = JSON.parse(cleanedResponse)
     } catch (parseError) {
-      console.error('解析AI响应失败:', parseError)
-      console.error('AI响应:', aiResponse)
+      logger.error('解析AI响应失败:', parseError)
+      logger.error('AI响应:', aiResponse)
       throw new Error('AI响应格式错误')
     }
 
@@ -154,7 +155,7 @@ ${conversationText.slice(0, 12000)} // 限制长度避免超过token限制
       (insight: any) => insight.depth_score >= min_depth_score
     )
 
-    console.log(`✨ 提取到 ${qualityInsights.length} 条高质量洞见`)
+    logger.info(`提取到 ${qualityInsights.length} 条高质量洞见`)
 
     // 5. 保存洞见到数据库
     const savedInsights = []
@@ -220,7 +221,7 @@ ${conversationText.slice(0, 12000)} // 限制长度避免超过token限制
       message: `成功提取 ${savedInsights.length} 条洞见`,
     })
   } catch (error: any) {
-    console.error('❌ 提取洞见失败:', error)
+    logger.error('提取洞见失败:', error)
     return NextResponse.json(
       { error: process.env.NODE_ENV === 'development' ? `服务器错误: ${error.message}` : '服务器错误' },
       { status: 500 }
@@ -277,7 +278,7 @@ export async function GET(request: NextRequest) {
       total: insights?.length || 0,
     })
   } catch (error: any) {
-    console.error('获取洞见失败:', error)
+    logger.error('获取洞见失败:', error)
     return NextResponse.json(
       { error: process.env.NODE_ENV === 'development' ? `服务器错误: ${error.message}` : '服务器错误' },
       { status: 500 }

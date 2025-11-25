@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 /**
  * 登录时触发总结和意识树计算
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     // 调用 summarize-user-activity Edge Function
-    console.log(`[触发总结] 用户 ${user.id} - 开始生成新总结`)
+    logger.debug(`[触发总结] 用户 ${user.id} - 开始生成新总结`)
 
     const summaryResponse = await fetch(
       `${supabaseUrl}/functions/v1/summarize-user-activity`,
@@ -71,15 +72,15 @@ export async function POST(request: Request) {
 
     if (!summaryResponse.ok) {
       const errorText = await summaryResponse.text()
-      console.error('[总结失败]', errorText)
+      logger.error('[总结失败]', errorText)
       throw new Error(`总结生成失败: ${summaryResponse.status}`)
     }
 
     const summaryResult = await summaryResponse.json()
-    console.log('[总结成功]', summaryResult)
+    logger.info('[总结成功]', summaryResult)
 
     // 调用 evaluate-and-grow-tree Edge Function
-    console.log(`[触发计算] 用户 ${user.id} - 开始计算意识树`)
+    logger.debug(`[触发计算] 用户 ${user.id} - 开始计算意识树`)
 
     const treeResponse = await fetch(
       `${supabaseUrl}/functions/v1/evaluate-and-grow-tree`,
@@ -95,12 +96,12 @@ export async function POST(request: Request) {
 
     if (!treeResponse.ok) {
       const errorText = await treeResponse.text()
-      console.error('[计算失败]', errorText)
+      logger.error('[计算失败]', errorText)
       throw new Error(`意识树计算失败: ${treeResponse.status}`)
     }
 
     const treeResult = await treeResponse.json()
-    console.log('[计算成功]', treeResult)
+    logger.info('[计算成功]', treeResult)
 
     return NextResponse.json({
       success: true,
@@ -110,7 +111,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('[API错误]', error)
+    logger.error('[API错误]', error)
     return NextResponse.json(
       { error: process.env.NODE_ENV === 'development' ? (error.message || 'Internal server error') : 'Internal server error' },
       { status: 500 }

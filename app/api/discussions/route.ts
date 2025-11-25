@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/discussions?course_content_id={id}&parent_id={id}
@@ -58,13 +59,13 @@ export async function GET(request: NextRequest) {
     const { data: discussions, error } = await query
 
     if (error) {
-      console.error('[Discussions API] Error fetching discussions:', error)
+      logger.error('[Discussions API] Error fetching discussions:', error)
       return NextResponse.json({ error: 'Failed to fetch discussions' }, { status: 500 })
     }
 
     return NextResponse.json({ discussions })
   } catch (error) {
-    console.error('[Discussions API] Unexpected error:', error)
+    logger.error('[Discussions API] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -150,13 +151,13 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('[Discussions API] Error creating discussion:', error)
+      logger.error('[Discussions API] Error creating discussion:', error)
       return NextResponse.json({ error: 'Failed to create discussion' }, { status: 500 })
     }
 
     return NextResponse.json({ discussion }, { status: 201 })
   } catch (error) {
-    console.error('[Discussions API] Unexpected error:', error)
+    logger.error('[Discussions API] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

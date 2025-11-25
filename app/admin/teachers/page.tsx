@@ -66,6 +66,11 @@ export default function TeachersPage() {
         }
       })
 
+      if (!response.ok) {
+        console.error('[加载教师] 网络错误:', response.status)
+        return
+      }
+
       const data = await response.json()
 
       if (data.error) {
@@ -95,6 +100,11 @@ export default function TeachersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: newTeacherEmail.trim() })
       })
+
+      if (!response.ok) {
+        alert(`❌ 添加失败 (${response.status})`)
+        return
+      }
 
       const data = await response.json()
 

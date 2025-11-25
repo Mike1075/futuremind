@@ -1,13 +1,14 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
     const admin = getAdminClient()
     const body = await request.json()
 
-    console.log('📥 收到文本文件webhook:', body)
+    logger.debug('收到文本文件webhook:', body)
 
     const {
       filename,
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
-      console.error('Storage upload error:', uploadError)
+      logger.error('Storage upload error:', uploadError)
       return NextResponse.json({
         error: 'Failed to upload to storage: ' + uploadError.message
       }, { status: 500 })
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (dbError) {
-      console.error('Database error:', dbError)
+      logger.error('Database error:', dbError)
       // 清理已上传的文件
       await admin.storage.from('media').remove([storagePath])
       return NextResponse.json({
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('✅ 文本文件处理成功:', {
+    logger.info('文本文件处理成功:', {
       filename,
       asset_id: assetData.id,
       url: urlData.publicUrl,
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Webhook processing error:', error)
+    logger.error('Webhook processing error:', error)
     return NextResponse.json({
       error: process.env.NODE_ENV === 'development'
         ? 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error')

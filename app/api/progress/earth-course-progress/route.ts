@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { InteractionService } from '@/lib/services/interaction.service'
+import { logger } from '@/lib/logger'
 
 // ✅ 性能优化：启用30秒缓存，避免重复计算进度
 // 地球课程进度计算涉及大量数据库查询（约50次），缓存可大幅提升速度
@@ -16,7 +17,7 @@ export const revalidate = 30
  */
 export async function GET(req: NextRequest) {
   const startTime = performance.now()
-  console.log('[Earth Course Progress] 🚀 开始计算进度')
+  logger.debug('Earth course progress calculation started')
 
   try {
     const supabase = await createClient()
@@ -52,9 +53,9 @@ export async function GET(req: NextRequest) {
       .eq('is_published', true)
       .order('stage_number', { ascending: true })
 
-    console.log('[Earth Course Progress] ✅ 查询1完成：所有阶段', {
-      耗时: `${(performance.now() - query1Start).toFixed(0)}ms`,
-      阶段数: stages?.length || 0
+    logger.debug('Query 1 complete: all stages', {
+      duration: `${(performance.now() - query1Start).toFixed(0)}ms`,
+      stageCount: stages?.length || 0
     })
 
     if (stagesError || !stages || stages.length === 0) {
@@ -70,13 +71,13 @@ export async function GET(req: NextRequest) {
       .in('stage_id', stageIds)
       .eq('is_published', true)
 
-    console.log('[Earth Course Progress] ✅ 查询2完成：所有内容', {
-      耗时: `${(performance.now() - query2Start).toFixed(0)}ms`,
-      内容数: allContents?.length || 0
+    logger.debug('Query 2 complete: all contents', {
+      duration: `${(performance.now() - query2Start).toFixed(0)}ms`,
+      contentCount: allContents?.length || 0
     })
 
     if (contentsError) {
-      console.error('[Earth Course Progress] 内容查询失败:', contentsError)
+      logger.error('Content query failed', contentsError)
       return NextResponse.json({ progress: 0 })
     }
 
@@ -101,13 +102,13 @@ export async function GET(req: NextRequest) {
       .eq('user_id', userId)
       .in('content_id', allContentIds)
 
-    console.log('[Earth Course Progress] ✅ 查询3完成：批量互动记录', {
-      耗时: `${(performance.now() - query3Start).toFixed(0)}ms`,
-      记录数: allInteractions?.length || 0
+    logger.debug('Query 3 complete: batch interactions', {
+      duration: `${(performance.now() - query3Start).toFixed(0)}ms`,
+      recordCount: allInteractions?.length || 0
     })
 
     if (interactionsError) {
-      console.error('[Earth Course Progress] 互动记录查询失败:', interactionsError)
+      logger.error('Interactions query failed', interactionsError)
     }
 
     // 按 contentId 分组互动记录（在内存中处理，超快）
@@ -164,15 +165,14 @@ export async function GET(req: NextRequest) {
     const progress = Math.round(totalStageProgress / stages.length)
 
     const totalTime = performance.now() - startTime
-    console.log('[Earth Course Progress] 🎉 计算完成', {
-      总耗时: `${totalTime.toFixed(0)}ms`,
-      进度: `${progress}%`,
-      查询次数: '3次（原50次）'
+    logger.info('Earth course progress calculated', {
+      duration: `${totalTime.toFixed(0)}ms`,
+      progress: `${progress}%`
     })
 
     return NextResponse.json({ progress })
   } catch (error) {
-    console.error('[Earth Course Progress] ❌ Error:', error)
+    logger.error('Earth course progress error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

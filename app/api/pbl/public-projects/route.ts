@@ -20,7 +20,9 @@ export async function GET(request: NextRequest) {
 
     const difficulty = searchParams.get('difficulty')
     const module = searchParams.get('module')
-    const search = searchParams.get('search')
+    // SEC-07: 限制搜索参数长度（防止DoS攻击）
+    const searchRaw = searchParams.get('search')
+    const search = searchRaw ? searchRaw.slice(0, 100) : null
 
     // 构建查询
     let query = (supabase

@@ -151,6 +151,12 @@ export default function StudentsPage() {
       })
 
       const response = await fetch(`/api/admin/students?${params}`)
+
+      if (!response.ok) {
+        console.error('获取学员网络错误:', response.status)
+        return
+      }
+
       const data = await response.json()
 
       if (data.error) {
@@ -184,6 +190,12 @@ export default function StudentsPage() {
           'Cache-Control': 'no-cache',
         }
       })
+
+      if (!response.ok) {
+        console.error('获取分组网络错误:', response.status)
+        return
+      }
+
       const data = await response.json()
 
       if (data.error) {
@@ -216,6 +228,11 @@ export default function StudentsPage() {
         })
       })
 
+      if (!response.ok) {
+        alert(`❌ 创建失败 (${response.status})`)
+        return
+      }
+
       const data = await response.json()
 
       if (data.error) {
@@ -244,6 +261,11 @@ export default function StudentsPage() {
       const response = await fetch(`/api/admin/groups/${groupId}`, {
         method: 'DELETE'
       })
+
+      if (!response.ok) {
+        alert(`❌ 删除失败 (${response.status})`)
+        return
+      }
 
       const data = await response.json()
 
