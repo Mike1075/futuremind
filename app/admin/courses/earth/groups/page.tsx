@@ -54,9 +54,10 @@ export default function EarthGroupsPage() {
         .from('course_systems')
         .select('id')
         .eq('system_key', 'earth')
-        .single()
+        .maybeSingle()
 
       if (systemError) throw systemError
+      if (!systemData) throw new Error('未找到地球课程体系')
       setEarthSystemId(systemData.id)
 
       // 获取课程分组

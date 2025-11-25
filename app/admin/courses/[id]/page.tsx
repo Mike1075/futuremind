@@ -101,7 +101,7 @@ export default function CourseDetailPage() {
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       const userRole = (profile as unknown as { role?: string })?.role
 
@@ -128,7 +128,7 @@ export default function CourseDetailPage() {
         .from('course_systems')
         .select('*')
         .eq('id', courseId)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
       setCourse(data)
@@ -236,7 +236,7 @@ export default function CourseDetailPage() {
         .from('profiles')
         .select('id, email, full_name')
         .eq('email', newStudentEmail.trim())
-        .single()
+        .maybeSingle()
 
       if (findError || !targetUser) {
         alert('未找到该邮箱的用户，请确认用户已注册')
@@ -249,7 +249,7 @@ export default function CourseDetailPage() {
         .select('id')
         .eq('student_id', targetUser.id)
         .eq('course_system_id', courseId)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         alert('该学员已选修此课程')

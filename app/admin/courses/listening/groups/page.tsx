@@ -54,9 +54,10 @@ export default function ListeningGroupsPage() {
         .from('course_systems')
         .select('id')
         .eq('system_key', 'listening')
-        .single()
+        .maybeSingle()
 
       if (systemError) throw systemError
+      if (!systemData) throw new Error('未找到自在聆听课程体系')
       setListeningSystemId(systemData.id)
 
       // 获取课程分组

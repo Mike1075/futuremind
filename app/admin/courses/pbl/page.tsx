@@ -163,9 +163,10 @@ export default function IcarusAdminPage() {
         .from('course_systems')
         .select('id')
         .eq('system_key', 'icarus')
-        .single()
+        .maybeSingle()
 
       if (systemError) throw systemError
+      if (!systemData) throw new Error('未找到伊卡洛斯课程体系')
       setIcarusSystemId(systemData.id)
 
       // Get all PBL projects

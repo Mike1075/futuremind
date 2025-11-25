@@ -83,7 +83,7 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
         .select('*')
         .eq('id', conversationId)
         .eq('user_id', userId)
-        .single()
+        .maybeSingle()
 
       conversation = data
     }
@@ -96,7 +96,7 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
         .eq('is_active', true)
         .order('updated_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       conversation = data
 
@@ -147,7 +147,7 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
       .from('profiles')
       .select('full_name, email')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
 
     const userName = profileData?.full_name || profileData?.email?.split('@')[0] || '用户'
     logger.debug('User profile loaded', { userName, userId })

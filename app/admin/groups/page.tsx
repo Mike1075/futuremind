@@ -57,7 +57,7 @@ export default function GroupsPage() {
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       const userRole = (profile as unknown as { role?: string })?.role
 

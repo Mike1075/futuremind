@@ -87,7 +87,7 @@ export default function UsersManagementPage() {
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (profileError) {
         alert('❌ 系统错误\n\n无法验证您的权限，请稍后重试。')
@@ -222,7 +222,7 @@ export default function UsersManagementPage() {
         .from('profiles')
         .select('id, email, role')
         .eq('email', newUserEmail.trim())
-        .single()
+        .maybeSingle()
 
       if (existingUser) {
         // 用户已存在，询问是否修改角色

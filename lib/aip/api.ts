@@ -62,7 +62,7 @@ export async function createOrganization(
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!profile || !profile.role || !['teacher', 'principal'].includes(profile.role)) {
       throw new Error('只有教师和校长可以创建组织')
@@ -149,7 +149,7 @@ export async function getOrganizationProjects(
       .from('organizations')
       .select('name')
       .eq('id', organizationId)
-      .single()
+      .maybeSingle()
 
     // 2. 如果是"我的项目"，查询用户参与的所有项目
     if (org?.name === '我的项目') {
@@ -238,7 +238,7 @@ export async function getProjectById(
         )
       `)
       .eq('id', projectId)
-      .single()
+      .maybeSingle()
 
     if (error) throw error
     return { data }
@@ -497,7 +497,7 @@ export async function requestToJoinProject(
       .from('projects')
       .select('name, creator_id')
       .eq('id', projectId)
-      .single()
+      .maybeSingle()
 
     if (projectError) throw projectError
     if (!project) throw new Error('项目不存在')
@@ -507,7 +507,7 @@ export async function requestToJoinProject(
       .from('profiles')
       .select('full_name, email')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (profileError) throw profileError
 
@@ -609,7 +609,7 @@ export async function reviewProjectJoinRequest(
       .from('project_join_requests')
       .select('*, project:projects(name)')
       .eq('id', requestId)
-      .single()
+      .maybeSingle()
 
     if (requestError) throw requestError
     if (!request) throw new Error('申请不存在')

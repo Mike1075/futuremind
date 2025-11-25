@@ -184,7 +184,7 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
         .from('profiles')
         .select('consciousness_tree_view')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
       const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any
 

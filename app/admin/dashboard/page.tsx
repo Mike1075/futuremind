@@ -98,7 +98,7 @@ export default function DashboardPage() {
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (!profile || !profile.role || !['principal', 'teacher'].includes(profile.role)) {
         alert('⚠️ 您不是管理员\n\n只有校长和老师可以访问仪表板。')

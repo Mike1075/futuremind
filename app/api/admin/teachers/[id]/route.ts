@@ -22,7 +22,7 @@ export async function DELETE(
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     const userRole = (profile as unknown as { role?: string })?.role
 
@@ -38,7 +38,7 @@ export async function DELETE(
       .from('profiles')
       .select('id, email, full_name, role')
       .eq('id', teacherId)
-      .single()
+      .maybeSingle()
 
     if (findError || !targetUser) {
       return NextResponse.json({ error: 'Teacher not found' }, { status: 404 })

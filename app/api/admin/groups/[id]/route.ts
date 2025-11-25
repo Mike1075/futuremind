@@ -26,7 +26,7 @@ export async function GET(
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
@@ -45,7 +45,7 @@ export async function GET(
         )
       `)
       .eq('id', groupId)
-      .single()
+      .maybeSingle()
 
     if (groupError) throw groupError
 
@@ -133,7 +133,7 @@ export async function PUT(
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
@@ -208,7 +208,7 @@ export async function DELETE(
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!profile || !['principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
@@ -219,7 +219,7 @@ export async function DELETE(
       .from('student_groups')
       .select('group_type, member_ids')
       .eq('id', groupId)
-      .single()
+      .maybeSingle()
 
     if (group?.group_type === 'auto_level') {
       return NextResponse.json(

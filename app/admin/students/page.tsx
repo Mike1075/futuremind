@@ -113,7 +113,7 @@ export default function StudentsPage() {
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (profileError) {
         console.error('无法验证用户权限:', profileError)

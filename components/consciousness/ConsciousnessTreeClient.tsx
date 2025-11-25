@@ -54,7 +54,7 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
         .from('profiles')
         .select('consciousness_tree_view')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 

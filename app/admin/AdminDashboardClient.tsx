@@ -42,7 +42,7 @@ export default function AdminDashboardClient() {
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (profileError || !profile) {
         console.error('获取用户资料失败:', profileError)

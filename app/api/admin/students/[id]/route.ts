@@ -25,7 +25,7 @@ export async function GET(
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!profile || !['admin', 'principal', 'teacher'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
@@ -49,7 +49,7 @@ export async function GET(
         consciousness_tree_view
       `)
       .eq('id', studentId)
-      .single()
+      .maybeSingle()
 
     if (studentError) throw studentError
 
@@ -58,7 +58,7 @@ export async function GET(
       .from('student_summaries')
       .select('*')
       .eq('user_id', studentId)
-      .single()
+      .maybeSingle()
 
     // 4. 获取等级历史记录
     const { data: levelHistory } = await supabase

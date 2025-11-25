@@ -35,7 +35,7 @@ export default function DebugPage() {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (profileError) {
         setError(`查询 profiles 表失败: ${profileError.message} (code: ${profileError.code})`)
@@ -49,7 +49,7 @@ export default function DebugPage() {
           .from('profiles')
           .select('*')
           .eq('email', user.email)
-          .single()
+          .maybeSingle()
 
         if (!emailError && profileByEmail) {
           setAdminInfo((prev: any) => ({ ...prev, foundByEmail: profileByEmail }))

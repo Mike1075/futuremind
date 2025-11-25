@@ -98,7 +98,7 @@ export default function ListeningCoursePage() {
         .from('course_systems')
         .select('id')
         .eq('system_key', 'listening')
-        .single()
+        .maybeSingle()
 
       if (systemError) throw systemError
       if (!systemData) throw new Error('未找到自在聆听课程体系')

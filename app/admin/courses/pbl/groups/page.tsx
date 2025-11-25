@@ -54,9 +54,10 @@ export default function PBLGroupsPage() {
         .from('course_systems')
         .select('id')
         .eq('system_key', 'icarus')
-        .single()
+        .maybeSingle()
 
       if (systemError) throw systemError
+      if (!systemData) throw new Error('未找到伊卡洛斯课程体系')
       setPblSystemId(systemData.id)
 
       // 获取课程分组

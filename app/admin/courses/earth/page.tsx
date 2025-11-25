@@ -143,7 +143,7 @@ export default function EarthCoursePage() {
         .from('course_systems')
         .select('id')
         .eq('system_key', 'earth')
-        .single()
+        .maybeSingle()
 
       if (systemError) throw systemError
       if (!systemData) throw new Error('未找到欢迎来到地球课程体系')
