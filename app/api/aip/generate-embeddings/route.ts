@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger'
 
 // 生成OpenAI embedding
 async function generateEmbedding(text: string): Promise<number[]> {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('[Generate Embeddings] 开始处理...')
+    logger.info('[Generate Embeddings] 开始处理')
 
     // 使用service role key创建客户端（绕过RLS）
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -71,13 +72,12 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log(`[Generate Embeddings] 找到 ${documents.length} 个文档`)
+    logger.info('[Generate Embeddings] 找到文档', { count: documents.length })
 
     // 为每个文档生成embedding
     const results = []
     for (const doc of documents) {
       try {
-        console.log(`[Generate Embeddings] 处理文档: ${doc.title}`)
 
         // 组合标题和内容
         const textToEmbed = `${doc.title || ''}\n\n${doc.content}`
@@ -90,25 +90,24 @@ export async function POST(request: NextRequest) {
           .eq('id', doc.id)
 
         if (updateError) {
-          console.error(`[Generate Embeddings] 更新失败 ${doc.id}:`, updateError)
-          results.push({ id: doc.id, success: false, error: updateError.message })
+          logger.error('[Generate Embeddings] 更新失败', { docId: doc.id, error: updateError })
+          results.push({ id: doc.id, success: false })
         } else {
-          console.log(`[Generate Embeddings] ✓ 成功: ${doc.id}`)
           results.push({ id: doc.id, success: true, title: doc.title })
         }
 
         // 避免OpenAI rate limit
         await new Promise(resolve => setTimeout(resolve, 100))
       } catch (error: any) {
-        console.error(`[Generate Embeddings] 处理错误 ${doc.id}:`, error)
-        results.push({ id: doc.id, success: false, error: error.message })
+        logger.error('[Generate Embeddings] 处理错误', { docId: doc.id, error })
+        results.push({ id: doc.id, success: false })
       }
     }
 
     const successCount = results.filter(r => r.success).length
     const failCount = results.filter(r => !r.success).length
 
-    console.log(`[Generate Embeddings] 完成: ${successCount} 成功, ${failCount} 失败`)
+    logger.info('[Generate Embeddings] 完成', { successCount, failCount })
 
     return NextResponse.json({
       message: 'Embedding生成完成',
@@ -118,9 +117,9 @@ export async function POST(request: NextRequest) {
       results: results
     })
   } catch (error: any) {
-    console.error('[Generate Embeddings] 错误:', error)
+    logger.error('[Generate Embeddings] 错误', error)
     return NextResponse.json(
-      { error: '生成embedding失败', details: error.message },
+      { error: '生成embedding失败' },
       { status: 500 }
     )
   }

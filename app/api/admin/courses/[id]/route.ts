@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * DELETE /api/admin/courses/[id]
@@ -112,10 +113,9 @@ export async function DELETE(
         .in('stage_id', stageIds)
 
       if (contentsError) {
-        console.error('删除课程内容失败:', contentsError)
+        logger.error('删除课程内容失败', contentsError)
         return NextResponse.json({
-          error: 'Failed to delete course contents',
-          details: contentsError.message
+          error: 'Failed to delete course contents'
         }, { status: 500 })
       }
     }
@@ -128,10 +128,9 @@ export async function DELETE(
         .in('id', stageIds)
 
       if (stagesError) {
-        console.error('删除课程阶段失败:', stagesError)
+        logger.error('删除课程阶段失败', stagesError)
         return NextResponse.json({
-          error: 'Failed to delete course stages',
-          details: stagesError.message
+          error: 'Failed to delete course stages'
         }, { status: 500 })
       }
     }
@@ -144,7 +143,7 @@ export async function DELETE(
       .eq('course_system_id', courseId)
 
     if (assignmentsError) {
-      console.error('删除学生课程分配失败:', assignmentsError)
+      logger.error('删除学生课程分配失败', assignmentsError)
       // 不抛出错误，继续删除其他记录
     }
 
@@ -158,10 +157,9 @@ export async function DELETE(
       .eq('id', courseId)
 
     if (systemError) {
-      console.error('删除课程系统失败:', systemError)
+      logger.error('删除课程系统失败', systemError)
       return NextResponse.json({
-        error: 'Failed to delete course system',
-        details: systemError.message
+        error: 'Failed to delete course system'
       }, { status: 500 })
     }
 
@@ -174,10 +172,9 @@ export async function DELETE(
       }
     })
   } catch (error) {
-    console.error('[Delete Course] Internal error:', error)
+    logger.error('[Delete Course] Internal error', error)
     return NextResponse.json({
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }, { status: 500 })
   }
 }

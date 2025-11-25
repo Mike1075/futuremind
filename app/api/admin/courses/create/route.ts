@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,9 +33,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 })
     }
 
-    console.log('💾 开始保存课程数据...')
-    console.log('📚 课程标题:', title)
-    console.log('📊 内容单元数:', contents.length)
+    logger.info('开始保存课程数据', { title, contentsCount: contents.length })
 
     // 1. 检查system_key是否已存在，如果存在则添加时间戳后缀
     let uniqueSystemKey = system_key
@@ -45,10 +44,8 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingCourse) {
-      console.log('⚠️ system_key已存在，添加时间戳后缀')
       const timestamp = Date.now().toString().slice(-6) // 使用最后6位时间戳
       uniqueSystemKey = `${system_key}-${timestamp}`
-      console.log('📝 新的system_key:', uniqueSystemKey)
     }
 
     // 2. 创建课程体系（使用Service Role绕过RLS）
@@ -70,14 +67,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (systemError) {
-      console.error('❌ 创建课程体系失败:', systemError)
+      logger.error('创建课程体系失败', systemError)
       return NextResponse.json(
-        { error: '创建课程体系失败: ' + systemError.message },
+        { error: '创建课程体系失败' },
         { status: 500 }
       )
     }
-
-    console.log('✅ 课程体系创建成功, ID:', courseSystem.id)
 
     // 2. 批量插入课程内容（使用Service Role绕过RLS）
     const contentsToInsert = contents.map((content: any) => ({
@@ -116,7 +111,7 @@ export async function POST(request: NextRequest) {
       .insert(contentsToInsert)
 
     if (contentsError) {
-      console.error('❌ 插入课程内容失败:', contentsError)
+      logger.error('插入课程内容失败', contentsError)
       // 如果内容插入失败，删除已创建的课程体系
       await serviceSupabase
         .from('course_systems')
@@ -124,13 +119,10 @@ export async function POST(request: NextRequest) {
         .eq('id', courseSystem.id)
 
       return NextResponse.json(
-        { error: '插入课程内容失败: ' + contentsError.message },
+        { error: '插入课程内容失败' },
         { status: 500 }
       )
     }
-
-    console.log('✅ 课程内容插入成功')
-    console.log('🎉 课程创建完成!')
 
     return NextResponse.json({
       success: true,
@@ -139,12 +131,9 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ 创建课程失败:', error)
+    logger.error('创建课程失败', error)
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : '创建课程失败',
-        details: error instanceof Error ? error.stack : undefined
-      },
+      { error: '创建课程失败' },
       { status: 500 }
     )
   }

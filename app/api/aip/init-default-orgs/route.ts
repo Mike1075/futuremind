@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/aip/init-default-orgs
@@ -13,11 +14,10 @@ export async function POST() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      console.error('[Init Orgs] 未授权访问')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('[Init Orgs] 开始初始化用户组织，用户ID:', user.id)
+    logger.info('[Init Orgs] 开始初始化用户组织', { userId: user.id })
 
     // 使用 Admin Client 绕过 RLS，用于创建系统组织
     const adminSupabase = createAdminClient()
@@ -229,15 +229,10 @@ export async function POST() {
       }
     })
   } catch (error: any) {
-    console.error('[Init Orgs] ❌ 初始化失败:', error)
-    console.error('[Init Orgs] 错误堆栈:', error.stack)
+    logger.error('[Init Orgs] 初始化失败', error)
 
     return NextResponse.json(
-      {
-        error: '初始化默认组织失败',
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      },
+      { error: '初始化默认组织失败' },
       { status: 500 }
     )
   }

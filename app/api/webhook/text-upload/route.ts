@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
-      logger.error('Storage upload error:', uploadError)
+      logger.error('Storage upload error', uploadError)
       return NextResponse.json({
-        error: 'Failed to upload to storage: ' + uploadError.message
+        error: 'Failed to upload to storage'
       }, { status: 500 })
     }
 
@@ -72,11 +72,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (dbError) {
-      logger.error('Database error:', dbError)
+      logger.error('Database error', dbError)
       // 清理已上传的文件
       await admin.storage.from('media').remove([storagePath])
       return NextResponse.json({
-        error: 'Failed to save to database: ' + dbError.message
+        error: 'Failed to save to database'
       }, { status: 500 })
     }
 
@@ -110,11 +110,9 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    logger.error('Webhook processing error:', error)
+    logger.error('Webhook processing error', error)
     return NextResponse.json({
-      error: process.env.NODE_ENV === 'development'
-        ? 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error')
-        : 'Internal server error'
+      error: 'Internal server error'
     }, { status: 500 })
   }
 }

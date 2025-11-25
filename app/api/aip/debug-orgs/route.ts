@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/aip/debug-orgs
@@ -72,9 +73,9 @@ export async function GET() {
       }
     })
   } catch (error: any) {
-    console.error('Debug orgs error:', error)
+    logger.error('[Debug Orgs] GET error', error)
     return NextResponse.json(
-      { error: 'Failed to debug organizations', details: error.message },
+      { error: 'Failed to debug organizations' },
       { status: 500 }
     )
   }
@@ -264,14 +265,11 @@ export async function POST() {
       }
     })
   } catch (error: any) {
-    console.error('[Debug Orgs] ❌ 修复失败:', error)
-    console.error('[Debug Orgs] 错误堆栈:', error.stack)
+    logger.error('[Debug Orgs] 修复失败', error)
 
     return NextResponse.json(
       {
-        error: 'Failed to fix organizations',
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        error: 'Failed to fix organizations'
       },
       { status: 500 }
     )

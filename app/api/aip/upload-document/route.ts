@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/aip/upload-document
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    console.log('[AIP Upload] 接收到上传请求:', {
+    logger.info('[AIP Upload] 接收到上传请求', {
       filename: file.name,
       size: file.size,
       type: file.type,
@@ -46,8 +47,6 @@ export async function POST(request: NextRequest) {
     // 4. 转发到N8N webhook
     const webhookUrl = 'https://n8n.aifunbox.com/webhook/267d2f36-116d-4e67-bedd-ef5d536cd200'
 
-    console.log('[AIP Upload] 转发到N8N webhook:', webhookUrl)
-
     const n8nResponse = await fetch(webhookUrl, {
       method: 'POST',
       body: n8nFormData
@@ -55,17 +54,10 @@ export async function POST(request: NextRequest) {
 
     const responseText = await n8nResponse.text()
 
-    console.log('[AIP Upload] N8N响应:', {
-      status: n8nResponse.status,
-      statusText: n8nResponse.statusText,
-      response: responseText.substring(0, 200)
-    })
-
     if (!n8nResponse.ok) {
-      console.error('[AIP Upload] N8N返回错误:', responseText)
+      logger.error('[AIP Upload] N8N返回错误', { response: responseText })
       return NextResponse.json({
-        error: 'N8N processing failed',
-        details: responseText
+        error: 'Processing failed'
       }, { status: 500 })
     }
 
@@ -77,10 +69,9 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[AIP Upload] 上传失败:', error)
+    logger.error('[AIP Upload] 上传失败', error)
     return NextResponse.json({
-      error: 'Upload failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Upload failed'
     }, { status: 500 })
   }
 }
