@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/pbl/select-project
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
           .single()) as any
 
         if (updateError) {
-          console.error('[API Error] Failed to reactivate project:', updateError)
+          logger.error('[PBL] 重新激活项目失败', updateError)
           return NextResponse.json({ error: updateError.message }, { status: 500 })
         }
 
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
       .single()) as any
 
     if (insertError) {
-      console.error('[API Error] Failed to select project:', insertError)
+      logger.error('[PBL] 选择项目失败', insertError)
       return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
 
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
       selection
     }, { status: 201 })
   } catch (error) {
-    console.error('[API Error] Internal error in select-project:', error)
+    logger.error('[PBL] select-project内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

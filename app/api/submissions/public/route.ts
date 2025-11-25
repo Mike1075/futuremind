@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/submissions/public
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
       .limit(limit)
 
     if (error) {
-      console.error('❌ 查询公开作业失败:', error)
+      logger.error('[提交] 查询公开作业失败', error)
       return NextResponse.json(
         { error: 'Failed to fetch public submissions' },
         { status: 500 }
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ API Error:', error)
+    logger.error('[提交] 公开作业API错误', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/pbl/create-project
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
         )
 
         if (reviewError) {
-          console.error('[API Error] AI review failed:', reviewError)
+          logger.error('[PBL] AI审核失败', reviewError)
           // 审核失败时默认拒绝
           reviewStatus = 'rejected'
           aiReviewResult = {
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (reviewError) {
-        console.error('[API Error] Exception during AI review:', reviewError)
+        logger.error('[PBL] AI审核异常', reviewError)
         // 出现异常时，暂时标记为待审核，需要人工介入
         reviewStatus = 'pending'
         aiReviewResult = {
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
       .single()) as any
 
     if (insertError) {
-      console.error('[API Error] Failed to create project:', insertError)
+      logger.error('[PBL] 创建项目失败', insertError)
       return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
 
@@ -171,7 +172,7 @@ export async function POST(request: NextRequest) {
       review: aiReviewResult
     }, { status: 201 })
   } catch (error) {
-    console.error('[API Error] Internal error in create-project:', error)
+    logger.error('[PBL] create-project内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 // 配置API路由以支持更大的请求体
 export const config = {
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
     const filePath = `submissions/${user.id}/${fileName}`
 
-    console.log('📤 上传文件到Supabase Storage:', filePath)
+    logger.debug('[提交上传] 上传文件到Supabase Storage', { filePath })
 
     // 上传到Supabase Storage
     const { error: uploadError } = await supabase.storage
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
-      console.error('❌ 上传失败:', uploadError)
+      logger.error('[提交上传] 上传失败', uploadError)
       return NextResponse.json(
         { error: uploadError.message },
         { status: 500 }
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
       .from('media')
       .getPublicUrl(filePath)
 
-    console.log('✅ 上传成功，URL:', urlData.publicUrl)
+    logger.debug('[提交上传] 上传成功', { url: urlData.publicUrl })
 
     // 返回前端期望的格式
     return NextResponse.json(
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
   } catch (error) {
-    console.error('❌ API Error:', error)
+    logger.error('[提交上传] API错误', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

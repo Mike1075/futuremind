@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/meditation/record
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       data: submission,
     })
   } catch (error: any) {
-    console.error('记录冥想失败:', error)
+    logger.error('[冥想] 记录冥想失败', error)
     return NextResponse.json(
       { error: process.env.NODE_ENV === 'development' ? `服务器错误: ${error.message}` : '服务器错误' },
       { status: 500 }
@@ -178,7 +179,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('获取冥想记录失败:', error)
+    logger.error('[冥想] 获取冥想记录失败', error)
     return NextResponse.json(
       { error: process.env.NODE_ENV === 'development' ? `服务器错误: ${error.message}` : '服务器错误' },
       { status: 500 }

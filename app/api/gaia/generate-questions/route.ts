@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/gaia/generate-questions
@@ -11,20 +12,20 @@ export async function POST(req: NextRequest) {
   try {
     const { topic, originalText } = await req.json()
 
-    console.log('[Generate Questions] 收到请求:', { topic, originalTextLength: originalText?.length })
+    logger.debug('[Generate Questions] 收到请求', { topic, originalTextLength: originalText?.length })
 
     if (!topic || !originalText) {
-      console.error('[Generate Questions] 缺少必要字段')
+      logger.error('[Generate Questions] 缺少必要字段')
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY
     if (!OPENAI_API_KEY) {
-      console.error('[Generate Questions] OpenAI API key未配置')
+      logger.error('[Generate Questions] OpenAI API key未配置')
       return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 })
     }
 
-    console.log('[Generate Questions] 调用OpenAI API...')
+    logger.debug('[Generate Questions] 调用OpenAI API')
 
     // 调用OpenAI生成启发性问题
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -60,17 +61,17 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.json()
-      console.error('[Generate Questions] OpenAI error:', errorData)
+      logger.error('[Generate Questions] OpenAI调用失败', errorData)
       return NextResponse.json({ error: 'Failed to generate questions' }, { status: 502 })
     }
 
     const data = await response.json()
     const questions = data.choices?.[0]?.message?.content?.trim() || '让我们一起探讨这个有趣的话题吧！'
 
-    console.log('[Generate Questions] 成功生成:', questions.substring(0, 100) + '...')
+    logger.debug('[Generate Questions] 成功生成', { preview: questions.substring(0, 100) })
     return NextResponse.json({ questions })
   } catch (error) {
-    console.error('[Generate Questions] Internal error:', error)
+    logger.error('[Generate Questions] 内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

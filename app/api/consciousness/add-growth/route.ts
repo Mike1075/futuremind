@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       .eq('id', userId)
 
     if (updateError) {
-      console.error('更新成长值失败:', updateError)
+      logger.error('[意识] 更新成长值失败', updateError)
       return NextResponse.json({ error: '更新失败' }, { status: 500 })
     }
 
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       message: `成功添加 ${amount} 成长值`
     })
   } catch (error) {
-    console.error('添加成长值错误:', error)
+    logger.error('[意识] 添加成长值错误', error)
     return NextResponse.json(
       { error: '服务器错误' },
       { status: 500 }

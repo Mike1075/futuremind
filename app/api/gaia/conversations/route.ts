@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 // ✅ 性能优化：启用30秒缓存，对话列表更新频率较低
 export const revalidate = 30
@@ -26,7 +27,7 @@ export async function GET() {
       .limit(50)
 
     if (error) {
-      console.error('[Gaia Conversations] Error:', error)
+      logger.error('[Gaia Conversations] 查询对话失败', error)
       return NextResponse.json({ error: 'Failed to load conversations' }, { status: 500 })
     }
 
@@ -34,7 +35,7 @@ export async function GET() {
       conversations: conversations || []
     })
   } catch (error) {
-    console.error('[Gaia Conversations] Internal error:', error)
+    logger.error('[Gaia Conversations] 内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

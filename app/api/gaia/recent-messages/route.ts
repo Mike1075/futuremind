@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/gaia/recent-messages?limit=10&offset=0
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
       hasMore
     })
   } catch (error) {
-    console.error('[Recent Messages] Internal error:', error)
+    logger.error('[Recent Messages] 内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClient } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 /**
  * PATCH /api/pbl/update-status
@@ -87,7 +88,7 @@ export async function PATCH(request: NextRequest) {
       .single()) as any
 
     if (updateError) {
-      console.error('[API Error] Failed to update project status:', updateError)
+      logger.error('[PBL] 更新项目状态失败', updateError)
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
@@ -96,7 +97,7 @@ export async function PATCH(request: NextRequest) {
       selection: updated
     })
   } catch (error) {
-    console.error('[API Error] Internal error in update-status:', error)
+    logger.error('[PBL] update-status内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

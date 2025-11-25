@@ -120,7 +120,7 @@ async function handleUpload(request: NextRequest) {
           }),
         })
       } catch (e) {
-        console.warn('N8N webhook call failed (media_asset.created):', e)
+        logger.warn('[Media] N8N webhook调用失败', e)
       }
     }
 

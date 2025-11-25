@@ -229,7 +229,7 @@ function parseDelimitedText(resultText: string): any[] {
   // 按DAY分割
   const days = resultText.split('===DAY_START===').filter(d => d.trim())
 
-  console.log(`📦 检测到 ${days.length} 个DAY块`)
+  logger.debug('[课程解析] 检测到DAY块', { count: days.length })
 
   for (const dayText of days) {
     try {
@@ -265,10 +265,10 @@ function parseDelimitedText(resultText: string): any[] {
 
       if (content.sequence_number > 0 && content.title) {
         contents.push(content)
-        console.log(`✅ 解析第${content.sequence_number}天: ${content.title}`)
+        logger.debug('[课程解析] 解析天数成功', { day: content.sequence_number, title: content.title })
       }
     } catch (error) {
-      console.error('❌ 解析某个DAY块失败:', error)
+      logger.error('[课程解析] 解析DAY块失败', error)
     }
   }
 
@@ -282,7 +282,7 @@ function parseGenericDailyText(resultText: string): any[] {
   // 按DAY分割
   const days = resultText.split('===DAY_START===').filter(d => d.trim())
 
-  console.log(`📦 检测到 ${days.length} 个DAY块`)
+  logger.debug('[课程解析] 检测到Daily DAY块', { count: days.length })
 
   for (const dayText of days) {
     try {
@@ -319,12 +319,12 @@ function parseGenericDailyText(resultText: string): any[] {
       // 验证必填字段
       if (content.sequence_number > 0 && content.title && content.main_content) {
         contents.push(content)
-        console.log(`✅ 解析第${content.sequence_number}天: ${content.title}`)
+        logger.debug('[课程解析] 解析Daily天数成功', { day: content.sequence_number, title: content.title })
       } else {
-        console.log(`⚠️ 跳过不完整的DAY块（序号: ${content.sequence_number}, 标题: ${content.title}, 有内容: ${!!content.main_content}）`)
+        logger.debug('[课程解析] 跳过不完整的DAY块', { day: content.sequence_number, hasTitle: !!content.title, hasContent: !!content.main_content })
       }
     } catch (error) {
-      console.error('❌ 解析某个DAY块失败:', error)
+      logger.error('[课程解析] 解析Daily DAY块失败', error)
     }
   }
 
@@ -362,7 +362,7 @@ function parseAndCleanJSON(resultText: string): any | null {
     }
   }
 
-  console.log('🔍 清理后的JSON预览 (前200字符):', cleanedText.substring(0, 200))
+  logger.debug('[课程解析] 清理后的JSON预览', { preview: cleanedText.substring(0, 200) })
 
   // 解析JSON
   let parsedData
@@ -370,10 +370,10 @@ function parseAndCleanJSON(resultText: string): any | null {
     parsedData = JSON.parse(cleanedText)
     return parsedData
   } catch (parseError) {
-    console.error('❌ JSON解析失败:', parseError)
+    logger.error('[课程解析] JSON解析失败', parseError)
 
     // 尝试修复常见的JSON问题
-    console.log('🔧 尝试修复JSON格式...')
+    logger.debug('[课程解析] 尝试修复JSON格式')
 
     let fixedText = cleanedText
 
@@ -386,10 +386,10 @@ function parseAndCleanJSON(resultText: string): any | null {
     // 第二次尝试解析
     try {
       parsedData = JSON.parse(fixedText)
-      console.log('✅ JSON修复成功！')
+      logger.debug('[课程解析] JSON修复成功')
       return parsedData
     } catch (secondError) {
-      console.error('❌ 修复后仍然解析失败:', secondError)
+      logger.error('[课程解析] 修复后仍然解析失败', secondError)
       return null
     }
   }
@@ -508,14 +508,14 @@ export async function POST(request: NextRequest) {
     let allContents: any[] = []
 
     if (documentContent.length > MAX_CHUNK_SIZE && (courseType === 'listening' || courseType === 'daily')) {
-      console.log('📦 文档过长，启用分批解析模式')
+      logger.debug('[课程解析] 文档过长，启用分批解析模式')
 
       // 将文档按天分割（假设每天用 ### **第X天 开头）
       const dayPattern = /###\s*\*\*第(\d+)天/g
       const matches = [...documentContent.matchAll(dayPattern)]
 
       if (matches.length >= 2) {
-        console.log(`📦 检测到 ${matches.length} 天的内容，按天分批处理`)
+        logger.debug('[课程解析] 按天分批处理', { dayCount: matches.length })
 
         // 分成两批：前一半和后一半
         const midPoint = Math.floor(matches.length / 2)
@@ -524,14 +524,14 @@ export async function POST(request: NextRequest) {
         const chunk1 = documentContent.substring(0, midIndex)
         const chunk2 = documentContent.substring(midIndex)
 
-        console.log(`📦 第一批长度: ${chunk1.length}, 第二批长度: ${chunk2.length}`)
+        logger.debug('[课程解析] 分批长度', { chunk1: chunk1.length, chunk2: chunk2.length })
 
         // 选择正确的prompt和parser
         const prompt = courseType === 'listening' ? LISTENING_PROMPT : DAILY_PROMPT
         const parser = courseType === 'listening' ? parseDelimitedText : parseGenericDailyText
 
         // 解析第一批
-        console.log('📦 解析第一批...')
+        logger.debug('[课程解析] 开始解析第一批')
         const prompt1 = prompt + chunk1
         const response1 = await ai.models.generateContent({
           model: 'gemini-2.0-flash-exp',
@@ -543,14 +543,14 @@ export async function POST(request: NextRequest) {
           const parsed1 = parser(result1)
           if (parsed1 && parsed1.length > 0) {
             allContents.push(...parsed1)
-            console.log(`✅ 第一批解析成功: ${parsed1.length} 个单元`)
+            logger.debug('[课程解析] 第一批解析成功', { count: parsed1.length })
           } else {
-            console.log('⚠️ 第一批解析结果为空')
+            logger.debug('[课程解析] 第一批解析结果为空')
           }
         }
 
         // 解析第二批
-        console.log('📦 解析第二批...')
+        logger.debug('[课程解析] 开始解析第二批')
         const prompt2 = prompt + chunk2
         const response2 = await ai.models.generateContent({
           model: 'gemini-2.0-flash-exp',
@@ -567,16 +567,16 @@ export async function POST(request: NextRequest) {
               content.sequence_number = content.sequence_number + offset
             })
             allContents.push(...parsed2)
-            console.log(`✅ 第二批解析成功: ${parsed2.length} 个单元`)
+            logger.debug('[课程解析] 第二批解析成功', { count: parsed2.length })
           } else {
-            console.log('⚠️ 第二批解析结果为空')
+            logger.debug('[课程解析] 第二批解析结果为空')
           }
         }
 
-        console.log(`✅ 分批解析完成，共 ${allContents.length} 个单元`)
+        logger.debug('[课程解析] 分批解析完成', { total: allContents.length })
       } else {
         // 无法按天分割，使用简单的字符分割
-        console.log('📦 无法按天分割，使用字符分割')
+        logger.debug('[课程解析] 无法按天分割，使用字符分割')
         const chunk1 = documentContent.substring(0, MAX_CHUNK_SIZE)
         const chunk2 = documentContent.substring(MAX_CHUNK_SIZE)
 
@@ -613,7 +613,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // 正常处理（不分批）
-      console.log('📝 文档长度适中，单次解析')
+      logger.debug('[课程解析] 文档长度适中，单次解析')
 
       // Listening和Daily课程使用分隔符格式，其他课程使用JSON
       const prompt = systemPrompt

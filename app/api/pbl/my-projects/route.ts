@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
       stats
     })
   } catch (error) {
-    console.error('[API Error] Internal error in my-projects:', error)
+    logger.error('[PBL] my-projects内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

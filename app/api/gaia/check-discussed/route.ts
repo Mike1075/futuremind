@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/gaia/check-discussed
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Question is required' }, { status: 400 })
     }
 
-    console.log('[Check Discussed] 检查问题是否讨论过:', question.substring(0, 50))
+    logger.debug('[Check Discussed] 检查问题是否讨论过', { questionPreview: question.substring(0, 50) })
 
     // 获取用户的所有对话
     const { data: conversations, error } = await supabase
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
       .order('updated_at', { ascending: false })
 
     if (error) {
-      console.error('[Check Discussed] Error:', error)
+      logger.error('[Check Discussed] 查询对话失败', error)
       return NextResponse.json({ discussed: false })
     }
 
@@ -51,9 +52,10 @@ export async function POST(req: NextRequest) {
       )
 
       if (foundIndex !== -1) {
-        console.log('[Check Discussed] ✅ 找到历史讨论')
-        console.log('  - conversationId:', conv.id)
-        console.log('  - messageIndex:', foundIndex)
+        logger.debug('[Check Discussed] 找到历史讨论', {
+          conversationId: conv.id,
+          messageIndex: foundIndex
+        })
 
         return NextResponse.json({
           discussed: true,
@@ -64,10 +66,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log('[Check Discussed] ❌ 未找到历史讨论')
+    logger.debug('[Check Discussed] 未找到历史讨论')
     return NextResponse.json({ discussed: false })
   } catch (error) {
-    console.error('[Check Discussed] Internal error:', error)
+    logger.error('[Check Discussed] 内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

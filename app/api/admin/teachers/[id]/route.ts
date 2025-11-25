@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 // DELETE /api/admin/teachers/[id] - 删除教师（将角色改回 student）
 export async function DELETE(
@@ -65,7 +66,7 @@ export async function DELETE(
       .eq('id', teacherId)
 
     if (updateError) {
-      console.error('更新用户角色失败:', updateError)
+      logger.error('[教师管理] 更新用户角色失败', updateError)
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
@@ -79,7 +80,7 @@ export async function DELETE(
       }
     })
   } catch (error) {
-    console.error('API错误:', error)
+    logger.error('[教师管理] API错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

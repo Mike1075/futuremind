@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { InteractionService } from '@/lib/services/interaction.service'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/progress/calculate-earth?contentId=xxx
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
         })
       }
 
-      console.log('📊 探索者项目最高分:', explorerProjectScores)
+      logger.debug('[地球进度] 探索者项目最高分', { explorerProjectScores })
     }
 
     // 计算进度
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('[Calculate Earth Progress] Error:', error)
+    logger.error('[地球进度] 计算进度错误', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

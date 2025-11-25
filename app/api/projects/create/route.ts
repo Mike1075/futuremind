@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/projects/create
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!moderationResponse.ok) {
-      console.error('AI moderation failed:', await moderationResponse.text())
+      logger.error('[项目创建] AI审核失败')
       return NextResponse.json({ error: 'AI审核服务暂时不可用' }, { status: 502 })
     }
 
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
     try {
       reviewResult = JSON.parse(aiResponse || '{}')
     } catch {
-      console.error('Failed to parse AI response:', aiResponse)
+      logger.error('[项目创建] 解析AI响应失败', { aiResponse })
       return NextResponse.json({ error: 'AI审核结果解析失败' }, { status: 500 })
     }
 
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (createError) {
-      console.error('Failed to create project:', createError)
+      logger.error('[项目创建] 创建项目失败', createError)
       return NextResponse.json({ error: '创建项目失败' }, { status: 500 })
     }
 
@@ -165,7 +166,7 @@ export async function POST(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('[Create Project] Internal error:', error)
+    logger.error('[项目创建] 内部错误', error)
     return NextResponse.json({
       error: '服务器错误，请稍后重试'
     }, { status: 500 })

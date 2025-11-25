@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/progress/calculate
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
         .eq('stage_id', stageId)
 
       if (stageError) {
-        console.error('[Progress Calculate] Stage query error:', stageError)
+        logger.error('[Progress Calculate] 查询阶段内容失败', stageError)
         return NextResponse.json({ error: 'Failed to query stage contents' }, { status: 500 })
       }
 
@@ -144,7 +145,7 @@ export async function GET(req: NextRequest) {
       results: progressResults
     })
   } catch (error) {
-    console.error('[Progress Calculate] Internal error:', error)
+    logger.error('[Progress Calculate] 内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

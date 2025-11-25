@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
           }),
         })
       } catch (e) {
-        console.warn('N8N webhook call failed (video_link.created):', e)
+        logger.warn('[CMS] N8N webhook调用失败 (video_link.created)', e)
       }
     }
 

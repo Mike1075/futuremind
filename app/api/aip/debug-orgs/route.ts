@@ -91,18 +91,18 @@ export async function POST() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      console.error('[Debug Orgs] 未授权访问')
+      logger.error('[Debug Orgs] 未授权访问')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('[Debug Orgs] 开始修复用户组织，用户ID:', user.id)
+    logger.info('[Debug Orgs] 开始修复用户组织', { userId: user.id })
 
     // 使用 Admin Client 绕过 RLS
     const adminSupabase = createAdminClient()
     const fixes = []
 
     // 1. 查找社区组织（通过名称，避免JSON查询问题）
-    console.log('[Debug Orgs] 查找社区组织...')
+    logger.debug('[Debug Orgs] 查找社区组织')
     let { data: communityOrgs, error: communityQueryError } = await adminSupabase
       .from('organizations')
       .select('id, name')
@@ -110,7 +110,7 @@ export async function POST() {
       .limit(1)
 
     if (communityQueryError) {
-      console.error('[Debug Orgs] 查找社区组织失败:', communityQueryError)
+      logger.error('[Debug Orgs] 查找社区组织失败', communityQueryError)
       throw new Error(`查找社区组织失败: ${communityQueryError.message}`)
     }
 
@@ -118,10 +118,10 @@ export async function POST() {
 
     if (communityOrgs && communityOrgs.length > 0) {
       communityOrgId = communityOrgs[0].id
-      console.log('[Debug Orgs] 找到已存在的社区组织:', communityOrgId)
+      logger.debug('[Debug Orgs] 找到已存在的社区组织', { id: communityOrgId })
     } else {
       // 创建社区组织（使用 Admin Client 绕过 RLS）
-      console.log('[Debug Orgs] 创建新的社区组织...')
+      logger.debug('[Debug Orgs] 创建新的社区组织')
       const { data: newCommunity, error: createError } = await adminSupabase
         .from('organizations')
         .insert({
@@ -133,17 +133,17 @@ export async function POST() {
         .single()
 
       if (createError || !newCommunity) {
-        console.error('[Debug Orgs] 创建社区组织失败:', createError)
+        logger.error('[Debug Orgs] 创建社区组织失败', createError)
         throw new Error(`创建社区组织失败: ${createError?.message || '未知错误'}`)
       }
 
       communityOrgId = newCommunity.id
       fixes.push('创建了社区组织')
-      console.log('[Debug Orgs] 社区组织创建成功:', communityOrgId)
+      logger.debug('[Debug Orgs] 社区组织创建成功', { id: communityOrgId })
     }
 
     // 2. 查找个人组织（通过用户ID，名称为"我的项目"）
-    console.log('[Debug Orgs] 查找个人组织...')
+    logger.debug('[Debug Orgs] 查找个人组织')
     let { data: personalOrgs, error: personalQueryError } = await adminSupabase
       .from('organizations')
       .select('id, name, description')
@@ -152,7 +152,7 @@ export async function POST() {
       .limit(10) // 可能有多个用户都有"我的项目"
 
     if (personalQueryError) {
-      console.error('[Debug Orgs] 查找个人组织失败:', personalQueryError)
+      logger.error('[Debug Orgs] 查找个人组织失败', personalQueryError)
       throw new Error(`查找个人组织失败: ${personalQueryError.message}`)
     }
 
@@ -172,7 +172,7 @@ export async function POST() {
 
         if (membership) {
           personalOrgId = org.id
-          console.log('[Debug Orgs] 找到用户的个人组织:', personalOrgId)
+          logger.debug('[Debug Orgs] 找到用户的个人组织', { id: personalOrgId })
           break
         }
       }
@@ -180,7 +180,7 @@ export async function POST() {
 
     if (!personalOrgId) {
       // 创建个人组织（使用 Admin Client 绕过 RLS）
-      console.log('[Debug Orgs] 创建新的个人组织...')
+      logger.debug('[Debug Orgs] 创建新的个人组织')
       const { data: newPersonal, error: createError } = await adminSupabase
         .from('organizations')
         .insert({
@@ -192,18 +192,18 @@ export async function POST() {
         .single()
 
       if (createError || !newPersonal) {
-        console.error('[Debug Orgs] 创建个人组织失败:', createError)
+        logger.error('[Debug Orgs] 创建个人组织失败', createError)
         throw new Error(`创建个人组织失败: ${createError?.message || '未知错误'}`)
       }
 
       personalOrgId = newPersonal.id
       fixes.push('创建了个人组织')
-      console.log('[Debug Orgs] 个人组织创建成功:', personalOrgId)
+      logger.debug('[Debug Orgs] 个人组织创建成功', { id: personalOrgId })
     }
 
     // 3. 删除旧的关系（清理脏数据）
     const orgIds = [communityOrgId, personalOrgId]
-    console.log('[Debug Orgs] 清理旧关系，组织IDs:', orgIds)
+    logger.debug('[Debug Orgs] 清理旧关系', { orgIds })
 
     const { error: deleteError } = await supabase
       .from('user_organizations')
@@ -212,15 +212,15 @@ export async function POST() {
       .in('organization_id', orgIds)
 
     if (deleteError) {
-      console.error('[Debug Orgs] 删除旧关系失败:', deleteError)
+      logger.error('[Debug Orgs] 删除旧关系失败', deleteError)
       // 不阻断流程，可能是没有旧数据
     } else {
       fixes.push('清理了旧的组织关系')
-      console.log('[Debug Orgs] 旧关系清理成功')
+      logger.debug('[Debug Orgs] 旧关系清理成功')
     }
 
     // 4. 重新插入正确的关系（使用 Admin Client 绕过 RLS）
-    console.log('[Debug Orgs] 创建新的组织关系...')
+    logger.debug('[Debug Orgs] 创建新的组织关系')
     const { error: insertError } = await adminSupabase
       .from('user_organizations')
       .insert([
@@ -237,12 +237,12 @@ export async function POST() {
       ])
 
     if (insertError) {
-      console.error('[Debug Orgs] 插入新关系失败:', insertError)
+      logger.error('[Debug Orgs] 插入新关系失败', insertError)
       throw new Error(`插入组织关系失败: ${insertError.message}`)
     }
 
     fixes.push('重新创建了组织关系')
-    console.log('[Debug Orgs] 组织关系创建成功')
+    logger.debug('[Debug Orgs] 组织关系创建成功')
 
     // 5. 验证修复结果
     const { data: verifyOrgs } = await supabase
@@ -250,8 +250,7 @@ export async function POST() {
       .select('*, organization:organizations(*)')
       .eq('user_id', user.id)
 
-    console.log('[Debug Orgs] ✅ 修复完成，共执行操作:', fixes.length)
-    console.log('[Debug Orgs] 验证结果:', verifyOrgs?.length || 0, '个组织关系')
+    logger.info('[Debug Orgs] 修复完成', { fixCount: fixes.length, orgCount: verifyOrgs?.length || 0 })
 
     return NextResponse.json({
       success: true,

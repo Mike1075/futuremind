@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/gaia/extract-topic
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.json()
-      console.error('[Extract Topic] OpenAI error:', errorData)
+      logger.error('[Extract Topic] OpenAI调用失败', errorData)
       return NextResponse.json({ error: 'Failed to extract topic' }, { status: 502 })
     }
 
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ topic })
   } catch (error) {
-    console.error('[Extract Topic] Internal error:', error)
+    logger.error('[Extract Topic] 内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

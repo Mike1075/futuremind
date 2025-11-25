@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/gaia/conversation-detail
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error || !conversation) {
-      console.error('[Conversation Detail] Error:', error)
+      logger.error('[Conversation Detail] 查询对话失败', error)
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
       messages
     })
   } catch (error) {
-    console.error('[Conversation Detail] Internal error:', error)
+    logger.error('[Conversation Detail] 内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

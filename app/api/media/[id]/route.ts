@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export async function DELETE(
   request: NextRequest,
@@ -17,7 +18,7 @@ export async function DELETE(
       .single()
 
     if (fetchError) {
-      console.error('Error fetching asset:', fetchError)
+      logger.error('[媒体] 获取资源失败', fetchError)
       return NextResponse.json({ error: fetchError.message }, { status: 500 })
     }
 
@@ -32,7 +33,7 @@ export async function DELETE(
       .eq('id', params.id)
 
     if (dbError) {
-      console.error('Error deleting from database:', dbError)
+      logger.error('[媒体] 从数据库删除失败', dbError)
       return NextResponse.json({ error: dbError.message }, { status: 500 })
     }
 
@@ -45,16 +46,16 @@ export async function DELETE(
           .remove([uploadPath])
 
         if (storageError) {
-          console.warn('Storage delete warning:', storageError)
+          logger.warn('[媒体] 存储删除警告', storageError)
         }
       }
     } catch (storageError) {
-      console.warn('Storage delete warning:', storageError)
+      logger.warn('[媒体] 存储删除警告', storageError)
     }
 
     return NextResponse.json({ message: 'Asset deleted successfully' })
   } catch (error) {
-    console.error('API Error:', error)
+    logger.error('[媒体] API错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

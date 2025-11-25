@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { InteractionService, InteractionType, ItemType } from '@/lib/services/interaction.service'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/interactions/record
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Record Interaction] Error:', error)
+    logger.error('[互动记录] 记录错误', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
