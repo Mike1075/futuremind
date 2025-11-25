@@ -1,8 +1,27 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 
-export async function POST(request: NextRequest) {
+// DB-14: 允许的文件类型白名单
+const ALLOWED_MIME_TYPES = [
+  // 图片
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+  // 视频
+  'video/mp4', 'video/webm', 'video/quicktime',
+  // 音频
+  'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm',
+  // 文档
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain', 'text/csv', 'text/markdown',
+]
+
+// DB-05: 文件上传限流（每小时10次）
+async function handleUpload(request: NextRequest) {
   try {
     const admin = getAdminClient()
     const supabase = await getClient()
@@ -20,6 +39,13 @@ export async function POST(request: NextRequest) {
     const maxSize = 50 * 1024 * 1024 // 50MB
     if (file.size > maxSize) {
       return NextResponse.json({ error: 'File too large. Maximum size is 50MB.' }, { status: 400 })
+    }
+
+    // DB-14: 验证文件类型
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return NextResponse.json({
+        error: `不支持的文件类型: ${file.type}。允许的类型: 图片、视频、音频、PDF、Office文档`
+      }, { status: 400 })
     }
 
     // Get current user for auditing (optional)
@@ -109,6 +135,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+// 导出带限流的POST处理器
+export const POST = withRateLimit(handleUpload, rateLimitConfigs.upload)
 
 export async function GET() {
   try {

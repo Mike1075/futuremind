@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient, getClient } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 
 /**
  * GET /api/discussions?course_content_id={id}&parent_id={id}
@@ -76,8 +77,9 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/discussions
  * 创建新讨论/回复
+ * DB-05: 添加Rate Limiting防止滥用
  */
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   try {
     const supabase = await getClient()
     const admin = getAdminClient()
@@ -164,3 +166,6 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// DB-05: 每分钟最多30次讨论发布
+export const POST = withRateLimit(handlePost, rateLimitConfigs.search)

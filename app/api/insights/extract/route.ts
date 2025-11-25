@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import OpenAI from 'openai'
 import { logger } from '@/lib/logger'
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 
 // 延迟初始化OpenAI客户端，避免构建时出错
 function getOpenAI() {
@@ -24,9 +25,20 @@ function getOpenAI() {
 /**
  * POST /api/insights/extract
  * 从Gaia对话中提取洞见
+ * DB-05: AI密集型操作，添加限流
  */
-export async function POST(request: NextRequest) {
+async function handleExtractInsights(request: NextRequest) {
   try {
+    // SEC-10: 请求大小限制（1MB）
+    const contentLength = request.headers.get('content-length')
+    const MAX_PAYLOAD_SIZE = 1 * 1024 * 1024 // 1MB
+    if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_SIZE) {
+      return NextResponse.json(
+        { error: '请求体过大，最大允许1MB' },
+        { status: 413 }
+      )
+    }
+
     const supabase = await createClient()
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -228,6 +240,9 @@ ${conversationText.slice(0, 12000)} // 限制长度避免超过token限制
     )
   }
 }
+
+// DB-05: AI操作每分钟最多20次
+export const POST = withRateLimit(handleExtractInsights, rateLimitConfigs.chat)
 
 /**
  * 根据洞见类型返回颜色
