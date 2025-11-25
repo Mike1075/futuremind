@@ -201,57 +201,20 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      const data = await res.json().catch(() => ({}))
-      
-      const pick = (d: unknown): string | undefined => {
-        if (!d) return undefined
-        if (typeof d === 'string') return d
-        if (typeof d === 'object' && d !== null) {
-          const obj = d as Record<string, unknown>;
-          return (
-            obj.reply || obj.message || obj.text || obj.content || obj.output || obj.body || obj.answer
-          ) as string | undefined;
-        }
-        return undefined;
-      }
-      const pickFromMessages = (d: unknown): string | undefined => {
-        if (!d) return undefined
-        const obj = d as Record<string, unknown>;
-        const arr = Array.isArray(d) ? d : obj.messages || (obj.data as Record<string, unknown>)?.messages
-        if (Array.isArray(arr) && arr.length > 0) {
-          const last = arr[arr.length - 1]
-          if (!last) return undefined
-          if (typeof last === 'string') return last
-          const lastObj = last as Record<string, unknown>;
-          return (lastObj.content || lastObj.text || lastObj.message) as string | undefined;
-        }
-        return undefined
-      }
-      
-      // 尝试提取回复内容
-      let reply = ''
-      
-      // 优先处理 n8n 返回的 messages 数组结构
-      if (data.messages && Array.isArray(data.messages)) {
-        const lastMessage = data.messages[data.messages.length - 1]
-        if (lastMessage && lastMessage.content) {
-          reply = lastMessage.content
-        }
+
+      if (!res.ok) {
+        throw new Error('Failed to get response')
       }
 
-      // 如果没有从 messages 提取到，尝试其他字段
-      if (!reply) {
-        if (Array.isArray(data)) {
-          reply = pick(data[0]) || pick(data[0]?.data) || pickFromMessages(data) || ''
-        } else {
-          const dataObj = data as Record<string, unknown>;
-          reply = pick(data) || pick(dataObj?.data) || pickFromMessages(data) || pickFromMessages(dataObj?.data) || ''
-        }
+      // 🔥 流式读取响应
+      const reader = res.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error('No reader available')
       }
 
-      const finalReply = reply && typeof reply === 'string' ? reply : '（n8n 未返回内容）'
-
-      // 打字机效果：逐字显示盖亚的回复
+      // 创建盖亚消息
       const gaiaMessageId = (Date.now() + 1).toString()
       const gaiaMessage: ChatMessage = {
         id: gaiaMessageId,
@@ -264,21 +227,47 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       let currentMessages = [...newMessages, gaiaMessage]
       setMessages(currentMessages)
 
-      // 逐字显示内容
-      let displayedContent = ''
-      const chars = finalReply.split('')
-      const typeSpeed = 30 // 每个字符的显示间隔（毫秒）
+      // 🔥 流式读取并实时显示
+      let buffer = ''
+      let fullContent = ''
 
-      for (let i = 0; i < chars.length; i++) {
-        displayedContent += chars[i]
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
 
-        // 更新消息内容
-        const updatedGaiaMessage = { ...gaiaMessage, content: displayedContent }
-        currentMessages = [...newMessages, updatedGaiaMessage]
-        setMessages(currentMessages)
+          const chunk = decoder.decode(value, { stream: true })
+          buffer += chunk
 
-        // 等待一小段时间
-        await new Promise(resolve => setTimeout(resolve, typeSpeed))
+          // 按换行符分割
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            const trimmedLine = line.trim()
+            if (!trimmedLine) continue
+
+            try {
+              const json = JSON.parse(trimmedLine)
+
+              if (json.type === 'chunk' && json.content) {
+                fullContent = json.content
+
+                // 🔥 实时更新显示
+                const updatedGaiaMessage = { ...gaiaMessage, content: fullContent }
+                currentMessages = [...newMessages, updatedGaiaMessage]
+                setMessages(currentMessages)
+              } else if (json.type === 'done') {
+                // 流结束
+                break
+              }
+            } catch {
+              // 继续处理下一行
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
       }
 
       // 全部显示完毕后，保存聊天记录

@@ -102,21 +102,13 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
             progress: completionMap.get(p.id)?.progress ?? 0
           }))
 
-          // 🔓 添加顺序解锁逻辑：只有完成前一个项目才能解锁下一个
-          // 按 sequence_number 排序，确保正确的顺序
+          // 🔓 所有项目都可以任意选择，不需要顺序解锁
+          // 只有项目内部的任务需要每天完成后解锁
           const sortedProjects = [...projects].sort((a, b) => a.sequence_number - b.sequence_number)
 
-          sortedProjects.forEach((project, index) => {
-            if (index === 0) {
-              // 第一个项目总是解锁的
-              project.is_unlocked = true
-            } else {
-              // 检查前一个项目是否有进度（已提交作业）
-              const previousProject = sortedProjects[index - 1]
-              const previousProgress = completionMap.get(previousProject.id)?.progress ?? 0
-              // 只要前一个项目有任何进度（> 0），就解锁当前项目
-              project.is_unlocked = previousProgress > 0
-            }
+          sortedProjects.forEach((project) => {
+            // 所有项目都默认解锁，可以任意选择
+            project.is_unlocked = true
           })
 
           // 更新回原数组（保持原有顺序）
@@ -131,10 +123,10 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
             is_unlocked: p.is_unlocked
           })))
         } else {
-          // 如果未登录或无法获取用户数据，默认只解锁第一个项目
+          // 如果未登录或无法获取用户数据，所有项目都默认解锁
           const sortedProjects = [...projects].sort((a, b) => a.sequence_number - b.sequence_number)
-          sortedProjects.forEach((project, index) => {
-            project.is_unlocked = index === 0
+          sortedProjects.forEach((project) => {
+            project.is_unlocked = true
             project.is_completed = false
             project.progress = 0
           })

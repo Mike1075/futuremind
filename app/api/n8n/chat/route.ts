@@ -47,58 +47,87 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'N8N_CHAT_FAILED', status: res.status, body: errorText }, { status: 502 })
     }
 
-    // N8N 返回流式输出，需要读取流并组合所有 content 字段
-    const reader = res.body?.getReader()
-    const decoder = new TextDecoder()
-    let fullContent = ''
-    let rawText = ''
+    // 🔥 创建真正的流式响应 - 边读边发送，不等待完整内容
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = res.body?.getReader()
+        const decoder = new TextDecoder()
+        let fullContent = ''
 
-    if (reader) {
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
+        if (!reader) {
+          controller.close()
+          return
+        }
 
-          const chunk = decoder.decode(value, { stream: true })
-          rawText += chunk
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
 
-          // 尝试解析每个 chunk（可能包含多个 JSON 对象或换行分隔的 JSON）
-          const lines = chunk.split('\n').filter(line => line.trim())
-          for (const line of lines) {
-            try {
-              const json = JSON.parse(line)
+            const chunk = decoder.decode(value, { stream: true })
 
-              // 只处理 type: "item" 的流式数据
-              if (json.type === 'item' && json.content) {
-                // content 可能是纯文本，也可能是转义的 JSON 字符串
-                const content = json.content
+            // 解析每行JSON
+            const lines = chunk.split('\n').filter(line => line.trim())
+            for (const line of lines) {
+              try {
+                const json = JSON.parse(line)
 
-                // 尝试解析 content（可能包含 output 字段）
-                try {
-                  const innerJson = JSON.parse(content)
-                  // 如果包含 output 字段，这是完整的最终回复
-                  if (innerJson.output) {
-                    fullContent = innerJson.output // 直接使用完整回复，覆盖之前的累积
+                // 处理type: "item"的流式数据
+                if (json.type === 'item' && json.content) {
+                  const content = json.content
+
+                  // 尝试解析content
+                  try {
+                    const innerJson = JSON.parse(content)
+                    // 如果有output字段，使用完整回复
+                    if (innerJson.output) {
+                      fullContent = innerJson.output
+                    }
+                  } catch {
+                    // content是纯文本，累加
+                    fullContent += content
                   }
-                } catch {
-                  // content 是纯文本，累加
-                  fullContent += content
+
+                  // 🔥 实时发送给前端（真正的流式输出）
+                  const streamData = JSON.stringify({
+                    type: 'chunk',
+                    content: fullContent,
+                    timestamp: new Date().toISOString()
+                  }) + '\n'
+
+                  controller.enqueue(new TextEncoder().encode(streamData))
                 }
+              } catch {
+                // 继续处理下一行
               }
-            } catch (e) {
-              // 可能不是 JSON，或者是部分 JSON，继续
             }
           }
-        }
-      } finally {
-        reader.releaseLock()
-      }
-    }
 
-    // 返回组合后的内容
-    return NextResponse.json({
-      reply: fullContent,
-      content: fullContent
+          // 发送完成标记
+          const doneData = JSON.stringify({
+            type: 'done',
+            content: fullContent,
+            timestamp: new Date().toISOString()
+          }) + '\n'
+
+          controller.enqueue(new TextEncoder().encode(doneData))
+          controller.close()
+        } catch (error) {
+          console.error('[N8N Chat] Stream error:', error)
+          controller.error(error)
+        } finally {
+          reader.releaseLock()
+        }
+      }
+    })
+
+    // 返回流式响应
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      }
     })
   } catch {
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })

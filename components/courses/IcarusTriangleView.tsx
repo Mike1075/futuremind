@@ -577,13 +577,10 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                               left: `${xOffset}vmin`,
                               top: `${yOffset}vmin`,
                             }}
-                            className={project.is_unlocked !== false ? "cursor-pointer" : "cursor-not-allowed"}
+                            className="cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation()
-                              // 只有解锁的项目才能点击
-                              if (project.is_unlocked !== false) {
-                                setSelectedProject(project)
-                              }
+                              setSelectedProject(project)
                             }}
                           >
                             {/* 子圆形节点容器 - 使用 translate 居中 */}
@@ -625,20 +622,9 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                                       ? '2px solid rgba(255,255,255,1)'
                                       : '2px solid rgba(255,255,255,0.5)',
                                     boxShadow: `0 0 15px ${currentColors[0]}80`,
-                                    opacity: project.is_unlocked === false ? 0.4 : 1,  // 未解锁项目降低透明度
-                                    filter: project.is_unlocked === false ? 'grayscale(70%)' : 'none',  // 未解锁项目灰化
                                   }}
                                 >
                                   <span className="text-xl font-bold">{letter}</span>
-
-                                  {/* 🔒 锁图标 - 仅对未解锁项目显示 */}
-                                  {project.is_unlocked === false && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
-                                      <svg className="w-6 h-6 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                      </svg>
-                                    </div>
-                                  )}
                                 </div>
                               </motion.div>
                             </div>
@@ -695,19 +681,13 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                     </p>
                   </div>
 
-                  {/* 🔒 锁定提示或查看详情按钮 */}
-                  {selectedProject.is_unlocked === false ? (
-                    <div className="block w-full px-6 py-3 bg-gray-700/50 border-2 border-gray-600 rounded-lg font-medium text-center text-gray-400">
-                      🔒 请先完成前一个项目以解锁
-                    </div>
-                  ) : (
-                    <Link
-                      href={`/courses/icarus/${selectedProject.id}`}
-                      className="block w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium text-center hover:opacity-90 transition-opacity text-white"
-                    >
-                      查看详情 →
-                    </Link>
-                  )}
+                  {/* 查看详情按钮 */}
+                  <Link
+                    href={`/courses/icarus/${selectedProject.id}`}
+                    className="block w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium text-center hover:opacity-90 transition-opacity text-white"
+                  >
+                    查看详情 →
+                  </Link>
                 </div>
               </div>
             </motion.div>
