@@ -1,37 +1,52 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
 
-export async function POST(request: NextRequest) {
+async function handleChatRequest(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      console.error('[AIP Chat] 未授权访问')
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // 1. 权限验证
+    const auth = await requireAuth(request)
+    if (!auth.authorized) {
+      return auth.response
     }
 
-    console.log('[AIP Chat] 用户:', user.id, user.email)
+    const { user, supabase } = auth
+    logger.info('Chat request received', { userId: user.id })
 
+    // 2. 解析和验证请求参数
     const body = await request.json()
     const { chatInput, project_id, organization_id } = body
 
-    console.log('[AIP Chat] 请求参数:', {
-      chatInput: chatInput?.substring(0, 100) + (chatInput?.length > 100 ? '...' : ''),
-      project_id,
-      organization_id,
-      user_id: user.id
+    const validation = validateParams(body, {
+      chatInput: {
+        required: true,
+        type: 'string',
+        minLength: 1,
+        maxLength: 5000
+      }
     })
 
-    if (!chatInput) {
-      console.error('[AIP Chat] 缺少chatInput参数')
-      return NextResponse.json({ error: 'Missing chatInput' }, { status: 400 })
+    if (!validation.valid) {
+      return validation.response
     }
 
-    // N8N webhook URL - 使用生产环境
-    const webhookUrl = 'https://n8n.aifunbox.com/webhook/c3585e19-255f-48ed-a481-b0c4d1c748ac'
+    logger.debug('Chat params', {
+      chatInputLength: chatInput.length,
+      projectId: project_id,
+      organizationId: organization_id
+    })
+
+    // 3. 获取N8N Webhook URL（不使用硬编码）
+    const webhookUrl = process.env.N8N_AIP_CHAT_WEBHOOK_URL
+
+    if (!webhookUrl) {
+      logger.error('N8N webhook URL not configured')
+      return errorResponse('Service configuration error', undefined, 503)
+    }
 
     // 处理project_id：支持单个或多个项目
     // 如果是数组，转换为逗号分隔的字符串，方便N8N处理
@@ -51,50 +66,54 @@ export async function POST(request: NextRequest) {
     const n8nPayload = {
       chatInput,
       user_id: user.id,
-      project_id: projectIdValue,  // 单个ID或逗号分隔的多个ID
-      project_ids: projectIdsArray, // 同时提供数组形式，供N8N选择使用
+      project_id: projectIdValue,
+      project_ids: projectIdsArray,
       organization_id: organization_id || ''
     }
 
-    console.log('[AIP Chat] 调用N8N webhook:', webhookUrl)
-    console.log('[AIP Chat] N8N payload:', JSON.stringify(n8nPayload, null, 2))
-
-    const n8nStartTime = Date.now()
-    const n8nResponse = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(n8nPayload)
+    logger.debug('Calling N8N webhook', {
+      url: webhookUrl.substring(0, 50) + '...',
+      payloadSize: JSON.stringify(n8nPayload).length
     })
 
-    const n8nDuration = Date.now() - n8nStartTime
-    console.log('[AIP Chat] N8N响应时间:', n8nDuration, 'ms')
-    console.log('[AIP Chat] N8N响应状态:', n8nResponse.status, n8nResponse.statusText)
+    const n8nStartTime = Date.now()
 
-    if (!n8nResponse.ok) {
-      const errorText = await n8nResponse.text()
-      console.error('[AIP Chat] N8N webhook失败:', {
-        status: n8nResponse.status,
-        statusText: n8nResponse.statusText,
-        body: errorText
+    // 添加超时控制
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 60000) // 60秒超时
+
+    try {
+      const n8nResponse = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(n8nPayload),
+        signal: controller.signal
       })
 
-      // 特殊处理404错误 - webhook未注册
-      if (n8nResponse.status === 404) {
-        let errorMessage = 'N8N webhook未注册或已过期'
-        try {
-          const errorData = JSON.parse(errorText)
-          if (errorData.hint) {
-            errorMessage += `\n提示: ${errorData.hint}`
-          }
-        } catch {}
-        throw new Error(`N8N webhook 404错误: ${errorMessage}`)
-      }
+      clearTimeout(timeout)
 
-      throw new Error(`N8N webhook失败 (${n8nResponse.status}): ${errorText}`)
-    }
+      const n8nDuration = Date.now() - n8nStartTime
+      logger.info('N8N response received', {
+        status: n8nResponse.status,
+        duration: `${n8nDuration}ms`
+      })
+
+      if (!n8nResponse.ok) {
+        const errorText = await n8nResponse.text()
+        logger.error('N8N webhook failed', undefined, {
+          status: n8nResponse.status,
+          statusText: n8nResponse.statusText
+        })
+
+        if (n8nResponse.status === 404) {
+          return errorResponse('AI service not available', undefined, 503)
+        }
+
+        return errorResponse('AI service error', undefined, 502)
+      }
 
     // 🔥 创建流式响应并转发给前端
     const stream = new ReadableStream({
@@ -125,7 +144,9 @@ export async function POST(request: NextRequest) {
                 // 处理type: "item"的流式数据
                 if (json.type === 'item' && json.content) {
                   if (!firstChunkReceived) {
-                    console.log(`[AIP Chat] ⏱️  首个chunk到达: +${Date.now() - startTime}ms`)
+                    logger.debug('First chunk received', {
+                      elapsed: `${Date.now() - startTime}ms`
+                    })
                     firstChunkReceived = true
                   }
 
@@ -169,10 +190,12 @@ export async function POST(request: NextRequest) {
             .replace(/\*/g, '')
             .trim() || '抱歉，我现在无法回应。请稍后再试。'
 
-          console.log('[AIP Chat] AI响应内容:', finalReply.substring(0, 200))
+          logger.debug('AI response completed', {
+            responseLength: finalReply.length
+          })
 
           // 保存聊天记录到数据库
-          console.log('[AIP Chat] 开始保存聊天记录到数据库...')
+          logger.dbQuery('chat_history', 'INSERT')
           const { error: dbError } = await supabase.from('chat_history').insert({
             user_id: user.id,
             content: chatInput,
@@ -188,13 +211,15 @@ export async function POST(request: NextRequest) {
           })
 
           if (dbError) {
-            console.error('[AIP Chat] 保存聊天记录失败:', dbError)
+            logger.error('Failed to save chat history', dbError)
           } else {
-            console.log('[AIP Chat] 聊天记录保存成功')
+            logger.debug('Chat history saved successfully')
           }
 
           const totalDuration = Date.now() - startTime
-          console.log('[AIP Chat] 总处理时间:', totalDuration, 'ms')
+          logger.info('Chat request completed', {
+            duration: `${totalDuration}ms`
+          })
 
           // 发送完成标记
           const doneData = JSON.stringify({
@@ -205,7 +230,7 @@ export async function POST(request: NextRequest) {
           controller.enqueue(new TextEncoder().encode(doneData))
           controller.close()
         } catch (error) {
-          console.error('[AIP Chat] Stream error:', error)
+          logger.error('Stream processing error', error)
           controller.error(error)
         } finally {
           reader.releaseLock()
@@ -221,18 +246,26 @@ export async function POST(request: NextRequest) {
         'Connection': 'keep-alive'
       }
     })
+    } catch (error: any) {
+      clearTimeout(timeout)
+      if (error.name === 'AbortError') {
+        logger.error('N8N request timeout (60s)')
+        return errorResponse('Request timeout', undefined, 504)
+      }
+      throw error
+    }
   } catch (error: any) {
     const totalDuration = Date.now() - startTime
-    console.error('[AIP Chat] ❌ 处理失败 (耗时', totalDuration, 'ms):', error)
-    console.error('[AIP Chat] 错误堆栈:', error.stack)
+    logger.error('Chat request failed', error, {
+      duration: `${totalDuration}ms`
+    })
 
-    return NextResponse.json(
-      {
-        error: 'Failed to process chat',
-        details: error.message,
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    )
+    return errorResponse('Failed to process chat', error, 500)
   }
 }
+
+// 导出包装了Rate Limiting的处理器
+export const POST = withRateLimit(
+  handleChatRequest,
+  rateLimitConfigs.chat
+)

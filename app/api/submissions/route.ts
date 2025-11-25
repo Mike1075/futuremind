@@ -1,20 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { requireAuth, errorResponse } from '@/lib/api-utils'
+
+// Type definitions
+interface Submission {
+  id: string
+  user_id: string
+  course_content_id: string
+  day_key: string | null
+  score: number | null
+  content: string
+  created_at: string
+  updated_at: string
+}
+
+interface UserSelectedProject {
+  id: string
+  progress: Record<string, number> | null
+}
 
 /**
  * GET /api/submissions?contentId=xxx&dayKey=xxx
  * 获取用户在某个课程内容下的提交记录
  * dayKey可选，用于过滤特定项目/任务的提交
  */
-export async function GET(req: NextRequest) {
-  try {
-    const supabase = await createClient()
+async function handleGetSubmissions(req: NextRequest) {
+  const startTime = Date.now()
 
-    // 验证用户登录
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    // 权限验证
+    const auth = await requireAuth(req)
+    if (!auth.authorized) {
+      return auth.response
     }
+
+    const { user, supabase } = auth
 
     const { searchParams } = new URL(req.url)
     const contentId = searchParams.get('contentId')
@@ -37,44 +59,48 @@ export async function GET(req: NextRequest) {
     // 如果提供了dayKey，按dayKey过滤
     if (dayKey) {
       query = query.eq('day_key', dayKey)
-      console.log(`🔍 查询提交记录: contentId=${contentId}, dayKey=${dayKey}`)
+      logger.debug('Query with dayKey', { contentId, dayKey })
     }
 
+    logger.dbQuery('user_submissions', 'SELECT')
     const { data: submissions, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching submissions:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch submissions' },
-        { status: 500 }
-      )
+      throw error
     }
 
-    console.log(`✅ 找到 ${submissions?.length || 0} 条提交记录`)
+    const duration = Date.now() - startTime
+    logger.info('Submissions retrieved', {
+      count: submissions?.length || 0,
+      duration: `${duration}ms`
+    })
 
     return NextResponse.json({ submissions })
   } catch (error) {
-    console.error('[Submissions API] Error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    logger.error('Failed to fetch submissions', error, {
+      duration: `${Date.now() - startTime}ms`
+    })
+    return errorResponse('Failed to fetch submissions', error, 500)
   }
 }
+
+export const GET = withRateLimit(handleGetSubmissions, rateLimitConfigs.api)
 
 /**
  * DELETE /api/submissions/:id
  * 删除一个提交记录
  */
-export async function DELETE(req: NextRequest) {
-  try {
-    const supabase = await createClient()
+async function handleDeleteSubmission(req: NextRequest) {
+  const startTime = Date.now()
 
-    // 验证用户登录
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    // 权限验证
+    const auth = await requireAuth(req)
+    if (!auth.authorized) {
+      return auth.response
     }
+
+    const { user, supabase } = auth
 
     const { searchParams } = new URL(req.url)
     const submissionId = searchParams.get('id')
@@ -87,41 +113,42 @@ export async function DELETE(req: NextRequest) {
     }
 
     // 验证这个提交记录属于当前用户，并获取day_key和content_id
+    logger.dbQuery('user_submissions', 'SELECT')
     const { data: submission } = await supabase
       .from('user_submissions')
       .select('user_id, day_key, course_content_id')
       .eq('id', submissionId)
       .single()
 
-    if (!submission || (submission as any).user_id !== user.id) {
+    const typedSubmission = submission as Pick<Submission, 'user_id' | 'day_key' | 'course_content_id'> | null
+
+    if (!typedSubmission || typedSubmission.user_id !== user.id) {
+      logger.warn('Submission access denied', { submissionId, userId: user.id })
       return NextResponse.json(
         { error: 'Submission not found or access denied' },
         { status: 403 }
       )
     }
 
-    const dayKey = (submission as any).day_key
-    const contentId = (submission as any).course_content_id
+    const dayKey = typedSubmission.day_key
+    const contentId = typedSubmission.course_content_id
 
-    console.log(`🗑️ 删除提交记录: id=${submissionId}, day_key=${dayKey}`)
+    logger.info('Deleting submission', { submissionId, dayKey })
 
     // 删除提交记录
+    logger.dbQuery('user_submissions', 'DELETE')
     const { error: deleteError } = await supabase
       .from('user_submissions')
       .delete()
       .eq('id', submissionId)
 
     if (deleteError) {
-      console.error('Error deleting submission:', deleteError)
-      return NextResponse.json(
-        { error: 'Failed to delete submission' },
-        { status: 500 }
-      )
+      throw deleteError
     }
 
     // 如果有day_key，重新计算该任务的最高分并更新progress
     if (dayKey && contentId) {
-      console.log(`🔄 重新计算 ${dayKey} 的最高分...`)
+      logger.debug('Recalculating highest score', { dayKey })
 
       // 查询该day_key的剩余提交记录，找到最高分
       const { data: remainingSubmissions } = await supabase
@@ -138,7 +165,7 @@ export async function DELETE(req: NextRequest) {
         ? remainingSubmissions[0].score
         : 0  // 如果没有剩余提交，设为0
 
-      console.log(`📊 ${dayKey} 新的最高分: ${newHighestScore}`)
+      logger.debug('New highest score calculated', { dayKey, score: newHighestScore })
 
       // 更新user_selected_projects的progress
       const { data: selection } = await supabase
@@ -150,8 +177,11 @@ export async function DELETE(req: NextRequest) {
         .single()
 
       if (selection) {
+        const typedSelection = selection as UserSelectedProject
+        const currentProgress = typedSelection.progress || {}
+
         const updatedProgress: Record<string, number> = {
-          ...((selection.progress as Record<string, number>) || {}),
+          ...currentProgress,
           [dayKey]: newHighestScore
         }
 
@@ -160,21 +190,28 @@ export async function DELETE(req: NextRequest) {
           delete updatedProgress[dayKey]
         }
 
+        logger.dbQuery('user_selected_projects', 'UPDATE')
         await supabase
           .from('user_selected_projects')
           .update({ progress: updatedProgress })
-          .eq('id', selection.id)
+          .eq('id', typedSelection.id)
 
-        console.log(`✅ 已更新progress`)
+        logger.debug('Progress updated')
       }
     }
 
+    const duration = Date.now() - startTime
+    logger.info('Submission deleted successfully', {
+      duration: `${duration}ms`
+    })
+
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Submissions API] Error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    logger.error('Failed to delete submission', error, {
+      duration: `${Date.now() - startTime}ms`
+    })
+    return errorResponse('Failed to delete submission', error, 500)
   }
 }
+
+export const DELETE = withRateLimit(handleDeleteSubmission, rateLimitConfigs.api)

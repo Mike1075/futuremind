@@ -127,8 +127,6 @@ ${data.description || '这是一个新创建的组织，暂无详细描述。'}
           metadata: { type: 'organization_knowledge_base' },
           embedding: null
         })
-
-      console.log('[createOrganization] 已为组织创建智慧库文档')
     } catch (docError) {
       console.error('[createOrganization] 创建组织智慧库失败:', docError)
       // 不影响组织创建，仅记录日志
@@ -302,7 +300,6 @@ export async function createProject(
           metadata: { type: 'project_knowledge_base' },
           embedding: null // NULL，与对标网站一致
         })
-      console.log('[createProject] 已为项目创建默认智慧库文档')
     } catch (docError) {
       // 文档创建失败不影响项目创建
       console.error('[createProject] 创建默认文档失败:', docError)
@@ -570,8 +567,6 @@ export async function requestToJoinProject(
       if (notificationError) {
         console.error('创建通知失败:', notificationError)
         // 不抛出错误，避免影响主要流程
-      } else {
-        console.log(`已为 ${managerIds.size} 位管理者创建通知`)
       }
     }
 

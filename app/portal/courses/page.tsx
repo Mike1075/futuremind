@@ -64,11 +64,16 @@ export default function CoursesPage() {
         .eq('student_id', user.id)
         .eq('status', 'active')
 
-      const enrolled: EnrolledCourse[] = enrolledData?.map((item: any) => ({
-        course_id: item.course_systems.id,
-        course_title: item.course_systems.title,
-        assigned_at: item.assigned_at
-      })) || []
+      const enrolled: EnrolledCourse[] = enrolledData
+        ?.filter(item => item.course_systems) // Filter out null course_systems
+        ?.map((item: any) => ({
+          course_id: item.course_systems?.id,
+          course_title: item.course_systems?.title,
+          assigned_at: item.assigned_at
+        }))
+        .filter((item): item is EnrolledCourse =>
+          item.course_id !== undefined && item.course_title !== undefined
+        ) || []
 
       setEnrolledCourses(enrolled)
     } catch (error) {

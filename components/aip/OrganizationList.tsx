@@ -26,7 +26,6 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
 
       // 获取当前用户
       const { data: { user } } = await supabase.auth.getUser()
-      console.log('[组织项目] 当前用户ID:', user?.id)
 
       // 1. 获取用户参与的所有项目ID（如果已登录）
       let userProjectIds: string[] = []
@@ -41,20 +40,16 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
         }
 
         userProjectIds = memberships?.map(m => m.project_id) || []
-        console.log('[组织项目] 用户参与的项目ID:', userProjectIds)
       }
 
       // 2. 并发加载所有组织的项目（公开项目 + 用户参与的项目）
-      console.log('[组织项目] 开始加载组织列表:', organizations.map(o => ({ id: o.organization_id, name: o.organization?.name })))
 
       await Promise.all(
         organizations.map(async (org) => {
           const orgName = org.organization?.name || ''
-          console.log(`[组织项目] 处理组织: ${orgName} (${org.organization_id})`)
 
           // 特殊处理"我的项目"组织：显示用户参与的所有项目（跨组织）
           if (orgName === '我的项目' && user && userProjectIds.length > 0) {
-            console.log(`[组织项目] 特殊处理"我的项目"，查询用户参与的所有项目`)
             const { data: projects, error: projectError } = await supabase
               .from('projects')
               .select('*')
@@ -65,7 +60,6 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
               console.error(`[组织项目] 查询"我的项目"失败:`, projectError)
             }
 
-            console.log(`[组织项目] "我的项目"查询到 ${projects?.length || 0} 个项目:`, projects?.map(p => ({ id: p.id, name: p.name })))
             projectsData[org.organization_id] = (projects as any) || []
             return
           }
@@ -79,16 +73,13 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
           // 应用对标网站的查询逻辑：公开项目 OR 用户参与的项目
           if (!user) {
             // 未登录：只显示公开项目
-            console.log(`[组织项目] 未登录，查询公开项目`)
             query = query.eq('is_public', true)
           } else if (userProjectIds.length > 0) {
             // 已登录且有参与项目：公开项目 OR 用户参与的项目
             const orCondition = `is_public.eq.true,id.in.(${userProjectIds.join(',')})`
-            console.log(`[组织项目] 已登录，OR条件:`, orCondition)
             query = query.or(orCondition)
           } else {
             // 已登录但没参与项目：只显示公开项目
-            console.log(`[组织项目] 已登录但无参与项目，查询公开项目`)
             query = query.eq('is_public', true)
           }
 
@@ -98,17 +89,9 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
             console.error(`[组织项目] 查询组织 ${orgName} 的项目失败:`, projectError)
           }
 
-          console.log(`[组织项目] 组织 ${orgName} 查询到 ${projects?.length || 0} 个项目:`, projects?.map(p => ({ id: p.id, name: p.name, is_public: p.is_public })))
-
           projectsData[org.organization_id] = (projects as any) || []
         })
       )
-
-      console.log('[组织项目] 最终项目数据:', Object.entries(projectsData).map(([orgId, projects]) => ({
-        orgId,
-        count: projects.length,
-        projects: projects.map((p: any) => ({ id: p.id, name: p.name }))
-      })))
 
       setOrgProjects(projectsData)
     } catch (error) {

@@ -5,6 +5,7 @@ import { Bot, X, Send, Trash2, Check, FolderOpen, Building2, Loader2 } from 'luc
 import ReactMarkdown from 'react-markdown'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project } from '@/lib/aip/types'
+import aipChatAPI from '@/lib/api/aip-chat'
 
 interface FloatingChatBotProps {
   organization?: Organization
@@ -32,7 +33,9 @@ export function FloatingChatBot({
   const [userProjects, setUserProjects] = useState<Project[]>([])
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [showProjectPanel, setShowProjectPanel] = useState(true) // 默认显示项目面板
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const hasLoadedHistory = useRef(false)
 
   // 自动滚动到底部
   const scrollToBottom = () => {
@@ -80,14 +83,27 @@ export function FloatingChatBot({
     loadProjects()
   }, [isOpen])
 
-  // 初始化欢迎消息
+  // 加载聊天历史记录
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen || hasLoadedHistory.current) return
 
-    let welcomeContent = '🚀 欢迎来到探索者联盟！我是您的AI探索伙伴。'
+    const loadHistory = async () => {
+      setIsLoadingHistory(true)
+      hasLoadedHistory.current = true
 
-    if (currentProject && organization) {
-      welcomeContent = `🚀 探索者你好！我看到你正在探索「${currentProject.name}」项目（${organization.name}组织）。
+      try {
+        const result = await aipChatAPI.loadChatHistory()
+
+        if (result.success && result.data) {
+          if (result.data.messages.length > 0) {
+            // 有历史记录，直接加载
+            setMessages(result.data.messages)
+          } else {
+            // 没有历史记录，显示欢迎消息
+            let welcomeContent = '🚀 欢迎来到探索者联盟！我是您的AI探索伙伴。'
+
+            if (currentProject && organization) {
+              welcomeContent = `🚀 探索者你好！我看到你正在探索「${currentProject.name}」项目（${organization.name}组织）。
 
 让我们一起：
 ✨ 深入挖掘项目的创新潜力
@@ -96,8 +112,8 @@ export function FloatingChatBot({
 💡 突破思维边界，做真正创新的事情
 
 有什么想探讨的吗？`
-    } else if (organization) {
-      welcomeContent = `🚀 探索者你好！当前已为您选择了「${organization.name}」组织。
+            } else if (organization) {
+              welcomeContent = `🚀 探索者你好！当前已为您选择了「${organization.name}」组织。
 
 在探索者联盟，我们鼓励你：
 🌟 创建属于自己的原创PBL项目
@@ -105,8 +121,8 @@ export function FloatingChatBot({
 🤝 与伙伴协作，共同突破
 
 选择一个项目开始探索，或告诉我你想创建什么样的项目！`
-    } else {
-      welcomeContent = `🚀 欢迎来到探索者联盟！我是您的AI探索伙伴。
+            } else {
+              welcomeContent = `🚀 欢迎来到探索者联盟！我是您的AI探索伙伴。
 
 这里是属于你的创新天地：
 🌟 **创建原创项目** - 把你的奇思妙想变成真实的探索
@@ -115,14 +131,26 @@ export function FloatingChatBot({
 💡 **项目式学习** - 在实践中获得真知
 
 告诉我，你想创建什么样的项目？或者需要我帮你找到合适的探索方向？`
+            }
+
+            setMessages([{
+              id: 'welcome',
+              role: 'assistant',
+              content: welcomeContent,
+              timestamp: new Date()
+            }])
+          }
+        } else {
+          console.error('加载聊天历史失败:', result.error)
+        }
+      } catch (error) {
+        console.error('加载聊天历史失败:', error)
+      } finally {
+        setIsLoadingHistory(false)
+      }
     }
 
-    setMessages([{
-      id: 'welcome',
-      role: 'assistant',
-      content: welcomeContent,
-      timestamp: new Date()
-    }])
+    loadHistory()
   }, [isOpen, currentProject, organization])
 
   const handleSend = async () => {
@@ -155,13 +183,6 @@ export function FloatingChatBot({
         const firstSelectedProject = userProjects.find(p => p.id === selectedProjects[0])
         organizationId = firstSelectedProject?.organization_id || ''
       }
-
-      console.log('[FloatingChatBot] 发送参数:', {
-        chatInput: userMessage.content,
-        project_id: projectIdValue,
-        organization_id: organizationId,
-        selectedProjectsCount: selectedProjects.length
-      })
 
       // 调用流式API
       const response = await fetch('/api/aip/chat', {
@@ -204,7 +225,7 @@ export function FloatingChatBot({
       let pendingChunks: string[] = []
       let displayInterval: NodeJS.Timeout | null = null
 
-      // 启动显示定时器（每50ms显示3个字符）
+      // 启动显示定时器（优化：每100ms显示5个字符，减少渲染频率）
       const startDisplayTimer = () => {
         if (displayInterval) return
 
@@ -219,15 +240,23 @@ export function FloatingChatBot({
             return
           }
 
+          // 每次显示5个字符，减少渲染次数
           const chunkToDisplay = pendingChunks.shift() || ''
           displayedAnswer += chunkToDisplay
 
-          setMessages(prev => prev.map(msg =>
-            msg.id === assistantMessageId
-              ? { ...msg, content: displayedAnswer }
-              : msg
-          ))
-        }, 50)
+          // 只更新最后一条消息，避免全量map
+          setMessages(prev => {
+            const newMessages = [...prev]
+            const lastIndex = newMessages.length - 1
+            if (lastIndex >= 0 && newMessages[lastIndex].id === assistantMessageId) {
+              newMessages[lastIndex] = {
+                ...newMessages[lastIndex],
+                content: displayedAnswer
+              }
+            }
+            return newMessages
+          })
+        }, 100) // 从50ms增加到100ms，减少50%的渲染次数
       }
 
       try {
@@ -263,7 +292,6 @@ export function FloatingChatBot({
                 startDisplayTimer()
               } else if (json.type === 'done') {
                 // 流式传输完成
-                console.log('[FloatingChatBot] 流式传输完成')
               }
             } catch {
               // 忽略解析错误
@@ -306,15 +334,27 @@ export function FloatingChatBot({
     }
   }
 
-  const handleClearChat = () => {
-    if (confirm('确定要清空聊天记录吗？')) {
-      const welcomeMessage: ChatMessage = {
-        id: 'welcome-new',
-        role: 'assistant',
-        content: '聊天记录已清空。这是一个全新的对话会话。',
-        timestamp: new Date()
+  const handleClearChat = async () => {
+    if (!confirm('确定要清空聊天记录吗？此操作不可恢复。')) return
+
+    try {
+      const result = await aipChatAPI.clearChatHistory()
+
+      if (result.success) {
+        const welcomeMessage: ChatMessage = {
+          id: 'welcome-new',
+          role: 'assistant',
+          content: '✅ 聊天记录已清空。这是一个全新的对话会话。',
+          timestamp: new Date()
+        }
+        setMessages([welcomeMessage])
+      } else {
+        console.error('清空聊天记录失败:', result.error)
+        alert('清空聊天记录失败，请稍后重试')
       }
-      setMessages([welcomeMessage])
+    } catch (error) {
+      console.error('清空聊天记录失败:', error)
+      alert('清空聊天记录失败，请稍后重试')
     }
   }
 
@@ -488,7 +528,14 @@ export function FloatingChatBot({
           {/* Chat Messages */}
           <div className="flex-1 flex flex-col">
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
+              {isLoadingHistory ? (
+                <div className="flex flex-col items-center justify-center h-full gap-3">
+                  <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
+                  <p className="text-sm text-zinc-400">加载聊天记录中...</p>
+                </div>
+              ) : (
+                <>
+                  {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -523,11 +570,11 @@ export function FloatingChatBot({
                         我
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                ))}
 
-              {isLoading && (
+                {isLoading && (
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-8 h-8 bg-blue-500/20 rounded-lg border border-blue-500/30 flex items-center justify-center">
                     <Bot className="w-4 h-4 text-blue-400" />
@@ -538,10 +585,12 @@ export function FloatingChatBot({
                       <span className="text-sm text-zinc-400">正在思考...</span>
                     </div>
                   </div>
-                </div>
-              )}
+                  </div>
+                )}
 
-              <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} />
+                </>
+              )}
             </div>
 
             {/* Input */}

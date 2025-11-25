@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import type { Project } from '@/lib/aip/types'
 import { ProjectCard } from './ProjectCard'
 
@@ -9,7 +10,7 @@ interface ProjectListProps {
   organizationId: string
 }
 
-export function ProjectList({ projects, loading, organizationId }: ProjectListProps) {
+export const ProjectList = memo(function ProjectList({ projects, loading, organizationId }: ProjectListProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -52,4 +53,4 @@ export function ProjectList({ projects, loading, organizationId }: ProjectListPr
       ))}
     </div>
   )
-}
+})

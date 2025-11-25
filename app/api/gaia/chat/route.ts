@@ -1,5 +1,8 @@
 import { NextRequest } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
 
 /**
  * POST /api/gaia/chat
@@ -9,33 +12,47 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server'
  * - message: 用户消息
  * - conversationId: 可选，现有对话ID
  */
-export async function POST(req: NextRequest) {
+async function handleGaiaChat(req: NextRequest) {
   try {
-    const startTime = Date.now()  // 🔥 开始计时
-    console.log('[Gaia API] ⏱️  请求开始')
+    const startTime = Date.now()
+    logger.info('Gaia chat request started')
 
+    // 获取N8N Webhook URL（不使用硬编码）
     const N8N_CHAT_WEBHOOK = process.env.N8N_CHAT_WEBHOOK_URL
-      || 'https://n8n.aifunbox.com/webhook/79cbcc7c-fcff-4ab4-9a4e-c5a6f14b3024'
 
-    // 获取登录用户
-    const supabase = await createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      })
+    if (!N8N_CHAT_WEBHOOK) {
+      logger.error('N8N chat webhook URL not configured')
+      return errorResponse('Service configuration error', undefined, 503)
     }
 
-    const { message, conversationId, currentMessages } = await req.json()
-    console.log(`[Gaia API] ⏱️  解析请求: +${Date.now() - startTime}ms`)
+    // 权限验证
+    const auth = await requireAuth(req)
+    if (!auth.authorized) {
+      return auth.response
+    }
 
-    if (!message || typeof message !== 'string' || !message.trim()) {
-      return new Response(JSON.stringify({ error: 'Message is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      })
+    const { user, supabase } = auth
+
+    // 解析和验证请求参数
+    const body = await req.json()
+    const { message, conversationId, currentMessages } = body
+
+    logger.debug('Request parsed', {
+      elapsed: `${Date.now() - startTime}ms`,
+      userId: user.id
+    })
+
+    const validation = validateParams(body, {
+      message: {
+        required: true,
+        type: 'string',
+        minLength: 1,
+        maxLength: 5000
+      }
+    })
+
+    if (!validation.valid) {
+      return validation.response
     }
 
     const userId = user.id
@@ -81,11 +98,8 @@ export async function POST(req: NextRequest) {
           .single()
 
         if (createError) {
-          console.error('[Gaia Chat] Failed to create conversation:', createError)
-          return new Response(JSON.stringify({ error: 'Failed to create conversation' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          })
+          logger.error('Failed to create conversation', createError)
+          return errorResponse('Failed to create conversation', createError, 500)
         }
 
         conversation = newConv
@@ -127,7 +141,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     const userName = profileData?.full_name || profileData?.email?.split('@')[0] || '用户'
-    console.log(`[Gaia API] 👤 用户姓名: ${userName} (来自profiles.full_name)`)
+    logger.debug('User profile loaded', { userName, userId })
 
     // 5. 准备发送给N8N的数据
     const defaultProjectId = process.env.DEFAULT_PROJECT_ID || 'p001'
@@ -137,8 +151,8 @@ export async function POST(req: NextRequest) {
       chatInput: message,
       session_id: conversation.session_id || conversation.id,
       user_id: userId,
-      user_name: userName,  // 🔥 添加用户姓名
-      user_email: profileData?.email || user.email,  // 🔥 添加用户邮箱
+      user_name: userName,
+      user_email: profileData?.email || user.email,
       project_id: defaultProjectId,
       organization_id: defaultOrganizationId,
       conversation_history: conversationHistory.slice(-5).map((m: any) => ({
@@ -147,24 +161,26 @@ export async function POST(req: NextRequest) {
       }))
     }
 
-    console.log(`[Gaia API] ⏱️  数据库操作完成: +${Date.now() - startTime}ms`)
-    console.log(`[Gaia API] 📤 发送N8N请求: ${N8N_CHAT_WEBHOOK}`)
-    console.log(`[Gaia API] 📊 Payload详情:`, {
-      chatInput: message,
-      session_id: payload.session_id,
-      user_id: userId,
-      conversation_history_length: payload.conversation_history.length,
-      payload_size_bytes: JSON.stringify(payload).length
+    logger.debug('Database operations completed', {
+      elapsed: `${Date.now() - startTime}ms`
+    })
+
+    logger.debug('Calling N8N webhook', {
+      url: N8N_CHAT_WEBHOOK.substring(0, 50) + '...',
+      sessionId: payload.session_id,
+      historyLength: payload.conversation_history.length,
+      payloadSize: JSON.stringify(payload).length
     })
 
     // 5. 调用N8N获取流式响应（添加60秒超时）
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 60000) // 60秒超时
+    const timeoutId = setTimeout(() => controller.abort(), 60000)
 
     let n8nRes: Response
     try {
       const n8nFetchStart = Date.now()
-      console.log(`[Gaia API] 🚀 开始调用N8N...`)
+      logger.info('N8N request started')
+
       n8nRes = await fetch(N8N_CHAT_WEBHOOK, {
         method: 'POST',
         headers: {
@@ -176,29 +192,25 @@ export async function POST(req: NextRequest) {
       })
 
       clearTimeout(timeoutId)
-      console.log(`[Gaia API] ⏱️  N8N响应到达: +${Date.now() - startTime}ms (N8N耗时: ${Date.now() - n8nFetchStart}ms)`)
+
+      logger.info('N8N response received', {
+        elapsed: `${Date.now() - startTime}ms`,
+        n8nDuration: `${Date.now() - n8nFetchStart}ms`,
+        status: n8nRes.status
+      })
 
       if (!n8nRes.ok) {
         const errorText = await n8nRes.text()
-        console.error('[Gaia Chat] N8N error:', errorText)
-        return new Response(JSON.stringify({
-          error: 'Failed to get response from Gaia',
+        logger.error('N8N request failed', undefined, {
           status: n8nRes.status
-        }), {
-          status: 502,
-          headers: { 'Content-Type': 'application/json' }
         })
+        return errorResponse('Failed to get response from Gaia', undefined, 502)
       }
     } catch (error: any) {
       clearTimeout(timeoutId)
       if (error.name === 'AbortError') {
-        console.error('[Gaia API] ⏱️  N8N请求超时 (60秒)')
-        return new Response(JSON.stringify({
-          error: 'N8N request timeout (60s)'
-        }), {
-          status: 504,
-          headers: { 'Content-Type': 'application/json' }
-        })
+        logger.error('N8N request timeout (60s)')
+        return errorResponse('Request timeout', undefined, 504)
       }
       throw error
     }
@@ -232,7 +244,9 @@ export async function POST(req: NextRequest) {
                 // 处理type: "item"的流式数据
                 if (json.type === 'item' && json.content) {
                   if (!firstChunkReceived) {
-                    console.log(`[Gaia API] ⏱️  首个chunk到达: +${Date.now() - startTime}ms`)
+                    logger.debug('First chunk received', {
+                      elapsed: `${Date.now() - startTime}ms`
+                    })
                     firstChunkReceived = true
                   }
 
@@ -317,7 +331,7 @@ export async function POST(req: NextRequest) {
           controller.enqueue(new TextEncoder().encode(doneData))
           controller.close()
         } catch (error) {
-          console.error('[Gaia Chat] Stream error:', error)
+          logger.error('Stream processing error', error)
           controller.error(error)
         } finally {
           reader.releaseLock()
@@ -334,12 +348,13 @@ export async function POST(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('[Gaia Chat] Internal error:', error)
-    return new Response(JSON.stringify({
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    })
+    logger.error('Gaia chat request failed', error)
+    return errorResponse('Internal server error', error, 500)
   }
 }
+
+// 导出包装了Rate Limiting的处理器
+export const POST = withRateLimit(
+  handleGaiaChat,
+  rateLimitConfigs.chat
+)

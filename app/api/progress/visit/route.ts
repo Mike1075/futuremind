@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
 
 /**
  * PUT /api/progress/visit
@@ -8,24 +10,36 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server'
  * Body参数:
  * - contentId: 课程内容ID
  */
-export async function PUT(req: NextRequest) {
+async function handleRecordVisit(req: NextRequest) {
+  const startTime = Date.now()
+
   try {
-    // 获取登录用户
-    const supabase = await createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // 权限验证
+    const auth = await requireAuth(req)
+    if (!auth.authorized) {
+      return auth.response
     }
 
-    const { contentId } = await req.json()
+    const { user, supabase } = auth
 
-    if (!contentId) {
-      return NextResponse.json({ error: 'contentId is required' }, { status: 400 })
+    // 参数验证
+    const body = await req.json()
+    const validation = validateParams(body, {
+      contentId: {
+        required: true,
+        type: 'string'
+      }
+    })
+
+    if (!validation.valid) {
+      return validation.response
     }
+
+    const { contentId } = body
 
     // 使用UPSERT：如果记录存在则更新时间，否则插入新记录
-    const { error } = await (supabase as any)
+    logger.dbQuery('content_visit_records', 'UPSERT')
+    const { error } = await supabase
       .from('content_visit_records')
       .upsert(
         {
@@ -39,13 +53,22 @@ export async function PUT(req: NextRequest) {
       )
 
     if (error) {
-      console.error('[Visit Record] Database error:', error)
-      return NextResponse.json({ error: 'Failed to record visit' }, { status: 500 })
+      throw error
     }
+
+    const duration = Date.now() - startTime
+    logger.info('Visit recorded', {
+      contentId,
+      duration: `${duration}ms`
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Visit Record] Internal error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    logger.error('Failed to record visit', error, {
+      duration: `${Date.now() - startTime}ms`
+    })
+    return errorResponse('Failed to record visit', error, 500)
   }
 }
+
+export const PUT = withRateLimit(handleRecordVisit, rateLimitConfigs.api)

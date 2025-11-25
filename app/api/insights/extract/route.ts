@@ -4,8 +4,19 @@ import OpenAI from 'openai'
 
 // 延迟初始化OpenAI客户端，避免构建时出错
 function getOpenAI() {
+  const apiKey = process.env.OPENAI_API_KEY
+
+  // 生产环境必须提供有效的API密钥
+  if (!apiKey || apiKey === 'dummy-key-for-build') {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('OPENAI_API_KEY is not configured')
+    }
+    // 开发环境允许使用dummy key（但会失败）
+    console.warn('[Insights] Using dummy OpenAI API key in development')
+  }
+
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || 'dummy-key-for-build',
+    apiKey: apiKey || 'dummy-key-for-build',
   })
 }
 

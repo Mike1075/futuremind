@@ -2,42 +2,67 @@
 // Description: 学员列表API - 支持搜索、筛选、排序
 // 权限：校长和老师
 
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { requireRole, errorResponse } from '@/lib/api-utils'
 
-export async function GET(request: Request) {
+// Whitelist of allowed sort columns (SEC-02 fix)
+const ALLOWED_SORT_COLUMNS = [
+  'composite_score',
+  'percentile_rank',
+  'consciousness_level',
+  'created_at',
+  'level_updated_at',
+  'full_name',
+  'email'
+] as const
+
+async function handleGetStudents(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    logger.info('Admin students list request')
+
+    // 1. Permission validation - require principal or teacher role
+    const auth = await requireRole(request, ['principal', 'teacher'])
+    if (!auth.authorized) {
+      return auth.response
+    }
+
+    const { supabase } = auth
     const { searchParams } = new URL(request.url)
 
-    // 1. 检查当前用户是否是管理员（校长或老师）
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || !['admin', 'principal', 'teacher'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
-    }
-
-    // 新权限系统：校长和老师都能查看所有学员
-
-    // 2. 获取查询参数
+    // 2. Parse and validate query parameters
     const search = searchParams.get('search') || ''
     const levelFilter = searchParams.get('level') || ''
-    const sortBy = searchParams.get('sortBy') || 'composite_score'
-    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const sortByParam = searchParams.get('sortBy') || 'composite_score'
+    const sortOrderParam = searchParams.get('sortOrder') || 'desc'
     const page = parseInt(searchParams.get('page') || '1')
-    const pageSize = parseInt(searchParams.get('pageSize') || '20')
+    const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '20'), 100) // Max 100
 
-    // 3. 构建查询
+    // SEC-02: Validate sortBy against whitelist
+    const sortBy = ALLOWED_SORT_COLUMNS.includes(sortByParam as any)
+      ? sortByParam
+      : 'composite_score'
+
+    if (sortByParam !== sortBy) {
+      logger.warn('Invalid sort column attempted', { attempted: sortByParam })
+    }
+
+    // Validate sortOrder
+    const sortOrder = ['asc', 'desc'].includes(sortOrderParam) ? sortOrderParam : 'desc'
+
+    logger.debug('Query parameters', {
+      search: search ? '***' : '',
+      levelFilter,
+      sortBy,
+      sortOrder,
+      page,
+      pageSize
+    })
+
+    // 3. Build query
     let query = supabase
       .from('profiles')
       .select(`
@@ -53,30 +78,41 @@ export async function GET(request: Request) {
       `, { count: 'exact' })
       .eq('role', 'student')
 
-    // 4. 应用搜索过滤
+    // 4. Apply search filter
     if (search) {
       query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
     }
 
-    // 5. 应用等级过滤
+    // 5. Apply level filter
     if (levelFilter) {
-      query = query.eq('consciousness_level', parseInt(levelFilter))
+      const level = parseInt(levelFilter)
+      if (!isNaN(level) && level >= 0 && level <= 12) {
+        query = query.eq('consciousness_level', level)
+      }
     }
 
-    // 6. 应用排序
+    // 6. Apply sorting (now safe with whitelist)
     query = query.order(sortBy, { ascending: sortOrder === 'asc' })
 
-    // 7. 应用分页
+    // 7. Apply pagination
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1
     query = query.range(from, to)
 
-    // 8. 执行查询
+    // 8. Execute query
+    logger.dbQuery('profiles', 'SELECT')
     const { data: students, error, count } = await query
 
     if (error) throw error
 
-    // 9. 返回结果
+    const duration = Date.now() - startTime
+    logger.info('Students list retrieved', {
+      count: students?.length || 0,
+      total: count || 0,
+      duration: `${duration}ms`
+    })
+
+    // 9. Return results
     return NextResponse.json({
       students,
       pagination: {
@@ -88,10 +124,15 @@ export async function GET(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('[API Error] /api/admin/students:', error)
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+    logger.error('Failed to fetch students', error, {
+      duration: `${Date.now() - startTime}ms`
+    })
+    return errorResponse('Failed to fetch students', error, 500)
   }
 }
+
+// Export with rate limiting
+export const GET = withRateLimit(
+  handleGetStudents,
+  rateLimitConfigs.api
+)

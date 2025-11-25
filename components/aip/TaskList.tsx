@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo, useCallback } from 'react'
 import type { Task } from '@/lib/aip/types'
 import { updateTask } from '@/lib/aip/api'
 
@@ -11,20 +11,22 @@ interface TaskListProps {
   onUpdate: () => void
 }
 
-export function TaskList({ tasks, loading, projectId, onUpdate }: TaskListProps) {
-  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all')
+type TaskFilter = 'all' | 'pending' | 'in_progress' | 'completed'
+
+export const TaskList = memo(function TaskList({ tasks, loading, projectId, onUpdate }: TaskListProps) {
+  const [filter, setFilter] = useState<TaskFilter>('all')
   const [updating, setUpdating] = useState<string | null>(null)
 
   const filteredTasks = filter === 'all'
     ? tasks
     : tasks.filter(task => task.status === filter)
 
-  const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
+  const handleStatusChange = useCallback(async (taskId: string, newStatus: Task['status']) => {
     setUpdating(taskId)
     await updateTask(taskId, { status: newStatus })
     setUpdating(null)
     onUpdate()
-  }
+  }, [onUpdate])
 
   const statusColors = {
     pending: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
@@ -74,7 +76,7 @@ export function TaskList({ tasks, loading, projectId, onUpdate }: TaskListProps)
         ].map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setFilter(tab.key as any)}
+            onClick={() => setFilter(tab.key as TaskFilter)}
             className={`pb-3 px-2 text-sm font-medium transition-colors relative ${
               filter === tab.key
                 ? 'text-purple-400'
@@ -197,4 +199,4 @@ export function TaskList({ tasks, loading, projectId, onUpdate }: TaskListProps)
       )}
     </div>
   )
-}
+})

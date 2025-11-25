@@ -37,7 +37,6 @@ export function useOrganizations() {
         if (Date.now() - timestamp < 5 * 60 * 1000) {
           setOrganizations(data)
           setLoading(false)
-          console.log('[组织加载] 使用缓存:', data.length, '个组织')
         }
       } catch (e) {
         console.error('缓存解析失败:', e)
@@ -49,13 +48,10 @@ export function useOrganizations() {
   }, [])
 
   const loadOrganizations = async () => {
-    console.time('[组织加载] 总耗时')
     setLoading(true)
 
     // 先快速获取组织列表
-    console.time('[组织加载] 获取组织列表')
     const result = await getMyOrganizations()
-    console.timeEnd('[组织加载] 获取组织列表')
 
     if (result.error) {
       setError(result.error)
@@ -69,19 +65,13 @@ export function useOrganizations() {
         timestamp: Date.now()
       }))
 
-      console.log('[组织加载] 获取到', orgs.length, '个组织')
-
       // 如果没有组织，才初始化默认组织
       if (!result.data || result.data.length === 0) {
         try {
-          console.time('[组织加载] 初始化默认组织')
           await fetch('/api/aip/init-default-orgs', { method: 'POST' })
-          console.timeEnd('[组织加载] 初始化默认组织')
 
           // 重新加载组织列表
-          console.time('[组织加载] 重新获取组织列表')
           const retryResult = await getMyOrganizations()
-          console.timeEnd('[组织加载] 重新获取组织列表')
 
           if (retryResult.data) {
             setOrganizations(retryResult.data)
@@ -93,7 +83,6 @@ export function useOrganizations() {
     }
 
     setLoading(false)
-    console.timeEnd('[组织加载] 总耗时')
   }
 
   return { organizations, loading, error, reload: loadOrganizations }

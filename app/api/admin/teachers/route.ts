@@ -1,34 +1,26 @@
-import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { requireRole, errorResponse, validateParams } from '@/lib/api-utils'
 
 // GET /api/admin/teachers - 获取教师列表
-export async function GET() {
+async function handleGetTeachers(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
-    const supabase = await createClient()
+    logger.info('Get teachers list request')
 
-    // 验证用户身份
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // 权限验证 - 只有校长可以管理教师
+    const auth = await requireRole(request, ['principal'])
+    if (!auth.authorized) {
+      return auth.response
     }
 
-    // 检查是否是校长（只有校长可以管理教师）
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    const userRole = (profile as unknown as { role?: string })?.role
-
-    if (profileError || !profile || !userRole || userRole !== 'principal') {
-      return NextResponse.json(
-        { error: 'Forbidden - Only principals can manage teachers' },
-        { status: 403 }
-      )
-    }
+    const { supabase } = auth
 
     // 获取所有教师列表
+    logger.dbQuery('profiles', 'SELECT')
     const { data: teachers, error: teachersError } = await supabase
       .from('profiles')
       .select('id, email, full_name, created_at')
@@ -36,51 +28,61 @@ export async function GET() {
       .order('created_at', { ascending: false })
 
     if (teachersError) {
-      console.error('获取教师列表失败:', teachersError)
-      return NextResponse.json({ error: teachersError.message }, { status: 500 })
+      throw teachersError
     }
+
+    const duration = Date.now() - startTime
+    logger.info('Teachers list retrieved', {
+      count: teachers?.length || 0,
+      duration: `${duration}ms`
+    })
 
     return NextResponse.json({ teachers })
   } catch (error) {
-    console.error('API错误:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    logger.error('Failed to fetch teachers', error, {
+      duration: `${Date.now() - startTime}ms`
+    })
+    return errorResponse('Failed to fetch teachers', error, 500)
   }
 }
 
+export const GET = withRateLimit(handleGetTeachers, rateLimitConfigs.api)
+
 // POST /api/admin/teachers - 添加教师（通过邮箱）
-export async function POST(request: Request) {
+async function handleAddTeacher(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
-    const supabase = await createClient()
+    logger.info('Add teacher request')
+
+    // 权限验证 - 只有校长可以添加教师
+    const auth = await requireRole(request, ['principal'])
+    if (!auth.authorized) {
+      return auth.response
+    }
+
+    const { supabase } = auth
+
+    // 解析和验证请求参数
     const body = await request.json()
+    const validation = validateParams(body, {
+      email: {
+        required: true,
+        type: 'string',
+        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ // Email regex
+      }
+    })
+
+    if (!validation.valid) {
+      return validation.response
+    }
+
     const { email } = body
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
-    }
-
-    // 验证用户身份
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // 检查是否是校长
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    const userRole = (profile as unknown as { role?: string })?.role
-
-    if (profileError || !profile || !userRole || userRole !== 'principal') {
-      return NextResponse.json(
-        { error: 'Forbidden - Only principals can add teachers' },
-        { status: 403 }
-      )
-    }
+    logger.debug('Looking up user by email', { email: '***' })
 
     // 查找该邮箱对应的用户
+    logger.dbQuery('profiles', 'SELECT')
     const { data: targetUser, error: findError } = await supabase
       .from('profiles')
       .select('id, email, full_name, role')
@@ -88,6 +90,7 @@ export async function POST(request: Request) {
       .single()
 
     if (findError || !targetUser) {
+      logger.warn('User not found', { email: '***' })
       return NextResponse.json(
         { error: 'User with this email not found. Please make sure the user has registered.' },
         { status: 404 }
@@ -103,6 +106,7 @@ export async function POST(request: Request) {
 
     // 检查是否已经是教师
     if (targetUserData.role === 'teacher') {
+      logger.warn('User already a teacher', { userId: targetUserData.id })
       return NextResponse.json(
         { error: 'This user is already a teacher' },
         { status: 400 }
@@ -110,6 +114,7 @@ export async function POST(request: Request) {
     }
 
     // 将用户角色设为 teacher - 使用管理员客户端绕过 RLS
+    logger.dbQuery('profiles', 'UPDATE')
     const adminSupabase = createAdminClient() as any
     const { error: updateError } = await adminSupabase
       .from('profiles')
@@ -117,9 +122,14 @@ export async function POST(request: Request) {
       .eq('id', targetUserData.id)
 
     if (updateError) {
-      console.error('更新用户角色失败:', updateError)
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      throw updateError
     }
+
+    const duration = Date.now() - startTime
+    logger.info('Teacher added successfully', {
+      teacherId: targetUserData.id,
+      duration: `${duration}ms`
+    })
 
     // 创建 teacher_assignments 记录（由触发器自动创建，这里返回成功即可）
     return NextResponse.json({
@@ -131,7 +141,11 @@ export async function POST(request: Request) {
       }
     })
   } catch (error) {
-    console.error('API错误:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    logger.error('Failed to add teacher', error, {
+      duration: `${Date.now() - startTime}ms`
+    })
+    return errorResponse('Failed to add teacher', error, 500)
   }
 }
+
+export const POST = withRateLimit(handleAddTeacher, rateLimitConfigs.api)

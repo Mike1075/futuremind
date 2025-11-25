@@ -53,13 +53,9 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         throw new Error('未找到用户信息')
       }
 
-      console.log('[UserProfile] 🔍 当前用户ID:', user.id)
-      console.log('[UserProfile] 🔍 准备更新姓名为:', nickname.trim())
-
       // 1. 更新姓名（同时保存到 auth.users.user_metadata 和 profiles.full_name）
       if (nickname.trim()) {
         // 1.1 更新 auth.users.user_metadata.full_name
-        console.log('[UserProfile] 📝 步骤1: 更新 auth.users.user_metadata.full_name')
         const { error: authUpdateError } = await supabase.auth.updateUser({
           data: { full_name: nickname.trim() }
         })
@@ -68,33 +64,16 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           console.error('[UserProfile] ❌ auth更新失败:', authUpdateError)
           throw authUpdateError
         }
-        console.log('[UserProfile] ✅ auth.users.user_metadata.full_name 更新成功')
 
         // 1.2 更新 profiles.full_name（N8N从这里读取姓名）
-        console.log('[UserProfile] 📝 步骤2: 更新 profiles.full_name')
-        const { data: updateData, error: profileUpdateError } = await supabase
+        const { error: profileUpdateError } = await supabase
           .from('profiles')
           .update({ full_name: nickname.trim() })
           .eq('id', user.id)
-          .select()
 
         if (profileUpdateError) {
           console.error('[UserProfile] ❌ profiles更新失败:', profileUpdateError)
           throw profileUpdateError
-        }
-        console.log('[UserProfile] ✅ profiles.full_name 更新成功, 返回数据:', updateData)
-
-        // 1.3 验证更新：读取profiles表确认
-        const { data: verifyData, error: verifyError } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single()
-
-        if (verifyError) {
-          console.error('[UserProfile] ❌ 验证读取失败:', verifyError)
-        } else {
-          console.log('[UserProfile] ✅ 验证: profiles表中的full_name =', verifyData.full_name)
         }
       }
 

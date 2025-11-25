@@ -2,34 +2,38 @@
 // Description: 统计看板API - 获取整体统计数据
 // 权限：校长和老师
 
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { requireRole, errorResponse } from '@/lib/api-utils'
 
 // ✅ 性能优化：启用60秒缓存，Dashboard数据不需要实时更新
 // 减少重复查询，大幅提升管理后台加载速度
 export const revalidate = 60
 
-export async function GET(request: Request) {
-  const startTime = performance.now()
-  console.log('[Dashboard API] 🚀 开始获取统计数据')
-  try {
-    const supabase = createRouteHandlerClient({ cookies })
+async function handleGetDashboard(request: NextRequest) {
+  const startTime = Date.now()
 
-    // 1. 检查当前用户是否是管理员（校长或老师）
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    logger.info('Dashboard request started')
+
+    // 1. 权限验证 - 校长和老师
+    const auth = await requireRole(request, ['principal', 'teacher'])
+    if (!auth.authorized) {
+      return auth.response
     }
 
+    const { user, supabase } = auth
+
+    // 获取用户角色
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['principal', 'teacher'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden - Not an admin' }, { status: 403 })
+    if (!profile) {
+      return errorResponse('Profile not found', undefined, 404)
     }
 
     const isPrincipal = profile.role === 'principal'
@@ -173,9 +177,9 @@ export async function GET(request: Request) {
       .from('course_systems')
       .select('id, title, system_key')
 
-    console.log('[Dashboard API] ✅ 查询12完成：课程列表', {
-      耗时: `${(performance.now() - query12Start).toFixed(0)}ms`,
-      课程数: courses?.length || 0
+    logger.debug('Courses loaded', {
+      elapsed: `${Date.now() - query12Start}ms`,
+      count: courses?.length || 0
     })
 
     // 🔥 批量查询所有课程的分配数据（2次查询 vs 原来的2N次）
@@ -193,8 +197,8 @@ export async function GET(request: Request) {
         .in('course_system_id', courseIds)
     ])
 
-    console.log('[Dashboard API] ✅ 查询13完成：批量课程分配', {
-      耗时: `${(performance.now() - query13Start).toFixed(0)}ms`
+    logger.debug('Course assignments loaded', {
+      elapsed: `${Date.now() - query13Start}ms`
     })
 
     // 在内存中按课程ID分组统计（超快）
@@ -215,10 +219,11 @@ export async function GET(request: Request) {
     })) || []
 
     // 13. 返回统计数据
-    const totalTime = performance.now() - startTime
-    console.log('[Dashboard API] 🎉 统计数据获取完成', {
-      总耗时: `${totalTime.toFixed(0)}ms`,
-      查询优化: '课程统计批量查询（2次 vs 原2N次）'
+    const totalTime = Date.now() - startTime
+    logger.info('Dashboard data retrieved', {
+      duration: `${totalTime}ms`,
+      students: totalStudents || 0,
+      courses: courses?.length || 0
     })
 
     return NextResponse.json({
@@ -246,10 +251,15 @@ export async function GET(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('[API Error] /api/admin/dashboard:', error)
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+    logger.error('Dashboard request failed', error, {
+      duration: `${Date.now() - startTime}ms`
+    })
+    return errorResponse('Failed to fetch dashboard data', error, 500)
   }
 }
+
+// Export with rate limiting
+export const GET = withRateLimit(
+  handleGetDashboard,
+  rateLimitConfigs.api
+)
