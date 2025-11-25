@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/gaia/all-messages?limit=100&offset=0
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
       .limit(20)
 
     if (error) {
-      console.error('[All Messages] Error:', error)
+      logger.error('[All Messages] 查询失败', error)
       return NextResponse.json({ error: 'Failed to load messages' }, { status: 500 })
     }
 
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('[All Messages] Internal error:', error)
+    logger.error('[All Messages] 内部错误', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
