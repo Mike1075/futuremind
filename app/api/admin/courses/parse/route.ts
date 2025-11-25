@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenAI } from '@google/genai'
+import { logger } from '@/lib/logger'
 
 // 初始化 Gemini AI（使用环境变量验证）
 const apiKey = process.env.GEMINI_API_KEY
@@ -419,9 +420,7 @@ export async function POST(request: NextRequest) {
     // 初始化 Gemini AI
     const ai = new GoogleGenAI({ apiKey })
 
-    console.log('🤖 步骤1：智能识别课程类型...')
-    console.log('📄 文档长度:', documentContent.length)
-    console.log('📄 文档预览 (前200字符):', documentContent.substring(0, 200))
+    logger.debug('步骤1：智能识别课程类型', { docLength: documentContent.length })
 
     // 第一步：识别课程类型
     let identifyResponse
@@ -431,19 +430,16 @@ export async function POST(request: NextRequest) {
         contents: IDENTIFY_COURSE_TYPE_PROMPT + documentContent.substring(0, 3000), // 只使用前3000字符识别类型
       })
     } catch (apiError) {
-      console.error('❌ Gemini API 调用失败:', apiError)
+      logger.error('Gemini API 调用失败', apiError)
+      // SEC-01: 生产环境不暴露错误详情
       return NextResponse.json(
-        {
-          error: 'Gemini API 调用失败',
-          details: apiError instanceof Error ? apiError.message : '未知错误'
-        },
-        { status: 500 }
+        { error: 'AI服务暂时不可用，请稍后重试' },
+        { status: 503 }
       )
     }
 
     const identifyText = identifyResponse.text
-    console.log('📥 识别步骤返回长度:', identifyText?.length || 0)
-    console.log('📥 识别步骤返回内容 (前500字符):', identifyText?.substring(0, 500))
+    logger.debug('识别步骤返回', { length: identifyText?.length || 0 })
 
     if (!identifyText) {
       return NextResponse.json(
@@ -454,8 +450,6 @@ export async function POST(request: NextRequest) {
 
     // 解析识别结果（键值对格式）
     const cleanedIdentifyText = identifyText.trim()
-
-    console.log('🔍 识别结果预览:', cleanedIdentifyText.substring(0, 300))
 
     // 使用正则提取键值对
     const courseTypeMatch = cleanedIdentifyText.match(/COURSE_TYPE:\s*(.+?)(?:\n|$)/i)
@@ -470,21 +464,14 @@ export async function POST(request: NextRequest) {
     const system_key = systemKeyMatch ? systemKeyMatch[1].trim() : null
 
     if (!courseType || !title || !description) {
-      console.error('❌ 识别结果解析失败，缺少必要字段')
-      console.error('📄 识别返回内容:', cleanedIdentifyText)
+      logger.error('识别结果解析失败，缺少必要字段', { courseType, hasTitle: !!title, hasDesc: !!description })
       return NextResponse.json(
-        {
-          error: 'AI识别结果格式不正确',
-          details: `缺少必要字段 - courseType: ${courseType}, title: ${title}, description: ${description}`,
-          preview: cleanedIdentifyText.substring(0, 500)
-        },
+        { error: 'AI识别结果格式不正确，请重试' },
         { status: 500 }
       )
     }
 
-    console.log('✅ 课程类型识别成功:', courseType)
-    console.log('📚 课程标题:', title)
-    console.log('📝 课程描述:', description)
+    logger.info('课程类型识别成功', { courseType, title })
 
     // 根据课程类型选择提示词和数据库structure_type
     let systemPrompt = ''
@@ -514,9 +501,7 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    console.log('🤖 步骤2：详细解析课程内容...')
-    console.log('📝 使用的提示词类型:', structureType)
-    console.log('📝 文档长度:', documentContent.length)
+    logger.debug('步骤2：详细解析课程内容', { structureType, docLength: documentContent.length })
 
     // 判断是否需要分批处理
     const MAX_CHUNK_SIZE = 15000 // 每批最多处理15000字符
@@ -640,21 +625,18 @@ export async function POST(request: NextRequest) {
           contents: prompt,
         })
       } catch (apiError) {
-        console.error('❌ Gemini API 详细解析调用失败:', apiError)
+        logger.error('Gemini API 详细解析调用失败', apiError)
         return NextResponse.json(
-          {
-            error: 'Gemini API 详细解析调用失败',
-            details: apiError instanceof Error ? apiError.message : '未知错误'
-          },
-          { status: 500 }
+          { error: 'AI服务暂时不可用，请稍后重试' },
+          { status: 503 }
         )
       }
 
       const resultText = response.text
-      console.log('📥 详细解析返回长度:', resultText?.length || 0)
+      logger.debug('详细解析返回', { length: resultText?.length || 0 })
 
       if (!resultText) {
-        console.error('❌ Gemini API 返回空内容')
+        logger.error('Gemini API 返回空内容')
         return NextResponse.json(
           { error: 'AI返回的内容为空，请重试' },
           { status: 500 }
@@ -680,8 +662,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('✅ 解析完成')
-    console.log('📊 总内容单元数:', allContents.length)
+    logger.info('解析完成', { totalUnits: allContents.length })
 
     // 验证返回的数据结构
     if (!allContents || !Array.isArray(allContents) || allContents.length === 0) {
@@ -706,17 +687,18 @@ export async function POST(request: NextRequest) {
       }))
     }
 
-    console.log('✨ 课程数据构建完成')
-    console.log('📚 内容单元数:', courseData.contents.length)
+    logger.info('课程数据构建完成', { contentCount: courseData.contents.length })
 
     return NextResponse.json({ course: courseData })
 
   } catch (error) {
-    console.error('❌ 解析失败:', error)
+    logger.error('课程解析失败', error)
+    // SEC-01: 生产环境不暴露错误详情
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : '解析失败，请重试',
-        details: error instanceof Error ? error.stack : undefined
+        error: process.env.NODE_ENV === 'development'
+          ? (error instanceof Error ? error.message : '解析失败')
+          : '解析失败，请重试'
       },
       { status: 500 }
     )
