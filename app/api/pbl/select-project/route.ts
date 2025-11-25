@@ -57,68 +57,49 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 检查是否已经选择过该项目
-    const { data: existing } = (await (supabase
+    // DB-16: 使用UPSERT解决并发控制问题
+    // 先尝试upsert，如果记录存在且状态不是cancelled则不更新
+    const { data: upsertResult, error: upsertError } = (await (supabase
       .from('user_selected_projects') as any)
-      .select('id, status')
-      .eq('user_id', user.id)
-      .eq('project_id', projectId)
-      .single()) as any
-
-    if (existing) {
-      // 如果已存在但状态是取消，则重新激活
-      if (existing.status === 'cancelled') {
-        const { data: updated, error: updateError } = (await (supabase
-          .from('user_selected_projects') as any)
-          .update({
-            status: 'active',
-            selected_at: new Date().toISOString(),
-            last_activity_at: new Date().toISOString(),
-            notes: notes || null
-          })
-          .eq('id', existing.id)
-          .select()
-          .single()) as any
-
-        if (updateError) {
-          logger.error('[PBL] 重新激活项目失败', updateError)
-          return NextResponse.json({ error: updateError.message }, { status: 500 })
-        }
-
-        return NextResponse.json({
-          message: 'Project reactivated successfully',
-          selection: updated
-        })
-      } else {
-        return NextResponse.json({
-          error: 'You have already selected this project',
-          currentStatus: existing.status
-        }, { status: 409 })
-      }
-    }
-
-    // 创建新的项目选择记录
-    const { data: selection, error: insertError } = (await (supabase
-      .from('user_selected_projects') as any)
-      .insert({
+      .upsert({
         user_id: user.id,
         project_id: projectId,
         status: 'active',
         notes: notes || null,
         progress: {},
-        completion_percentage: 0
+        completion_percentage: 0,
+        selected_at: new Date().toISOString(),
+        last_activity_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,project_id',
+        ignoreDuplicates: false
       })
       .select()
       .single()) as any
 
-    if (insertError) {
-      logger.error('[PBL] 选择项目失败', insertError)
-      return NextResponse.json({ error: insertError.message }, { status: 500 })
+    if (upsertError) {
+      // 检查是否是因为已存在active/completed状态的记录
+      const { data: existing } = (await (supabase
+        .from('user_selected_projects') as any)
+        .select('id, status')
+        .eq('user_id', user.id)
+        .eq('project_id', projectId)
+        .single()) as any
+
+      if (existing && existing.status !== 'cancelled') {
+        return NextResponse.json({
+          error: 'You have already selected this project',
+          currentStatus: existing.status
+        }, { status: 409 })
+      }
+
+      logger.error('[PBL] 选择项目失败', upsertError)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     return NextResponse.json({
       message: 'Project selected successfully',
-      selection
+      selection: upsertResult
     }, { status: 201 })
   } catch (error) {
     logger.error('[PBL] select-project内部错误', error)

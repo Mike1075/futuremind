@@ -201,9 +201,8 @@ export function GlobalGaiaV3() {
             setLoadedCount(0)
           }
         })
-        .catch(error => {
-          console.error('[GlobalGaia] ❌ 加载历史消息失败:', error)
-          // 失败时显示空白，不显示欢迎消息
+        .catch(() => {
+          // CQ-04: 错误已处理，失败时显示空白
           setMessages([])
           setHasMore(false)
           setLoadedCount(0)

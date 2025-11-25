@@ -397,6 +397,16 @@ function parseAndCleanJSON(resultText: string): any | null {
 
 export async function POST(request: NextRequest) {
   try {
+    // SEC-10: 请求大小限制（10MB，课程文档可能较大）
+    const contentLength = request.headers.get('content-length')
+    const MAX_PAYLOAD_SIZE = 10 * 1024 * 1024 // 10MB
+    if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_SIZE) {
+      return NextResponse.json(
+        { error: '请求体过大，最大允许10MB' },
+        { status: 413 }
+      )
+    }
+
     // 检查API密钥
     if (!apiKey) {
       return NextResponse.json(

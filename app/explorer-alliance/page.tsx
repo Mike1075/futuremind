@@ -161,6 +161,10 @@ export default function ExplorerAlliancePage() {
                 onClick={async () => {
                   try {
                     const response = await fetch('/api/aip/debug-orgs', { method: 'POST' })
+                    // CQ-08: 检查response.ok再解析JSON
+                    if (!response.ok) {
+                      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+                    }
                     const data = await response.json()
                     if (data.success) {
                       alert('组织数据已修复！正在刷新...')
@@ -170,7 +174,6 @@ export default function ExplorerAlliancePage() {
                     }
                   } catch (error) {
                     alert('修复失败，请联系管理员')
-                    console.error(error)
                   }
                 }}
                 className="flex items-center gap-2 px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"

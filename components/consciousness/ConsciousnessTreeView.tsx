@@ -34,7 +34,7 @@ function migrateOldFormat(dbData: any): TreeGrowthData {
   const isMainRootsFormat = dbData?.roots?.main_roots !== undefined
 
   if (isMainRootsFormat) {
-    console.log('[数据迁移] 检测到 main_roots 旧格式，开始转换...')
+    // 检测到 main_roots 旧格式，进行转换
 
     const mainRoots = dbData.roots.main_roots || []
     const totalRootLength = mainRoots.reduce((sum: number, root: any) => sum + (root.length || 0), 0)
@@ -53,7 +53,7 @@ function migrateOldFormat(dbData: any): TreeGrowthData {
       (trunkThickness <= 1 && trunkStability <= 1)
 
     if (isInitialEmptyState) {
-      console.log('[数据迁移] 检测到初始空状态，返回种子状态')
+      // 检测到初始空状态，返回种子状态
       return {
         roots: { count: 0, depth_level: 0, is_solid: false },
         trunk: { thickness: 0, height_level: 0, is_solid: false },
@@ -98,7 +98,7 @@ function migrateOldFormat(dbData: any): TreeGrowthData {
   const isGrowthValueFormat = dbData?.roots?.growth_value !== undefined
 
   if (isGrowthValueFormat) {
-    console.log('[数据迁移] 检测到 growth_value 旧格式，开始转换...')
+    // 检测到 growth_value 旧格式，进行转换
 
     const rootsValue = dbData?.roots?.growth_value ?? 0
     const trunkValue = dbData?.trunk?.growth_value ?? 0
@@ -166,13 +166,9 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // 🔥 组件挂载时输出版本信息
+  // 组件挂载时的初始化
   useEffect(() => {
-    console.log(`🌳 ConsciousnessTreeView 组件挂载 - 版本: ${COMPONENT_VERSION}`, {
-      userId,
-      isPreview,
-      timestamp: new Date().toISOString()
-    })
+    // 版本: COMPONENT_VERSION - 用于调试时启用日志
   }, [])
 
   useEffect(() => {
@@ -180,21 +176,18 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
   }, [userId]) // 只在userId改变时加载，techParams改变不触发
 
   const loadTreeData = async () => {
-    const timestamp = Date.now()
-    console.log('🔄 [loadTreeData] 开始加载意识树数据', { userId, timestamp })
     try {
       setLoading(true)
       setError(null)
 
-      // 🔥 添加超时保护（5秒）
+      // 添加超时保护（5秒）
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('加载超时')), 5000)
       })
 
       const supabase = createClient()
 
-      // 🔥 从 profiles 表获取 consciousness_tree_view（强制禁用缓存）
-      console.log('📡 [loadTreeData] 正在从 Supabase 查询数据，添加缓存破坏参数...')
+      // 从 profiles 表获取 consciousness_tree_view
       const dataPromise = supabase
         .from('profiles')
         .select('consciousness_tree_view')
@@ -202,39 +195,22 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
         .single()
 
       const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any
-      console.log('📥 [loadTreeData] Supabase 返回结果:', {
-        data,
-        error,
-        timestamp,
-        rawTreeView: data?.consciousness_tree_view
-      })
 
       if (error) throw error
 
       if (data?.consciousness_tree_view) {
         // 使用迁移函数自动处理新旧格式
         const migratedData = migrateOldFormat(data.consciousness_tree_view)
-        console.log('🌳 [意识树数据] 从数据库加载完成:', {
-          userId,
-          原始数据: JSON.stringify(data.consciousness_tree_view),
-          迁移后数据: JSON.stringify(migratedData),
-          树干高度: migratedData.trunk.height_level,
-          树干粗度: migratedData.trunk.thickness,
-          树干虚实: migratedData.trunk.is_solid
-        })
         setGrowthData(migratedData)
       } else {
-        // 🔥 如果没有数据，使用种子状态（而不是报错）
-        console.log('⚠️ [意识树数据] 没有数据，使用种子状态')
+        // 如果没有数据，使用种子状态
         setGrowthData(INITIAL_GROWTH_DATA)
       }
-    } catch (err) {
-      console.error('加载意识树数据失败:', err)
-      // 🔥 预览模式下即使加载失败也显示种子状态
+    } catch {
+      // 预览模式下即使加载失败也显示种子状态
       if (isPreview) {
-        console.log('预览模式：加载失败，显示种子状态')
         setGrowthData(INITIAL_GROWTH_DATA)
-        setError(null)  // 清除错误，避免显示错误界面
+        setError(null)
       } else {
         setError('无法加载意识树数据')
       }
