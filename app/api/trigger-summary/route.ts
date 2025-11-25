@@ -112,7 +112,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('[API错误]', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: process.env.NODE_ENV === 'development' ? (error.message || 'Internal server error') : 'Internal server error' },
       { status: 500 }
     )
   }

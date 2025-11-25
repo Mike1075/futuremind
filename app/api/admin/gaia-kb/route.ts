@@ -248,11 +248,14 @@ export async function POST(request: Request) {
       })
       .catch(async (error) => {
         console.error('[盖亚知识库] N8N webhook调用失败（异步）:', error)
-        console.error('[盖亚知识库] 错误详情:', {
-          message: error.message,
-          stack: error.stack,
-          document_id: newDoc.id
-        })
+        // 仅在开发环境记录详细错误
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[盖亚知识库] 错误详情:', {
+            message: error.message,
+            stack: error.stack,
+            document_id: newDoc.id
+          })
+        }
 
         // 🔧 webhook失败时，自动更新文档状态为error
         try {
@@ -289,7 +292,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('[盖亚知识库] 上传失败:', error)
     return NextResponse.json(
-      { error: error.message || '上传失败' },
+      { error: process.env.NODE_ENV === 'development' ? (error.message || '上传失败') : '上传失败' },
       { status: 500 }
     )
   }

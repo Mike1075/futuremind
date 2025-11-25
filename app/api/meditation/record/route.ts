@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('记录冥想失败:', error)
     return NextResponse.json(
-      { error: `服务器错误: ${error.message}` },
+      { error: process.env.NODE_ENV === 'development' ? `服务器错误: ${error.message}` : '服务器错误' },
       { status: 500 }
     )
   }
@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('获取冥想记录失败:', error)
     return NextResponse.json(
-      { error: `服务器错误: ${error.message}` },
+      { error: process.env.NODE_ENV === 'development' ? `服务器错误: ${error.message}` : '服务器错误' },
       { status: 500 }
     )
   }

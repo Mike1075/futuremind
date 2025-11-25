@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('[Discussions API] Error fetching discussions:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to fetch discussions' }, { status: 500 })
     }
 
     return NextResponse.json({ discussions })
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('[Discussions API] Error creating discussion:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to create discussion' }, { status: 500 })
     }
 
     return NextResponse.json({ discussion }, { status: 201 })
