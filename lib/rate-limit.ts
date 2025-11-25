@@ -41,7 +41,8 @@ function getClientIdentifier(req: NextRequest): string {
 
   // 使用IP地址
   const forwarded = req.headers.get('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0] : req.ip || 'unknown'
+  const realIp = req.headers.get('x-real-ip')
+  const ip = forwarded ? forwarded.split(',')[0] : realIp || 'unknown'
 
   return `ip:${ip}`
 }
@@ -149,7 +150,7 @@ export const rateLimitConfigs = {
 /**
  * API路由包装器 - 自动添加Rate Limiting
  */
-export function withRateLimit<T extends (...args: any[]) => Promise<NextResponse>>(
+export function withRateLimit<T extends (...args: any[]) => Promise<Response | NextResponse>>(
   handler: T,
   config: RateLimitConfig
 ): T {

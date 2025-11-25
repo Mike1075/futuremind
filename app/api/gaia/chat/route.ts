@@ -12,7 +12,7 @@ import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
  * - message: 用户消息
  * - conversationId: 可选，现有对话ID
  */
-async function handleGaiaChat(req: NextRequest) {
+async function handleGaiaChat(req: NextRequest): Promise<Response> {
   try {
     const startTime = Date.now()
     logger.info('Gaia chat request started')
@@ -52,7 +52,7 @@ async function handleGaiaChat(req: NextRequest) {
     })
 
     if (!validation.valid) {
-      return validation.response
+      return validation.response!
     }
 
     const userId = user.id

@@ -49,7 +49,7 @@ async function handleGetTeachers(request: NextRequest) {
 export const GET = withRateLimit(handleGetTeachers, rateLimitConfigs.api)
 
 // POST /api/admin/teachers - 添加教师（通过邮箱）
-async function handleAddTeacher(request: NextRequest) {
+async function handleAddTeacher(request: NextRequest): Promise<NextResponse> {
   const startTime = Date.now()
 
   try {
@@ -74,7 +74,7 @@ async function handleAddTeacher(request: NextRequest) {
     })
 
     if (!validation.valid) {
-      return validation.response
+      return validation.response!
     }
 
     const { email } = body

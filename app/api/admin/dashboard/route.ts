@@ -46,9 +46,9 @@ async function handleGetDashboard(request: NextRequest) {
         .from('teacher_assignments')
         .select('managed_student_ids')
         .eq('teacher_id', user.id)
-        .single()
+        .maybeSingle()
 
-      managedStudentIds = assignment?.managed_student_ids || []
+      managedStudentIds = (assignment as { managed_student_ids: string[] } | null)?.managed_student_ids || []
     }
 
     // 3. 获取学员数（校长看全部，老师看自己管理的）
@@ -99,17 +99,18 @@ async function handleGetDashboard(request: NextRequest) {
 
     // 6. 计算等级分布
     const levelDistribution = students?.reduce((acc: any, s) => {
-      acc[s.consciousness_level] = (acc[s.consciousness_level] || 0) + 1
+      const level = s.consciousness_level ?? 0
+      acc[level] = (acc[level] || 0) + 1
       return acc
     }, {}) || {}
 
     // 7. 计算平均等级和平均评分
     const avgLevel = students && students.length > 0
-      ? students.reduce((sum, s) => sum + s.consciousness_level, 0) / students.length
+      ? students.reduce((sum, s) => sum + (s.consciousness_level ?? 0), 0) / students.length
       : 0
 
     const avgScore = students && students.length > 0
-      ? students.reduce((sum, s) => sum + s.composite_score, 0) / students.length
+      ? students.reduce((sum, s) => sum + (s.composite_score ?? 0), 0) / students.length
       : 0
 
     // 8. 获取最近30天的新增学员趋势
@@ -117,12 +118,12 @@ async function handleGetDashboard(request: NextRequest) {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
     const recentStudents = students?.filter(s =>
-      new Date(s.created_at) >= thirtyDaysAgo
+      s.created_at && new Date(s.created_at) >= thirtyDaysAgo
     ) || []
 
     // 按天分组统计
     const registrationTrend = recentStudents.reduce((acc: any, s) => {
-      const date = new Date(s.created_at).toISOString().split('T')[0]
+      const date = new Date(s.created_at!).toISOString().split('T')[0]
       acc[date] = (acc[date] || 0) + 1
       return acc
     }, {})
@@ -137,8 +138,14 @@ async function handleGetDashboard(request: NextRequest) {
       .gte('date', sevenDaysAgo.toISOString())
       .order('date', { ascending: true })
 
+    type BehaviorStat = {
+      date: string
+      online_duration_minutes: number | null
+      completed_lessons: number | null
+    }
+
     // 按日期聚合
-    const activityTrend = recentBehavior?.reduce((acc: any, b) => {
+    const activityTrend = (recentBehavior as BehaviorStat[] | null)?.reduce((acc: any, b) => {
       const date = b.date.split('T')[0]
       if (!acc[date]) {
         acc[date] = { online_minutes: 0, lessons: 0, count: 0 }
@@ -191,7 +198,7 @@ async function handleGetDashboard(request: NextRequest) {
         .from('student_course_assignments')
         .select('course_system_id')
         .in('course_system_id', courseIds),
-      supabase
+      (supabase as any)
         .from('course_assignments')
         .select('course_system_id')
         .in('course_system_id', courseIds)
@@ -204,12 +211,16 @@ async function handleGetDashboard(request: NextRequest) {
     // 在内存中按课程ID分组统计（超快）
     const studentCountMap = new Map<string, number>()
     studentAssignments.data?.forEach(a => {
-      studentCountMap.set(a.course_system_id, (studentCountMap.get(a.course_system_id) || 0) + 1)
+      if (a.course_system_id) {
+        studentCountMap.set(a.course_system_id, (studentCountMap.get(a.course_system_id) || 0) + 1)
+      }
     })
 
     const groupCountMap = new Map<string, number>()
-    groupAssignments.data?.forEach(a => {
-      groupCountMap.set(a.course_system_id, (groupCountMap.get(a.course_system_id) || 0) + 1)
+    groupAssignments.data?.forEach((a: any) => {
+      if (a.course_system_id) {
+        groupCountMap.set(a.course_system_id, (groupCountMap.get(a.course_system_id) || 0) + 1)
+      }
     })
 
     const courseStats = courses?.map(course => ({

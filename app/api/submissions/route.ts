@@ -18,7 +18,7 @@ interface Submission {
 
 interface UserSelectedProject {
   id: string
-  progress: Record<string, number> | null
+  progress: Record<string, number | null> | null
 }
 
 /**
@@ -180,10 +180,18 @@ async function handleDeleteSubmission(req: NextRequest) {
         const typedSelection = selection as UserSelectedProject
         const currentProgress = typedSelection.progress || {}
 
-        const updatedProgress: Record<string, number> = {
-          ...currentProgress,
+        // 过滤掉 null 值
+        const filteredProgress: Record<string, number> = {}
+        Object.entries(currentProgress).forEach(([key, value]) => {
+          if (value !== null && typeof value === 'number') {
+            filteredProgress[key] = value
+          }
+        })
+
+        const updatedProgress = {
+          ...filteredProgress,
           [dayKey]: newHighestScore
-        }
+        } as Record<string, number>
 
         // 如果最高分是0，从progress中移除该key
         if (newHighestScore === 0) {

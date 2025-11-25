@@ -10,7 +10,7 @@ import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
  * Body参数:
  * - contentId: 课程内容ID
  */
-async function handleRecordVisit(req: NextRequest) {
+async function handleRecordVisit(req: NextRequest): Promise<NextResponse> {
   const startTime = Date.now()
 
   try {
@@ -32,7 +32,7 @@ async function handleRecordVisit(req: NextRequest) {
     })
 
     if (!validation.valid) {
-      return validation.response
+      return validation.response!
     }
 
     const { contentId } = body

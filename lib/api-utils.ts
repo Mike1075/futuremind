@@ -70,9 +70,16 @@ export function successResponse<T>(
 }
 
 /**
+ * 权限验证中间件返回类型
+ */
+type AuthResult =
+  | { authorized: false; response: NextResponse }
+  | { authorized: true; user: any; supabase: Awaited<ReturnType<typeof createClient>> }
+
+/**
  * 权限验证中间件
  */
-export async function requireAuth(req: NextRequest) {
+export async function requireAuth(req: NextRequest): Promise<AuthResult> {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -96,12 +103,19 @@ export async function requireAuth(req: NextRequest) {
 }
 
 /**
+ * 角色验证中间件返回类型
+ */
+type RoleAuthResult =
+  | { authorized: false; response: NextResponse }
+  | { authorized: true; user: any; profile: any; supabase: Awaited<ReturnType<typeof createClient>> }
+
+/**
  * 角色验证中间件
  */
 export async function requireRole(
   req: NextRequest,
   allowedRoles: string[]
-) {
+): Promise<RoleAuthResult> {
   const authResult = await requireAuth(req)
 
   if (!authResult.authorized) {
@@ -125,7 +139,7 @@ export async function requireRole(
     }
   }
 
-  if (!profile || !allowedRoles.includes(profile.role)) {
+  if (!profile || !profile.role || !allowedRoles.includes(profile.role)) {
     logger.warn('Unauthorized access attempt', {
       userId: user.id,
       userRole: profile?.role,

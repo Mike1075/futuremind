@@ -55,13 +55,15 @@ class AIPChatAPI {
       const messages: AIPChatMessage[] = []
 
       for (const record of data) {
+        const timestamp = record.created_at ? new Date(record.created_at) : new Date()
+
         // 用户消息
         if (record.content) {
           messages.push({
             id: `${record.id}-user`,
             role: 'user',
             content: record.content,
-            timestamp: new Date(record.created_at)
+            timestamp
           })
         }
 
@@ -71,7 +73,7 @@ class AIPChatAPI {
             id: `${record.id}-ai`,
             role: 'assistant',
             content: record.ai_content,
-            timestamp: new Date(record.created_at)
+            timestamp
           })
         }
       }

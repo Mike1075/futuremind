@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
 
-async function handleChatRequest(request: NextRequest) {
+async function handleChatRequest(request: NextRequest): Promise<Response> {
   const startTime = Date.now()
 
   try {
@@ -31,7 +31,7 @@ async function handleChatRequest(request: NextRequest) {
     })
 
     if (!validation.valid) {
-      return validation.response
+      return validation.response!
     }
 
     logger.debug('Chat params', {
