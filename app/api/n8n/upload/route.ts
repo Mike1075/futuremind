@@ -4,9 +4,10 @@ import { logger } from '@/lib/logger'
 export async function POST(req: NextRequest) {
   try {
     // SEC-03: 不使用硬编码URL，必须通过环境变量配置
-    const N8N_UPLOAD_WEBHOOK = process.env.N8N_UPLOAD_WEBHOOK_URL
+    // 使用与Vercel配置一致的变量名 N8N_UPLOAD_WEBHOOK
+    const N8N_UPLOAD_WEBHOOK = process.env.N8N_UPLOAD_WEBHOOK
     if (!N8N_UPLOAD_WEBHOOK) {
-      logger.error('[N8N Upload] N8N_UPLOAD_WEBHOOK_URL环境变量未配置')
+      logger.error('[N8N Upload] N8N_UPLOAD_WEBHOOK环境变量未配置')
       return NextResponse.json({ error: 'Service configuration error' }, { status: 503 })
     }
 

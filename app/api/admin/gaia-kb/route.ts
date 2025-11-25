@@ -186,9 +186,10 @@ export async function POST(request: Request) {
     logger.debug('[盖亚知识库] 已保存到数据库', { document_id: newDoc.id, course_id: courseId })
 
     // SEC-03: N8N webhook URL必须通过环境变量配置
-    const webhookUrl = process.env.N8N_GAIA_KB_WEBHOOK_URL
+    // 盖亚知识库复用通用上传webhook（N8N_UPLOAD_WEBHOOK）
+    const webhookUrl = process.env.N8N_UPLOAD_WEBHOOK
     if (!webhookUrl) {
-      logger.error('[盖亚知识库] N8N_GAIA_KB_WEBHOOK_URL环境变量未配置')
+      logger.error('[盖亚知识库] N8N_UPLOAD_WEBHOOK环境变量未配置')
       return NextResponse.json({ error: '服务配置错误' }, { status: 503 })
     }
     const n8nFormData = new FormData()
