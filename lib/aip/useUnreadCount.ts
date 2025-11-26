@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/client'
 
 export function useUnreadCount() {
   const [unreadCount, setUnreadCount] = useState(0)
+  const [pendingRequestCount, setPendingRequestCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   const loadUnreadCount = async () => {
@@ -14,20 +15,41 @@ export function useUnreadCount() {
 
       if (!user) {
         setUnreadCount(0)
+        setPendingRequestCount(0)
         setLoading(false)
         return
       }
 
-      // 只查询 notifications 表（其他表暂时禁用，因为RLS权限问题）
+      // 1. 查询未读通知数量
       const { count: notifCount } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('is_read', false)
 
-      const totalCount = notifCount || 0
+      // 2. 查询当前用户管理的项目的待审核申请数量
+      // 首先获取用户管理的项目ID列表
+      const { data: managedProjects } = await supabase
+        .from('project_members')
+        .select('project_id')
+        .eq('user_id', user.id)
+        .in('role_in_project', ['manager', 'owner'])
 
-      setUnreadCount(totalCount)
+      let pendingCount = 0
+      if (managedProjects && managedProjects.length > 0) {
+        const projectIds = managedProjects.map(p => p.project_id)
+        const { count } = await supabase
+          .from('project_join_requests')
+          .select('*', { count: 'exact', head: true })
+          .in('project_id', projectIds)
+          .eq('status', 'pending')
+        pendingCount = count || 0
+      }
+
+      const totalCount = (notifCount || 0) + pendingCount
+
+      setUnreadCount(notifCount || 0)
+      setPendingRequestCount(pendingCount)
 
       // 保存到缓存
       localStorage.setItem('unreadCount', JSON.stringify({
@@ -67,8 +89,13 @@ export function useUnreadCount() {
     loadUnreadCount()
   }
 
+  // 总数 = 未读通知 + 待审核申请
+  const totalCount = unreadCount + pendingRequestCount
+
   return {
-    unreadCount,
+    unreadCount,           // 未读通知数
+    pendingRequestCount,   // 待审核申请数
+    totalCount,            // 总数（用于显示徽章）
     loading,
     refresh
   }

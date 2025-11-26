@@ -128,6 +128,27 @@ export function PendingRequestsPanel({ organizationId, projectId, type }: Pendin
 
         if (memberError) throw memberError
 
+        // 3. 获取组织名称
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('name')
+          .eq('id', organizationId)
+          .single()
+
+        // 4. 发送通知给申请者
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          type: 'join_request',
+          title: '组织加入申请已通过',
+          message: `您加入组织「${org?.name || '未知组织'}」的申请已被批准，欢迎加入！`,
+          is_read: false,
+          metadata: {
+            organization_id: organizationId,
+            request_id: requestId,
+            action: 'approved'
+          }
+        })
+
         alert('申请已批准，用户已加入组织')
       } else if (type === 'project' && projectId) {
         // 1. 更新申请状态为已批准
@@ -153,6 +174,27 @@ export function PendingRequestsPanel({ organizationId, projectId, type }: Pendin
 
         if (memberError) throw memberError
 
+        // 3. 获取项目名称
+        const { data: project } = await supabase
+          .from('projects')
+          .select('name')
+          .eq('id', projectId)
+          .single()
+
+        // 4. 发送通知给申请者
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          type: 'join_request',
+          title: '项目加入申请已通过',
+          message: `您加入项目「${project?.name || '未知项目'}」的申请已被批准，欢迎加入！`,
+          is_read: false,
+          metadata: {
+            project_id: projectId,
+            request_id: requestId,
+            action: 'approved'
+          }
+        })
+
         alert('申请已批准，用户已加入项目')
       }
 
@@ -166,8 +208,12 @@ export function PendingRequestsPanel({ organizationId, projectId, type }: Pendin
     }
   }
 
-  const handleReject = async (requestId: string) => {
+  const handleReject = async (requestId: string, userId: string | null) => {
     if (!confirm('确定要拒绝这个申请吗？')) return
+    if (!userId) {
+      alert('申请用户信息缺失')
+      return
+    }
 
     setProcessingId(requestId)
     try {
@@ -189,6 +235,47 @@ export function PendingRequestsPanel({ organizationId, projectId, type }: Pendin
         .eq('id', requestId)
 
       if (error) throw error
+
+      // 发送通知给申请者
+      if (type === 'organization' && organizationId) {
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('name')
+          .eq('id', organizationId)
+          .single()
+
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          type: 'join_request',
+          title: '组织加入申请未通过',
+          message: `很抱歉，您加入组织「${org?.name || '未知组织'}」的申请未被批准。`,
+          is_read: false,
+          metadata: {
+            organization_id: organizationId,
+            request_id: requestId,
+            action: 'rejected'
+          }
+        })
+      } else if (type === 'project' && projectId) {
+        const { data: project } = await supabase
+          .from('projects')
+          .select('name')
+          .eq('id', projectId)
+          .single()
+
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          type: 'join_request',
+          title: '项目加入申请未通过',
+          message: `很抱歉，您加入项目「${project?.name || '未知项目'}」的申请未被批准。`,
+          is_read: false,
+          metadata: {
+            project_id: projectId,
+            request_id: requestId,
+            action: 'rejected'
+          }
+        })
+      }
 
       alert('申请已拒绝')
 
@@ -296,7 +383,7 @@ export function PendingRequestsPanel({ organizationId, projectId, type }: Pendin
                   )}
                 </button>
                 <button
-                  onClick={() => handleReject(request.id)}
+                  onClick={() => handleReject(request.id, request.user_id)}
                   disabled={processingId === request.id}
                   className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="拒绝"

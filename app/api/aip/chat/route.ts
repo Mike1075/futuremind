@@ -63,12 +63,37 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       }
     }
 
+    // 查询最近的聊天历史作为上下文
+    logger.dbQuery('chat_history', 'SELECT')
+    const { data: chatHistory } = await supabase
+      .from('chat_history')
+      .select('content, ai_content, created_at')
+      .eq('user_id', user.id)
+      .eq('agent_type', 'member')
+      .order('created_at', { ascending: false })
+      .limit(10) // 获取最近10轮对话
+
+    // 构建历史消息数组（从旧到新排序）
+    const historyMessages = (chatHistory || [])
+      .reverse()
+      .flatMap(record => [
+        { role: 'user', content: record.content },
+        { role: 'assistant', content: record.ai_content }
+      ])
+
+    logger.debug('Chat history loaded', {
+      historyCount: chatHistory?.length || 0,
+      messagesCount: historyMessages.length
+    })
+
     const n8nPayload = {
       chatInput,
       user_id: user.id,
       project_id: projectIdValue,
       project_ids: projectIdsArray,
-      organization_id: organization_id || ''
+      organization_id: organization_id || '',
+      // 添加历史消息供N8N使用
+      chat_history: historyMessages
     }
 
     logger.debug('Calling N8N webhook', {
