@@ -173,8 +173,12 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
           </div>
         </div>
 
-        {/* 曲线路径地图 - 自适应屏幕大小 */}
-        <div className="relative w-full" style={{ height: 'calc(100vh - 280px)', minHeight: '400px', maxHeight: '700px' }}>
+        {/* 曲线路径地图 - 自适应屏幕大小，保持宽高比 */}
+        <div className="relative mx-auto" style={{
+          width: 'min(100%, calc(100vh - 280px))',
+          maxWidth: '700px',
+          aspectRatio: '1 / 1'
+        }}>
           {/* SVG路径 */}
           <svg
             className="w-full h-full"
