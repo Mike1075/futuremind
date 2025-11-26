@@ -173,14 +173,13 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
           </div>
         </div>
 
-        {/* 曲线路径地图 */}
-        <div className="relative">
+        {/* 曲线路径地图 - 自适应屏幕大小 */}
+        <div className="relative w-full" style={{ height: 'calc(100vh - 280px)', minHeight: '400px', maxHeight: '700px' }}>
           {/* SVG路径 */}
           <svg
-            className="w-full h-auto"
+            className="w-full h-full"
             viewBox="0 0 100 100"
             preserveAspectRatio="xMidYMid meet"
-            style={{ minHeight: '800px' }}
           >
             {/* 背景路径（灰色虚线） */}
             <path
@@ -314,18 +313,18 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                           }}
                         />
 
-                        {/* 主节点 */}
+                        {/* 主节点 - 响应式大小 */}
                         <div
-                          className="relative w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-2xl transition-all"
+                          className="relative w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold text-white shadow-2xl transition-all"
                           style={{
                             background: isCompleted
                               ? `linear-gradient(135deg, ${color.from}, ${color.to})`
                               : `linear-gradient(135deg, ${color.from}AA, ${color.to}AA)`,
                             border: isPassed
-                              ? '4px solid rgba(255,255,255,0.5)'
+                              ? '3px solid rgba(255,255,255,0.5)'
                               : isCompleted
-                                ? '4px solid rgba(255,255,255,0.3)'
-                                : '4px solid rgba(255,255,255,0.1)',
+                                ? '3px solid rgba(255,255,255,0.3)'
+                                : '3px solid rgba(255,255,255,0.1)',
                           }}
                         >
                           {/* 始终显示数字 */}
@@ -343,23 +342,23 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                     </Link>
                   ) : (
                     <div className="relative">
-                      {/* 未解锁节点 */}
+                      {/* 未解锁节点 - 响应式大小 */}
                       <div
-                        className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-gray-600 shadow-lg"
+                        className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-xl font-bold text-gray-600 shadow-lg"
                         style={{
                           background: 'linear-gradient(135deg, #374151, #1F2937)',
-                          border: '3px solid rgba(75, 85, 99, 0.3)',
+                          border: '2px solid rgba(75, 85, 99, 0.3)',
                           filter: 'grayscale(100%)',
                         }}
                       >
-                        <svg className="w-8 h-8 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
                       </div>
 
-                      {/* 未解锁提示 */}
-                      <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                        <div className="bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded px-2 py-1 text-xs text-gray-500">
+                      {/* 未解锁提示 - 响应式 */}
+                      <div className="absolute top-full mt-1 sm:mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                        <div className="bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs text-gray-500">
                           🔒 未解锁
                         </div>
                       </div>
