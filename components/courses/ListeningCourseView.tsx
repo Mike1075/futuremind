@@ -44,8 +44,8 @@ const PATH_POINTS = [
   { x: 54, y: 85 },   // Day 10 - 耳垂底部（最低点）
   { x: 40, y: 82 },   // Day 11 - 耳垂左侧
   { x: 32, y: 72 },   // Day 12 - 耳垂向上，准备向右内勾
-  { x: 40, y: 56 },   // Day 13 - 向右内勾（耳洞深处，x从32增加到40）
-  { x: 45, y: 38 },   // Day 14 - 耳洞上部，继续向右上形成内凹轮廓
+  { x: 42, y: 58 },   // Day 13 - 向右内勾
+  { x: 58, y: 48 },   // Day 14 - 耳洞内部，向右上延伸
 ]
 
 export function ListeningCourseView({ courseSystem, contents, completionMap, scoreMap }: ListeningCourseViewProps) {
@@ -347,8 +347,8 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                       </motion.div>
                     </Link>
                   ) : (
-                    <div className="relative flex items-center justify-center" style={{ width: 'fit-content', height: 'fit-content' }}>
-                      {/* 未解锁节点 - 与已解锁节点大小一致 */}
+                    <div className="flex items-center justify-center" style={{ width: 'fit-content', height: 'fit-content' }}>
+                      {/* 未解锁节点 - 锁图标已足够说明状态 */}
                       <div
                         className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-gray-600 shadow-lg"
                         style={{
@@ -359,13 +359,6 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                         <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
-                      </div>
-
-                      {/* 未解锁提示 */}
-                      <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                        <div className="bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs text-gray-500">
-                          🔒 未解锁
-                        </div>
                       </div>
                     </div>
                   )}
