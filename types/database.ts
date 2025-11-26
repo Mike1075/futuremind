@@ -467,34 +467,55 @@ export type Database = {
       }
       course_stages: {
         Row: {
+          core_objectives: Json | null
           created_at: string | null
+          duration_weeks: number | null
+          final_outcome: string | null
           id: string
           is_published: boolean | null
+          module_category: string | null
           stage_description: string | null
           stage_name: string
           stage_number: number
+          stage_order: number | null
+          suggested_age_range: string | null
           system_id: string
           updated_at: string | null
+          welcome_message: string | null
         }
         Insert: {
+          core_objectives?: Json | null
           created_at?: string | null
+          duration_weeks?: number | null
+          final_outcome?: string | null
           id?: string
           is_published?: boolean | null
+          module_category?: string | null
           stage_description?: string | null
           stage_name: string
           stage_number: number
+          stage_order?: number | null
+          suggested_age_range?: string | null
           system_id: string
           updated_at?: string | null
+          welcome_message?: string | null
         }
         Update: {
+          core_objectives?: Json | null
           created_at?: string | null
+          duration_weeks?: number | null
+          final_outcome?: string | null
           id?: string
           is_published?: boolean | null
+          module_category?: string | null
           stage_description?: string | null
           stage_name?: string
           stage_number?: number
+          stage_order?: number | null
+          suggested_age_range?: string | null
           system_id?: string
           updated_at?: string | null
+          welcome_message?: string | null
         }
         Relationships: [
           {
@@ -1547,11 +1568,15 @@ export type Database = {
           generated_at: string | null
           generated_by: string | null
           id: string
+          last_summary_check_at: string | null
           learning_style: string | null
+          messages_since_last_summary: number | null
           overall_summary: string | null
           personality_traits: Json | null
           strengths: string[] | null
+          user_email: string | null
           user_id: string | null
+          user_name: string | null
           valid_until: string | null
         }
         Insert: {
@@ -1560,11 +1585,15 @@ export type Database = {
           generated_at?: string | null
           generated_by?: string | null
           id?: string
+          last_summary_check_at?: string | null
           learning_style?: string | null
+          messages_since_last_summary?: number | null
           overall_summary?: string | null
           personality_traits?: Json | null
           strengths?: string[] | null
+          user_email?: string | null
           user_id?: string | null
+          user_name?: string | null
           valid_until?: string | null
         }
         Update: {
@@ -1573,11 +1602,15 @@ export type Database = {
           generated_at?: string | null
           generated_by?: string | null
           id?: string
+          last_summary_check_at?: string | null
           learning_style?: string | null
+          messages_since_last_summary?: number | null
           overall_summary?: string | null
           personality_traits?: Json | null
           strengths?: string[] | null
+          user_email?: string | null
           user_id?: string | null
+          user_name?: string | null
           valid_until?: string | null
         }
         Relationships: [

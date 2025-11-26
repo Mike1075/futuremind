@@ -52,6 +52,30 @@ Deno.serve(async (req: Request) => {
     // 2. 初始化 Supabase 客户端
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // 2.5 检查最低行为阈值（至少需要5条消息才值得分析）
+    const { data: conversationStats } = await supabase
+      .from("gaia_conversations")
+      .select("message_count")
+      .eq("user_id", userId)
+      .eq("is_active", true);
+
+    const totalMessages = conversationStats?.reduce((sum, c) => sum + (c.message_count || 0), 0) || 0;
+
+    if (totalMessages < 5 && !forceFullRefresh) {
+      console.log(`[跳过] 用户 ${userId}: 数据不足 (${totalMessages} 条消息, 需要至少5条)`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          reason: "insufficient_data",
+          userId,
+          totalMessages,
+          message: `数据不足，跳过分析（当前${totalMessages}条消息，需要至少5条）`
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // 3. 获取现有的总结数据 (用于增量更新)
     const { data: existingSummary } = await supabase
       .from("student_summaries")
@@ -234,6 +258,9 @@ Deno.serve(async (req: Request) => {
         generated_by: "edge_function",
         generated_at: new Date().toISOString(),
         valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7天后过期
+        // ⭐ 重置消息计数器
+        messages_since_last_summary: 0,
+        last_summary_check_at: new Date().toISOString(),
       }, {
         onConflict: "user_id",
       });
@@ -243,7 +270,7 @@ Deno.serve(async (req: Request) => {
       throw upsertError;
     }
 
-    console.log(`[总结完成] 用户ID: ${userId}`);
+    console.log(`[总结完成] 用户ID: ${userId}, 消息计数器已重置`);
 
     return new Response(
       JSON.stringify({

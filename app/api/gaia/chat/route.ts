@@ -50,7 +50,7 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
 
     // 解析和验证请求参数
     const body = await req.json()
-    const { message, conversationId, currentMessages } = body
+    const { message, conversationId, currentMessages, courseId, courseSlug } = body
 
     logger.debug('Request parsed', {
       elapsed: `${Date.now() - startTime}ms`,
@@ -152,7 +152,81 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
     const userName = profileData?.full_name || profileData?.email?.split('@')[0] || '用户'
     logger.debug('User profile loaded', { userName, userId })
 
-    // 5. 准备发送给N8N的数据
+    // ============================================
+    // 5. 获取学生画像和对话摘要
+    // ============================================
+    const { data: studentSummary } = await supabase
+      .from('student_summaries')
+      .select(`
+        personality_traits,
+        learning_style,
+        strengths,
+        areas_for_growth,
+        course_summaries,
+        messages_since_last_summary,
+        generated_at
+      `)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    // 提取对话摘要
+    // CQ-02: 安全访问Json类型的嵌套属性
+    const courseSummaries = studentSummary?.course_summaries as Record<string, { dialogue?: { summary?: string } }> | null
+    const dialogueSummary = courseSummaries?.default?.dialogue?.summary || ''
+
+    // 构建学生画像字符串
+    const studentProfile = studentSummary ? `
+性格特点：${studentSummary.personality_traits ? JSON.stringify(studentSummary.personality_traits) : '暂未分析'}
+学习风格：${studentSummary.learning_style || '暂未分析'}
+优势领域：${Array.isArray(studentSummary.strengths) ? studentSummary.strengths.join('、') : '暂未分析'}
+成长空间：${Array.isArray(studentSummary.areas_for_growth) ? studentSummary.areas_for_growth.join('、') : '暂未分析'}
+`.trim() : ''
+
+    logger.debug('Student summary loaded', {
+      hasProfile: !!studentProfile,
+      hasDialogueSummary: !!dialogueSummary,
+      messagesSinceLastSummary: studentSummary?.messages_since_last_summary || 0
+    })
+
+    // ============================================
+    // 6. 检查是否需要更新摘要（事件驱动）
+    // ============================================
+    const shouldUpdate = evaluateShouldUpdate(studentSummary)
+    if (shouldUpdate) {
+      // 异步触发更新，不阻塞当前对话
+      triggerAsyncSummaryUpdate(userId)
+      logger.info('Async summary update triggered', { userId })
+    }
+
+    // ============================================
+    // 7. 如果是课程模式，获取课程信息
+    // ============================================
+    let courseContext: {
+      course_id: string
+      course_title: string
+      course_teaching_goals: string
+      course_guidance_keywords: string[]
+    } | null = null
+
+    if (courseId) {
+      const { data: courseData } = await supabase
+        .from('course_systems')
+        .select('id, title, teaching_goals, guidance_keywords')
+        .eq('id', courseId)
+        .maybeSingle()
+
+      if (courseData) {
+        courseContext = {
+          course_id: courseId,
+          course_title: courseData.title || '',
+          course_teaching_goals: courseData.teaching_goals || '',
+          course_guidance_keywords: courseData.guidance_keywords || []
+        }
+        logger.debug('Course context loaded', { courseId, courseTitle: courseData.title })
+      }
+    }
+
+    // 8. 准备发送给N8N的数据
     const defaultProjectId = process.env.DEFAULT_PROJECT_ID || 'p001'
     const defaultOrganizationId = process.env.DEFAULT_ORGANIZATION_ID || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
 
@@ -168,7 +242,24 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
       conversation_history: conversationHistory.slice(-5).map((m: GaiaMessage) => ({
         role: m.role,
         content: m.content
-      }))
+      })),
+
+      // ⭐ 新增：上下文模式标识
+      context_mode: courseId ? 'course_focused' : 'global',
+
+      // ⭐ 新增：学生画像
+      student_profile: studentProfile,
+
+      // ⭐ 新增：对话行为摘要
+      dialogue_summary: dialogueSummary,
+
+      // ⭐ 新增：课程上下文（课程模式时）
+      ...(courseContext && {
+        course_id: courseContext.course_id,
+        course_title: courseContext.course_title,
+        course_teaching_goals: courseContext.course_teaching_goals,
+        course_guidance_keywords: courseContext.course_guidance_keywords
+      })
     }
 
     logger.debug('Database operations completed', {
@@ -369,3 +460,58 @@ export const POST = withRateLimit(
   handleGaiaChat,
   rateLimitConfigs.chat
 )
+
+// ============================================
+// 辅助函数：判断是否需要更新摘要
+// ============================================
+interface StudentSummaryData {
+  messages_since_last_summary?: number | null
+  generated_at?: string | null
+}
+
+function evaluateShouldUpdate(summary: StudentSummaryData | null): boolean {
+  // 没有摘要记录，新用户暂时不更新（等积累数据）
+  if (!summary) return false
+
+  const messageCount = summary.messages_since_last_summary || 0
+  const lastUpdate = summary.generated_at ? new Date(summary.generated_at) : null
+  const daysSinceUpdate = lastUpdate
+    ? (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24)
+    : Infinity
+
+  // 阈值判断
+  if (messageCount >= 10) return true           // 消息量大，需要更新
+  if (daysSinceUpdate >= 7 && messageCount >= 3) return true  // 中频用户
+  if (daysSinceUpdate >= 30 && messageCount >= 1) return true // 兜底
+
+  return false
+}
+
+// ============================================
+// 辅助函数：异步触发摘要更新
+// ============================================
+function triggerAsyncSummaryUpdate(userId: string): void {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    logger.error('Missing Supabase credentials for async summary update')
+    return
+  }
+
+  // 调用 summarize-user-activity 边缘函数
+  // 使用 fetch 异步调用，不等待结果
+  fetch(`${supabaseUrl}/functions/v1/summarize-user-activity`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${serviceRoleKey}`
+    },
+    body: JSON.stringify({
+      userId: userId,
+      dimensions: ['dialogue', 'coursework', 'projects']
+    })
+  }).catch(err => {
+    logger.error('Async summary update failed', err)
+  })
+}

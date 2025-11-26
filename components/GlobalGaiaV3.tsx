@@ -1,8 +1,9 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { MessageCircle, X, Send, Loader2, History, Edit3, Check, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { usePathname } from 'next/navigation'
 
 interface Message {
   id?: string
@@ -37,6 +38,30 @@ export function GlobalGaiaV3() {
   const [hasMore, setHasMore] = useState(false)  // 是否还有更多消息
   const [isLoadingMore, setIsLoadingMore] = useState(false)  // 是否正在加载更多
   const [loadedCount, setLoadedCount] = useState(0)  // 已加载的消息数量
+
+  // 课程上下文检测
+  const pathname = usePathname()
+
+  // 检测当前是否在课程页面，提取课程信息
+  const courseContext = useMemo(() => {
+    // URL 格式：/courses/{courseSlug}/{courseId}
+    // 例如：/courses/earth/f652f01e-ae8d-4d51-a495-d17f40593b11
+    const courseMatch = pathname?.match(/\/courses\/([^/]+)\/([^/]+)/)
+
+    if (courseMatch) {
+      return {
+        isCoursePage: true,
+        courseSlug: courseMatch[1],  // 例如 "earth"
+        courseId: courseMatch[2]      // 例如 "f652f01e-ae8d-4d51-a495-d17f40593b11"
+      }
+    }
+
+    return {
+      isCoursePage: false,
+      courseSlug: null,
+      courseId: null
+    }
+  }, [pathname])
 
   // 监听GaiaDialog打开事件，自动关闭侧边栏
   useEffect(() => {
@@ -325,7 +350,12 @@ export function GlobalGaiaV3() {
           message: messageText,
           conversationId: currentConversationId,
           // 发送当前的所有消息（包括欢迎语或知识点问题），让API保存
-          currentMessages: shouldSendCurrentMessages ? messages : undefined
+          currentMessages: shouldSendCurrentMessages ? messages : undefined,
+          // 课程上下文（如果在课程页面）
+          ...(courseContext.isCoursePage && {
+            courseId: courseContext.courseId,
+            courseSlug: courseContext.courseSlug
+          })
         })
       })
 
