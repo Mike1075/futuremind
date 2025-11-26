@@ -19,6 +19,7 @@ interface CourseContent {
     post_watch?: string[]
   } | null
   post_reflection: string[] | null
+  explorer_projects: { id: string }[] | null
 }
 
 interface ContentInteraction {
@@ -28,6 +29,13 @@ interface ContentInteraction {
   interaction_type: string
   item_type?: string
   item_index?: number
+  metadata?: { crossTopic?: boolean } | null
+}
+
+interface UserSubmission {
+  course_content_id: string
+  day_key: string
+  score: number | null
 }
 
 // ✅ 性能优化：启用30秒缓存，避免重复计算进度
@@ -90,12 +98,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ progress: 0 })
     }
 
-    // 🔥 优化2：一次性查询所有内容（所有阶段的内容）
+    // 🔥 优化2：一次性查询所有内容（所有阶段的内容，包含explorer_projects）
     const query2Start = performance.now()
     const stageIds = stages.map((s) => s.id)
     const { data: allContents, error: contentsError } = await supabase
       .from('course_contents')
-      .select('id, stage_id, knowledge_points, socratic_questions, post_reflection')
+      .select('id, stage_id, knowledge_points, socratic_questions, post_reflection, explorer_projects')
       .in('stage_id', stageIds)
       .eq('is_published', true)
       .returns<CourseContent[]>()
@@ -151,6 +159,38 @@ export async function GET(req: NextRequest) {
       interactionsByContent.get(contentId)!.push(interaction)
     })
 
+    // 🔥 优化4：批量查询所有探索者项目提交记录
+    const query4Start = performance.now()
+    const { data: allSubmissions, error: submissionsError } = await supabase
+      .from('user_submissions')
+      .select('course_content_id, day_key, score')
+      .eq('user_id', userId)
+      .in('course_content_id', allContentIds)
+      .like('day_key', 'explorer_project_%')
+      .eq('status', 'approved')
+      .returns<UserSubmission[]>()
+
+    logger.debug('Query 4 complete: explorer project submissions', {
+      duration: `${(performance.now() - query4Start).toFixed(0)}ms`,
+      recordCount: allSubmissions?.length || 0
+    })
+
+    if (submissionsError) {
+      logger.error('Submissions query failed', submissionsError)
+    }
+
+    // 按 contentId 分组提交记录，并计算每个项目的最高分
+    const submissionsByContent = new Map<string, Record<string, number>>()
+    allSubmissions?.forEach((submission) => {
+      const contentId = submission.course_content_id
+      if (!submissionsByContent.has(contentId)) {
+        submissionsByContent.set(contentId, {})
+      }
+      const scores = submissionsByContent.get(contentId)!
+      const currentScore = scores[submission.day_key] || 0
+      scores[submission.day_key] = Math.max(currentScore, submission.score || 0)
+    })
+
     // 计算每个阶段的平均进度
     const stageProgresses: number[] = []
 
@@ -167,6 +207,7 @@ export async function GET(req: NextRequest) {
         const knowledgePoints = content.knowledge_points || []
         const socraticQuestions = content.socratic_questions || {}
         const postReflection = content.post_reflection || []
+        const explorerProjects = content.explorer_projects || []
 
         const questionCounts = {
           pre: socraticQuestions.pre_watch?.length || 0,
@@ -174,14 +215,17 @@ export async function GET(req: NextRequest) {
           post: socraticQuestions.post_watch?.length || 0
         }
 
-        // 🔥 关键：使用预加载的互动记录，不再查询数据库
+        // 🔥 关键：使用预加载的互动记录和提交记录，不再查询数据库
         const interactions = interactionsByContent.get(content.id) || []
+        const explorerProjectScores = submissionsByContent.get(content.id) || {}
 
         return calculateProgressInMemory({
           interactions,
           knowledgePointCount: knowledgePoints.length,
           questionCounts,
-          reflectionCount: postReflection.length
+          reflectionCount: postReflection.length,
+          explorerProjectCount: explorerProjects.length,
+          explorerProjectScores
         })
       })
 
@@ -212,16 +256,34 @@ export async function GET(req: NextRequest) {
 
 /**
  * 🔥 内存计算进度（无数据库查询）
- * 复制自 InteractionService.calculateProgress 的核心逻辑
+ * 与 InteractionService.calculateProgress 保持一致的计算逻辑
+ *
+ * 权重分配：
+ * - 知识点+问题+反思部分：70%
+ *   - Level 1: 接触探索（20%）× 0.7 = 14%
+ *   - Level 2: 主动思考（30%）× 0.7 = 21%
+ *   - Level 3: 深度对话（40%）× 0.7 = 28%
+ *   - Level 4: 知识内化（10%）× 0.7 = 7%
+ * - 探索者项目部分：30%
  */
 function calculateProgressInMemory(params: {
   interactions: ContentInteraction[]
   knowledgePointCount: number
   questionCounts: { pre: number; during: number; post: number }
   reflectionCount: number
+  explorerProjectCount?: number
+  explorerProjectScores?: Record<string, number>
 }) {
-  const { interactions, knowledgePointCount, questionCounts, reflectionCount } = params
+  const {
+    interactions,
+    knowledgePointCount,
+    questionCounts,
+    reflectionCount,
+    explorerProjectCount = 0,
+    explorerProjectScores = {}
+  } = params
   const totalQuestions = questionCounts.pre + questionCounts.during + questionCounts.post
+  const totalClickableItems = knowledgePointCount + totalQuestions + reflectionCount
 
   // Level 1: 接触探索（20%）
   const hasVisited = interactions.some((i) => i.interaction_type === 'page_visit')
@@ -235,7 +297,6 @@ function calculateProgressInMemory(params: {
       .map((i) => `${i.item_type}_${i.item_index}`)
   ).size
 
-  const totalClickableItems = knowledgePointCount + totalQuestions + reflectionCount
   const level1Progress = totalClickableItems > 0
     ? (hasVisited ? 1 : 0) + (itemsClicked / totalClickableItems * 19)
     : (hasVisited ? 1 : 0)
@@ -243,21 +304,62 @@ function calculateProgressInMemory(params: {
   // Level 2: 主动思考（30%）
   const knowledgeClicks = interactions.filter((i) => i.interaction_type === 'knowledge_click').length
   const questionClicks = interactions.filter((i) => i.interaction_type === 'question_click').length
-  const reflectionClicks = interactions.filter((i) => i.interaction_type === 'reflection_click').length
-  const totalClicks = knowledgeClicks + questionClicks + reflectionClicks
-  const level2Progress = totalClickableItems > 0 ? (totalClicks / totalClickableItems) * 30 : 0
+  const level2Progress =
+    (knowledgePointCount > 0 ? (knowledgeClicks / knowledgePointCount * 15) : 0) +
+    (totalQuestions > 0 ? (questionClicks / totalQuestions * 15) : 0)
 
-  // Level 3: 深度对话（30%）
-  const discussionStarts = interactions.filter((i) => i.interaction_type === 'discussion_start').length
-  const level3Progress = totalClickableItems > 0 ? Math.min((discussionStarts / totalClickableItems) * 30, 30) : 0
+  // Level 3: 深度对话（40%）- 使用讨论深度而非讨论数量
+  const discussionsByTopic = new Map<string, number>()
+  interactions.forEach((i) => {
+    if (i.interaction_type === 'discussion_message') {
+      const key = `${i.item_type}_${i.item_index}`
+      discussionsByTopic.set(key, (discussionsByTopic.get(key) || 0) + 1)
+    }
+  })
 
-  // Level 4: 持续交流（20%）
-  const discussionMessages = interactions.filter((i) => i.interaction_type === 'discussion_message').length
-  const deepDiscussions = interactions.filter((i) => i.interaction_type === 'deep_discussion').length
-  const messageScore = Math.min(discussionMessages * 0.5, 10)
-  const deepScore = Math.min(deepDiscussions * 2, 10)
-  const level4Progress = messageScore + deepScore
+  // 计算每个主题的深度分数
+  let totalDepthScore = 0
+  discussionsByTopic.forEach((rounds) => {
+    if (rounds <= 2) {
+      totalDepthScore += 0
+    } else if (rounds <= 4) {
+      totalDepthScore += 5
+    } else if (rounds <= 7) {
+      totalDepthScore += 10
+    } else {
+      totalDepthScore += 13.33 // 深度钻研奖励
+    }
+  })
+  const level3Progress = Math.min(40, totalDepthScore)
 
-  const totalProgress = level1Progress + level2Progress + level3Progress + level4Progress
+  // Level 4: 知识内化（10%）
+  const crossTopicDiscussions = interactions.filter((i) => {
+    if (i.interaction_type !== 'discussion_message') return false
+    return i.metadata?.crossTopic === true
+  }).length
+  const reflectionDiscussions = interactions.filter((i) =>
+    i.interaction_type === 'discussion_start' &&
+    i.item_type === 'reflection'
+  ).length
+  const level4Progress =
+    Math.min(7, crossTopicDiscussions * 1.4) +
+    (reflectionCount > 0 ? (reflectionDiscussions / reflectionCount * 3) : 0)
+
+  // 知识点部分进度（占总进度的70%）
+  const knowledgeProgress = (level1Progress + level2Progress + level3Progress + level4Progress) * 0.7
+
+  // 探索者项目进度（占总进度的30%）
+  let explorerProgress = 0
+  if (explorerProjectCount > 0) {
+    const projectWeight = 30 / explorerProjectCount
+    Object.values(explorerProjectScores).forEach((score: number) => {
+      if (score > 0) {
+        explorerProgress += (score / 100) * projectWeight
+      }
+    })
+  }
+
+  // 总进度 = 知识点部分(70%) + 探索者项目部分(30%)
+  const totalProgress = knowledgeProgress + explorerProgress
   return Math.round(Math.min(totalProgress, 100))
 }
