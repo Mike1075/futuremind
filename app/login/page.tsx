@@ -3,11 +3,12 @@
 import { useState, useEffect, Suspense, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
-import { TreePine, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { TreePine, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 function LoginForm() {
   const [isLogin, setIsLogin] = useState(true)
+  const [isForgotPassword, setIsForgotPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -85,6 +86,41 @@ function LoginForm() {
     }
   }
 
+  // 忘记密码处理
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email) {
+      setMessage('请输入邮箱地址')
+      return
+    }
+
+    setLoading(true)
+    setMessage('')
+
+    try {
+      // 使用环境变量或当前域名构建重定向URL
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      const redirectUrl = `${baseUrl}/reset-password`
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      })
+
+      if (error) throw error
+
+      setMessage('密码重置邮件已发送，请检查您的邮箱（包括垃圾邮件文件夹）')
+      // 3秒后返回登录界面
+      setTimeout(() => {
+        setIsForgotPassword(false)
+        setMessage('')
+      }, 5000)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '发送重置邮件失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Background particles */}
@@ -126,11 +162,66 @@ function LoginForm() {
             </h1>
           </div>
           <p className="text-gray-300 text-sm">
-            {isLogin ? '欢迎回到觉醒之旅' : '开启你的意识探索'}
+            {isForgotPassword
+              ? '输入邮箱地址，我们将发送重置链接'
+              : (isLogin ? '欢迎回到觉醒之旅' : '开启你的意识探索')}
           </p>
         </div>
 
-        {/* Auth Form */}
+        {/* Forgot Password Form */}
+        {isForgotPassword ? (
+          <form onSubmit={handleForgotPassword} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                邮箱
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="请输入注册时使用的邮箱"
+                  required
+                />
+              </div>
+            </div>
+
+            {message && (
+              <div className={`text-sm p-3 rounded-lg ${
+                message.includes('失败') || message.includes('Error') || message.includes('请输入')
+                  ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                  : 'bg-green-500/20 text-green-300 border border-green-500/30'
+              }`}>
+                {message}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {loading ? '发送中...' : '发送重置邮件'}
+            </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(false)
+                  setMessage('')
+                }}
+                className="text-purple-300 hover:text-purple-200 text-sm transition-colors flex items-center justify-center mx-auto"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                返回登录
+              </button>
+            </div>
+          </form>
+        ) : (
+        /* Auth Form */
         <form onSubmit={handleAuth} className="space-y-6">
           {!isLogin && (
             <div>
@@ -190,6 +281,21 @@ function LoginForm() {
                 {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
               </button>
             </div>
+            {/* 忘记密码链接 - 仅在登录模式显示 */}
+            {isLogin && (
+              <div className="text-right mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(true)
+                    setMessage('')
+                  }}
+                  className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                >
+                  忘记密码？
+                </button>
+              </div>
+            )}
           </div>
 
           {message && (
@@ -209,20 +315,22 @@ function LoginForm() {
           >
             {loading ? '处理中...' : (isLogin ? '登录' : '注册')}
           </button>
-        </form>
 
-        {/* Switch between login/register */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => {
-              setIsLogin(!isLogin)
-              setMessage('')
-            }}
-            className="text-purple-300 hover:text-purple-200 text-sm transition-colors"
-          >
-            {isLogin ? '还没有账户？点击注册' : '已有账户？点击登录'}
-          </button>
-        </div>
+          {/* Switch between login/register */}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsLogin(!isLogin)
+                setMessage('')
+              }}
+              className="text-purple-300 hover:text-purple-200 text-sm transition-colors"
+            >
+              {isLogin ? '还没有账户？点击注册' : '已有账户？点击登录'}
+            </button>
+          </div>
+        </form>
+        )}
 
         {/* Back to home */}
         <div className="mt-4 text-center">
