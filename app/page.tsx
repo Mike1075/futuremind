@@ -273,29 +273,6 @@ export default function Home() {
           )}
         </motion.div>
 
-        {/* Features preview */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1.4 }}
-          className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 text-center"
-        >
-          <div className="p-6 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-            <TreePine className="w-8 h-8 text-green-400 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-white mb-2">意识进化树</h3>
-            <p className="text-gray-400 text-sm">可视化你的觉醒成长轨迹</p>
-          </div>
-          <div className="p-6 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-            <Sparkles className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-white mb-2">主线剧情</h3>
-            <p className="text-gray-400 text-sm">全球同步的探索之旅</p>
-          </div>
-          <div className="p-6 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-            <MessageCircle className="w-8 h-8 text-blue-400 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-white mb-2">盖亚对话</h3>
-            <p className="text-gray-400 text-sm">AI导师的个性化指导</p>
-          </div>
-        </motion.div>
       </motion.div>
 
       {/* Floating Gaia chat button */}

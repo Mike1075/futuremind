@@ -27,6 +27,9 @@ interface EarthCourseViewProps {
 
 const UNLOCK_THRESHOLD = 0.8 // 80%完成度解锁下一阶段
 
+// localStorage缓存key
+const PROGRESS_CACHE_KEY = 'earth_course_progress'
+
 export function EarthCourseView({
   courseSystem,
   contents,
@@ -34,12 +37,33 @@ export function EarthCourseView({
 }: EarthCourseViewProps) {
   const [showUnlockAnimation, setShowUnlockAnimation] = useState<number | null>(null)
 
-  // 计算初始进度（基于服务端的completionMap，立即显示）
-  const initialProgress = contents.length > 0
-    ? Math.round((Array.from(completionMap.values()).filter(Boolean).length / contents.length) * 100)
-    : 0
+  // 从localStorage获取缓存的进度，优先使用缓存值
+  const getInitialProgress = () => {
+    // 服务端计算的初始进度
+    const serverProgress = contents.length > 0
+      ? Math.round((Array.from(completionMap.values()).filter(Boolean).length / contents.length) * 100)
+      : 0
 
-  const [overallProgress, setOverallProgress] = useState<number>(initialProgress)
+    // 尝试从localStorage获取缓存
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(PROGRESS_CACHE_KEY)
+        if (cached) {
+          const cacheData = JSON.parse(cached)
+          // 检查是否是同一个课程系统的缓存
+          if (cacheData.systemKey === courseSystem.system_key) {
+            // 使用缓存值（可能是上次的真实进度）
+            return cacheData.progress ?? serverProgress
+          }
+        }
+      } catch {
+        // localStorage不可用或解析失败，使用服务端值
+      }
+    }
+    return serverProgress
+  }
+
+  const [overallProgress, setOverallProgress] = useState<number>(getInitialProgress)
 
   // 异步获取真实进度（后台更新，用户感知不到）
   useEffect(() => {
@@ -58,14 +82,29 @@ export function EarthCourseView({
         const avgProgress = Math.round(totalProgress / validResults.length)
 
         // 只有当真实进度与当前不同时才更新
-        setOverallProgress(prev => prev !== avgProgress ? avgProgress : prev)
+        setOverallProgress(prev => {
+          if (prev !== avgProgress) {
+            // 保存到localStorage缓存
+            try {
+              localStorage.setItem(PROGRESS_CACHE_KEY, JSON.stringify({
+                systemKey: courseSystem.system_key,
+                progress: avgProgress,
+                timestamp: Date.now()
+              }))
+            } catch {
+              // localStorage不可用，忽略
+            }
+            return avgProgress
+          }
+          return prev
+        })
       } catch (error) {
         console.error('Failed to fetch real progress:', error)
       }
     }
 
     fetchRealProgress()
-  }, [contents])
+  }, [contents, courseSystem.system_key])
 
   // 将内容按阶段分组（根据title中的"第X阶段"来分组）
   const stages: Stage[] = []

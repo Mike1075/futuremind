@@ -22,6 +22,9 @@ interface EarthStageCircleProps {
 
 const UNLOCK_THRESHOLD = 0.8
 
+// localStorage缓存key
+const STAGE_PROGRESS_CACHE_KEY = 'earth_stage_progress'
+
 export function EarthStageCircle({
   stages,
   completionMap,
@@ -30,20 +33,47 @@ export function EarthStageCircle({
   const [containerSize, setContainerSize] = useState({ width: 600, height: 600 })
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // 计算初始进度（基于服务端的completionMap，立即显示）
+  // 计算初始进度（基于服务端的completionMap，立即显示，优先使用缓存）
   const calculateInitialProgress = () => {
-    const progressMap = new Map<number, number>()
+    // 先计算服务端进度作为后备
+    const serverProgressMap = new Map<number, number>()
     for (const stage of stages) {
       if (stage.contents.length === 0) {
-        progressMap.set(stage.stageNumber, 0)
+        serverProgressMap.set(stage.stageNumber, 0)
         continue
       }
-      // 基于completionMap计算初始进度
       const completed = stage.contents.filter(c => completionMap.get(c.id)).length
       const progress = Math.round((completed / stage.contents.length) * 100)
-      progressMap.set(stage.stageNumber, progress)
+      serverProgressMap.set(stage.stageNumber, progress)
     }
-    return progressMap
+
+    // 尝试从localStorage获取缓存
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(STAGE_PROGRESS_CACHE_KEY)
+        if (cached) {
+          const cacheData = JSON.parse(cached)
+          // 检查是否是同一个课程系统的缓存
+          if (cacheData.systemKey === systemKey && cacheData.stages) {
+            const cachedMap = new Map<number, number>()
+            // 使用缓存的进度值
+            for (const [stageNum, progress] of Object.entries(cacheData.stages)) {
+              cachedMap.set(Number(stageNum), progress as number)
+            }
+            // 确保所有阶段都有值（新阶段可能没有缓存）
+            for (const stage of stages) {
+              if (!cachedMap.has(stage.stageNumber)) {
+                cachedMap.set(stage.stageNumber, serverProgressMap.get(stage.stageNumber) ?? 0)
+              }
+            }
+            return cachedMap
+          }
+        }
+      } catch {
+        // localStorage不可用或解析失败，使用服务端值
+      }
+    }
+    return serverProgressMap
   }
 
   const [stageProgressMap, setStageProgressMap] = useState<Map<number, number>>(calculateInitialProgress)
@@ -95,11 +125,26 @@ export function EarthStageCircle({
         }
       }
 
+      // 保存到localStorage缓存
+      try {
+        const stagesObj: Record<number, number> = {}
+        progressMap.forEach((value, key) => {
+          stagesObj[key] = value
+        })
+        localStorage.setItem(STAGE_PROGRESS_CACHE_KEY, JSON.stringify({
+          systemKey,
+          stages: stagesObj,
+          timestamp: Date.now()
+        }))
+      } catch {
+        // localStorage不可用，忽略
+      }
+
       setStageProgressMap(progressMap)
     }
 
     fetchRealProgress()
-  }, [stages])
+  }, [stages, systemKey])
 
   const radius = containerSize.width * 0.35
   const centerX = containerSize.width / 2
