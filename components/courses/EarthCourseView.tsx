@@ -33,38 +33,38 @@ export function EarthCourseView({
   completionMap
 }: EarthCourseViewProps) {
   const [showUnlockAnimation, setShowUnlockAnimation] = useState<number | null>(null)
-  const [realOverallProgress, setRealOverallProgress] = useState<number | null>(null)
 
-  // 获取真实的总体进度（使用与阶段进度相同的计算逻辑）
+  // 计算初始进度（基于服务端的completionMap，立即显示）
+  const initialProgress = contents.length > 0
+    ? Math.round((Array.from(completionMap.values()).filter(Boolean).length / contents.length) * 100)
+    : 0
+
+  const [overallProgress, setOverallProgress] = useState<number>(initialProgress)
+
+  // 异步获取真实进度（后台更新，用户感知不到）
   useEffect(() => {
-    const fetchOverallProgress = async () => {
-      if (contents.length === 0) {
-        setRealOverallProgress(0)
-        return
-      }
+    const fetchRealProgress = async () => {
+      if (contents.length === 0) return
 
       try {
         const contentIds = contents.map(c => c.id)
         const progressPromises = contentIds.map(id => getEarthProgress(id))
         const progressResults = await Promise.all(progressPromises)
 
-        // 过滤掉null结果，计算平均进度
         const validResults = progressResults.filter(r => r !== null)
-        if (validResults.length === 0) {
-          setRealOverallProgress(0)
-          return
-        }
+        if (validResults.length === 0) return
 
         const totalProgress = validResults.reduce((sum, r) => sum + (r?.progress || 0), 0)
-        const avgProgress = totalProgress / validResults.length
-        setRealOverallProgress(Math.round(avgProgress))
+        const avgProgress = Math.round(totalProgress / validResults.length)
+
+        // 只有当真实进度与当前不同时才更新
+        setOverallProgress(prev => prev !== avgProgress ? avgProgress : prev)
       } catch (error) {
-        console.error('Failed to fetch overall progress:', error)
-        setRealOverallProgress(0)
+        console.error('Failed to fetch real progress:', error)
       }
     }
 
-    fetchOverallProgress()
+    fetchRealProgress()
   }, [contents])
 
   // 将内容按阶段分组（根据title中的"第X阶段"来分组）
@@ -120,10 +120,6 @@ export function EarthCourseView({
   const totalContents = contents.length
   const completedContents = Array.from(completionMap.values()).filter(Boolean).length
 
-  // 使用真实进度，如果还在加载中则显示加载状态
-  const displayProgress = realOverallProgress ?? 0
-  const isLoadingProgress = realOverallProgress === null
-
   // 获取阶段的图标
   const getStageIcon = (stageNumber: number) => {
     const icons = ['🎧', '🌊', '🧠', '👥', '🌌', '🚀']
@@ -173,18 +169,12 @@ export function EarthCourseView({
           <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-gray-400">总体学习进度</span>
-              <span className="text-white font-medium">
-                {isLoadingProgress ? (
-                  <span className="inline-block w-8 h-4 bg-gray-700 rounded animate-pulse" />
-                ) : (
-                  `${displayProgress}%`
-                )}
-              </span>
+              <span className="text-white font-medium">{overallProgress}%</span>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-3 mb-2">
               <div
                 className="bg-gradient-to-r from-green-400 via-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500 relative overflow-hidden"
-                style={{ width: `${displayProgress}%` }}
+                style={{ width: `${overallProgress}%` }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
               </div>

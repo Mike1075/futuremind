@@ -28,8 +28,25 @@ export function EarthStageCircle({
   systemKey
 }: EarthStageCircleProps) {
   const [containerSize, setContainerSize] = useState({ width: 600, height: 600 })
-  const [stageProgressMap, setStageProgressMap] = useState<Map<number, number>>(new Map())
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // 计算初始进度（基于服务端的completionMap，立即显示）
+  const calculateInitialProgress = () => {
+    const progressMap = new Map<number, number>()
+    for (const stage of stages) {
+      if (stage.contents.length === 0) {
+        progressMap.set(stage.stageNumber, 0)
+        continue
+      }
+      // 基于completionMap计算初始进度
+      const completed = stage.contents.filter(c => completionMap.get(c.id)).length
+      const progress = Math.round((completed / stage.contents.length) * 100)
+      progressMap.set(stage.stageNumber, progress)
+    }
+    return progressMap
+  }
+
+  const [stageProgressMap, setStageProgressMap] = useState<Map<number, number>>(calculateInitialProgress)
 
   // 响应式容器尺寸
   useEffect(() => {
@@ -45,9 +62,9 @@ export function EarthStageCircle({
     return () => window.removeEventListener('resize', updateSize)
   }, [])
 
-  // 获取各阶段的学习进度（使用新的进度系统）
+  // 异步获取真实进度（后台更新）
   useEffect(() => {
-    const fetchStageProgress = async () => {
+    const fetchRealProgress = async () => {
       const progressMap = new Map<number, number>()
 
       for (const stage of stages) {
@@ -57,12 +74,10 @@ export function EarthStageCircle({
         }
 
         try {
-          // 批量查询每个内容的进度
           const contentIds = stage.contents.map(c => c.id)
           const progressPromises = contentIds.map(id => getEarthProgress(id))
           const progressResults = await Promise.all(progressPromises)
 
-          // 过滤掉null结果，计算平均进度
           const validResults = progressResults.filter(r => r !== null)
           if (validResults.length === 0) {
             progressMap.set(stage.stageNumber, 0)
@@ -74,14 +89,16 @@ export function EarthStageCircle({
           progressMap.set(stage.stageNumber, Math.round(avgProgress))
         } catch (error) {
           console.error(`Failed to fetch progress for stage ${stage.stageNumber}:`, error)
-          progressMap.set(stage.stageNumber, 0)
+          // 保留当前值，不覆盖
+          const currentValue = stageProgressMap.get(stage.stageNumber) ?? 0
+          progressMap.set(stage.stageNumber, currentValue)
         }
       }
 
       setStageProgressMap(progressMap)
     }
 
-    fetchStageProgress()
+    fetchRealProgress()
   }, [stages])
 
   const radius = containerSize.width * 0.35
