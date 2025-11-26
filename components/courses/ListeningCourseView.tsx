@@ -346,16 +346,16 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                     </Link>
                   ) : (
                     <div className="relative">
-                      {/* 未解锁节点 - 响应式大小 */}
+                      {/* 未解锁节点 - 与已解锁节点大小一致 */}
                       <div
-                        className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-xl font-bold text-gray-600 shadow-lg"
+                        className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-xl font-bold text-gray-600 shadow-lg"
                         style={{
                           background: 'linear-gradient(135deg, #374151, #1F2937)',
                           border: '2px solid rgba(75, 85, 99, 0.3)',
                           filter: 'grayscale(100%)',
                         }}
                       >
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
                       </div>
