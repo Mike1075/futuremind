@@ -50,7 +50,7 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
 
     // 解析和验证请求参数
     const body = await req.json()
-    const { message, conversationId, currentMessages, courseId, courseSlug } = body
+    const { message, conversationId, currentMessages } = body
 
     logger.debug('Request parsed', {
       elapsed: `${Date.now() - startTime}ms`,
@@ -198,35 +198,7 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
       logger.info('Async summary update triggered', { userId })
     }
 
-    // ============================================
-    // 7. 如果是课程模式，获取课程信息
-    // ============================================
-    let courseContext: {
-      course_id: string
-      course_title: string
-      course_teaching_goals: string
-      course_guidance_keywords: string[]
-    } | null = null
-
-    if (courseId) {
-      const { data: courseData } = await supabase
-        .from('course_systems')
-        .select('id, title, teaching_goals, guidance_keywords')
-        .eq('id', courseId)
-        .maybeSingle()
-
-      if (courseData) {
-        courseContext = {
-          course_id: courseId,
-          course_title: courseData.title || '',
-          course_teaching_goals: courseData.teaching_goals || '',
-          course_guidance_keywords: courseData.guidance_keywords || []
-        }
-        logger.debug('Course context loaded', { courseId, courseTitle: courseData.title })
-      }
-    }
-
-    // 8. 准备发送给N8N的数据
+    // 7. 准备发送给N8N的数据
     const defaultProjectId = process.env.DEFAULT_PROJECT_ID || 'p001'
     const defaultOrganizationId = process.env.DEFAULT_ORGANIZATION_ID || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
 
@@ -244,22 +216,11 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
         content: m.content
       })),
 
-      // ⭐ 新增：上下文模式标识
-      context_mode: courseId ? 'course_focused' : 'global',
-
-      // ⭐ 新增：学生画像
+      // 学生画像（用于因材施教）
       student_profile: studentProfile,
 
-      // ⭐ 新增：对话行为摘要
-      dialogue_summary: dialogueSummary,
-
-      // ⭐ 新增：课程上下文（课程模式时）
-      ...(courseContext && {
-        course_id: courseContext.course_id,
-        course_title: courseContext.course_title,
-        course_teaching_goals: courseContext.course_teaching_goals,
-        course_guidance_keywords: courseContext.course_guidance_keywords
-      })
+      // 对话行为摘要（用于了解学生）
+      dialogue_summary: dialogueSummary
     }
 
     logger.debug('Database operations completed', {
