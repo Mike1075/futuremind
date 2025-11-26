@@ -284,17 +284,19 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                   {isUnlocked ? (
                     <Link href={`/courses/listening/${content.id}`}>
                       <motion.div
-                        whileHover={{ scale: 1.15, rotate: 5 }}
+                        whileHover={{ scale: 1.2 }}
                         whileTap={{ scale: 0.95 }}
-                        className="relative cursor-pointer"
+                        className="relative cursor-pointer flex items-center justify-center"
+                        style={{ width: 'fit-content', height: 'fit-content' }}
                       >
                         {/* 旋转彩色圆环（仅及格节点） */}
                         {isPassed && (
                           <motion.div
-                            className="absolute inset-0 rounded-full"
+                            className="absolute rounded-full"
                             style={{
+                              width: '150%',
+                              height: '150%',
                               background: `conic-gradient(from 0deg, ${color.from}, ${color.to}, ${COURSE_COLORS[(index + 1) % COURSE_COLORS.length].from}, ${color.from})`,
-                              transform: 'scale(1.3)',
                               filter: 'blur(2px)',
                             }}
                             animate={{
@@ -310,33 +312,33 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
 
                         {/* 光晕效果 */}
                         <div
-                          className="absolute inset-0 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity"
+                          className="absolute rounded-full blur-lg opacity-60 group-hover:opacity-100 transition-opacity"
                           style={{
+                            width: '180%',
+                            height: '180%',
                             background: `linear-gradient(135deg, ${color.from}, ${color.to})`,
-                            transform: 'scale(1.5)',
                           }}
                         />
 
-                        {/* 主节点 - 响应式大小 */}
+                        {/* 主节点 - 缩小尺寸 */}
                         <div
-                          className="relative w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold text-white shadow-2xl transition-all"
+                          className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm sm:text-base md:text-lg font-bold text-white shadow-2xl transition-all"
                           style={{
                             background: isCompleted
                               ? `linear-gradient(135deg, ${color.from}, ${color.to})`
                               : `linear-gradient(135deg, ${color.from}AA, ${color.to}AA)`,
                             border: isPassed
-                              ? '3px solid rgba(255,255,255,0.5)'
+                              ? '2px solid rgba(255,255,255,0.5)'
                               : isCompleted
-                                ? '3px solid rgba(255,255,255,0.3)'
-                                : '3px solid rgba(255,255,255,0.1)',
+                                ? '2px solid rgba(255,255,255,0.3)'
+                                : '2px solid rgba(255,255,255,0.1)',
                           }}
                         >
-                          {/* 始终显示数字 */}
                           <span>{dayNumber}</span>
                         </div>
 
                         {/* 标题 */}
-                        <div className="absolute top-full mt-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
                           <div className="bg-gray-900/90 backdrop-blur-sm border border-gray-700 rounded-lg px-3 py-1.5 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity shadow-xl">
                             {content.title}
                             {isPassed && <span className="ml-2 text-green-400">✓ {score}分</span>}
@@ -345,23 +347,22 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                       </motion.div>
                     </Link>
                   ) : (
-                    <div className="relative">
+                    <div className="relative flex items-center justify-center" style={{ width: 'fit-content', height: 'fit-content' }}>
                       {/* 未解锁节点 - 与已解锁节点大小一致 */}
                       <div
-                        className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-xl font-bold text-gray-600 shadow-lg"
+                        className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-gray-600 shadow-lg"
                         style={{
                           background: 'linear-gradient(135deg, #374151, #1F2937)',
                           border: '2px solid rgba(75, 85, 99, 0.3)',
-                          filter: 'grayscale(100%)',
                         }}
                       >
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
                       </div>
 
-                      {/* 未解锁提示 - 响应式 */}
-                      <div className="absolute top-full mt-1 sm:mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                      {/* 未解锁提示 */}
+                      <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap">
                         <div className="bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs text-gray-500">
                           🔒 未解锁
                         </div>
