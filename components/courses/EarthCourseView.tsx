@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import type { CourseContent } from '@/lib/supabase/database.types'
 import { EarthStageCircle } from './EarthStageCircle'
+import { getEarthProgress } from '@/lib/utils/interaction-tracker'
 
 interface Stage {
   stageNumber: number
@@ -32,6 +33,39 @@ export function EarthCourseView({
   completionMap
 }: EarthCourseViewProps) {
   const [showUnlockAnimation, setShowUnlockAnimation] = useState<number | null>(null)
+  const [realOverallProgress, setRealOverallProgress] = useState<number | null>(null)
+
+  // 获取真实的总体进度（使用与阶段进度相同的计算逻辑）
+  useEffect(() => {
+    const fetchOverallProgress = async () => {
+      if (contents.length === 0) {
+        setRealOverallProgress(0)
+        return
+      }
+
+      try {
+        const contentIds = contents.map(c => c.id)
+        const progressPromises = contentIds.map(id => getEarthProgress(id))
+        const progressResults = await Promise.all(progressPromises)
+
+        // 过滤掉null结果，计算平均进度
+        const validResults = progressResults.filter(r => r !== null)
+        if (validResults.length === 0) {
+          setRealOverallProgress(0)
+          return
+        }
+
+        const totalProgress = validResults.reduce((sum, r) => sum + (r?.progress || 0), 0)
+        const avgProgress = totalProgress / validResults.length
+        setRealOverallProgress(Math.round(avgProgress))
+      } catch (error) {
+        console.error('Failed to fetch overall progress:', error)
+        setRealOverallProgress(0)
+      }
+    }
+
+    fetchOverallProgress()
+  }, [contents])
 
   // 将内容按阶段分组（根据title中的"第X阶段"来分组）
   const stages: Stage[] = []
@@ -82,12 +116,13 @@ export function EarthCourseView({
     stages[i].isUnlocked = prevStageCompletion >= UNLOCK_THRESHOLD
   }
 
-  // 计算总体进度
+  // 计算总体进度（用于显示完成单元数）
   const totalContents = contents.length
   const completedContents = Array.from(completionMap.values()).filter(Boolean).length
-  const overallProgress = totalContents > 0
-    ? Math.round((completedContents / totalContents) * 100)
-    : 0
+
+  // 使用真实进度，如果还在加载中则显示加载状态
+  const displayProgress = realOverallProgress ?? 0
+  const isLoadingProgress = realOverallProgress === null
 
   // 获取阶段的图标
   const getStageIcon = (stageNumber: number) => {
@@ -138,12 +173,18 @@ export function EarthCourseView({
           <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-gray-400">总体学习进度</span>
-              <span className="text-white font-medium">{overallProgress}%</span>
+              <span className="text-white font-medium">
+                {isLoadingProgress ? (
+                  <span className="inline-block w-8 h-4 bg-gray-700 rounded animate-pulse" />
+                ) : (
+                  `${displayProgress}%`
+                )}
+              </span>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-3 mb-2">
               <div
                 className="bg-gradient-to-r from-green-400 via-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500 relative overflow-hidden"
-                style={{ width: `${overallProgress}%` }}
+                style={{ width: `${displayProgress}%` }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
               </div>
