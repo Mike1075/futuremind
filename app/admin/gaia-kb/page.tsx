@@ -22,8 +22,14 @@ interface Document {
   created_at: string
 }
 
-// 课程列表
-const COURSES = [
+// CQ-10: 课程类型定义
+interface Course {
+  id: string
+  name: string
+}
+
+// CQ-10: 默认课程列表（作为fallback，优先从数据库加载）
+const DEFAULT_COURSES: Course[] = [
   { id: 'p001', name: '伊卡洛斯计划' },
   { id: 'p002', name: '自在聆听·观音之旅' },
   { id: 'p003', name: '卡洛罗韦利4本' },
@@ -32,11 +38,12 @@ const COURSES = [
 
 export default function GaiaKnowledgeBasePage() {
   const [documents, setDocuments] = useState<Document[]>([])
+  const [courses, setCourses] = useState<Course[]>(DEFAULT_COURSES) // CQ-10: 动态课程列表
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
-  const [courseId, setCourseId] = useState<string>('p001') // 默认选中第一个课程
+  const [courseId, setCourseId] = useState<string>('') // CQ-10: 初始为空，等课程加载后设置
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState(false)
   const router = useRouter()
@@ -44,6 +51,7 @@ export default function GaiaKnowledgeBasePage() {
 
   useEffect(() => {
     checkAuth()
+    loadCourses() // CQ-10: 加载课程列表
     loadDocuments()
   }, [])
 
@@ -62,6 +70,35 @@ export default function GaiaKnowledgeBasePage() {
 
     if (!profile || !profile.role || !['teacher', 'principal'].includes(profile.role)) {
       router.push('/')
+    }
+  }
+
+  // CQ-10: 从数据库加载课程列表
+  const loadCourses = async () => {
+    try {
+      const { data: courseSystems } = await supabase
+        .from('course_systems')
+        .select('id, title, system_key')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+
+      if (courseSystems && courseSystems.length > 0) {
+        const loadedCourses = courseSystems.map(cs => ({
+          id: cs.system_key || cs.id,
+          name: cs.title
+        }))
+        setCourses(loadedCourses)
+        // 设置默认选中第一个课程
+        if (!courseId && loadedCourses.length > 0) {
+          setCourseId(loadedCourses[0].id)
+        }
+      } else {
+        // 如果数据库没有课程，使用默认值
+        setCourseId(DEFAULT_COURSES[0].id)
+      }
+    } catch {
+      // 加载失败时使用默认课程列表
+      setCourseId(DEFAULT_COURSES[0].id)
     }
   }
 
@@ -351,10 +388,11 @@ export default function GaiaKnowledgeBasePage() {
                 onChange={(e) => setCourseId(e.target.value)}
                 className="block w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
+                disabled={courses.length === 0}
               >
-                {COURSES.map(course => (
+                {courses.map(course => (
                   <option key={course.id} value={course.id} className="bg-zinc-900">
-                    {course.id} - {course.name}
+                    {course.name}
                   </option>
                 ))}
               </select>

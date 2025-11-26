@@ -6,24 +6,60 @@
  * - 生产环境：只输出错误和警告
  * - 自动添加时间戳和上下文
  * - 支持结构化日志
+ * - DB-12: 请求ID追踪，关联同一请求的多个日志
  */
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 interface LogContext {
-  [key: string]: any
+  [key: string]: unknown
+  requestId?: string
+}
+
+// DB-12: 生成唯一请求ID
+function generateRequestId(): string {
+  return `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
 }
 
 class Logger {
   private isDevelopment = process.env.NODE_ENV === 'development'
   private isServer = typeof window === 'undefined'
+  private currentRequestId: string | null = null
+
+  /**
+   * DB-12: 设置当前请求ID，用于关联日志
+   */
+  setRequestId(requestId?: string): string {
+    this.currentRequestId = requestId || generateRequestId()
+    return this.currentRequestId
+  }
+
+  /**
+   * DB-12: 获取当前请求ID
+   */
+  getRequestId(): string | null {
+    return this.currentRequestId
+  }
+
+  /**
+   * DB-12: 清除请求ID（请求结束时调用）
+   */
+  clearRequestId(): void {
+    this.currentRequestId = null
+  }
 
   private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
     const timestamp = new Date().toISOString()
-    const prefix = `[${timestamp}] [${level.toUpperCase()}]`
+    // DB-12: 在日志中包含请求ID
+    const requestIdPart = this.currentRequestId ? ` [${this.currentRequestId}]` : ''
+    const prefix = `[${timestamp}] [${level.toUpperCase()}]${requestIdPart}`
 
     if (context && Object.keys(context).length > 0) {
-      return `${prefix} ${message} ${JSON.stringify(context)}`
+      // DB-12: 自动添加requestId到context
+      const contextWithRequestId = this.currentRequestId
+        ? { ...context, requestId: this.currentRequestId }
+        : context
+      return `${prefix} ${message} ${JSON.stringify(contextWithRequestId)}`
     }
 
     return `${prefix} ${message}`
@@ -141,9 +177,37 @@ export const logger = new Logger()
 export const logApiRequest = (req: Request) => {
   const method = req.method
   const url = new URL(req.url)
-  logger.apiRequest(method, url.pathname)
+  // DB-12: 自动为每个请求设置追踪ID
+  const requestId = logger.setRequestId()
+  logger.apiRequest(method, url.pathname, { requestId })
+  return requestId
 }
 
 export const logApiError = (error: unknown, endpoint: string) => {
   logger.error(`API Error at ${endpoint}`, error)
+}
+
+// DB-12: 导出请求ID生成函数
+export { generateRequestId }
+
+/**
+ * DB-12: API路由包装器 - 自动添加请求ID追踪
+ * 用法：export const GET = withRequestTracking(async (req) => { ... })
+ */
+export function withRequestTracking<T extends (req: Request, ...args: unknown[]) => Promise<Response>>(
+  handler: T
+): T {
+  return (async (req: Request, ...args: unknown[]) => {
+    const requestId = logApiRequest(req)
+    try {
+      const response = await handler(req, ...args)
+      // 在响应头中添加请求ID，方便前端调试
+      if (response instanceof Response) {
+        response.headers.set('X-Request-ID', requestId)
+      }
+      return response
+    } finally {
+      logger.clearRequestId()
+    }
+  }) as T
 }
