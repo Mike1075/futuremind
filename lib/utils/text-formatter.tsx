@@ -5,15 +5,16 @@
 
 interface FormatOptions {
   addBorderToAll?: boolean  // 是否为所有段落添加左边框（用于深度解读）
+  isMeditation?: boolean    // 是否是冥想练习（特殊格式）
+  isLifePractice?: boolean  // 是否是生活实践（特殊格式）
 }
 
 /**
  * 格式化课程文本
- * - 移除重复的标题行（🧘 冥想练习: 和 🌱 生活实践:）
+ * - 移除重复的标题行
  * - 智能分段和层级标题
- * - 清理多余空行
+ * - 清理多余空行和*号
  * - 段落结尾添加emoji装饰
- * - 标题不添加emoji
  */
 export function formatCourseText(
   text: string | null | undefined,
@@ -27,16 +28,20 @@ export function formatCourseText(
   // 2. 移除多余的空行
   formatted = formatted.replace(/\n{3,}/g, '\n\n')
 
-  // 3. 清理首尾空白
+  // 3. 清理 ** 和 * 标记（会造成显示问题）
+  formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '$1')
+  formatted = formatted.replace(/\*([^*]+)\*/g, '$1')
+
+  // 4. 清理首尾空白
   formatted = formatted.trim()
 
-  // 4. 移除第一行如果是重复的标题（🧘 冥想练习:xxx 或 🌱 生活实践:xxx）
-  formatted = formatted.replace(/^[🧘🌱]\s*[^:：]+[:：][^\n]*\n\n?/, '')
+  // 5. 移除第一行如果是重复的标题（🧘 冥想练习:xxx 或 🌱 生活实践:xxx）
+  formatted = formatted.replace(/^[🧘🌱🔍📖]\s*[^:：\n]+[:：][^\n]*\n\n?/, '')
 
-  // 5. 智能分段：将过长的段落按句子分段
+  // 6. 智能分段
   formatted = smartParagraphSplit(formatted)
 
-  // 6. 将文本分段
+  // 7. 将文本分段
   const paragraphs = formatted.split('\n\n')
 
   return (
@@ -45,8 +50,16 @@ export function formatCourseText(
         const trimmed = paragraph.trim()
         if (!trimmed) return null
 
-        // 一级标题（如"准备阶段"、"聆听练习"、"结束阶段"）
-        // 标题不添加emoji
+        // 冥想/生活实践的副标题（第一行短文本）
+        if (index === 0 && trimmed.length < 30 && !trimmed.includes('\n') && !trimmed.match(/[。，！？]/) && !trimmed.match(/^[\d]/)) {
+          return (
+            <h3 key={index} className="text-xl font-bold text-purple-300 mb-4">
+              {trimmed.replace(/[:：]$/, '')}
+            </h3>
+          )
+        }
+
+        // 二级标题（准备阶段、冥想引导、时机、具体步骤、目的 等）
         if (
           trimmed.length < 15 &&
           !trimmed.includes('\n') &&
@@ -54,16 +67,16 @@ export function formatCourseText(
           !trimmed.match(/^[*\-•\d]/)
         ) {
           return (
-            <h3 key={index} className="text-xl font-bold text-purple-300 mt-8 mb-4">
+            <h4 key={index} className="text-lg font-bold text-purple-200 mt-6 mb-3">
               {trimmed.replace(/[:：]$/, '')}
-            </h3>
+            </h4>
           )
         }
 
-        // 二级标题（如"1. xxx"开头但文本较短）
-        // 标题不添加emoji
-        const numberedTitleMatch = trimmed.match(/^(\d+\.)\s*(.{1,30})$/)
+        // 有序号标题（如"1. xxx"开头但文本较短 < 40字符）
+        const numberedTitleMatch = trimmed.match(/^(\d+\.)\s*(.{1,40})$/)
         if (numberedTitleMatch && !trimmed.includes('\n')) {
+          // 深度解读中的有序号标题 - 不加竖线
           return (
             <h4 key={index} className="text-lg font-semibold text-purple-200 mt-6 mb-3">
               <span className="mr-2">{numberedTitleMatch[1]}</span>
@@ -72,23 +85,47 @@ export function formatCourseText(
           )
         }
 
-        // 小标题（如"时机:xxx"、"练习方法:"）
-        // 标题不添加emoji，内容另起一行且结尾加emoji
-        const subtitleMatch = trimmed.match(/^([^:：\n]{2,20})[:：]\s*([\s\S]*)$/)
-        if (subtitleMatch && subtitleMatch[1].length < 20) {
+        // 小标题（如"时机:xxx"、"目的:"）
+        const subtitleMatch = trimmed.match(/^([^:：\n]{2,15})[:：]\s*([\s\S]*)$/)
+        if (subtitleMatch && subtitleMatch[1].length < 15) {
           const [, title, content] = subtitleMatch
           return (
             <div key={index} className="mt-4">
-              <h5 className="text-base font-semibold text-purple-100 mb-2">
+              <h5 className="text-base font-bold text-purple-100 mb-2">
                 {title}
               </h5>
               {content && (
-                <div className="text-gray-300 leading-relaxed ml-6">
+                <div className="text-gray-300 leading-relaxed ml-4">
                   {formatInlineText(content)}
                   {content.length > 40 && <span className="ml-2 opacity-60 text-sm">{getRandomDecorativeEmoji()}</span>}
                 </div>
               )}
             </div>
+          )
+        }
+
+        // 列表项（以 * 或 - 或 • 或 数字. 开头的多行列表）
+        if (trimmed.match(/^[\d]+\.\s/) && trimmed.includes('\n')) {
+          const items = paragraph.split('\n').filter(line => line.trim())
+          return (
+            <ol key={index} className="space-y-3 ml-4">
+              {items.map((item, i) => {
+                const match = item.match(/^(\d+\.)\s*(.*)$/)
+                if (match) {
+                  return (
+                    <li key={i} className="text-gray-300 leading-relaxed">
+                      <span className="font-bold text-purple-200 mr-2">{match[1]}</span>
+                      <span>{formatInlineText(match[2])}</span>
+                    </li>
+                  )
+                }
+                return (
+                  <li key={i} className="text-gray-300 leading-relaxed ml-6">
+                    {formatInlineText(item)}
+                  </li>
+                )
+              })}
+            </ol>
           )
         }
 
@@ -109,18 +146,16 @@ export function formatCourseText(
           )
         }
 
-        // 编号段落（如"1. xxxxx一大段文字"）
-        // 编号分行显示，段落结尾加emoji
+        // 编号段落（如"1. xxxxx一大段文字"）- 深度解读中的内容段落，不加竖线
         const numberedParaMatch = trimmed.match(/^(\d+\.)\s+([\s\S]+)$/)
         if (numberedParaMatch) {
-          // 如果编号段落包含多行，按行分割
           const content = numberedParaMatch[2]
           const hasMultipleLines = content.includes('\n')
 
           if (hasMultipleLines) {
             const lines = content.split('\n').filter(line => line.trim())
             return (
-              <div key={index} className={`${options.addBorderToAll ? 'border-l-4 border-purple-400 pl-4 py-2 bg-purple-500/5' : ''}`}>
+              <div key={index}>
                 <div className="flex items-start gap-3">
                   <span className="text-purple-300 font-semibold mt-0.5 flex-shrink-0">
                     {numberedParaMatch[1]}
@@ -141,7 +176,7 @@ export function formatCourseText(
           }
 
           return (
-            <div key={index} className={`flex items-start gap-3 ${options.addBorderToAll ? 'border-l-4 border-purple-400 pl-4 py-2 bg-purple-500/5' : ''}`}>
+            <div key={index} className="flex items-start gap-3">
               <span className="text-purple-300 font-semibold mt-0.5 flex-shrink-0">
                 {numberedParaMatch[1]}
               </span>
@@ -150,6 +185,21 @@ export function formatCourseText(
                 {content.length > 40 && <span className="ml-2 opacity-60 text-sm">{getRandomDecorativeEmoji()}</span>}
               </p>
             </div>
+          )
+        }
+
+        // 冥想引导正文（包含省略号的对话/引导语）- 用斜体+竖线
+        if (trimmed.includes('……') || trimmed.includes('...')) {
+          return (
+            <blockquote
+              key={index}
+              className="border-l-4 border-green-400/50 pl-4 py-2 bg-green-500/5 rounded-r-lg"
+            >
+              <p className="text-gray-300 italic leading-relaxed">
+                {formatInlineText(trimmed)}
+                {trimmed.length > 40 && <span className="ml-2 opacity-60 text-sm">{getRandomDecorativeEmoji()}</span>}
+              </p>
+            </blockquote>
           )
         }
 
@@ -165,7 +215,7 @@ export function formatCourseText(
           )
         }
 
-        // 普通段落 - 较长段落结尾添加emoji
+        // 普通段落
         const isLongParagraph = trimmed.length > 40
 
         return (
@@ -196,14 +246,12 @@ function smartParagraphSplit(text: string): string {
   for (const para of paragraphs) {
     // 如果段落超过200字且包含多个句子，尝试分段
     if (para.length > 200 && (para.match(/[。！？]/g) || []).length > 1) {
-      // 按句子分割
       const sentences = para.split(/([。！？])/g)
       let currentPara = ''
 
       for (let i = 0; i < sentences.length; i++) {
         currentPara += sentences[i]
 
-        // 如果是标点符号且累积长度超过100字，分段
         if ((sentences[i] === '。' || sentences[i] === '！' || sentences[i] === '？') && currentPara.length > 100) {
           result.push(currentPara.trim())
           currentPara = ''
@@ -223,42 +271,28 @@ function smartParagraphSplit(text: string): string {
 
 /**
  * 处理行内格式
- * - 加粗（**text**）
  * - 增强emoji显示
  */
 function formatInlineText(text: string): React.ReactNode {
-  // 处理加粗 **text**
-  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  // 扩展的emoji正则表达式
+  const emojiRegex = /([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2B50}]|[\u{231A}-\u{231B}]|[\u{23E9}-\u{23EC}]|[\u{25AA}-\u{25AB}]|[\u{25B6}]|[\u{25C0}]|[\u{25FB}-\u{25FE}]|[\u{2934}-\u{2935}]|[\u{2B05}-\u{2B07}]|[\u{3030}]|[\u{303D}]|[\u{3297}]|[\u{3299}])/gu
+  const segments = text.split(emojiRegex)
 
-  return parts.map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return (
-        <strong key={index} className="text-white font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-          {part.slice(2, -2)}
-        </strong>
-      )
-    }
-
-    // 扩展的emoji正则表达式
-    const emojiRegex = /([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2B50}]|[\u{231A}-\u{231B}]|[\u{23E9}-\u{23EC}]|[\u{25AA}-\u{25AB}]|[\u{25B6}]|[\u{25C0}]|[\u{25FB}-\u{25FE}]|[\u{2934}-\u{2935}]|[\u{2B05}-\u{2B07}]|[\u{3030}]|[\u{303D}]|[\u{3297}]|[\u{3299}])/gu
-    const segments = part.split(emojiRegex)
-
-    return (
-      <span key={index}>
-        {segments.map((segment, i) => {
-          const testRegex = /([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2B50}]|[\u{231A}-\u{231B}]|[\u{23E9}-\u{23EC}]|[\u{25AA}-\u{25AB}]|[\u{25B6}]|[\u{25C0}]|[\u{25FB}-\u{25FE}]|[\u{2934}-\u{2935}]|[\u{2B05}-\u{2B07}]|[\u{3030}]|[\u{303D}]|[\u{3297}]|[\u{3299}])/gu
-          if (testRegex.test(segment)) {
-            return (
-              <span key={i} className="inline-block text-lg mx-0.5">
-                {segment}
-              </span>
-            )
-          }
-          return segment
-        })}
-      </span>
-    )
-  })
+  return (
+    <span>
+      {segments.map((segment, i) => {
+        const testRegex = /([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2B50}]|[\u{231A}-\u{231B}]|[\u{23E9}-\u{23EC}]|[\u{25AA}-\u{25AB}]|[\u{25B6}]|[\u{25C0}]|[\u{25FB}-\u{25FE}]|[\u{2934}-\u{2935}]|[\u{2B05}-\u{2B07}]|[\u{3030}]|[\u{303D}]|[\u{3297}]|[\u{3299}])/gu
+        if (testRegex.test(segment)) {
+          return (
+            <span key={i} className="inline-block text-lg mx-0.5">
+              {segment}
+            </span>
+          )
+        }
+        return segment
+      })}
+    </span>
+  )
 }
 
 /**
