@@ -3,6 +3,33 @@ import { createClient } from '@/lib/supabase/server'
 import { InteractionService } from '@/lib/services/interaction.service'
 import { logger } from '@/lib/logger'
 
+// CQ-02: 类型定义，减少 as any 使用
+interface CourseStage {
+  id: string
+  stage_number: number
+}
+
+interface CourseContent {
+  id: string
+  stage_id: string
+  knowledge_points: string[] | null
+  socratic_questions: {
+    pre_watch?: string[]
+    during_watch?: string[]
+    post_watch?: string[]
+  } | null
+  post_reflection: string[] | null
+}
+
+interface ContentInteraction {
+  id: string
+  user_id: string
+  content_id: string
+  interaction_type: string
+  item_type?: string
+  item_index?: number
+}
+
 // ✅ 性能优化：启用30秒缓存，避免重复计算进度
 // 地球课程进度计算涉及大量数据库查询（约50次），缓存可大幅提升速度
 export const revalidate = 30
@@ -46,12 +73,13 @@ export async function GET(req: NextRequest) {
 
     // 🔥 优化1：批量查询所有阶段
     const query1Start = performance.now()
-    const { data: stages, error: stagesError } = await (supabase
-      .from('course_stages') as any)
+    const { data: stages, error: stagesError } = await supabase
+      .from('course_stages')
       .select('id, stage_number')
       .eq('system_id', courseSystemId)
       .eq('is_published', true)
       .order('stage_number', { ascending: true })
+      .returns<CourseStage[]>()
 
     logger.debug('Query 1 complete: all stages', {
       duration: `${(performance.now() - query1Start).toFixed(0)}ms`,
@@ -64,12 +92,13 @@ export async function GET(req: NextRequest) {
 
     // 🔥 优化2：一次性查询所有内容（所有阶段的内容）
     const query2Start = performance.now()
-    const stageIds = stages.map((s: any) => s.id)
-    const { data: allContents, error: contentsError } = await (supabase
-      .from('course_contents') as any)
+    const stageIds = stages.map((s) => s.id)
+    const { data: allContents, error: contentsError } = await supabase
+      .from('course_contents')
       .select('id, stage_id, knowledge_points, socratic_questions, post_reflection')
       .in('stage_id', stageIds)
       .eq('is_published', true)
+      .returns<CourseContent[]>()
 
     logger.debug('Query 2 complete: all contents', {
       duration: `${(performance.now() - query2Start).toFixed(0)}ms`,
@@ -82,8 +111,8 @@ export async function GET(req: NextRequest) {
     }
 
     // 按 stageId 分组内容
-    const contentsByStage = new Map<string, any[]>()
-    allContents?.forEach((content: any) => {
+    const contentsByStage = new Map<string, CourseContent[]>()
+    allContents?.forEach((content) => {
       const stageId = content.stage_id
       if (!contentsByStage.has(stageId)) {
         contentsByStage.set(stageId, [])
@@ -92,15 +121,16 @@ export async function GET(req: NextRequest) {
     })
 
     // 收集所有contentId
-    const allContentIds = allContents?.map((c: any) => c.id) || []
+    const allContentIds = allContents?.map((c) => c.id) || []
 
     // 🔥 优化3：一次性批量查询所有互动记录（50次查询 → 1次查询）
     const query3Start = performance.now()
-    const { data: allInteractions, error: interactionsError } = await (supabase
-      .from('user_content_interactions') as any)
+    const { data: allInteractions, error: interactionsError } = await supabase
+      .from('user_content_interactions')
       .select('*')
       .eq('user_id', userId)
       .in('content_id', allContentIds)
+      .returns<ContentInteraction[]>()
 
     logger.debug('Query 3 complete: batch interactions', {
       duration: `${(performance.now() - query3Start).toFixed(0)}ms`,
@@ -112,8 +142,8 @@ export async function GET(req: NextRequest) {
     }
 
     // 按 contentId 分组互动记录（在内存中处理，超快）
-    const interactionsByContent = new Map<string, any[]>()
-    allInteractions?.forEach((interaction: any) => {
+    const interactionsByContent = new Map<string, ContentInteraction[]>()
+    allInteractions?.forEach((interaction) => {
       const contentId = interaction.content_id
       if (!interactionsByContent.has(contentId)) {
         interactionsByContent.set(contentId, [])
@@ -124,7 +154,7 @@ export async function GET(req: NextRequest) {
     // 计算每个阶段的平均进度
     const stageProgresses: number[] = []
 
-    for (const stage of stages as any[]) {
+    for (const stage of stages) {
       const stageContents = contentsByStage.get(stage.id) || []
 
       if (stageContents.length === 0) {
@@ -133,10 +163,10 @@ export async function GET(req: NextRequest) {
       }
 
       // 计算该阶段每个内容的进度（内存计算，无DB查询）
-      const contentProgresses = stageContents.map((content: any) => {
-        const knowledgePoints = (content.knowledge_points as string[]) || []
-        const socraticQuestions = (content.socratic_questions as any) || {}
-        const postReflection = (content.post_reflection as string[]) || []
+      const contentProgresses = stageContents.map((content) => {
+        const knowledgePoints = content.knowledge_points || []
+        const socraticQuestions = content.socratic_questions || {}
+        const postReflection = content.post_reflection || []
 
         const questionCounts = {
           pre: socraticQuestions.pre_watch?.length || 0,
@@ -185,7 +215,7 @@ export async function GET(req: NextRequest) {
  * 复制自 InteractionService.calculateProgress 的核心逻辑
  */
 function calculateProgressInMemory(params: {
-  interactions: any[]
+  interactions: ContentInteraction[]
   knowledgePointCount: number
   questionCounts: { pre: number; during: number; post: number }
   reflectionCount: number
@@ -194,15 +224,15 @@ function calculateProgressInMemory(params: {
   const totalQuestions = questionCounts.pre + questionCounts.during + questionCounts.post
 
   // Level 1: 接触探索（20%）
-  const hasVisited = interactions.some((i: any) => i.interaction_type === 'page_visit')
+  const hasVisited = interactions.some((i) => i.interaction_type === 'page_visit')
   const itemsClicked = new Set(
     interactions
-      .filter((i: any) =>
+      .filter((i) =>
         i.interaction_type === 'knowledge_click' ||
         i.interaction_type === 'question_click' ||
         i.interaction_type === 'reflection_click'
       )
-      .map((i: any) => `${i.item_type}_${i.item_index}`)
+      .map((i) => `${i.item_type}_${i.item_index}`)
   ).size
 
   const totalClickableItems = knowledgePointCount + totalQuestions + reflectionCount
@@ -211,19 +241,19 @@ function calculateProgressInMemory(params: {
     : (hasVisited ? 1 : 0)
 
   // Level 2: 主动思考（30%）
-  const knowledgeClicks = interactions.filter((i: any) => i.interaction_type === 'knowledge_click').length
-  const questionClicks = interactions.filter((i: any) => i.interaction_type === 'question_click').length
-  const reflectionClicks = interactions.filter((i: any) => i.interaction_type === 'reflection_click').length
+  const knowledgeClicks = interactions.filter((i) => i.interaction_type === 'knowledge_click').length
+  const questionClicks = interactions.filter((i) => i.interaction_type === 'question_click').length
+  const reflectionClicks = interactions.filter((i) => i.interaction_type === 'reflection_click').length
   const totalClicks = knowledgeClicks + questionClicks + reflectionClicks
   const level2Progress = totalClickableItems > 0 ? (totalClicks / totalClickableItems) * 30 : 0
 
   // Level 3: 深度对话（30%）
-  const discussionStarts = interactions.filter((i: any) => i.interaction_type === 'discussion_start').length
+  const discussionStarts = interactions.filter((i) => i.interaction_type === 'discussion_start').length
   const level3Progress = totalClickableItems > 0 ? Math.min((discussionStarts / totalClickableItems) * 30, 30) : 0
 
   // Level 4: 持续交流（20%）
-  const discussionMessages = interactions.filter((i: any) => i.interaction_type === 'discussion_message').length
-  const deepDiscussions = interactions.filter((i: any) => i.interaction_type === 'deep_discussion').length
+  const discussionMessages = interactions.filter((i) => i.interaction_type === 'discussion_message').length
+  const deepDiscussions = interactions.filter((i) => i.interaction_type === 'deep_discussion').length
   const messageScore = Math.min(discussionMessages * 0.5, 10)
   const deepScore = Math.min(deepDiscussions * 2, 10)
   const level4Progress = messageScore + deepScore

@@ -113,9 +113,18 @@ async function handleAddTeacher(request: NextRequest): Promise<NextResponse> {
       )
     }
 
+    // SEC-06: 审计日志 - 在使用管理员权限前记录
+    logger.audit('ADMIN_CLIENT_ACCESS', {
+      action: 'promote_to_teacher',
+      operatorId: auth.user.id,
+      targetUserId: targetUserData.id,
+      targetEmail: email,
+      reason: 'User role promotion via admin API'
+    })
+
     // 将用户角色设为 teacher - 使用管理员客户端绕过 RLS
     logger.dbQuery('profiles', 'UPDATE')
-    const adminSupabase = createAdminClient() as any
+    const adminSupabase = createAdminClient()
     const { error: updateError } = await adminSupabase
       .from('profiles')
       .update({ role: 'teacher' })

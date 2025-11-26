@@ -110,6 +110,20 @@ class Logger {
   }
 
   /**
+   * SEC-06: 安全审计日志 - 在使用管理员权限前记录
+   * 生产环境和开发环境都会输出，用于安全审计追踪
+   */
+  audit(action: string, context: LogContext) {
+    const auditContext = {
+      ...context,
+      auditTimestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'unknown'
+    }
+    // 审计日志始终输出，用于安全追踪
+    console.info(this.formatMessage('info', `[AUDIT] ${action}`, auditContext))
+  }
+
+  /**
    * 安全的错误信息（生产环境）
    */
   safeError(message: string, error?: Error | unknown): string {

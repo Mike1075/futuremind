@@ -58,8 +58,17 @@ export async function DELETE(
       )
     }
 
+    // SEC-06: 审计日志 - 在使用管理员权限前记录
+    logger.audit('ADMIN_CLIENT_ACCESS', {
+      action: 'demote_from_teacher',
+      operatorId: user.id,
+      targetUserId: targetUserData.id,
+      targetEmail: targetUserData.email,
+      reason: 'User role demotion via admin API'
+    })
+
     // 将角色改回 student - 使用管理员客户端绕过 RLS
-    const adminSupabase = createAdminClient() as any
+    const adminSupabase = createAdminClient()
     const { error: updateError } = await adminSupabase
       .from('profiles')
       .update({ role: 'student' })
