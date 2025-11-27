@@ -110,7 +110,9 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
   const radius = 38 // 扩大半径到38%，让圆圈更大
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-y-auto">
+    <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-y-auto">
+      {/* 宇宙背景渐变 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10 pointer-events-none" />
       {/* 星空背景 - 优化性能，减少星星数量 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(50)].map((_, i) => {

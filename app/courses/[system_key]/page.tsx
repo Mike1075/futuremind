@@ -31,12 +31,13 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
 
   if (!courseData) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">课程不存在</h1>
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+        <div className="text-center relative z-10">
+          <h1 className="text-2xl font-bold text-starlight mb-4">课程不存在</h1>
           <Link
             href="/portal"
-            className="text-blue-400 hover:text-blue-300 underline"
+            className="text-mystic-purple hover:text-mystic-purple/80 underline transition-colors"
           >
             返回学习中心
           </Link>
@@ -123,12 +124,15 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     : 0
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-hidden">
+      {/* 宇宙背景渐变 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+
+      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
         {/* 返回按钮 */}
         <Link
           href="/portal"
-          className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition-colors"
+          className="inline-flex items-center text-starlight-muted hover:text-starlight mb-6 transition-colors"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -144,16 +148,16 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
           {/* 进度条 */}
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-400">学习进度</span>
-              <span className="text-white font-medium">{progressPercentage}%</span>
+              <span className="text-starlight-dim">学习进度</span>
+              <span className="text-starlight font-medium">{progressPercentage}%</span>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-2">
+            <div className="progress-ethereal">
               <div
-                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                className="progress-ethereal-bar"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
-            <p className="text-sm text-gray-400 mt-2">
+            <p className="text-sm text-starlight-muted mt-2">
               已完成 {completedCount} / {totalContents} 个单元
             </p>
           </div>
@@ -316,8 +320,9 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+        <div className="loader-ethereal relative z-10"></div>
       </div>
     }>
       <CourseContent systemKey={system_key} />

@@ -81,7 +81,9 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
   const progressPercentage = Math.round((completedCount / contents.length) * 100)
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-hidden">
+      {/* 宇宙背景渐变 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10 pointer-events-none" />
       {/* 星空背景 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(100)].map((_, i) => {
@@ -286,23 +288,20 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                       <motion.div
                         whileHover={{ scale: 1.15 }}
                         whileTap={{ scale: 0.95 }}
-                        className="relative cursor-pointer flex items-center justify-center"
+                        className="relative cursor-pointer flex items-center justify-center group/node"
                         style={{ width: 'fit-content', height: 'fit-content' }}
                       >
-                        {/* 光晕效果 - 默认隐藏，悬停时显示 */}
+                        {/* 光晕效果 - 默认隐藏，悬停时显示旋转动画 */}
                         <motion.div
-                          className="absolute rounded-full pointer-events-none"
+                          className="absolute rounded-full pointer-events-none opacity-0 group-hover/node:opacity-80 transition-opacity duration-300"
                           style={{
                             width: '160%',
                             height: '160%',
                             background: `conic-gradient(from 0deg, ${color.from}, ${color.to}, ${COURSE_COLORS[(index + 1) % COURSE_COLORS.length].from}, ${color.from})`,
                             filter: 'blur(3px)',
                           }}
-                          initial={{ opacity: 0, scale: 0.8, rotate: 0 }}
-                          whileHover={{ opacity: 0.8, scale: 1, rotate: 360 }}
+                          animate={{ rotate: 360 }}
                           transition={{
-                            opacity: { duration: 0.3 },
-                            scale: { duration: 0.3 },
                             rotate: { duration: 3, repeat: Infinity, ease: "linear" },
                           }}
                         />
@@ -325,9 +324,9 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                           <span>{dayNumber}</span>
                         </div>
 
-                        {/* 标题 */}
-                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                          <div className="bg-gray-900/90 backdrop-blur-sm border border-gray-700 rounded-lg px-3 py-1.5 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity shadow-xl">
+                        {/* 标题 - 提高z-index确保显示在最前 */}
+                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap z-50">
+                          <div className="bg-gray-900/95 backdrop-blur-md border border-gray-600 rounded-lg px-3 py-1.5 text-sm font-medium opacity-0 group-hover/node:opacity-100 transition-opacity duration-200 shadow-2xl">
                             {content.title}
                             {isPassed && <span className="ml-2 text-green-400">✓ {score}分</span>}
                           </div>

@@ -782,6 +782,11 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* 炫彩边框旋转动画 */
+.animate-aurora-spin {
+  animation: spin 3s linear infinite;
+}
+
 .loader-dots {
   display: flex;
   gap: 0.5rem;
