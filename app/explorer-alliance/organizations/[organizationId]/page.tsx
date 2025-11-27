@@ -546,8 +546,10 @@ export default function OrganizationDashboardPage() {
                       onTogglePublic={handleTogglePublic}
                       onToggleRecruiting={handleToggleRecruiting}
                       userProjectPermissions={userProjectPermissions}
+                      userId={userId}
                       showEditControls={true}
                       showApplyButton={false}
+                      showCreatorBadge={true}
                     />
                   </div>
                 )}
@@ -574,8 +576,10 @@ export default function OrganizationDashboardPage() {
                       onTogglePublic={handleTogglePublic}
                       onToggleRecruiting={handleToggleRecruiting}
                       userProjectPermissions={userProjectPermissions}
+                      userId={userId}
                       showEditControls={true}
                       showApplyButton={false}
+                      showCreatorBadge={true}
                     />
                   </div>
                 )}
@@ -602,8 +606,10 @@ export default function OrganizationDashboardPage() {
                   onProjectClick={handleProjectClick}
                   onApplyToJoin={handleApplyToJoin}
                   userProjectPermissions={userProjectPermissions}
+                  userId={userId}
                   showEditControls={false}
                   showApplyButton={true}
+                  showCreatorBadge={true}
                 />
               </div>
             )}
