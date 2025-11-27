@@ -175,7 +175,6 @@ export function PortalClient({
                 </div>
               </button>
             </div>
-          </div>
         </div>
       </motion.nav>
 
