@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import { MessageCircle, X, Send, Loader2, History, Edit3, Check, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AuthModal from '@/components/AuthModal'
-import { playNotificationSound, isNotificationSoundEnabled } from '@/lib/utils/notificationSound'
 
 interface Message {
   id?: string
@@ -546,11 +545,6 @@ export function GlobalGaiaV3() {
           clearInterval(displayInterval)
         }
         reader.releaseLock()
-      }
-
-      // 🔔 播放消息提示音（AI回复完成）
-      if (fullAnswer && isNotificationSoundEnabled()) {
-        playNotificationSound('message')
       }
 
       // 🔥 如果没有收到任何内容，显示默认消息

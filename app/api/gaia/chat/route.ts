@@ -83,6 +83,7 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
         .select('*')
         .eq('id', conversationId)
         .eq('user_id', userId)
+        .eq('is_active', true)
         .maybeSingle()
 
       conversation = data

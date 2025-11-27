@@ -22,14 +22,15 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10', 10)
     const offset = parseInt(searchParams.get('offset') || '0', 10)
 
-    // 获取用户最近更新的对话
+    // 获取用户最近更新的活跃对话（与 GaiaAPI 保持一致，添加 is_active 过滤）
     const { data: conversation, error } = await supabase
       .from('gaia_conversations')
       .select('id, messages')
       .eq('user_id', user.id)
+      .eq('is_active', true)
       .order('updated_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (error || !conversation) {
       // 没有历史对话
