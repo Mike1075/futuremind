@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Sparkles, MessageCircle, TreePine, Users, Shield } from 'lucide-react'
+import { MessageCircle, TreePine, Users, Shield } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
 import AuthModal from '@/components/AuthModal'
 import { createClient } from '@/lib/supabase/client'
@@ -201,35 +201,36 @@ export default function Home() {
           </span>
         </motion.p>
 
-        {/* 季度公告卡片 - 深色衬底保证可读性 */}
+        {/* 季度公告卡片 - 极光边框效果 */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 1 }}
-          className="w-full max-w-2xl p-8 rounded-2xl bg-black/60 border border-white/10 shadow-[0_0_50px_-10px_rgba(255,255,255,0.1)] mx-auto mb-14"
+          className="w-full max-w-2xl card-aurora mx-auto mb-14"
         >
-          <div className="flex items-center justify-center mb-4">
-            <Sparkles className="w-6 h-6 text-yellow-400 animate-pulse mr-2" />
-            <h2 className="font-sacred text-2xl md:text-3xl text-white tracking-wide">
-              第一季：声音的交响
-            </h2>
-          </div>
-          <p className="text-starlight-dim mb-6">
-            一场关于声音、寂静与实相的旅程即将开启
-          </p>
-          <div className="flex items-center justify-center gap-4 text-sm text-starlight-muted">
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-gaia-gold animate-pulse" />
-              全球同步探索
-            </span>
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-mystic-purple animate-pulse" style={{ animationDelay: '0.5s' }} />
-              意识觉醒之旅
-            </span>
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-ethereal-blue animate-pulse" style={{ animationDelay: '1s' }} />
-              与盖亚共创
-            </span>
+          <div className="card-aurora-inner">
+            <div className="flex items-center justify-center mb-4">
+              <h2 className="font-sacred text-2xl md:text-3xl text-white tracking-wide">
+                第一季：声音的交响
+              </h2>
+            </div>
+            <p className="text-starlight-dim mb-6">
+              一场关于声音、寂静与实相的旅程即将开启
+            </p>
+            <div className="flex items-center justify-center gap-4 text-sm text-starlight-muted">
+              <span className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-gaia-gold animate-pulse shadow-[0_0_8px_#FFD700]" />
+                全球同步探索
+              </span>
+              <span className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-mystic-purple animate-pulse shadow-[0_0_8px_#9D00FF]" style={{ animationDelay: '0.5s' }} />
+                意识觉醒之旅
+              </span>
+              <span className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-ethereal-blue animate-pulse shadow-[0_0_8px_#00FFFF]" style={{ animationDelay: '1s' }} />
+                与盖亚共创
+              </span>
+            </div>
           </div>
         </motion.div>
 

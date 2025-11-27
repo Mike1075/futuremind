@@ -424,3 +424,80 @@ body {
   from { transform: translateY(0); }
   to { transform: translateY(-2000px); }
 }
+
+/* ========== 极光边框动画 ========== */
+@keyframes aurora-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes aurora-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(12px);
+  }
+}
+
+/* 极光边框卡片容器 */
+.card-aurora {
+  position: relative;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 1.5rem;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* 极光边框效果 - 使用伪元素 */
+.card-aurora::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: 1.625rem;
+  background: conic-gradient(
+    from 0deg,
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700
+  );
+  animation: aurora-rotate 6s linear infinite;
+}
+
+/* 极光光晕层 */
+.card-aurora::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  z-index: -2;
+  border-radius: 1.75rem;
+  background: conic-gradient(
+    from 180deg,
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700
+  );
+  animation: aurora-rotate 6s linear infinite reverse, aurora-pulse 3s ease-in-out infinite;
+}
+
+/* 内部遮罩层 */
+.card-aurora-inner {
+  position: relative;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: calc(1.5rem - 3px);
+  padding: 2rem;
+  z-index: 1;
+}
