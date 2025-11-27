@@ -164,13 +164,26 @@ class GaiaAPI {
 
       // 转换消息格式（复用现有逻辑）
       const rawMessages = (Array.isArray(data.messages) ? data.messages : []) as RawMessageData[]
-      const normalizedMessages: ChatMessage[] = rawMessages.map((msg) => ({
-        id: typeof msg.id === 'string' ? msg.id : String(Date.now()),
-        content: String(msg.content || msg.text || ''),
-        // 支持多种格式：isGaia, is_gaia, from='gaia', role='assistant'
-        isGaia: Boolean(msg.isGaia ?? msg.is_gaia ?? (msg.from === 'gaia') ?? (msg.role === 'assistant')),
-        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-      }))
+      const normalizedMessages: ChatMessage[] = rawMessages.map((msg) => {
+        // 判断是否是盖亚消息，优先检查 role 字段
+        let isGaiaMessage = false
+        if (msg.role) {
+          isGaiaMessage = msg.role === 'assistant'
+        } else if (msg.isGaia !== undefined) {
+          isGaiaMessage = msg.isGaia === true
+        } else if (msg.is_gaia !== undefined) {
+          isGaiaMessage = msg.is_gaia === true
+        } else if (msg.from) {
+          isGaiaMessage = msg.from === 'gaia'
+        }
+
+        return {
+          id: typeof msg.id === 'string' ? msg.id : String(Date.now() + Math.random()),
+          content: String(msg.content || msg.text || ''),
+          isGaia: isGaiaMessage,
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+        }
+      })
 
       const convertedData: ChatConversation = {
         id: data.id,
@@ -295,13 +308,26 @@ class GaiaAPI {
 
       // 转换消息格式（复用getConversation的逻辑）
       const rawMessages = (Array.isArray(data.messages) ? data.messages : []) as RawMessageData[]
-      const normalizedMessages: ChatMessage[] = rawMessages.map((msg) => ({
-        id: typeof msg.id === 'string' ? msg.id : String(Date.now()),
-        content: String(msg.content || msg.text || ''),
-        // 支持多种格式：isGaia, is_gaia, from='gaia', role='assistant'
-        isGaia: Boolean(msg.isGaia ?? msg.is_gaia ?? (msg.from === 'gaia') ?? (msg.role === 'assistant')),
-        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-      }))
+      const normalizedMessages: ChatMessage[] = rawMessages.map((msg) => {
+        // 判断是否是盖亚消息，优先检查 role 字段
+        let isGaiaMessage = false
+        if (msg.role) {
+          isGaiaMessage = msg.role === 'assistant'
+        } else if (msg.isGaia !== undefined) {
+          isGaiaMessage = msg.isGaia === true
+        } else if (msg.is_gaia !== undefined) {
+          isGaiaMessage = msg.is_gaia === true
+        } else if (msg.from) {
+          isGaiaMessage = msg.from === 'gaia'
+        }
+
+        return {
+          id: typeof msg.id === 'string' ? msg.id : String(Date.now() + Math.random()),
+          content: String(msg.content || msg.text || ''),
+          isGaia: isGaiaMessage,
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+        }
+      })
 
       const convertedData: ChatConversation = {
         id: data.id,
