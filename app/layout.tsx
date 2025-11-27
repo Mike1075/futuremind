@@ -3,6 +3,7 @@ import { Cinzel, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DynamicGaiaWrapper } from "@/components/DynamicGaiaWrapper";
+import CosmicBackground from "@/components/ui/CosmicBackground";
 
 // 神圣字体：用于标题，赋予"古老智慧"和"铭文"的感觉
 const cinzel = Cinzel({
@@ -32,12 +33,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className={`${cinzel.variable} ${spaceGrotesk.variable}`}>
-      <body className="antialiased bg-void min-h-screen font-body tracking-wide">
-        {/* 流体深空背景层 */}
-        <div className="fixed inset-0 bg-void overflow-hidden pointer-events-none z-0">
-          <div className="cosmic-nebula" />
-          <div className="cosmic-stars" />
-        </div>
+      <body className="antialiased min-h-screen font-body tracking-wide">
+        {/* 活着的深空背景 */}
+        <CosmicBackground />
 
         <ErrorBoundary>
           <div className="relative z-10">
