@@ -588,18 +588,22 @@ export function GlobalGaiaV3() {
 
   // 判断消息是否是用户消息（兼容新旧格式）
   const isUserMessage = (message: Message) => {
-    // 新格式：role === 'user'
-    if (message.role === 'user') return true
-    // 旧格式：isGaia === false
+    // 优先检查 role 字段（新格式）
+    if (message.role) {
+      return message.role === 'user'
+    }
+    // 旧格式：isGaia === false 表示用户消息
     if (message.isGaia === false) return true
     return false
   }
 
   // 判断消息是否是AI消息（兼容新旧格式）
   const isAssistantMessage = (message: Message) => {
-    // 新格式：role === 'assistant'
-    if (message.role === 'assistant') return true
-    // 旧格式：isGaia === true
+    // 优先检查 role 字段（新格式）
+    if (message.role) {
+      return message.role === 'assistant'
+    }
+    // 旧格式：isGaia === true 表示AI消息
     if (message.isGaia === true) return true
     return false
   }
