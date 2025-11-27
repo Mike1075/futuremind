@@ -97,21 +97,25 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   // 加载聊天记录（支持多对话系统）
   const loadChatHistory = async () => {
     try {
+      console.log('[GaiaDialog] 开始加载聊天记录...')
       const result = await GaiaAPI.getChatHistory()
 
       if (result.success && result.data) {
         // 设置当前对话信息
+        console.log('[GaiaDialog] 获取到对话:', result.data.id, '消息数量:', result.data.messages.length)
         setCurrentConversationId(result.data.id)
         setConversationTitle(result.data.title)
 
         // 加载消息
         if (result.data.messages.length > 0) {
+          console.log('[GaiaDialog] 加载消息:', result.data.messages)
           setMessages(result.data.messages)
         } else {
           // 没有消息，判断是否是第一次使用
           const isNewConversation = result.data.created_at === result.data.updated_at
           if (isNewConversation) {
             // 刚创建的对话，第一次使用，显示欢迎消息
+            console.log('[GaiaDialog] 新对话，显示欢迎消息')
             setMessages([{
               id: '1',
               content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
@@ -120,12 +124,15 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             }])
           } else {
             // 对话存在但无消息（用户删除了所有消息），显示空白
+            console.log('[GaiaDialog] 对话无消息')
             setMessages([])
           }
         }
+      } else {
+        console.error('[GaiaDialog] 加载聊天记录失败:', result.error)
       }
     } catch (error) {
-      // 静默处理错误
+      console.error('[GaiaDialog] 加载聊天记录异常:', error)
     }
   }
 
@@ -151,17 +158,23 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       let result;
       if (currentConversationId) {
         // 保存到特定对话
+        console.log('[GaiaDialog] 保存消息到对话:', currentConversationId, '消息数量:', slice.length)
         result = await GaiaAPI.saveConversationMessages(currentConversationId, slice)
       } else {
         // 使用旧的保存方式（会自动创建或更新最新对话）
+        console.log('[GaiaDialog] 保存消息到最新对话, 消息数量:', slice.length)
         result = await GaiaAPI.saveChatHistory(slice)
       }
 
-      if (!result.success) {
-        // 静默处理错误
+      if (result.success) {
+        console.log('[GaiaDialog] 消息保存成功')
+        // 触发同步事件，通知其他盖亚组件更新
+        window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
+      } else {
+        console.error('[GaiaDialog] 消息保存失败:', result.error)
       }
     } catch (error) {
-      // 静默处理错误
+      console.error('[GaiaDialog] 保存消息异常:', error)
     }
   }
 
@@ -507,10 +520,21 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                           : ''
                       }`}
                     >
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                      <p className="text-xs text-gray-400 mt-2">
-                        {message.timestamp.toLocaleTimeString()}
-                      </p>
+                      {/* 如果是盖亚消息且内容为空，显示加载动画 */}
+                      {message.isGaia && !message.content ? (
+                        <div className="flex space-x-1 py-2">
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                          <p className="text-xs text-gray-400 mt-2">
+                            {message.timestamp.toLocaleTimeString()}
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
 

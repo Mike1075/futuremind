@@ -226,19 +226,22 @@ class GaiaAPI {
       // 转换消息为可序列化格式
       const serializableMessages = messages.map(msg => ({
         ...msg,
-        timestamp: msg.timestamp.toISOString()
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp.toISOString() : msg.timestamp
       }))
 
-      const { error } = await this.supabase
+      const { error, count } = await this.supabase
         .from('gaia_conversations')
         .update({
           messages: serializableMessages,
+          message_count: messages.length,
           updated_at: new Date().toISOString()
         })
         .eq('id', conversationId)
         .eq('user_id', user.id)
+        .eq('is_active', true)
 
       if (error) {
+        console.error('保存对话消息失败:', error)
         return { success: false, error: error.message }
       }
 
