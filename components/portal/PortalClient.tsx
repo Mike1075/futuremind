@@ -264,9 +264,6 @@ export function PortalClient({
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
                         className="relative group/card cursor-pointer rounded-2xl p-[2px] transition-all duration-500"
-                        style={{
-                          background: 'transparent',
-                        }}
                         onClick={() => router.push(`/courses/${course.course_system_key}`)}
                       >
                         {/* 炫彩边框背景 - 悬停时显示 */}
@@ -289,8 +286,11 @@ export function PortalClient({
                           }}
                         />
 
-                        {/* 卡片内容 - 内层有实心背景覆盖 */}
-                        <div className={`relative rounded-[calc(1rem-1px)] bg-cosmic-deep/95 backdrop-blur-sm p-6 border border-transparent`}>
+                        {/* 卡片内容 - 内层完全不透明背景遮住渐变 */}
+                        <div
+                          className="relative rounded-[calc(1rem-1px)] p-6"
+                          style={{ background: '#0a0a1f' }}
+                        >
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center">
                               <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4 border border-white/20">
