@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Send, Inbox, Mail, Trash2, Eraser, Eye, MessageSquare, Check as CheckIcon, XIcon, Users, FolderOpen } from 'lucide-react'
+import { X, Send, Inbox, Mail, Trash2, Eraser, Eye, MessageSquare, Check as CheckIcon, XIcon, Users, FolderOpen, Settings2, CheckSquare, Square } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { InvitationCard } from './InvitationCard'
 import { reviewProjectJoinRequest } from '@/lib/aip/api'
@@ -62,6 +62,9 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState<string | null>(null)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const [isManageMode, setIsManageMode] = useState(false)
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     loadInteractions()
@@ -272,6 +275,94 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     }
   }
 
+  // 切换选择项
+  const toggleSelectItem = (id: string) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    const deletableItems = filteredInteractions.filter(i =>
+      i.interactionType === 'notification' ||
+      (i.interactionType === 'project_request' && i.status !== 'pending')
+    )
+
+    if (selectedItems.size === deletableItems.length && deletableItems.length > 0) {
+      setSelectedItems(new Set())
+    } else {
+      setSelectedItems(new Set(deletableItems.map(i => i.id)))
+    }
+  }
+
+  // 批量删除
+  const handleBulkDelete = async () => {
+    if (selectedItems.size === 0) return
+
+    const confirmDelete = window.confirm(`确定要删除选中的 ${selectedItems.size} 条记录吗？`)
+    if (!confirmDelete) return
+
+    setIsDeleting(true)
+    try {
+      const supabase = createClient()
+
+      // 分类选中项
+      const notificationIds: string[] = []
+      const requestIds: string[] = []
+
+      selectedItems.forEach(id => {
+        const item = interactions.find(i => i.id === id)
+        if (item?.interactionType === 'notification') {
+          notificationIds.push(id)
+        } else if (item?.interactionType === 'project_request' && item.status !== 'pending') {
+          requestIds.push(id)
+        }
+      })
+
+      // 删除通知
+      if (notificationIds.length > 0) {
+        const { error } = await supabase
+          .from('notifications')
+          .delete()
+          .in('id', notificationIds)
+        if (error) throw error
+      }
+
+      // 删除已处理的项目申请
+      if (requestIds.length > 0) {
+        const { error } = await supabase
+          .from('project_join_requests')
+          .delete()
+          .in('id', requestIds)
+        if (error) throw error
+      }
+
+      // 更新状态
+      setInteractions(prev => prev.filter(i => !selectedItems.has(i.id)))
+      setSelectedItems(new Set())
+      setIsManageMode(false)
+      onUnreadCountChange?.()
+    } catch (error) {
+      console.error('批量删除失败:', error)
+      alert('删除失败，请重试')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // 退出管理模式
+  const exitManageMode = () => {
+    setIsManageMode(false)
+    setSelectedItems(new Set())
+  }
+
   const toggleExpanded = async (interactionId: string) => {
     const newExpanded = new Set(expandedItems)
     const interaction = interactions.find(i => i.id === interactionId)
@@ -393,19 +484,55 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* 清空已读按钮 */}
-            {readCount > 0 && (
-              <button
-                onClick={handleClearCompleted}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-orange-500/10 text-orange-500 rounded-lg hover:bg-orange-500/20 transition-colors border border-orange-500/20"
-                title="清空所有已读通知"
-              >
-                <Eraser className="h-4 w-4" />
-                清空已完成
-                <span className="bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full text-xs">
-                  {readCount}
-                </span>
-              </button>
+            {/* 管理模式控制 */}
+            {isManageMode ? (
+              <>
+                {/* 删除选中按钮 */}
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={selectedItems.size === 0 || isDeleting}
+                  className="flex items-center gap-2 px-3 py-2 text-sm bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors border border-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {isDeleting ? '删除中...' : `删除 (${selectedItems.size})`}
+                </button>
+                {/* 退出管理 */}
+                <button
+                  onClick={exitManageMode}
+                  className="flex items-center gap-2 px-3 py-2 text-sm bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                  退出管理
+                </button>
+              </>
+            ) : (
+              <>
+                {/* 清空已读按钮 */}
+                {readCount > 0 && (
+                  <button
+                    onClick={handleClearCompleted}
+                    className="flex items-center gap-2 px-3 py-2 text-sm bg-orange-500/10 text-orange-500 rounded-lg hover:bg-orange-500/20 transition-colors border border-orange-500/20"
+                    title="清空所有已读通知"
+                  >
+                    <Eraser className="h-4 w-4" />
+                    清空已完成
+                    <span className="bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full text-xs">
+                      {readCount}
+                    </span>
+                  </button>
+                )}
+                {/* 管理按钮 */}
+                {interactions.length > 0 && (
+                  <button
+                    onClick={() => setIsManageMode(true)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors"
+                    title="管理消息"
+                  >
+                    <Settings2 className="h-4 w-4" />
+                    管理
+                  </button>
+                )}
+              </>
             )}
             <button
               onClick={onClose}
@@ -460,6 +587,40 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
           </button>
         </div>
 
+        {/* 管理模式下的全选栏 */}
+        {isManageMode && filteredInteractions.length > 0 && (
+          <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-800/30">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <button
+                onClick={toggleSelectAll}
+                className="flex items-center justify-center w-5 h-5"
+              >
+                {(() => {
+                  const deletableItems = filteredInteractions.filter(i =>
+                    i.interactionType === 'notification' ||
+                    (i.interactionType === 'project_request' && i.status !== 'pending')
+                  )
+                  const isAllSelected = selectedItems.size === deletableItems.length && deletableItems.length > 0
+                  return isAllSelected ? (
+                    <CheckSquare className="h-5 w-5 text-blue-500" />
+                  ) : (
+                    <Square className="h-5 w-5 text-zinc-500" />
+                  )
+                })()}
+              </button>
+              <span className="text-sm text-zinc-400">
+                全选可删除项 ({filteredInteractions.filter(i =>
+                  i.interactionType === 'notification' ||
+                  (i.interactionType === 'project_request' && i.status !== 'pending')
+                ).length})
+              </span>
+            </label>
+            <p className="text-xs text-zinc-500 mt-1 ml-8">
+              提示：待处理的项目申请不可删除，需先批准或拒绝
+            </p>
+          </div>
+        )}
+
         {/* 内容区域 */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
@@ -483,12 +644,17 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
             <div className="space-y-2">
               {filteredInteractions.map((interaction) => {
                 const isExpanded = expandedItems.has(interaction.id)
+                const canDelete = interaction.interactionType === 'notification' ||
+                  (interaction.interactionType === 'project_request' && interaction.status !== 'pending')
+                const isSelected = selectedItems.has(interaction.id)
 
                 return (
                   <div
                     key={interaction.id}
                     className={`border rounded-lg transition-all duration-200 ${
-                      interaction.status === 'unread' || interaction.status === 'pending'
+                      isSelected
+                        ? 'border-blue-500/50 bg-blue-500/10'
+                        : interaction.status === 'unread' || interaction.status === 'pending'
                         ? 'border-orange-500/30 bg-orange-500/5'
                         : 'border-zinc-800 bg-zinc-800/50 hover:bg-zinc-800'
                     }`}
@@ -496,9 +662,36 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                     {/* 通知头部 */}
                     <div
                       className="p-3 cursor-pointer flex items-center justify-between group"
-                      onClick={() => toggleExpanded(interaction.id)}
+                      onClick={() => {
+                        if (isManageMode && canDelete) {
+                          toggleSelectItem(interaction.id)
+                        } else {
+                          toggleExpanded(interaction.id)
+                        }
+                      }}
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {/* 管理模式下显示复选框 */}
+                        {isManageMode && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (canDelete) {
+                                toggleSelectItem(interaction.id)
+                              }
+                            }}
+                            className={`flex-shrink-0 ${!canDelete ? 'opacity-30 cursor-not-allowed' : ''}`}
+                            disabled={!canDelete}
+                            title={!canDelete ? '待处理的申请不可删除' : '选择此项'}
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="h-5 w-5 text-blue-500" />
+                            ) : (
+                              <Square className="h-5 w-5 text-zinc-500" />
+                            )}
+                          </button>
+                        )}
+
                         <div className="flex-shrink-0">
                           {interaction.interactionType === 'project_request' ? (
                             <Users className="h-5 w-5 text-purple-500" />
@@ -527,8 +720,8 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                           <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                         )}
 
-                        {/* 删除按钮 (只对通知显示) */}
-                        {interaction.interactionType === 'notification' && (
+                        {/* 删除按钮 (只对通知显示，非管理模式) */}
+                        {!isManageMode && interaction.interactionType === 'notification' && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
