@@ -284,43 +284,30 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                   {isUnlocked ? (
                     <Link href={`/courses/listening/${content.id}`}>
                       <motion.div
-                        whileHover={{ scale: 1.2 }}
+                        whileHover={{ scale: 1.15 }}
                         whileTap={{ scale: 0.95 }}
                         className="relative cursor-pointer flex items-center justify-center"
                         style={{ width: 'fit-content', height: 'fit-content' }}
                       >
-                        {/* 旋转彩色圆环（仅及格节点） */}
-                        {isPassed && (
-                          <motion.div
-                            className="absolute rounded-full"
-                            style={{
-                              width: '150%',
-                              height: '150%',
-                              background: `conic-gradient(from 0deg, ${color.from}, ${color.to}, ${COURSE_COLORS[(index + 1) % COURSE_COLORS.length].from}, ${color.from})`,
-                              filter: 'blur(2px)',
-                            }}
-                            animate={{
-                              rotate: 360,
-                            }}
-                            transition={{
-                              duration: 4,
-                              repeat: Infinity,
-                              ease: "linear",
-                            }}
-                          />
-                        )}
-
-                        {/* 光晕效果 */}
-                        <div
-                          className="absolute rounded-full blur-lg opacity-60 group-hover:opacity-100 transition-opacity"
+                        {/* 光晕效果 - 默认隐藏，悬停时显示 */}
+                        <motion.div
+                          className="absolute rounded-full pointer-events-none"
                           style={{
-                            width: '180%',
-                            height: '180%',
-                            background: `linear-gradient(135deg, ${color.from}, ${color.to})`,
+                            width: '160%',
+                            height: '160%',
+                            background: `conic-gradient(from 0deg, ${color.from}, ${color.to}, ${COURSE_COLORS[(index + 1) % COURSE_COLORS.length].from}, ${color.from})`,
+                            filter: 'blur(3px)',
+                          }}
+                          initial={{ opacity: 0, scale: 0.8, rotate: 0 }}
+                          whileHover={{ opacity: 0.8, scale: 1, rotate: 360 }}
+                          transition={{
+                            opacity: { duration: 0.3 },
+                            scale: { duration: 0.3 },
+                            rotate: { duration: 3, repeat: Infinity, ease: "linear" },
                           }}
                         />
 
-                        {/* 主节点 - 缩小尺寸 */}
+                        {/* 主节点 */}
                         <div
                           className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm sm:text-base md:text-lg font-bold text-white shadow-2xl transition-all"
                           style={{
@@ -332,6 +319,7 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                               : isCompleted
                                 ? '2px solid rgba(255,255,255,0.3)'
                                 : '2px solid rgba(255,255,255,0.1)',
+                            boxShadow: `0 0 15px ${color.from}40`,
                           }}
                         >
                           <span>{dayNumber}</span>
