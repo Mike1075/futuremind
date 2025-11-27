@@ -201,12 +201,12 @@ export default function Home() {
           </span>
         </motion.p>
 
-        {/* 季度公告卡片 - 极致透明 */}
+        {/* 季度公告卡片 - 深色衬底保证可读性 */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 1 }}
-          className="bg-transparent border border-white/10 rounded-2xl p-8 max-w-2xl mx-auto mb-14"
+          className="w-full max-w-2xl p-8 rounded-2xl bg-black/60 border border-white/10 shadow-[0_0_50px_-10px_rgba(255,255,255,0.1)] mx-auto mb-14"
         >
           <div className="flex items-center justify-center mb-4">
             <Sparkles className="w-6 h-6 text-yellow-400 animate-pulse mr-2" />
