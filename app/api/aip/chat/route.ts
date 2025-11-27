@@ -209,19 +209,29 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
             }
           }
 
-          // 🔥 流结束后，保存到数据库
+          // 🔥 流结束后，先发送完成标记，再异步保存到数据库
           const finalReply = fullContent
             .replace(/\*\*/g, '')
             .replace(/\*/g, '')
             .trim() || '抱歉，我现在无法回应。请稍后再试。'
 
-          logger.debug('AI response completed', {
-            responseLength: finalReply.length
+          const totalDuration = Date.now() - startTime
+          logger.info('AI response completed', {
+            responseLength: finalReply.length,
+            duration: `${totalDuration}ms`
           })
 
-          // 保存聊天记录到数据库
-          logger.dbQuery('chat_history', 'INSERT')
-          const { error: dbError } = await supabase.from('chat_history').insert({
+          // 🔥 先发送完成标记，不等待数据库保存
+          const doneData = JSON.stringify({
+            type: 'done',
+            timestamp: new Date().toISOString()
+          }) + '\n'
+
+          controller.enqueue(new TextEncoder().encode(doneData))
+          controller.close()
+
+          // 🔥 异步保存聊天记录（不阻塞响应）
+          supabase.from('chat_history').insert({
             user_id: user.id,
             content: chatInput,
             role: 'user',
@@ -233,27 +243,11 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
               project_ids: projectIdsArray,
               project_count: projectIdsArray.length
             }
+          }).then(({ error: dbError }) => {
+            if (dbError) {
+              logger.error('Failed to save chat history', dbError)
+            }
           })
-
-          if (dbError) {
-            logger.error('Failed to save chat history', dbError)
-          } else {
-            logger.debug('Chat history saved successfully')
-          }
-
-          const totalDuration = Date.now() - startTime
-          logger.info('Chat request completed', {
-            duration: `${totalDuration}ms`
-          })
-
-          // 发送完成标记
-          const doneData = JSON.stringify({
-            type: 'done',
-            timestamp: new Date().toISOString()
-          }) + '\n'
-
-          controller.enqueue(new TextEncoder().encode(doneData))
-          controller.close()
         } catch (error) {
           logger.error('Stream processing error', error)
           controller.error(error)

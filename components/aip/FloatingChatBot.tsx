@@ -233,32 +233,18 @@ export function FloatingChatBot({
       let buffer = ''
       let fullAnswer = ''
       let displayedAnswer = ''
-      let lastFullAnswerLength = 0
 
-      // 🔥 视觉缓冲队列：控制显示速度
-      let pendingChunks: string[] = []
-      let displayInterval: NodeJS.Timeout | null = null
+      // 🔥 优化：直接显示，减少延迟
+      let lastUpdateTime = 0
+      const MIN_UPDATE_INTERVAL = 50 // 最小更新间隔50ms
 
-      // 启动显示定时器（优化：每100ms显示5个字符，减少渲染频率）
-      const startDisplayTimer = () => {
-        if (displayInterval) return
+      const updateDisplay = (content: string) => {
+        const now = Date.now()
+        // 节流：至少间隔50ms更新一次，或者内容变化较大时立即更新
+        if (now - lastUpdateTime >= MIN_UPDATE_INTERVAL || content.length - displayedAnswer.length > 20) {
+          lastUpdateTime = now
+          displayedAnswer = content
 
-        displayInterval = setInterval(() => {
-          if (pendingChunks.length === 0) {
-            if (displayedAnswer === fullAnswer && fullAnswer.length > 0) {
-              if (displayInterval) {
-                clearInterval(displayInterval)
-                displayInterval = null
-              }
-            }
-            return
-          }
-
-          // 每次显示5个字符，减少渲染次数
-          const chunkToDisplay = pendingChunks.shift() || ''
-          displayedAnswer += chunkToDisplay
-
-          // 只更新最后一条消息，避免全量map
           setMessages(prev => {
             const newMessages = [...prev]
             const lastIndex = newMessages.length - 1
@@ -270,7 +256,7 @@ export function FloatingChatBot({
             }
             return newMessages
           })
-        }, 100) // 从50ms增加到100ms，减少50%的渲染次数
+        }
       }
 
       try {
@@ -293,33 +279,16 @@ export function FloatingChatBot({
 
               if (json.type === 'chunk') {
                 fullAnswer = json.content
-
-                // 计算新增内容
-                const newContent = fullAnswer.slice(lastFullAnswerLength)
-                lastFullAnswerLength = fullAnswer.length
-
-                // 每次显示3个字符
-                for (let i = 0; i < newContent.length; i += 3) {
-                  pendingChunks.push(newContent.slice(i, i + 3))
-                }
-
-                startDisplayTimer()
+                // 🔥 直接更新显示，不再使用缓冲队列
+                updateDisplay(fullAnswer)
               } else if (json.type === 'done') {
-                // 流式传输完成
+                // 流式传输完成，确保显示完整内容
+                updateDisplay(fullAnswer)
               }
             } catch {
               // 忽略解析错误
             }
           }
-        }
-
-        // 确保所有内容都显示完毕
-        while (pendingChunks.length > 0 || displayedAnswer !== fullAnswer) {
-          await new Promise(resolve => setTimeout(resolve, 50))
-        }
-
-        if (displayInterval) {
-          clearInterval(displayInterval)
         }
 
         // 最终更新消息
