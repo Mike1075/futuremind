@@ -14,10 +14,10 @@ interface ConsciousnessTreeCanvasProps {
   isPreview?: boolean  // 预览模式（隐藏拖拽提示）
 }
 
-// 默认参数（神经元生物发光树 V3 - Ethereal Bioluminescence）
+// 默认参数（经典红色能量树 V2）
 const DEFAULT_PARAMS: TreeParams = {
-  particleSize: 6,  // 粒子基础尺寸
-  glowIntensity: 0.6,  // 增强发光强度
+  particleSize: 6,  // 🔥 整体再放大一倍：3 → 6
+  glowIntensity: 0.5,
 }
 
 export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPreview = false }: ConsciousnessTreeCanvasProps) {
@@ -132,7 +132,7 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       ctx.fillStyle = '#000000'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // 如果是空树，绘制闪烁的种子（金紫色灵性种子）
+      // 如果是空树，绘制闪烁的种子
       if (isEmptyTree) {
         const centerX = canvas.width / 2
         const centerY = canvas.height / 2
@@ -141,48 +141,46 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
         ctx.save()
         ctx.globalCompositeOperation = 'lighter'
 
-        // 最外层光环（金色光晕）
-        const gradient1 = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 80)
-        gradient1.addColorStop(0, `rgba(255, 215, 0, ${seedOpacity * 0.4})`)
-        gradient1.addColorStop(0.3, `rgba(157, 0, 255, ${seedOpacity * 0.2})`)
-        gradient1.addColorStop(0.6, `rgba(0, 255, 255, ${seedOpacity * 0.1})`)
-        gradient1.addColorStop(1, 'rgba(0, 0, 0, 0)')
+        // 最外层光环（淡淡的光晕）
+        const gradient1 = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 60)
+        gradient1.addColorStop(0, `rgba(220, 38, 38, ${seedOpacity * 0.3})`)
+        gradient1.addColorStop(0.5, `rgba(220, 38, 38, ${seedOpacity * 0.15})`)
+        gradient1.addColorStop(1, 'rgba(220, 38, 38, 0)')
         ctx.fillStyle = gradient1
         ctx.beginPath()
-        ctx.arc(centerX, centerY, 80, 0, Math.PI * 2)
+        ctx.arc(centerX, centerY, 60, 0, Math.PI * 2)
         ctx.fill()
 
-        // 中层光环（紫色）
-        const gradient2 = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 45)
-        gradient2.addColorStop(0, `rgba(157, 0, 255, ${seedOpacity * 0.6})`)
-        gradient2.addColorStop(0.5, `rgba(255, 215, 0, ${seedOpacity * 0.3})`)
-        gradient2.addColorStop(1, 'rgba(157, 0, 255, 0)')
+        // 中层光环
+        const gradient2 = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 35)
+        gradient2.addColorStop(0, `rgba(239, 68, 68, ${seedOpacity * 0.5})`)
+        gradient2.addColorStop(0.6, `rgba(220, 38, 38, ${seedOpacity * 0.3})`)
+        gradient2.addColorStop(1, 'rgba(220, 38, 38, 0)')
         ctx.fillStyle = gradient2
         ctx.beginPath()
-        ctx.arc(centerX, centerY, 45, 0, Math.PI * 2)
+        ctx.arc(centerX, centerY, 35, 0, Math.PI * 2)
         ctx.fill()
 
-        // 外层发光（金紫渐变）
-        ctx.shadowBlur = 50
-        ctx.shadowColor = `rgba(255, 215, 0, ${seedOpacity * 0.9})`
+        // 外层发光
+        ctx.shadowBlur = 40
+        ctx.shadowColor = `rgba(220, 38, 38, ${seedOpacity * 0.8})`
 
-        // 种子主体（金色核心）
+        // 种子主体
         ctx.beginPath()
-        ctx.ellipse(centerX, centerY, 18, 24, 0, 0, Math.PI * 2)
-        const seedGradient = ctx.createRadialGradient(centerX - 5, centerY - 5, 0, centerX, centerY, 24)
-        seedGradient.addColorStop(0, `rgba(255, 255, 200, ${seedOpacity})`)
-        seedGradient.addColorStop(0.3, `rgba(255, 215, 0, ${seedOpacity})`)
-        seedGradient.addColorStop(0.7, `rgba(157, 0, 255, ${seedOpacity * 0.8})`)
-        seedGradient.addColorStop(1, `rgba(0, 255, 255, ${seedOpacity * 0.6})`)
+        ctx.ellipse(centerX, centerY, 15, 20, 0, 0, Math.PI * 2)
+        const seedGradient = ctx.createRadialGradient(centerX - 5, centerY - 5, 0, centerX, centerY, 20)
+        seedGradient.addColorStop(0, `rgba(248, 113, 113, ${seedOpacity})`)
+        seedGradient.addColorStop(0.5, `rgba(220, 38, 38, ${seedOpacity})`)
+        seedGradient.addColorStop(1, `rgba(185, 28, 28, ${seedOpacity * 0.9})`)
         ctx.fillStyle = seedGradient
         ctx.fill()
 
-        // 内部高光（白金色）
-        ctx.shadowBlur = 25
-        ctx.shadowColor = `rgba(255, 255, 200, ${seedOpacity * 0.8})`
+        // 内部高光
+        ctx.shadowBlur = 20
+        ctx.shadowColor = `rgba(252, 165, 165, ${seedOpacity * 0.6})`
         ctx.beginPath()
-        ctx.ellipse(centerX - 5, centerY - 7, 7, 10, 0, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255, 255, 220, ${seedOpacity * 0.9})`
+        ctx.ellipse(centerX - 4, centerY - 6, 6, 8, 0, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(252, 165, 165, ${seedOpacity * 0.7})`
         ctx.fill()
 
         ctx.restore()
@@ -200,147 +198,108 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
         canvas.height
       )
 
-      // 🔥 神经元风格：分组绘制
+      // 🔥 性能优化：分组绘制，减少状态切换
+      // 1. 先绘制所有普通粒子（不需要发光）
       const normalParticles = particles.filter(p => !p.shape || p.shape === 'circle')
       const leafParticles = particles.filter(p => p.shape === 'leaf')
       const appleParticles = particles.filter(p => p.shape === 'apple')
 
-      // 🌟 背景氛围光：根据树的总粒子数创建柔和光晕
-      const totalParticles = particles.length
-      if (totalParticles > 10) {
-        const ambientIntensity = Math.min(totalParticles / 500, 0.3)
-        const centerX = canvas.width / 2
-        const centerY = canvas.height * 0.45  // 稍微偏上，树冠位置
-        const ambientGlow = ctx.createRadialGradient(
-          centerX, centerY, 0,
-          centerX, centerY, Math.min(canvas.width, canvas.height) * 0.6
-        )
-        ambientGlow.addColorStop(0, `rgba(157, 0, 255, ${ambientIntensity * 0.15})`)
-        ambientGlow.addColorStop(0.3, `rgba(0, 255, 255, ${ambientIntensity * 0.1})`)
-        ambientGlow.addColorStop(0.6, `rgba(255, 215, 0, ${ambientIntensity * 0.05})`)
-        ambientGlow.addColorStop(1, 'rgba(0, 0, 0, 0)')
-        ctx.fillStyle = ambientGlow
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-      }
-
-      // 🌿 神经元发光粒子（所有普通粒子都发光）
-      // 第一遍：绘制柔和光晕底层
-      ctx.shadowBlur = 20
+      // 绘制普通粒子（批量处理，无阴影）
       normalParticles.forEach((p) => {
-        ctx.shadowColor = p.color
-        ctx.fillStyle = p.color
-        ctx.globalAlpha = 0.4
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2)
-        ctx.fill()
-      })
-
-      // 第二遍：绘制明亮核心
-      ctx.shadowBlur = 8
-      ctx.globalAlpha = 1
-      normalParticles.forEach((p) => {
-        ctx.shadowColor = p.color
         ctx.fillStyle = p.color
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
         ctx.fill()
       })
-      ctx.shadowBlur = 0
 
-      // ✨ 能量光点（叶子 → 发光能量球）
+      // 🔥 只对需要发光的粒子启用阴影（减少shadowBlur切换次数）
+      const glowParticles = normalParticles.filter(p =>
+        p.color.includes('70%') || p.color.includes('72%') || p.color.includes('85%')
+      )
+      if (glowParticles.length > 0) {
+        ctx.shadowBlur = 15
+        glowParticles.forEach((p) => {
+          ctx.shadowColor = p.color
+          ctx.fillStyle = p.color
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.fill()
+        })
+        ctx.shadowBlur = 0
+      }
+
+      // 绘制叶子（批量处理）
       leafParticles.forEach((p) => {
         ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate((p.rotation || 0) * Math.PI / 180)
 
-        // 外层柔和光晕
-        ctx.shadowBlur = 25
-        ctx.shadowColor = p.color
-        const outerGlow = ctx.createRadialGradient(
-          p.x, p.y, 0,
-          p.x, p.y, p.size * 3
-        )
-        outerGlow.addColorStop(0, p.color.replace(')', ', 0.6)').replace('hsla', 'hsla').replace('hsl', 'hsla'))
-        outerGlow.addColorStop(0.4, p.color.replace(')', ', 0.2)').replace('hsla', 'hsla').replace('hsl', 'hsla'))
-        outerGlow.addColorStop(1, 'rgba(0, 255, 255, 0)')
-        ctx.fillStyle = outerGlow
+        // 🍃 简单椭圆带尖的叶子形状
         ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2)
-        ctx.fill()
+        // 叶尖（顶部）
+        ctx.moveTo(0, -p.size * 1.5)
+        // 右侧弧线（椭圆）
+        ctx.quadraticCurveTo(p.size * 0.7, -p.size * 0.5, p.size * 0.6, 0)
+        ctx.quadraticCurveTo(p.size * 0.7, p.size * 0.5, 0, p.size)
+        // 左侧弧线（椭圆）
+        ctx.quadraticCurveTo(-p.size * 0.7, p.size * 0.5, -p.size * 0.6, 0)
+        ctx.quadraticCurveTo(-p.size * 0.7, -p.size * 0.5, 0, -p.size * 1.5)
+        ctx.closePath()
 
-        // 中间层能量环
-        const midGlow = ctx.createRadialGradient(
-          p.x, p.y, 0,
-          p.x, p.y, p.size * 1.8
-        )
-        midGlow.addColorStop(0, 'rgba(200, 255, 255, 0.9)')
-        midGlow.addColorStop(0.5, p.color)
-        midGlow.addColorStop(1, 'rgba(0, 255, 200, 0)')
-        ctx.fillStyle = midGlow
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * 1.8, 0, Math.PI * 2)
+        // 填充叶子
+        ctx.fillStyle = p.color
+        ctx.globalAlpha = 0.85  // 稍微透明，显示绿色
         ctx.fill()
+        ctx.globalAlpha = 1
 
-        // 核心亮点
-        ctx.shadowBlur = 15
-        ctx.shadowColor = 'rgba(255, 255, 255, 0.8)'
-        ctx.fillStyle = 'rgba(220, 255, 255, 0.95)'
+        // 叶子轮廓
+        ctx.strokeStyle = p.color
+        ctx.lineWidth = 1
+        ctx.stroke()
+
+        // 🍃 叶脉（简单中线）
+        ctx.strokeStyle = p.color
+        ctx.lineWidth = 0.5
+        ctx.globalAlpha = 0.6
         ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2)
-        ctx.fill()
+        ctx.moveTo(0, -p.size * 1.5)
+        ctx.lineTo(0, p.size)
+        ctx.stroke()
+        ctx.globalAlpha = 1
 
         ctx.restore()
       })
 
-      // 💎 灵魂宝石（果实 → 水晶）
+      // 绘制果实（批量处理）
       appleParticles.forEach((p) => {
         ctx.save()
 
-        // 最外层辉光
-        ctx.shadowBlur = 35
-        ctx.shadowColor = p.color
-        const outerAura = ctx.createRadialGradient(
-          p.x, p.y, 0,
-          p.x, p.y, p.size * 4
+        // 填充红色果实主体
+        ctx.fillStyle = p.color
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        ctx.fill()
+
+        // 🔥 添加彩色渐变勾边
+        const gradient = ctx.createLinearGradient(
+          p.x - p.size, p.y - p.size,
+          p.x + p.size, p.y + p.size
         )
-        outerAura.addColorStop(0, p.color.replace(')', ', 0.5)').replace('hsla', 'hsla').replace('hsl', 'hsla'))
-        outerAura.addColorStop(0.5, p.color.replace(')', ', 0.15)').replace('hsla', 'hsla').replace('hsl', 'hsla'))
-        outerAura.addColorStop(1, 'rgba(0, 0, 0, 0)')
-        ctx.fillStyle = outerAura
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * 4, 0, Math.PI * 2)
-        ctx.fill()
+        gradient.addColorStop(0, 'rgba(255, 215, 0, 0.9)')
+        gradient.addColorStop(0.25, 'rgba(255, 165, 0, 0.9)')
+        gradient.addColorStop(0.5, 'rgba(255, 105, 180, 0.9)')
+        gradient.addColorStop(0.75, 'rgba(138, 43, 226, 0.9)')
+        gradient.addColorStop(1, 'rgba(255, 215, 0, 0.9)')
 
-        // 宝石主体（多层渐变模拟切面）
-        const gemGradient = ctx.createRadialGradient(
-          p.x - p.size * 0.3, p.y - p.size * 0.3, 0,
-          p.x, p.y, p.size * 1.2
-        )
-        gemGradient.addColorStop(0, 'rgba(255, 255, 255, 0.95)')
-        gemGradient.addColorStop(0.2, p.color)
-        gemGradient.addColorStop(0.6, p.color.replace('60%', '40%').replace('50%', '35%'))
-        gemGradient.addColorStop(1, p.color.replace('60%', '25%').replace('50%', '20%'))
-        ctx.fillStyle = gemGradient
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * 1.2, 0, Math.PI * 2)
-        ctx.fill()
-
-        // 宝石高光（模拟切面反光）
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
-        ctx.beginPath()
-        ctx.ellipse(p.x - p.size * 0.25, p.y - p.size * 0.3, p.size * 0.35, p.size * 0.25, -Math.PI / 4, 0, Math.PI * 2)
-        ctx.fill()
-
-        // 次高光
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
-        ctx.beginPath()
-        ctx.ellipse(p.x + p.size * 0.3, p.y + p.size * 0.2, p.size * 0.2, p.size * 0.15, Math.PI / 3, 0, Math.PI * 2)
-        ctx.fill()
-
-        // 彩虹光边
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * 1.2, 0, Math.PI * 2)
+        ctx.strokeStyle = gradient
+        ctx.lineWidth = 2.5
         ctx.stroke()
+
+        // 果实发光效果
+        ctx.shadowBlur = 12
+        ctx.shadowColor = p.color
+        ctx.fill()
+        ctx.shadowBlur = 0
 
         ctx.restore()
       })
