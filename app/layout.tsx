@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className={`${cinzel.variable} ${spaceGrotesk.variable}`}>
-      <body className="antialiased min-h-screen font-body tracking-wide">
+      <body className="font-sans antialiased text-white min-h-screen relative">
         {/* 活着的深空背景 */}
         <CosmicBackground />
 

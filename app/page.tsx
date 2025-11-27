@@ -169,15 +169,12 @@ export default function Home() {
           transition={{ duration: 1, delay: 0.3 }}
           className="mb-10"
         >
-          {/* 神圣图腾 - 缓慢呼吸效果 */}
+          {/* 神圣图腾 - 呼吸发光效果 */}
           <div className="flex items-center justify-center mb-6">
             <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gaia-gold/30 via-mystic-purple/20 to-ethereal-blue/30 flex items-center justify-center animate-breathe">
-                <TreePine className="w-10 h-10 text-gaia-gold" />
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-500/20 via-purple-500/20 to-blue-500/20 flex items-center justify-center animate-pulse shadow-[0_0_30px_rgba(255,215,0,0.4)] border border-yellow-500/30">
+                <TreePine className="w-10 h-10 text-yellow-400" />
               </div>
-              <div className="absolute inset-0 rounded-full border border-gaia-gold/30 animate-glow-pulse" />
-              <div className="absolute -inset-2 rounded-full border border-mystic-purple/20" />
-              <div className="absolute -inset-4 rounded-full border border-ethereal-blue/10" />
             </div>
           </div>
 
@@ -204,16 +201,16 @@ export default function Home() {
           </span>
         </motion.p>
 
-        {/* 季度公告卡片 - 全息水晶风格 */}
+        {/* 季度公告卡片 - 玻璃拟态风格 */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 1 }}
-          className="card-holographic max-w-2xl mx-auto mb-14"
+          className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-2xl mx-auto mb-14"
         >
           <div className="flex items-center justify-center mb-4">
-            <Sparkles className="w-5 h-5 text-gaia-gold mr-2 opacity-80" />
-            <h2 className="font-sacred text-2xl md:text-3xl text-starlight tracking-wide">
+            <Sparkles className="w-6 h-6 text-yellow-400 animate-pulse mr-2" />
+            <h2 className="font-sacred text-2xl md:text-3xl text-white tracking-wide">
               第一季：声音的交响
             </h2>
           </div>
