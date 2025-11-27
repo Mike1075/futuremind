@@ -174,13 +174,28 @@ export function FloatingChatBot({
       // 构建project_id参数
       const projectIdValue = selectedProjects.length === 1 ? selectedProjects[0] : selectedProjects
 
-      // 获取organization_id：从选中的项目或组织参数中获取
-      let organizationId = organization?.id || ''
+      // 获取organization_id：多层兜底逻辑
+      let organizationId = ''
 
-      // 如果没有组织参数但选择了项目，从项目中提取organization_id
+      // 1. 优先使用传入的organization参数
+      if (organization?.id) {
+        organizationId = organization.id
+      }
+
+      // 2. 如果选择了项目，从项目中提取organization_id
       if (!organizationId && selectedProjects.length > 0) {
         const firstSelectedProject = userProjects.find(p => p.id === selectedProjects[0])
         organizationId = firstSelectedProject?.organization_id || ''
+      }
+
+      // 3. 如果还是没有，使用用户的第一个项目所属的组织
+      if (!organizationId && userProjects.length > 0) {
+        organizationId = userProjects[0].organization_id || ''
+      }
+
+      // 4. 最终兜底：使用默认组织ID（确保不选项目时也能聊天）
+      if (!organizationId) {
+        organizationId = 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
       }
 
       // 调用流式API
