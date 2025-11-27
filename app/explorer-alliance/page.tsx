@@ -72,44 +72,50 @@ export default function ExplorerAlliancePage() {
   }, [isMounted])
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden bg-black">
-      {/* 星空背景 - 纯黑色背景 + 白色星星闪烁 */}
-      <div className="absolute inset-0 overflow-hidden">
+    <div className="min-h-screen text-starlight relative overflow-hidden bg-cosmic-void">
+      {/* Ethereal background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+
+      {/* Animated star particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {isMounted && particles.map((particle) => (
           <motion.div
             key={particle.id}
-            className="absolute w-0.5 h-0.5 bg-white rounded-full"
+            className="absolute w-0.5 h-0.5 rounded-full"
+            style={{
+              left: `${particle.left}%`,
+              top: `${particle.top}%`,
+              background: `radial-gradient(circle, ${['#FFD700', '#9D00FF', '#00FFFF', '#FFFFFF'][particle.id % 4]} 0%, transparent 70%)`,
+              boxShadow: `0 0 4px ${['#FFD700', '#9D00FF', '#00FFFF', '#FFFFFF'][particle.id % 4]}40`,
+            }}
             animate={{
-              opacity: [0.2, 1, 0.2],
-              scale: [1, 1.5, 1],
+              opacity: [0.2, 0.9, 0.2],
+              scale: [1, 1.3, 1],
             }}
             transition={{
               duration: particle.duration,
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            style={{
-              left: `${particle.left}%`,
-              top: `${particle.top}%`,
-            }}
           />
         ))}
       </div>
+
       {/* Header */}
-      <div className="relative border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-20">
+      <div className="nav-ethereal sticky top-0 z-20">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                探索者联盟 - AIP项目管理系统
+              <h1 className="text-h1 text-gradient-gold-purple text-glow-gold">
+                探索者联盟
               </h1>
-              <p className="text-gray-400 mt-2">AI驱动的智能项目协作平台</p>
+              <p className="text-body text-starlight-dim mt-1">AI驱动的智能项目协作平台</p>
             </div>
             <div className="flex items-center gap-3">
               <NotificationBadge onClick={() => setShowInteractionLog(true)} />
               <button
                 onClick={() => router.push('/')}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
+                className="badge-ethereal flex items-center gap-2"
               >
                 <Home className="w-5 h-5" />
                 返回首页
@@ -122,10 +128,10 @@ export default function ExplorerAlliancePage() {
       <div className="relative container mx-auto px-6 py-12 z-10 max-w-7xl">
         {/* 页面标题 */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-white mb-4">
+          <h1 className="text-display text-starlight mb-4">
             我的组织
           </h1>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+          <p className="text-body text-starlight-dim max-w-2xl mx-auto">
             管理你所属的组织，选择组织进入对应的工作台
           </p>
         </div>
@@ -135,7 +141,7 @@ export default function ExplorerAlliancePage() {
           <div className="flex justify-center mb-8">
             <button
               onClick={() => setShowCreateOrganization(true)}
-              className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+              className="btn-stardust flex items-center gap-2 px-8 py-3"
             >
               <Plus className="w-5 h-5" />
               创建新组织
@@ -145,15 +151,15 @@ export default function ExplorerAlliancePage() {
 
         {orgsLoading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="loader-ethereal"></div>
           </div>
         ) : organizations.length === 0 ? (
-          <div className="text-center py-16">
-            <Building2 className="h-20 w-20 text-gray-600 mx-auto mb-6" />
-            <h3 className="text-2xl font-semibold text-white mb-4">
+          <div className="card-glass p-12 text-center max-w-lg mx-auto">
+            <Building2 className="h-20 w-20 text-starlight-muted mx-auto mb-6" />
+            <h3 className="text-h2 text-starlight mb-4">
               还没有加入任何组织
             </h3>
-            <p className="text-gray-400 mb-8 max-w-md mx-auto">
+            <p className="text-body text-starlight-dim mb-8">
               系统应该自动为您创建"社区项目"和"我的项目"两个默认组织
             </p>
             <div className="flex flex-col items-center gap-4">
@@ -161,7 +167,6 @@ export default function ExplorerAlliancePage() {
                 onClick={async () => {
                   try {
                     const response = await fetch('/api/aip/debug-orgs', { method: 'POST' })
-                    // CQ-08: 检查response.ok再解析JSON
                     if (!response.ok) {
                       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
                     }
@@ -176,14 +181,15 @@ export default function ExplorerAlliancePage() {
                     alert('修复失败，请联系管理员')
                   }
                 }}
-                className="flex items-center gap-2 px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                className="btn-stardust flex items-center gap-2 px-8 py-3"
+                style={{ borderColor: 'rgba(0, 255, 136, 0.4)' }}
               >
-                🔧 修复组织数据
+                修复组织数据
               </button>
               {isAdmin && (
                 <button
                   onClick={() => setShowCreateOrganization(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  className="badge-ethereal flex items-center gap-2 px-6 py-3"
                 >
                   <Plus className="w-4 h-4" />
                   或者创建新组织

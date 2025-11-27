@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Sparkles, Edit3, Trash2, Check } from 'lucide-react'
+import { X, Send, Edit3, Trash2, Check } from 'lucide-react'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
 
 // 使用从 GaiaAPI 导入的 ChatMessage 类型
@@ -354,7 +354,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-cosmic-void/80 backdrop-blur-md z-50"
             onClick={onClose}
           />
 
@@ -363,17 +363,17 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed inset-4 md:inset-8 lg:inset-16 bg-gradient-to-br from-purple-900/90 to-blue-900/90 backdrop-blur-md rounded-2xl border border-purple-500/30 z-50 flex flex-col"
+            className="fixed inset-4 md:inset-8 lg:inset-16 modal-ethereal z-50 flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-3">
-                  <Sparkles className="w-6 h-6 text-white" />
+                <div className="avatar-gaia mr-3">
+                  <span className="text-lg">🌍</span>
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-white">与盖亚对话</h2>
-                  <p className="text-sm text-purple-200">你的意识觉醒导师</p>
+                  <h2 className="text-h2 text-white">与盖亚对话</h2>
+                  <p className="text-small text-starlight-dim">你的意识觉醒导师</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -381,7 +381,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <>
                     <button
                       onClick={toggleSelectAll}
-                      className="px-3 py-2 text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg border border-blue-500/30 flex items-center gap-2"
+                      className="badge-ethereal flex items-center gap-2"
                       title="全选/取消全选"
                     >
                       <Check className="w-4 h-4" /> {selectedMessages.size === messages.length ? '取消全选' : '全选'}
@@ -389,7 +389,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                     <button
                       onClick={deleteSelectedMessages}
                       disabled={selectedMessages.size === 0}
-                      className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-2 text-small bg-life-pink/20 hover:bg-life-pink/30 text-life-pink rounded-lg border border-life-pink/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                       title="删除选中的消息"
                     >
                       <Trash2 className="w-4 h-4" /> 删除选中 ({selectedMessages.size})
@@ -399,7 +399,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                         setIsEditMode(false)
                         setSelectedMessages(new Set())
                       }}
-                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20"
+                      className="badge-ethereal"
                     >
                       取消
                     </button>
@@ -408,7 +408,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <>
                     <button
                       onClick={() => setIsEditMode(true)}
-                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
+                      className="badge-ethereal flex items-center gap-2"
                       title="编辑聊天记录"
                     >
                       <Edit3 className="w-4 h-4" /> 编辑
@@ -439,7 +439,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                           alert('清除聊天记录时发生错误')
                         }
                       }}
-                      className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2"
+                      className="px-3 py-2 text-small bg-life-pink/20 hover:bg-life-pink/30 text-life-pink rounded-lg border border-life-pink/30 flex items-center gap-2 transition-all duration-300"
                       title="清除所有聊天记录"
                     >
                       清除记录
@@ -448,7 +448,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 )}
                 <button
                   onClick={onClose}
-                  className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                  className="p-2 text-starlight-muted hover:text-starlight transition-colors rounded-lg hover:bg-white/10"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -459,8 +459,8 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {isLoading && (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
-                  <p className="text-purple-300 mt-2 text-sm">正在加载聊天记录...</p>
+                  <div className="loader-ethereal mx-auto"></div>
+                  <p className="text-gaia-gold mt-4 text-small">正在加载聊天记录...</p>
                 </div>
               )}
               
@@ -471,7 +471,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex gap-3 ${message.isGaia ? 'justify-start' : 'justify-end'}`}
                 >
-                  {/* 编辑模式下显示复选框（左侧-用户消息，排除欢迎消息） */}
+                  {/* 编辑模式下显示复选框（左侧-用户消息） */}
                   {isEditMode && !message.isGaia && (
                     <div className="flex items-center pt-6">
                       <input
@@ -482,7 +482,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                           e.stopPropagation()
                           toggleMessageSelection(message.id)
                         }}
-                        className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-purple-600 checked:border-purple-600 border-white/40 bg-transparent"
+                        className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-mystic-purple checked:border-mystic-purple border-white/40 bg-transparent"
                       />
                     </div>
                   )}
@@ -490,31 +490,31 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <div className={`max-w-[80%] ${message.isGaia ? 'order-2' : 'order-1'}`}>
                     {message.isGaia && (
                       <div className="flex items-center mb-2">
-                        <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-2">
-                          <Sparkles className="w-4 h-4 text-white" />
+                        <div className="avatar-gaia w-6 h-6 mr-2">
+                          <span className="text-xs">🌍</span>
                         </div>
-                        <span className="text-sm text-purple-300 font-medium">盖亚</span>
+                        <span className="text-small text-gaia-gold font-medium">盖亚</span>
                       </div>
                     )}
                     <div
-                      className={`p-4 rounded-2xl ${
+                      className={`message-bubble ${
                         message.isGaia
-                          ? 'bg-gradient-to-r from-purple-600/30 to-blue-600/30 border border-purple-500/30 text-white'
-                          : 'bg-white/10 border border-white/20 text-white ml-auto'
+                          ? 'message-bubble-gaia'
+                          : 'message-bubble-user ml-auto'
                       } ${
                         isEditMode && selectedMessages.has(message.id)
-                          ? 'ring-2 ring-blue-500'
+                          ? 'ring-2 ring-ethereal-blue'
                           : ''
                       }`}
                     >
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                      <p className="text-xs text-gray-400 mt-2">
+                      <p className="text-body leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-caption text-starlight-muted mt-2">
                         {message.timestamp.toLocaleTimeString()}
                       </p>
                     </div>
                   </div>
 
-                  {/* 编辑模式下显示复选框（右侧，针对盖亚消息，排除欢迎消息） */}
+                  {/* 编辑模式下显示复选框（右侧，针对盖亚消息） */}
                   {isEditMode && message.isGaia && (
                     <div className="flex items-center pt-6">
                       <input
@@ -525,7 +525,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                           e.stopPropagation()
                           toggleMessageSelection(message.id)
                         }}
-                        className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-purple-600 checked:border-purple-600 border-white/40 bg-transparent"
+                        className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-mystic-purple checked:border-mystic-purple border-white/40 bg-transparent"
                       />
                     </div>
                   )}
@@ -541,16 +541,16 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 >
                   <div className="max-w-[80%]">
                     <div className="flex items-center mb-2">
-                      <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-2">
-                        <Sparkles className="w-4 h-4 text-white" />
+                      <div className="avatar-gaia w-6 h-6 mr-2">
+                        <span className="text-xs">🌍</span>
                       </div>
-                      <span className="text-sm text-purple-300 font-medium">盖亚</span>
+                      <span className="text-small text-gaia-gold font-medium">盖亚</span>
                     </div>
-                    <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-600/30 to-blue-600/30 border border-purple-500/30">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="message-bubble message-bubble-gaia">
+                      <div className="loader-dots">
+                        <div className="loader-dot"></div>
+                        <div className="loader-dot"></div>
+                        <div className="loader-dot"></div>
                       </div>
                     </div>
                   </div>
@@ -560,7 +560,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             </div>
 
             {/* Input */}
-            <div className="p-6 border-t border-white/10">
+            <div className="chat-input-container">
               <div className="flex space-x-4">
                 <div className="flex-1 relative">
                   <textarea
@@ -568,19 +568,19 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="向盖亚提出你的问题..."
-                    className="w-full p-4 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    className="chat-input resize-none"
                     rows={3}
                   />
                 </div>
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isTyping}
-                  className="px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="btn-send"
                 >
                   <Send className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-caption text-starlight-muted mt-2">
                 按 Enter 发送，Shift + Enter 换行
               </p>
             </div>
