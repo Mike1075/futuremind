@@ -418,3 +418,9 @@ body {
   background: rgba(157, 0, 255, 0.3);
   color: var(--color-starlight);
 }
+
+/* ========== 星空动画关键帧 (高性能CSS驱动) ========== */
+@keyframes move-twinkle {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2000px); }
+}
