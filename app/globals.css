@@ -458,7 +458,7 @@ body {
     #FFD700
   );
   background-size: 300% 100%;
-  animation: border-flow 4s linear infinite;
+  animation: border-flow 8s linear infinite;
 }
 
 /* 发光效果 */
@@ -482,7 +482,7 @@ body {
     #FFD700
   );
   background-size: 300% 100%;
-  animation: border-flow 4s linear infinite;
+  animation: border-flow 8s linear infinite;
   filter: blur(12px);
   opacity: 0.6;
 }
