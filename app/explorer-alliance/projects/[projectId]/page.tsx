@@ -53,12 +53,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       const supabase = createClient()
       setDocumentsLoading(true)
       try {
-        // N8N Supabase Vector Store 把 project_id 存储在 metadata 里
-        // 需要用 JSONB 查询语法：metadata->>'project_id'
+        // 从 project_files 表查询原始上传文件（不是分块数据）
         const { data, count, error } = await supabase
-          .from('documents')
-          .select('*', { count: 'exact' })
-          .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
+          .from('project_files')
+          .select(`
+            *,
+            uploader:profiles!project_files_user_id_fkey(full_name)
+          `, { count: 'exact' })
+          .eq('project_id', projectId)
           .order('created_at', { ascending: false })
 
         if (error) throw error
@@ -107,12 +109,28 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
     try {
       const idsToDelete = Array.from(selectedDocuments)
-      const { error } = await supabase
-        .from('documents')
+
+      // 1. 获取要删除的文件的标题（用于删除对应的分块）
+      const filesToDelete = documents.filter(doc => idsToDelete.includes(doc.id))
+      const titlesToDelete = filesToDelete.map(doc => doc.title)
+
+      // 2. 删除 project_files 记录
+      const { error: fileError } = await supabase
+        .from('project_files')
         .delete()
         .in('id', idsToDelete)
 
-      if (error) throw error
+      if (fileError) throw fileError
+
+      // 3. 删除对应的 documents 分块（通过 title 和 project_id 匹配）
+      // 使用 metadata->>'title' 匹配，因为 N8N 存储在 metadata 里
+      for (const title of titlesToDelete) {
+        await supabase
+          .from('documents')
+          .delete()
+          .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
+          .or(`title.eq.${title},metadata->>title.eq.${title}`)
+      }
 
       // 先清空选择和退出管理模式
       setSelectedDocuments(new Set())
@@ -120,9 +138,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
       // 重新加载文档列表
       const { data, count, error: loadError } = await supabase
-        .from('documents')
-        .select('*', { count: 'exact' })
-        .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
+        .from('project_files')
+        .select(`
+          *,
+          uploader:profiles!project_files_user_id_fkey(full_name)
+        `, { count: 'exact' })
+        .eq('project_id', projectId)
         .order('created_at', { ascending: false })
 
       if (loadError) throw loadError
@@ -494,11 +515,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {documents.map((doc) => {
-                  // N8N把字段存在metadata里，需要兼容处理
-                  const docTitle = doc.title || doc.metadata?.title || '未命名文档'
-                  const isKnowledgeBase = docTitle === '项目智慧库'
-                  const contentLength = doc.content?.length || 0
                   const isSelected = selectedDocuments.has(doc.id)
+                  const uploaderName = doc.uploader?.full_name || '未知用户'
+                  const fileSize = doc.file_size ? (doc.file_size / 1024).toFixed(1) + ' KB' : '未知'
+                  const fileIcon = doc.file_type?.includes('pdf') ? '📄' :
+                                   doc.file_type?.includes('word') ? '📝' : '📰'
                   return (
                     <div
                       key={doc.id}
@@ -518,22 +539,24 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                               className="w-5 h-5 rounded border-zinc-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 bg-zinc-800 cursor-pointer"
                             />
                           )}
-                          <span className="text-3xl">{isKnowledgeBase ? '📚' : '📄'}</span>
+                          <span className="text-3xl">{fileIcon}</span>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-white truncate">{docTitle}</h3>
-                            {isKnowledgeBase && (
-                              <span className="text-xs text-blue-400">系统默认</span>
-                            )}
+                            <h3 className="font-semibold text-white truncate">{doc.title}</h3>
+                            <p className="text-xs text-zinc-500 truncate">{doc.file_name}</p>
                           </div>
                         </div>
                       </div>
                       <div className="space-y-2 text-sm text-gray-400">
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-500">内容:</span>
-                          <span>{contentLength} 字符</span>
+                          <span className="text-gray-500">上传者:</span>
+                          <span>{uploaderName}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-500">创建时间:</span>
+                          <span className="text-gray-500">大小:</span>
+                          <span>{fileSize}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500">上传时间:</span>
                           <span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString('zh-CN') : '未知'}</span>
                         </div>
                       </div>

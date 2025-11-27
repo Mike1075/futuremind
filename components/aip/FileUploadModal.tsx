@@ -19,21 +19,24 @@ interface UploadFile {
   title: string
 }
 
-interface ProjectDocument {
+interface ProjectFile {
   id: string
-  project_id: string | null
-  user_id: string | null
-  organization_id: string | null
-  title: string | null
-  content: string
-  metadata: any
-  created_at: string | null
+  project_id: string
+  user_id: string
+  title: string
+  file_name: string
+  file_size: number
+  file_type: string
+  created_at: string
+  uploader?: {
+    full_name: string | null
+  }
 }
 
 export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadModalProps) {
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
-  const [existingDocuments, setExistingDocuments] = useState<ProjectDocument[]>([])
+  const [existingDocuments, setExistingDocuments] = useState<ProjectFile[]>([])
   const [loading, setLoading] = useState(true)
   const [isManager, setIsManager] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
@@ -65,12 +68,14 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       setLoading(true)
       const supabase = createClient()
 
-      // N8N Supabase Vector Store 把 project_id 存储在 metadata 里
-      // 需要用 JSONB 查询语法：metadata->>'project_id'
-      const { data, error} = await supabase
-        .from('documents')
-        .select('*')
-        .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
+      // 从 project_files 表查询原始上传文件
+      const { data, error } = await supabase
+        .from('project_files')
+        .select(`
+          *,
+          uploader:profiles!project_files_user_id_fkey(full_name)
+        `)
+        .eq('project_id', projectId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -215,19 +220,11 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
     ))
   }
 
-  const handleDeleteDocument = async (doc: ProjectDocument) => {
-    // N8N把字段存在metadata里，需要兼容处理
-    const docTitle = doc.title || doc.metadata?.title || '未命名文档'
-    const docUserId = doc.user_id || doc.metadata?.user_id
-
-    // 防止删除项目智慧库
-    if (docTitle === '项目智慧库') {
-      alert('项目智慧库不能被删除')
-      return
-    }
+  const handleDeleteDocument = async (doc: any) => {
+    const docTitle = doc.title || '未命名文档'
 
     // 权限检查：项目经理或文档创建者可以删除
-    const canDelete = isManager || docUserId === userId
+    const canDelete = isManager || doc.user_id === userId
 
     if (!canDelete) {
       alert('您没有权限删除此文档')
@@ -241,13 +238,20 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
     try {
       const supabase = createClient()
 
-      // 从数据库删除记录
-      const { error: dbError } = await supabase
-        .from('documents')
+      // 1. 删除 project_files 记录
+      const { error: fileError } = await supabase
+        .from('project_files')
         .delete()
         .eq('id', doc.id)
 
-      if (dbError) throw dbError
+      if (fileError) throw fileError
+
+      // 2. 删除对应的 documents 分块（通过 title 和 project_id 匹配）
+      await supabase
+        .from('documents')
+        .delete()
+        .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
+        .or(`title.eq.${docTitle},metadata->>title.eq.${docTitle}`)
 
       alert('文档删除成功')
       loadDocuments()
@@ -257,23 +261,9 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
     }
   }
 
-  // 下载文本文档（documents表仅存储文本内容）
-  const handleDownloadDocument = async (doc: ProjectDocument) => {
-    try {
-      // 创建一个文本文件并下载
-      const blob = new Blob([doc.content], { type: 'text/plain;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${doc.title}.txt`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('下载文档失败:', error)
-      alert('下载文档失败')
-    }
+  // 下载功能暂不可用（project_files 只存储元数据，原文件已被处理为知识库分块）
+  const handleDownloadDocument = async (doc: ProjectFile) => {
+    alert('下载功能暂不可用。文档已被处理为知识库内容，原文件不再保留。')
   }
 
   const onDragOver = (e: React.DragEvent) => {
@@ -336,35 +326,30 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
               </div>
             ) : (
               <div className="space-y-2 max-h-40 overflow-y-auto">
-                {existingDocuments.map((doc) => {
-                  // N8N把字段存在metadata里，需要兼容处理
-                  const docTitle = doc.title || doc.metadata?.title || '未命名文档'
-                  const docUserId = doc.user_id || doc.metadata?.user_id
-                  const isKnowledgeBase = docTitle === '项目智慧库'
-                  const contentLength = doc.content?.length || 0
+                {existingDocuments.map((doc: any) => {
+                  const uploaderName = doc.uploader?.full_name || '未知用户'
+                  const fileSize = doc.file_size ? (doc.file_size / 1024).toFixed(1) + ' KB' : '未知'
+                  const fileIcon = doc.file_type?.includes('pdf') ? '📄' :
+                                   doc.file_type?.includes('word') ? '📝' : '📰'
                   return (
                     <div
                       key={doc.id}
                       className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
                     >
-                      <span className="text-lg">{isKnowledgeBase ? '📚' : '📄'}</span>
+                      <span className="text-lg">{fileIcon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white truncate">{docTitle}</p>
+                        <p className="font-medium text-white truncate">{doc.title}</p>
                         <div className="flex items-center gap-2 text-xs text-zinc-500">
-                          <span>{contentLength} 字符</span>
+                          <span>{uploaderName}</span>
+                          <span>•</span>
+                          <span>{fileSize}</span>
                           <span>•</span>
                           <span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString('zh-CN') : '未知日期'}</span>
-                          {isKnowledgeBase && (
-                            <>
-                              <span>•</span>
-                              <span className="text-blue-400">系统默认</span>
-                            </>
-                          )}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {!isKnowledgeBase && (isManager || docUserId === userId) && (
+                        {(isManager || doc.user_id === userId) && (
                           <button
                             onClick={() => handleDeleteDocument(doc)}
                             className="p-1 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300"

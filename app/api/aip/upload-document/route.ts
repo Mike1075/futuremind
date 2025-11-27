@@ -66,7 +66,24 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // 5. 返回成功响应
+    // 5. 在 project_files 表中记录原始文件信息
+    const { error: insertError } = await supabase
+      .from('project_files')
+      .insert({
+        project_id: projectId,
+        user_id: user.id,
+        title: title,
+        file_name: file.name,
+        file_size: file.size,
+        file_type: file.type
+      })
+
+    if (insertError) {
+      logger.error('[AIP Upload] 记录文件信息失败', insertError)
+      // 不影响上传成功，只记录日志
+    }
+
+    // 6. 返回成功响应
     return NextResponse.json({
       success: true,
       message: '文档上传成功',
