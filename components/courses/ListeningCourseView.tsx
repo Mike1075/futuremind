@@ -31,21 +31,22 @@ const COURSE_COLORS = [
 
 // 曲线路径节点位置（百分比）- 根据手绘参考图设计的耳朵轮廓
 // 完整的耳朵形状：外耳轮 + 耳垂 + 内耳凹陷（耳洞 - 向右内勾）
+// 扩大路径使节点穿过耳朵轮廓线
 const PATH_POINTS = [
-  { x: 30, y: 25 },   // Day 1 - 左上起点
-  { x: 42, y: 15 },   // Day 2 - 向上弯曲
-  { x: 56, y: 10 },   // Day 3 - 外耳轮顶部（最高点）
-  { x: 70, y: 15 },   // Day 4 - 开始向右外侧
-  { x: 80, y: 25 },   // Day 5 - 外耳轮右上部
-  { x: 85, y: 40 },   // Day 6 - 外耳轮右中部（最右点）
-  { x: 84, y: 55 },   // Day 7 - 外耳轮右下部
-  { x: 78, y: 68 },   // Day 8 - 开始向耳垂过渡
-  { x: 68, y: 78 },   // Day 9 - 耳垂右侧
-  { x: 54, y: 85 },   // Day 10 - 耳垂底部（最低点）
-  { x: 40, y: 82 },   // Day 11 - 耳垂左侧
-  { x: 32, y: 72 },   // Day 12 - 耳垂向上，准备向右内勾
-  { x: 42, y: 58 },   // Day 13 - 向右内勾
-  { x: 58, y: 48 },   // Day 14 - 耳洞内部，向右上延伸
+  { x: 25, y: 28 },   // Day 1 - 左上起点（向外扩展）
+  { x: 38, y: 12 },   // Day 2 - 向上弯曲（更高更外）
+  { x: 54, y: 5 },    // Day 3 - 外耳轮顶部（最高点，更高）
+  { x: 72, y: 10 },   // Day 4 - 开始向右外侧（更外）
+  { x: 85, y: 22 },   // Day 5 - 外耳轮右上部（更外）
+  { x: 92, y: 40 },   // Day 6 - 外耳轮右中部（最右点，更外）
+  { x: 90, y: 58 },   // Day 7 - 外耳轮右下部（更外）
+  { x: 82, y: 72 },   // Day 8 - 开始向耳垂过渡（更外）
+  { x: 70, y: 82 },   // Day 9 - 耳垂右侧（更外）
+  { x: 54, y: 90 },   // Day 10 - 耳垂底部（最低点，更低）
+  { x: 38, y: 86 },   // Day 11 - 耳垂左侧（更外）
+  { x: 28, y: 74 },   // Day 12 - 耳垂向上，准备向右内勾（更外）
+  { x: 40, y: 58 },   // Day 13 - 向右内勾
+  { x: 56, y: 46 },   // Day 14 - 耳洞内部，向右上延伸
 ]
 
 export function ListeningCourseView({ courseSystem, contents, completionMap, scoreMap }: ListeningCourseViewProps) {
@@ -84,64 +85,6 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
     <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-hidden">
       {/* 宇宙背景渐变 */}
       <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10 pointer-events-none" />
-      {/* 星空背景 */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(100)].map((_, i) => {
-          const randomColors = () => {
-            const colors = ['#FFFFFF', '#E0E7FF', '#DBEAFE', '#FCE7F3', '#FEF3C7', '#D1FAE5']
-            return colors[Math.floor(Math.random() * colors.length)]
-          }
-
-          return (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                opacity: Math.random() * 0.7 + 0.3,
-              }}
-              animate={{
-                opacity: [Math.random() * 0.3 + 0.2, Math.random() * 0.8 + 0.2, Math.random() * 0.3 + 0.2],
-                scale: [1, 1.5, 1],
-                background: [randomColors(), randomColors(), randomColors()],
-              }}
-              transition={{
-                duration: Math.random() * 3 + 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          )
-        })}
-        {/* 彩色星星 - 颜色随机变化 */}
-        {[...Array(20)].map((_, i) => {
-          const randomCourseColor = () => {
-            return COURSE_COLORS[Math.floor(Math.random() * COURSE_COLORS.length)].from
-          }
-
-          return (
-            <motion.div
-              key={`color-${i}`}
-              className="absolute w-1.5 h-1.5 rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                opacity: [0.3, 0.8, 0.3],
-                scale: [1, 1.8, 1],
-                background: [randomCourseColor(), randomCourseColor(), randomCourseColor()],
-              }}
-              transition={{
-                duration: Math.random() * 4 + 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          )
-        })}
-      </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
         {/* 返回按钮 */}
@@ -280,23 +223,24 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                     left: `${point.x}%`,
                     top: `${point.y}%`,
                     transform: 'translate(-50%, -50%)',
+                    // 限制容器大小，防止悬停范围过大
+                    width: 'auto',
+                    height: 'auto',
                   }}
-                  className="group"
                 >
                   {isUnlocked ? (
-                    <Link href={`/courses/listening/${content.id}`}>
+                    <Link href={`/courses/listening/${content.id}`} className="block">
                       <motion.div
                         whileHover={{ scale: 1.15 }}
                         whileTap={{ scale: 0.95 }}
                         className="relative cursor-pointer flex items-center justify-center group/node"
-                        style={{ width: 'fit-content', height: 'fit-content' }}
                       >
                         {/* 光晕效果 - 默认隐藏，悬停时显示旋转动画 */}
                         <motion.div
                           className="absolute rounded-full pointer-events-none opacity-0 group-hover/node:opacity-80 transition-opacity duration-300"
                           style={{
-                            width: '160%',
-                            height: '160%',
+                            width: '140%',
+                            height: '140%',
                             background: `conic-gradient(from 0deg, ${color.from}, ${color.to}, ${COURSE_COLORS[(index + 1) % COURSE_COLORS.length].from}, ${color.from})`,
                             filter: 'blur(3px)',
                           }}
@@ -308,7 +252,7 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
 
                         {/* 主节点 */}
                         <div
-                          className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm sm:text-base md:text-lg font-bold text-white shadow-2xl transition-all"
+                          className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center text-sm sm:text-base md:text-lg font-bold text-white shadow-2xl transition-all"
                           style={{
                             background: isCompleted
                               ? `linear-gradient(135deg, ${color.from}, ${color.to})`
@@ -325,7 +269,7 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                         </div>
 
                         {/* 标题 - 提高z-index确保显示在最前 */}
-                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap z-50">
+                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap z-50 pointer-events-none">
                           <div className="bg-gray-900/95 backdrop-blur-md border border-gray-600 rounded-lg px-3 py-1.5 text-sm font-medium opacity-0 group-hover/node:opacity-100 transition-opacity duration-200 shadow-2xl">
                             {content.title}
                             {isPassed && <span className="ml-2 text-green-400">✓ {score}分</span>}
@@ -334,16 +278,16 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
                       </motion.div>
                     </Link>
                   ) : (
-                    <div className="flex items-center justify-center" style={{ width: 'fit-content', height: 'fit-content' }}>
+                    <div className="flex items-center justify-center">
                       {/* 未解锁节点 - 锁图标已足够说明状态 */}
                       <div
-                        className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-gray-600 shadow-lg"
+                        className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center font-bold text-gray-600 shadow-lg"
                         style={{
                           background: 'linear-gradient(135deg, #374151, #1F2937)',
                           border: '2px solid rgba(75, 85, 99, 0.3)',
                         }}
                       >
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-5 md:h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
                       </div>
