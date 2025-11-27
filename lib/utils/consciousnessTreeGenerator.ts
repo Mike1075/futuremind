@@ -163,74 +163,59 @@ const calculateOverallGrowthProgress = (growthData: TreeGrowthData): number => {
   return overallProgress
 }
 
-// ============ 颜色系统：基于整体生长进度，从暗红到金边红 ============
+// ============ 空灵生物发光配色系统 (Ethereal Bioluminescence) ============
+// 🌟 新配色：根部金色 → 树干紫红 → 枝条荧光蓝
 const getColor = (
   type: 'root' | 'trunk' | 'branch' | 'leaf' | 'fruit',
-  overallProgress: number,  // 整体生长进度 (0-1)，0=刚开始，1=接近升级
+  overallProgress: number,  // 整体生长进度 (0-1)
   isSolid: boolean,
   glowIntensity: number = 0.5,
-  seed: number = 0  // 用于果实的随机颜色
+  seed: number = 0
 ): string => {
-  // 🌿 叶子：绿色，亮度跟随红色同步变化
+  const alpha = isSolid ? 0.95 : 0.6
+
+  // 🌿 叶子：空灵青绿色能量光点
   if (type === 'leaf') {
-    const hue = 120  // 绿色
-
-    // 🔥 叶子亮度与红色同步：都是从暗到亮
-    let lightness: number
-    if (overallProgress < 0.9) {
-      // 第一级树：0-90%，亮度范围与红色一致
-      // 红色：20 + overallProgress * 30 = 20-47
-      // 叶子：25 + overallProgress * 30 = 25-52（稍亮一点，更显眼）
-      lightness = 25 + overallProgress * 30
-    } else {
-      // 第二级树：90%+，与红色保持一致的高亮度
-      lightness = 58  // 红色是55%，叶子稍亮
-    }
-
-    const saturation = 65 + overallProgress * 25  // 65-90%，越成熟越鲜艳
-    const alpha = isSolid ? 0.95 : 0.85
+    // 从暗青绿到明亮荧光青
+    const hue = 160 + overallProgress * 20  // 160-180（青绿到青色）
+    const saturation = 70 + overallProgress * 30  // 70-100%
+    const lightness = 40 + overallProgress * 25   // 40-65%
     return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
   }
 
-  // 🍎 果实：随机彩色（红、橙、黄、紫、粉、青）
+  // 🍎 果实：灵魂宝石 - 晶莹彩色
   if (type === 'fruit') {
-    const fruitHues = [0, 30, 60, 280, 320, 180]  // 红、橙、黄、紫、粉、青
-    const hue = fruitHues[seed % fruitHues.length]
-    const saturation = 80 + (seed % 20)  // 80-100%
-    const lightness = 50 + (seed % 15)   // 50-65%
-    const alpha = isSolid ? 0.95 : 0.7
+    // 神圣宝石色系：金、紫、青、粉、翠
+    const gemHues = [45, 280, 180, 320, 140]  // 金、紫、青、粉、翠
+    const hue = gemHues[seed % gemHues.length]
+    const saturation = 85 + (seed % 15)  // 85-100%
+    const lightness = 55 + (seed % 15)   // 55-70%（更亮更通透）
     return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
   }
 
-  // 🌳 树干/树枝/树根：暗红到亮红的渐变
-  let hue = 0       // 纯红色
-  let saturation = 70
-  let lightness = 20
-
-  if (overallProgress < 0.9) {
-    // 第一级树：0-90%
-    hue = 0
-
-    // 饱和度：70 → 95 (逐渐鲜艳)
-    saturation = 70 + overallProgress * 28
-
-    // 亮度：根据部位基础值 + 整体进度加成
-    const baseLight = type === 'trunk' ? 15 :
-                      type === 'root' ? 20 : 20  // branch
-
-    // 进度越高，亮度提升越多
-    const progressBonus = overallProgress * 30
-    lightness = Math.min(baseLight + progressBonus, 50)
-
-  } else {
-    // 第二级树：90%+（亮红色为主 + 金边点缀）
-    hue = 0
-    saturation = 95
-    lightness = 55
+  // 🌳 根系：燃烧的金色 - 大地智慧
+  if (type === 'root') {
+    // 从暗金到明亮金色
+    const hue = 40 + overallProgress * 5  // 40-45（金色）
+    const saturation = 80 + overallProgress * 20  // 80-100%
+    const lightness = 35 + overallProgress * 25   // 35-60%
+    return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
   }
 
-  const alpha = isSolid ? 0.95 : 0.5
+  // 🌳 树干：神秘紫红 - 意识通道
+  if (type === 'trunk') {
+    // 从暗紫到明亮紫红
+    const hue = 300 + overallProgress * 20  // 300-320（紫到紫红）
+    const saturation = 70 + overallProgress * 30  // 70-100%
+    const lightness = 30 + overallProgress * 25   // 30-55%
+    return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
+  }
 
+  // 🌳 枝条：空灵荧光蓝 - 能量流动
+  // 从紫蓝过渡到明亮青色
+  const hue = 260 - overallProgress * 80  // 260→180（紫蓝→青色）
+  const saturation = 80 + overallProgress * 20  // 80-100%
+  const lightness = 40 + overallProgress * 25   // 40-65%
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
 }
 

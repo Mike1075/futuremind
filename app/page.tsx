@@ -15,13 +15,11 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  // 确保只在客户端渲染
   useEffect(() => {
     setIsMounted(true)
     checkAdminStatus()
   }, [])
 
-  // 监听侧边栏盖亚打开事件，自动关闭主页盖亚对话框
   useEffect(() => {
     const handleGlobalGaiaOpened = () => {
       setShowGaiaDialog(false)
@@ -33,28 +31,20 @@ export default function Home() {
     }
   }, [])
 
-  // 检查管理员状态和登录状态
   const checkAdminStatus = async () => {
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      // 如果用户已登录
       if (user) {
         setIsLoggedIn(true)
-
-        // CQ-03: 使用maybeSingle()避免profile不存在时抛出错误
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .maybeSingle()
 
-        // 检查role字段是否为principal或teacher
-        // principal: 校长，拥有最高管理员权限
-        // teacher: 老师，拥有部分管理权限
         const userRole = profile?.role
-
         if (userRole === 'principal' || userRole === 'teacher') {
           setIsAdmin(true)
         } else {
@@ -65,7 +55,7 @@ export default function Home() {
         setIsAdmin(false)
       }
     } catch (error) {
-      console.error('❌ [首页权限检查] 检查管理员状态失败:', error)
+      console.error('检查管理员状态失败:', error)
       setIsLoggedIn(false)
       setIsAdmin(false)
     } finally {
@@ -73,7 +63,6 @@ export default function Home() {
     }
   }
 
-  // 处理"与盖亚对话"按钮点击
   const handleGaiaClick = () => {
     if (!isLoggedIn) {
       setShowAuthModal(true)
@@ -82,7 +71,6 @@ export default function Home() {
     }
   }
 
-  // 处理"探索者联盟"按钮点击
   const handlePBLClick = () => {
     if (!isLoggedIn) {
       setShowAuthModal(true)
@@ -91,51 +79,59 @@ export default function Home() {
     }
   }
 
-  // ⚡ 性能优化：减少粒子数量，提升低端设备性能
-  // 从50个减少到30个，降低GPU/CPU负担
-  const particles = useMemo(() => {
+  // 能量粒子 - 更有灵性的运动
+  const energyParticles = useMemo(() => {
     if (!isMounted) return []
-    return [...Array(30)].map((_, i) => ({
+    return [...Array(40)].map((_, i) => ({
       id: i,
-      x: Math.random() * 100 - 50,
-      y: Math.random() * 100 - 50,
-      duration: Math.random() * 3 + 2,
+      x: Math.random() * 200 - 100,
+      y: Math.random() * 200 - 100,
+      duration: Math.random() * 8 + 6,
+      delay: Math.random() * 4,
       left: Math.random() * 100,
       top: Math.random() * 100,
+      size: Math.random() * 3 + 1,
+      color: ['#FFD700', '#9D00FF', '#00FFFF'][Math.floor(Math.random() * 3)]
     }))
   }, [isMounted])
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Background particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        {isMounted && particles.map((particle) => (
+      {/* 能量粒子层 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {isMounted && energyParticles.map((particle) => (
           <motion.div
             key={particle.id}
-            className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30"
+            className="absolute rounded-full"
+            style={{
+              width: particle.size,
+              height: particle.size,
+              left: `${particle.left}%`,
+              top: `${particle.top}%`,
+              background: `radial-gradient(circle, ${particle.color} 0%, transparent 70%)`,
+              boxShadow: `0 0 ${particle.size * 4}px ${particle.color}40`,
+            }}
             animate={{
-              x: [0, particle.x],
-              y: [0, particle.y],
-              opacity: [0.3, 0.8, 0.3],
+              x: [0, particle.x, 0],
+              y: [0, particle.y, 0],
+              opacity: [0.2, 0.8, 0.2],
+              scale: [1, 1.5, 1],
             }}
             transition={{
               duration: particle.duration,
+              delay: particle.delay,
               repeat: Infinity,
               ease: "easeInOut",
-            }}
-            style={{
-              left: `${particle.left}%`,
-              top: `${particle.top}%`,
             }}
           />
         ))}
       </div>
 
-      {/* Header with login/logout button */}
+      {/* 登录/登出按钮 */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
+        transition={{ duration: 0.8, delay: 0.5 }}
         className="absolute top-8 right-8 z-20"
       >
         {isLoggedIn ? (
@@ -145,105 +141,145 @@ export default function Home() {
               await supabase.auth.signOut()
               window.location.reload()
             }}
-            className="px-6 py-2 bg-purple-600/20 border border-purple-400/50 rounded-full text-purple-300 hover:bg-purple-600/40 transition-all duration-300"
+            className="btn-stardust"
           >
             退出登录
           </button>
         ) : (
           <button
             onClick={() => setShowAuthModal(true)}
-            className="px-6 py-2 bg-purple-600/20 border border-purple-400/50 rounded-full text-purple-300 hover:bg-purple-600/40 transition-all duration-300"
+            className="btn-stardust"
           >
             登录
           </button>
         )}
       </motion.div>
 
-      {/* Main content */}
+      {/* 主内容区域 */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1 }}
-        className="text-center z-10 max-w-4xl mx-auto px-6"
+        transition={{ duration: 1.2, ease: "easeOut" }}
+        className="text-center z-10 max-w-5xl mx-auto px-6"
       >
-        {/* Logo and title */}
+        {/* 神圣标题 */}
         <motion.div
-          initial={{ scale: 0.8 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="mb-8"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 1, delay: 0.3 }}
+          className="mb-10"
         >
-          <div className="flex items-center justify-center mb-4">
-            <TreePine className="w-12 h-12 text-purple-400 mr-3" />
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-              未来心灵学院
-            </h1>
-          </div>
-          <p className="text-xl text-purple-200 font-light">
+          {/* 神圣图腾 */}
+          <motion.div
+            className="flex items-center justify-center mb-6"
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+          >
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gaia-gold/30 via-mystic-purple/20 to-ethereal-blue/30 flex items-center justify-center animate-breathe">
+                <TreePine className="w-10 h-10 text-gaia-gold" />
+              </div>
+              <div className="absolute inset-0 rounded-full border border-gaia-gold/30 animate-glow-pulse" />
+              <div className="absolute -inset-2 rounded-full border border-mystic-purple/20" />
+              <div className="absolute -inset-4 rounded-full border border-ethereal-blue/10" />
+            </div>
+          </motion.div>
+
+          {/* 主标题 - 神圣字体 + 金紫渐变 */}
+          <h1 className="font-sacred text-6xl md:text-7xl lg:text-8xl font-semibold text-gradient-gold-purple text-glow-gold mb-4 tracking-wider">
+            未来心灵学院
+          </h1>
+          <p className="text-xl md:text-2xl text-starlight-dim font-light tracking-widest">
             Future Mind Institute
           </p>
         </motion.div>
 
-        {/* Subtitle */}
+        {/* 宣言 */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.5 }}
-          className="text-lg text-gray-300 mb-12 leading-relaxed"
+          transition={{ duration: 1, delay: 0.8 }}
+          className="text-lg md:text-xl text-starlight-muted mb-14 leading-relaxed max-w-3xl mx-auto"
         >
           一个面向后AGI时代的全球意识觉醒生态系统
           <br />
-          <span className="text-purple-300">
+          <span className="text-gradient-ethereal font-medium">
             宇宙正在低语，你，准备好聆听了吗？
           </span>
         </motion.p>
 
-        {/* Season announcement */}
+        {/* 季度公告卡片 - 全息水晶风格 */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 backdrop-blur-sm rounded-2xl p-8 mb-12 border border-purple-500/30"
+          transition={{ duration: 0.8, delay: 1 }}
+          className="card-holographic max-w-2xl mx-auto mb-14"
         >
           <div className="flex items-center justify-center mb-4">
-            <Sparkles className="w-8 h-8 text-yellow-400 mr-3" />
-            <h2 className="text-2xl font-semibold text-white">
+            <motion.div
+              animate={{ rotate: [0, 15, -15, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Sparkles className="w-8 h-8 text-gaia-gold mr-3" />
+            </motion.div>
+            <h2 className="font-sacred text-2xl md:text-3xl text-starlight tracking-wide">
               第一季：声音的交响
             </h2>
           </div>
-          <p className="text-gray-300 mb-6">
+          <p className="text-starlight-dim mb-6">
             一场关于声音、寂静与实相的旅程即将开启
           </p>
-          <div className="text-sm text-purple-300">
-            全球同步探索 • 意识觉醒之旅 • 与盖亚共创
+          <div className="flex items-center justify-center gap-4 text-sm text-starlight-muted">
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-gaia-gold animate-pulse" />
+              全球同步探索
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-mystic-purple animate-pulse" style={{ animationDelay: '0.5s' }} />
+              意识觉醒之旅
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-ethereal-blue animate-pulse" style={{ animationDelay: '1s' }} />
+              与盖亚共创
+            </span>
           </div>
         </motion.div>
 
-        {/* Action buttons */}
+        {/* 行动按钮组 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.1 }}
-          className="flex flex-col sm:flex-row gap-6 justify-center items-center"
+          transition={{ duration: 0.8, delay: 1.3 }}
+          className="flex flex-col sm:flex-row gap-5 justify-center items-center flex-wrap"
         >
-          <button
+          {/* 与盖亚对话 - 主按钮 */}
+          <motion.button
             onClick={handleGaiaClick}
-            className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-white font-semibold text-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25"
+            className="btn-ethereal group relative"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <MessageCircle className="w-5 h-5 inline mr-2" />
-            与盖亚对话
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
-          </button>
+            <span className="relative z-10 flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              与盖亚对话
+            </span>
+          </motion.button>
 
-          <button
+          {/* 探索者联盟 */}
+          <motion.button
             onClick={handlePBLClick}
-            className="group px-8 py-4 border-2 border-purple-400 rounded-full text-purple-300 font-semibold text-lg hover:bg-purple-400 hover:text-white transition-all duration-300 transform hover:scale-105"
+            className="btn-stardust group"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Users className="w-5 h-5 inline mr-2" />
-            探索者联盟
-          </button>
+            <span className="relative z-10 flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              探索者联盟
+            </span>
+          </motion.button>
 
-          <button
+          {/* 个人门户 */}
+          <motion.button
             onClick={() => {
               if (!isLoggedIn) {
                 setShowAuthModal(true)
@@ -251,45 +287,71 @@ export default function Home() {
                 window.location.href = '/portal'
               }
             }}
-            className="group px-8 py-4 border-2 border-green-400 rounded-full text-green-300 font-semibold text-lg hover:bg-green-400 hover:text-white transition-all duration-300 transform hover:scale-105"
+            className="btn-stardust group"
+            style={{ borderColor: 'rgba(0, 255, 136, 0.4)' }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <TreePine className="w-5 h-5 inline mr-2" />
-            个人门户
-          </button>
+            <span className="relative z-10 flex items-center gap-2">
+              <TreePine className="w-5 h-5" />
+              个人门户
+            </span>
+          </motion.button>
 
-          {/* 管理员入口 - 仅管理员可见 */}
+          {/* 管理员入口 */}
           {isAdmin && (
             <motion.button
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
               onClick={() => window.location.href = '/admin'}
-              className="group relative px-8 py-4 bg-gradient-to-r from-red-600 to-pink-600 rounded-full text-white font-semibold text-lg hover:from-red-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-red-500/25"
+              className="btn-stardust group"
+              style={{ borderColor: 'rgba(255, 105, 180, 0.5)' }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <Shield className="w-5 h-5 inline mr-2" />
-              管理后台
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-600 to-pink-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+              <span className="relative z-10 flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                管理后台
+              </span>
             </motion.button>
           )}
         </motion.div>
-
       </motion.div>
 
-      {/* Floating Gaia chat button */}
+      {/* 浮动盖亚按钮 - 呼吸动画 */}
       <motion.button
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 0.5, delay: 2 }}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.6, delay: 2 }}
         onClick={handleGaiaClick}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-110 z-50"
+        className="fixed bottom-8 right-8 w-18 h-18 rounded-full flex items-center justify-center z-50 group"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
       >
-        <MessageCircle className="w-8 h-8 text-white" />
+        {/* 多层呼吸光环 */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-mystic-purple/40 to-ethereal-blue/40 animate-breathe" />
+        <div className="absolute -inset-2 rounded-full border border-gaia-gold/30 animate-glow-pulse" />
+        <div className="absolute -inset-4 rounded-full border border-mystic-purple/20 opacity-50" />
+
+        {/* 核心按钮 */}
+        <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-mystic-purple via-life-pink to-ethereal-blue flex items-center justify-center shadow-glow-purple">
+          <MessageCircle className="w-7 h-7 text-starlight" />
+        </div>
       </motion.button>
 
-      {/* Gaia Dialog */}
+      {/* 底部装饰线 */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 1.5, delay: 1.5 }}
+        className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gaia-gold/30 to-transparent"
+      />
+
+      {/* 对话框 */}
       <GaiaDialog isOpen={showGaiaDialog} onClose={() => setShowGaiaDialog(false)} />
 
-      {/* Auth Modal */}
+      {/* 登录弹窗 */}
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   )
