@@ -531,7 +531,13 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                         <>
                           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                           <p className="text-xs text-gray-400 mt-2">
-                            {message.timestamp.toLocaleTimeString()}
+                            {message.timestamp.toLocaleDateString('zh-CN', {
+                              month: '2-digit',
+                              day: '2-digit'
+                            })} {message.timestamp.toLocaleTimeString('zh-CN', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
                           </p>
                         </>
                       )}

@@ -855,7 +855,10 @@ export function GlobalGaiaV3() {
                         <p className={`text-xs mt-2 ${
                           isUserMessage(message) ? 'text-purple-100' : 'text-gray-500'
                         }`}>
-                          {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
+                          {new Date(message.timestamp).toLocaleDateString('zh-CN', {
+                            month: '2-digit',
+                            day: '2-digit'
+                          })} {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
                             hour: '2-digit',
                             minute: '2-digit'
                           })}
