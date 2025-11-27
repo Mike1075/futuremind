@@ -42,20 +42,44 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const allMessages = (conversation.messages as any[] || []) as Array<{
-      role: string
-      content: string
-      timestamp: string
-    }>
+    // 🔥 统一消息格式：支持两种输入格式
+    // 格式1 (GaiaDialog): { id, content, isGaia, timestamp }
+    // 格式2 (GlobalGaiaV3): { role, content, timestamp }
+    const rawMessages = (conversation.messages as any[] || [])
+    const normalizedMessages = rawMessages.map((msg: any) => {
+      // 判断消息来源
+      if (msg.role) {
+        // 已经是 role 格式，直接返回
+        return {
+          role: msg.role,
+          content: msg.content || '',
+          timestamp: msg.timestamp
+        }
+      } else if (msg.isGaia !== undefined) {
+        // isGaia 格式，转换为 role 格式
+        return {
+          role: msg.isGaia ? 'assistant' : 'user',
+          content: msg.content || '',
+          timestamp: msg.timestamp
+        }
+      } else {
+        // 未知格式，默认作为用户消息
+        return {
+          role: 'user',
+          content: msg.content || msg.text || '',
+          timestamp: msg.timestamp || new Date().toISOString()
+        }
+      }
+    })
 
-    const totalCount = allMessages.length
+    const totalCount = normalizedMessages.length
 
     // 从后往前切片（最新的消息在数组末尾）
     // offset=0, limit=10 -> 取最后10条
     // offset=10, limit=20 -> 取倒数第11到30条
     const startIndex = Math.max(0, totalCount - offset - limit)
     const endIndex = totalCount - offset
-    const messages = allMessages.slice(startIndex, endIndex)
+    const messages = normalizedMessages.slice(startIndex, endIndex)
 
     const hasMore = startIndex > 0
 
