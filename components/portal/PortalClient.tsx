@@ -170,12 +170,6 @@ export function PortalClient({
                   transition={{ duration: 0.2 }}
                   className="absolute left-0 top-full mt-2 w-56 card-glass rounded-xl overflow-hidden shadow-2xl border border-white/10"
                 >
-                  {/* 用户信息头部 */}
-                  <div className="px-4 py-3 border-b border-white/10 bg-gradient-to-r from-mystic-purple/10 to-ethereal-blue/10">
-                    <p className="text-small font-medium text-starlight">{userName || '探索者'}</p>
-                    <p className="text-xs text-starlight-muted truncate">{userEmail}</p>
-                  </div>
-
                   {/* 菜单项 */}
                   <div className="py-2">
                     {/* 修改密码 */}
@@ -269,22 +263,34 @@ export function PortalClient({
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="relative group/card cursor-pointer"
+                        className="relative group/card cursor-pointer rounded-2xl p-[2px] transition-all duration-500"
+                        style={{
+                          background: 'transparent',
+                        }}
                         onClick={() => router.push(`/courses/${course.course_system_key}`)}
                       >
-                        {/* 炫彩边框 - 悬停时显示 */}
-                        <div className="absolute -inset-[1px] rounded-2xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 overflow-hidden">
-                          <div
-                            className="absolute inset-0 animate-aurora-spin"
-                            style={{
-                              background: 'conic-gradient(from 0deg, #FFD700, #9D00FF, #00FFFF, #FF6B6B, #FFD700)',
-                              filter: 'blur(2px)',
-                            }}
-                          />
-                        </div>
+                        {/* 炫彩边框背景 - 悬停时显示 */}
+                        <div
+                          className="absolute inset-0 rounded-2xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500"
+                          style={{
+                            background: 'linear-gradient(90deg, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #00FF88, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #FFD700)',
+                            backgroundSize: '300% 100%',
+                            animation: 'border-flow 8s linear infinite',
+                          }}
+                        />
+                        {/* 炫彩发光效果 - 悬停时显示 */}
+                        <div
+                          className="absolute -inset-1 rounded-2xl opacity-0 group-hover/card:opacity-40 transition-opacity duration-500 -z-10"
+                          style={{
+                            background: 'linear-gradient(90deg, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #00FF88, #FFD700)',
+                            backgroundSize: '300% 100%',
+                            animation: 'border-flow 8s linear infinite',
+                            filter: 'blur(12px)',
+                          }}
+                        />
 
-                        {/* 卡片内容 */}
-                        <div className={`relative card-content bg-gradient-to-br ${gradient}`}>
+                        {/* 卡片内容 - 内层有实心背景覆盖 */}
+                        <div className={`relative rounded-[calc(1rem-1px)] bg-cosmic-deep/95 backdrop-blur-sm p-6 border border-transparent`}>
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center">
                               <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4 border border-white/20">
