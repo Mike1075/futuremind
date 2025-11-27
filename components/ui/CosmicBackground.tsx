@@ -1,33 +1,44 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 export default function CosmicBackground() {
+  // 生成随机星星数据
+  const [stars, setStars] = useState<{id: number, top: string, left: string, size: number, duration: number}[]>([]);
+
+  useEffect(() => {
+    const newStars = Array.from({ length: 50 }).map((_, i) => ({
+      id: i,
+      top: `${Math.random() * 100}%`,
+      left: `${Math.random() * 100}%`,
+      size: Math.random() * 2 + 1, // 1px - 3px
+      duration: Math.random() * 3 + 2,
+    }));
+    setStars(newStars);
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden bg-[#050510]">
-      {/* 增强的星空噪点 */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100"></div>
+    <div className="fixed inset-0 z-[-1] bg-[#000000] overflow-hidden">
+      {/* 唯一的环境光：底部极微弱的金色地平线光 */}
+      <div className="absolute bottom-0 left-0 right-0 h-[300px] bg-gradient-to-t from-amber-900/10 to-transparent opacity-50"></div>
 
-      {/* 核心光球 1: 盖亚金 (左上) - 调高亮度到 0.6 */}
-      <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -top-[20%] -left-[10%] h-[800px] w-[800px] rounded-full bg-purple-600/30 blur-[100px]"
-      />
-
-      {/* 核心光球 2: 虚空紫 (右下) - 调高亮度到 0.6 */}
-      <motion.div
-        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.8, 0.5] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-        className="absolute -bottom-[20%] -right-[10%] h-[800px] w-[800px] rounded-full bg-indigo-600/30 blur-[100px]"
-      />
-
-      {/* 核心光球 3: 能量蓝 (中间) */}
-      <motion.div
-        animate={{ opacity: [0.3, 0.6, 0.3] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-[30%] left-[50%] -translate-x-1/2 h-[600px] w-[600px] rounded-full bg-blue-500/20 blur-[120px]"
-      />
+      {/* 星星层 */}
+      {stars.map((star) => (
+        <motion.div
+          key={star.id}
+          initial={{ opacity: 0.1 }}
+          animate={{ opacity: [0.1, 0.8, 0.1] }}
+          transition={{ duration: star.duration, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute rounded-full bg-white"
+          style={{
+            top: star.top,
+            left: star.left,
+            width: star.size,
+            height: star.size,
+          }}
+        />
+      ))}
     </div>
   );
 }

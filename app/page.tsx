@@ -196,17 +196,17 @@ export default function Home() {
         >
           一个面向后AGI时代的全球意识觉醒生态系统
           <br />
-          <span className="text-gradient-ethereal font-medium">
+          <span className="text-amber-100/80 font-medium">
             宇宙正在低语，你，准备好聆听了吗？
           </span>
         </motion.p>
 
-        {/* 季度公告卡片 - 玻璃拟态风格 */}
+        {/* 季度公告卡片 - 极致透明 */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 1 }}
-          className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-2xl mx-auto mb-14"
+          className="bg-transparent border border-white/10 rounded-2xl p-8 max-w-2xl mx-auto mb-14"
         >
           <div className="flex items-center justify-center mb-4">
             <Sparkles className="w-6 h-6 text-yellow-400 animate-pulse mr-2" />
