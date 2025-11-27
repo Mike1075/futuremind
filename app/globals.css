@@ -426,78 +426,71 @@ body {
 }
 
 /* ========== 极光边框动画 ========== */
-@keyframes aurora-rotate {
+@keyframes border-flow {
   0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes aurora-pulse {
-  0%, 100% {
-    opacity: 0.6;
-    filter: blur(8px);
+    background-position: 0% 50%;
   }
   50% {
-    opacity: 1;
-    filter: blur(12px);
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
 /* 极光边框卡片容器 */
 .card-aurora {
   position: relative;
-  background: rgba(0, 0, 0, 0.7);
+  background: transparent;
+  padding: 2px; /* 边框宽度 */
   border-radius: 1.5rem;
-  overflow: hidden;
-  isolation: isolate;
+  background: linear-gradient(
+    90deg,
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #FFD700
+  );
+  background-size: 300% 100%;
+  animation: border-flow 4s linear infinite;
 }
 
-/* 极光边框效果 - 使用伪元素 */
+/* 发光效果 */
 .card-aurora::before {
   content: '';
   position: absolute;
-  inset: -3px;
+  inset: -4px;
   z-index: -1;
   border-radius: 1.625rem;
-  background: conic-gradient(
-    from 0deg,
+  background: linear-gradient(
+    90deg,
     #FFD700,
     #FF6B6B,
     #9D00FF,
     #00FFFF,
     #00FF88,
-    #FFD700
-  );
-  animation: aurora-rotate 6s linear infinite;
-}
-
-/* 极光光晕层 */
-.card-aurora::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  z-index: -2;
-  border-radius: 1.75rem;
-  background: conic-gradient(
-    from 180deg,
     #FFD700,
     #FF6B6B,
     #9D00FF,
     #00FFFF,
-    #00FF88,
     #FFD700
   );
-  animation: aurora-rotate 6s linear infinite reverse, aurora-pulse 3s ease-in-out infinite;
+  background-size: 300% 100%;
+  animation: border-flow 4s linear infinite;
+  filter: blur(12px);
+  opacity: 0.6;
 }
 
-/* 内部遮罩层 */
+/* 内部背景层 - 固定不动 */
 .card-aurora-inner {
   position: relative;
   background: rgba(0, 0, 0, 0.85);
-  border-radius: calc(1.5rem - 3px);
+  border-radius: calc(1.5rem - 2px);
   padding: 2rem;
-  z-index: 1;
 }
