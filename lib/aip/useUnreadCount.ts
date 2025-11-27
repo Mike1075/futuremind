@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { playNotificationSound, isNotificationSoundEnabled } from '@/lib/utils/notificationSound'
 
 export function useUnreadCount() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [pendingRequestCount, setPendingRequestCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const prevTotalCountRef = useRef<number | null>(null)
 
   const loadUnreadCount = async () => {
     try {
@@ -46,14 +48,22 @@ export function useUnreadCount() {
         pendingCount = count || 0
       }
 
-      const totalCount = (notifCount || 0) + pendingCount
+      const newTotalCount = (notifCount || 0) + pendingCount
+
+      // 检测是否有新通知（数量增加），播放提示音
+      if (prevTotalCountRef.current !== null && newTotalCount > prevTotalCountRef.current) {
+        if (isNotificationSoundEnabled()) {
+          playNotificationSound('notification')
+        }
+      }
+      prevTotalCountRef.current = newTotalCount
 
       setUnreadCount(notifCount || 0)
       setPendingRequestCount(pendingCount)
 
       // 保存到缓存
       localStorage.setItem('unreadCount', JSON.stringify({
-        count: totalCount,
+        count: newTotalCount,
         timestamp: Date.now()
       }))
     } catch (err) {

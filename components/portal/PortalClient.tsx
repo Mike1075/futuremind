@@ -126,56 +126,54 @@ export function PortalClient({
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative z-20 bg-white/5 backdrop-blur-md border-b border-white/10"
+        className="relative z-20 bg-black/40 border-b border-white/5"
       >
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* 左侧：返回主页 */}
-            <button
-              onClick={() => (window.location.href = '/')}
-              className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
-            >
-              <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/40 transition-colors duration-300">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-              </div>
-              <span className="font-medium">返回主页</span>
-            </button>
-
-            {/* 中间：标题 */}
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center">
-                <TreePine className="w-5 h-5 text-purple-400" />
-              </div>
-              <h2 className="text-lg font-semibold text-white">个人探索基地</h2>
+        <div className="flex justify-between items-center w-full px-6 py-4">
+          {/* 左侧：返回主页 */}
+          <button
+            onClick={() => (window.location.href = '/')}
+            className="flex-shrink-0 flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
+          >
+            <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/40 transition-colors duration-300">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
             </div>
+            <span className="font-medium hidden sm:inline">返回主页</span>
+          </button>
 
-            {/* 右侧：快捷入口与登出 */}
-            <div className="flex items-center space-x-4">
-              {/* 管理后台入口 - 仅管理员可见 */}
-              {userRole && ['principal', 'teacher'].includes(userRole) && (
-                <button
-                  onClick={() => router.push('/admin')}
-                  className="flex items-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors duration-300 group"
-                >
-                  <span className="font-medium">管理后台</span>
-                  <div className="w-8 h-8 bg-blue-600/20 rounded-full flex items-center justify-center group-hover:bg-blue-600/40 transition-colors duration-300">
-                    <Settings className="w-5 h-5 text-blue-400" />
-                  </div>
-                </button>
-              )}
+          {/* 中间：标题 */}
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center">
+              <TreePine className="w-5 h-5 text-purple-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-white">个人探索基地</h2>
+          </div>
 
+          {/* 右侧：快捷入口与登出 */}
+          <div className="flex-shrink-0 flex items-center space-x-4">
+            {/* 管理后台入口 - 仅管理员可见 */}
+            {userRole && ['principal', 'teacher'].includes(userRole) && (
               <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 text-red-300 hover:text-red-200 transition-colors duration-300 group"
+                onClick={() => router.push('/admin')}
+                className="flex items-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors duration-300 group"
               >
-                <span className="font-medium">登出</span>
-                <div className="w-8 h-8 bg-red-600/20 rounded-full flex items-center justify-center group-hover:bg-red-600/40 transition-colors duration-300">
-                  <LogOut className="w-5 h-5 text-red-400" />
+                <span className="font-medium">管理后台</span>
+                <div className="w-8 h-8 bg-blue-600/20 rounded-full flex items-center justify-center group-hover:bg-blue-600/40 transition-colors duration-300">
+                  <Settings className="w-5 h-5 text-blue-400" />
                 </div>
               </button>
-            </div>
+            )}
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-2 text-red-300 hover:text-red-200 transition-colors duration-300 group"
+            >
+              <span className="font-medium">登出</span>
+              <div className="w-8 h-8 bg-red-600/20 rounded-full flex items-center justify-center group-hover:bg-red-600/40 transition-colors duration-300">
+                <LogOut className="w-5 h-5 text-red-400" />
+              </div>
+            </button>
           </div>
         </div>
       </motion.nav>

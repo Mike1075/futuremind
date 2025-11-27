@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project } from '@/lib/aip/types'
 import aipChatAPI from '@/lib/api/aip-chat'
+import { playNotificationSound, isNotificationSoundEnabled } from '@/lib/utils/notificationSound'
 
 interface FloatingChatBotProps {
   organization?: Organization
@@ -284,6 +285,10 @@ export function FloatingChatBot({
               } else if (json.type === 'done') {
                 // 流式传输完成，确保显示完整内容
                 updateDisplay(fullAnswer)
+                // 播放消息提示音
+                if (isNotificationSoundEnabled()) {
+                  playNotificationSound('message')
+                }
               }
             } catch {
               // 忽略解析错误
