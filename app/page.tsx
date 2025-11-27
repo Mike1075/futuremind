@@ -203,7 +203,7 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="bg-black/60 backdrop-blur-sm rounded-2xl p-8 mb-12 border border-white/10 shadow-[0_0_50px_-10px_rgba(255,255,255,0.1)]"
+          className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 backdrop-blur-sm rounded-2xl p-8 mb-12 border border-purple-500/30"
         >
           <div className="flex items-center justify-center mb-4">
             <Sparkles className="w-8 h-8 text-yellow-400 mr-3" />
