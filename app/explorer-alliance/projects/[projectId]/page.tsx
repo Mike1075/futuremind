@@ -29,6 +29,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const [documentsLoading, setDocumentsLoading] = useState(false)
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isManageMode, setIsManageMode] = useState(false)
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -96,7 +97,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const handleBatchDelete = async () => {
     if (selectedDocuments.size === 0) return
 
-    if (!confirm(`确定要删除选中的 ${selectedDocuments.size} 份文档吗？此操作不可撤销。`)) {
+    const deleteCount = selectedDocuments.size
+    if (!confirm(`确定要删除选中的 ${deleteCount} 份文档吗？此操作不可撤销。`)) {
       return
     }
 
@@ -104,15 +106,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     const supabase = createClient()
 
     try {
+      const idsToDelete = Array.from(selectedDocuments)
       const { error } = await supabase
         .from('documents')
         .delete()
-        .in('id', Array.from(selectedDocuments))
+        .in('id', idsToDelete)
 
       if (error) throw error
 
-      alert(`成功删除 ${selectedDocuments.size} 份文档`)
+      // 先清空选择和退出管理模式
       setSelectedDocuments(new Set())
+      setIsManageMode(false)
 
       // 重新加载文档列表
       const { data, count, error: loadError } = await supabase
@@ -123,8 +127,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
       if (loadError) throw loadError
 
+      // 更新状态
       setDocuments(data || [])
       setDocumentsCount(count || 0)
+
+      // 最后显示成功提示
+      alert(`成功删除 ${deleteCount} 份文档`)
     } catch (error) {
       console.error('批量删除失败:', error)
       alert('删除失败: ' + (error instanceof Error ? error.message : '未知错误'))
@@ -415,8 +423,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                {selectedDocuments.size > 0 && isManager && (
+                {isManageMode && isManager && (
                   <>
+                    <button
+                      onClick={() => {
+                        setIsManageMode(false)
+                        setSelectedDocuments(new Set())
+                      }}
+                      className="px-4 py-2 bg-zinc-600 hover:bg-zinc-500 text-white rounded-lg transition-colors"
+                    >
+                      退出管理
+                    </button>
                     <button
                       onClick={toggleSelectAll}
                       className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
@@ -425,13 +442,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                     </button>
                     <button
                       onClick={handleBatchDelete}
-                      disabled={isDeleting}
+                      disabled={isDeleting || selectedDocuments.size === 0}
                       className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Trash2 className="w-4 h-4" />
                       {isDeleting ? '删除中...' : `删除 (${selectedDocuments.size})`}
                     </button>
                   </>
+                )}
+                {!isManageMode && isManager && documentsCount > 0 && (
+                  <button
+                    onClick={() => setIsManageMode(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    管理文档
+                  </button>
                 )}
                 {isManager && (
                   <button
@@ -484,7 +510,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3 flex-1">
-                          {isManager && (
+                          {isManageMode && isManager && (
                             <input
                               type="checkbox"
                               checked={isSelected}

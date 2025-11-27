@@ -353,11 +353,14 @@ export async function getProjectMembers(
     const { data, error } = await supabase
       .from('project_members')
       .select(`
-        *,
-        user:user_id(id, full_name, avatar_url, email)
+        project_id,
+        user_id,
+        role_in_project,
+        joined_at,
+        user:profiles!fk_project_members_user(id, full_name, avatar_url, email)
       `)
       .eq('project_id', projectId)
-      .order('created_at', { ascending: true })
+      .order('joined_at', { ascending: true, nullsFirst: false })
 
     if (error) throw error
     return { data: data || [] }
