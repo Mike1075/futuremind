@@ -9,6 +9,7 @@ import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { PendingRequestsPanel } from '@/components/aip/PendingRequestsPanel'
 import { FileUploadModal } from '@/components/aip/FileUploadModal'
 import { InviteModal } from '@/components/aip/InviteModal'
+import { ShowcasePanel } from '@/components/aip/ShowcasePanel'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Settings, UserPlus, Upload, ArrowLeft, Trash2 } from 'lucide-react'
@@ -20,7 +21,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const [showCreateTask, setShowCreateTask] = useState(false)
   const [showFileUpload, setShowFileUpload] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'documents' | 'members'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'documents' | 'showcases' | 'members'>('overview')
   const [isManager, setIsManager] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [documentsCount, setDocumentsCount] = useState(0)
@@ -262,6 +263,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               { key: 'overview', label: '概览' },
               { key: 'tasks', label: '任务' },
               { key: 'documents', label: '文档' },
+              { key: 'showcases', label: '成果展示' },
               { key: 'members', label: '成员' },
             ].map((tab) => (
               <button
@@ -515,6 +517,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === 'showcases' && (
+          <ShowcasePanel projectId={projectId} />
         )}
 
         {activeTab === 'members' && (

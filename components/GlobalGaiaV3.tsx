@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { MessageCircle, X, Send, Loader2, History, Edit3, Check, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import AuthModal from '@/components/AuthModal'
 
 interface Message {
   id?: string
@@ -33,10 +34,31 @@ export function GlobalGaiaV3() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [selectedMessages, setSelectedMessages] = useState<Set<number>>(new Set())
 
+  // 登录状态检查
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authChecked, setAuthChecked] = useState(false)
+
   // 分页相关状态
   const [hasMore, setHasMore] = useState(false)  // 是否还有更多消息
   const [isLoadingMore, setIsLoadingMore] = useState(false)  // 是否正在加载更多
   const [loadedCount, setLoadedCount] = useState(0)  // 已加载的消息数量
+
+  // 检查登录状态
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        setIsLoggedIn(!!user)
+      } catch {
+        setIsLoggedIn(false)
+      } finally {
+        setAuthChecked(true)
+      }
+    }
+    checkAuth()
+  }, [])
 
   // 监听GaiaDialog打开事件，自动关闭侧边栏
   useEffect(() => {
@@ -665,7 +687,14 @@ export function GlobalGaiaV3() {
       {/* 浮动按钮 - 仅在对话框关闭时显示 */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            // 检查登录状态
+            if (!isLoggedIn) {
+              setShowAuthModal(true)
+            } else {
+              setIsOpen(true)
+            }
+          }}
           className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
           aria-label="打开盖亚对话"
         >
@@ -903,6 +932,9 @@ export function GlobalGaiaV3() {
             </>
         </div>
       )}
+
+      {/* 登录弹窗 */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </>
   )
 }

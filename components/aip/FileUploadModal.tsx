@@ -83,18 +83,15 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
     }
   }
 
+  // 知识库只支持文本类文档（用于AI检索），不支持图片
   const acceptedTypes = [
     'application/pdf',
-    'image/jpeg',
-    'image/png',
-    'image/gif',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain'
   ]
 
   const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) return '🖼️'
     if (type === 'application/pdf') return '📄'
     if (type.includes('word')) return '📝'
     if (type === 'text/plain') return '📰'
@@ -102,8 +99,12 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
   }
 
   const validateFile = (file: File) => {
+    // 检查是否是图片类型，给出特定提示
+    if (file.type.startsWith('image/')) {
+      return '知识库暂不支持图片上传。如需分享图片作品，请使用「成果展示」功能。'
+    }
     if (!acceptedTypes.includes(file.type)) {
-      return '不支持的文件类型。请上传PDF、图片、Word文档或文本文件。'
+      return '不支持的文件类型。请上传PDF、Word文档或文本文件。'
     }
     if (file.size > 50 * 1024 * 1024) {
       return '文件大小不能超过50MB'
@@ -396,15 +397,18 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
           >
             <Upload className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-white mb-2">
-              拖拽文件到此处或点击选择
+              上传文档到项目知识库
             </h3>
-            <p className="text-sm text-zinc-500 mb-4">
-              支持 PDF、图片、Word文档、文本文件 (最大50MB)
+            <p className="text-sm text-zinc-500 mb-2">
+              支持 PDF、Word文档、文本文件 (最大50MB)
+            </p>
+            <p className="text-xs text-zinc-600 mb-4">
+              上传的文档将用于AI智能问答，暂不支持图片
             </p>
             <input
               type="file"
               multiple
-              accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt"
+              accept=".pdf,.doc,.docx,.txt"
               onChange={onFileSelect}
               className="hidden"
               id="file-input"

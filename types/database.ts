@@ -1392,6 +1392,60 @@ export type Database = {
           },
         ]
       }
+      project_showcases: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          image_urls: string[] | null
+          likes_count: number | null
+          project_id: string
+          task_id: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_urls?: string[] | null
+          likes_count?: number | null
+          project_id: string
+          task_id?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_urls?: string[] | null
+          likes_count?: number | null
+          project_id?: string
+          task_id?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_showcases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_showcases_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string | null
@@ -1445,6 +1499,35 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      showcase_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          showcase_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          showcase_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          showcase_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "showcase_likes_showcase_id_fkey"
+            columns: ["showcase_id"]
+            isOneToOne: false
+            referencedRelation: "project_showcases"
             referencedColumns: ["id"]
           },
         ]

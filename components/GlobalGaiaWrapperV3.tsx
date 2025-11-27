@@ -10,13 +10,17 @@ import { GlobalGaiaV3 } from './GlobalGaiaV3'
 export function GlobalGaiaWrapperV3() {
   const pathname = usePathname()
 
-  // 排除探索者联盟相关路径
-  const excludePaths = [
+  // 排除特定路径：首页（有自己的浮动按钮）和探索者联盟
+  const excludePrefixes = [
     '/explorer-alliance',
     '/pbl' // 如果PBL也属于探索者联盟，也排除
   ]
 
-  const shouldShowGaia = !excludePaths.some(path => pathname?.startsWith(path))
+  // 精确匹配首页
+  const isHomePage = pathname === '/'
+  const isExcludedPrefix = excludePrefixes.some(path => pathname?.startsWith(path))
+
+  const shouldShowGaia = !isHomePage && !isExcludedPrefix
 
   if (!shouldShowGaia) {
     return null
