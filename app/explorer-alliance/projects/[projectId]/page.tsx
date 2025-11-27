@@ -58,16 +58,29 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         // 从 project_files 表查询原始上传文件（不是分块数据）
         const { data, count, error } = await supabase
           .from('project_files')
-          .select(`
-            *,
-            uploader:profiles!project_files_user_id_fkey(full_name)
-          `, { count: 'exact' })
+          .select('*', { count: 'exact' })
           .eq('project_id', projectId)
           .order('created_at', { ascending: false })
 
         if (error) throw error
 
-        setDocuments(data || [])
+        // 如果有数据，单独获取上传者信息
+        if (data && data.length > 0) {
+          const userIds = [...new Set(data.map(d => d.user_id))]
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', userIds)
+
+          // 合并用户信息
+          const docsWithUploader = data.map(doc => ({
+            ...doc,
+            uploader: profiles?.find(p => p.id === doc.user_id) || null
+          }))
+          setDocuments(docsWithUploader)
+        } else {
+          setDocuments([])
+        }
         setDocumentsCount(count || 0)
       } catch (error) {
         console.error('加载文档失败:', error)

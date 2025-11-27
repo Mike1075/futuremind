@@ -29,8 +29,9 @@ interface ProjectFile {
   file_type: string
   created_at: string
   uploader?: {
+    id?: string
     full_name: string | null
-  }
+  } | null
 }
 
 export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadModalProps) {
@@ -71,16 +72,28 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       // 从 project_files 表查询原始上传文件
       const { data, error } = await supabase
         .from('project_files')
-        .select(`
-          *,
-          uploader:profiles!project_files_user_id_fkey(full_name)
-        `)
+        .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      setExistingDocuments(data || [])
+      // 如果有数据，单独获取上传者信息
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(d => d.user_id))]
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds)
+
+        const docsWithUploader = data.map(doc => ({
+          ...doc,
+          uploader: profiles?.find(p => p.id === doc.user_id) || null
+        }))
+        setExistingDocuments(docsWithUploader)
+      } else {
+        setExistingDocuments([])
+      }
     } catch (err) {
       console.error('加载文档失败:', err)
     } finally {
