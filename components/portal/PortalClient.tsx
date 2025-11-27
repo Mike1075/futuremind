@@ -15,11 +15,12 @@ import {
   Rocket,
   ChevronRight,
   Sparkles,
-  Atom
+  Atom,
+  User
 } from 'lucide-react'
 import { usePortalCourses } from '@/lib/hooks/usePortalCourses'
 import { ConsciousnessTreeView } from '@/components/consciousness/ConsciousnessTreeView'
-import UserProfileButton from '@/components/UserProfileButton'
+import UserProfileModal from '@/components/UserProfileModal'
 
 interface PortalClientProps {
   userId: string
@@ -38,6 +39,7 @@ export function PortalClient({
 }: PortalClientProps) {
   const router = useRouter()
   const supabase = createClient()
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
 
   // ✅ 使用SWR缓存课程数据（首次3秒，后续瞬间）
   const { courses: enrolledCourses, loading: coursesLoading } = usePortalCourses(userId)
@@ -118,9 +120,6 @@ export function PortalClient({
         ))}
       </div>
 
-      {/* 用户资料按钮（左上角） */}
-      <UserProfileButton />
-
       {/* 顶部导航栏 */}
       <motion.nav
         initial={{ opacity: 0, y: -20 }}
@@ -130,18 +129,35 @@ export function PortalClient({
       >
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* 左侧：返回主页 */}
-            <button
-              onClick={() => (window.location.href = '/')}
-              className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
-            >
-              <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/40 transition-colors duration-300">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-              </div>
-              <span className="font-medium">返回主页</span>
-            </button>
+            {/* 左侧：用户资料 + 返回主页 */}
+            <div className="flex items-center space-x-4">
+              {/* 用户名按钮 */}
+              <button
+                onClick={() => setIsProfileModalOpen(true)}
+                className="flex items-center space-x-2 text-white hover:text-purple-200 transition-colors duration-300 group"
+              >
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-medium">{userName || userEmail?.split('@')[0] || '用户'}</span>
+              </button>
+
+              {/* 分隔线 */}
+              <div className="h-6 w-px bg-white/20"></div>
+
+              {/* 返回主页 */}
+              <button
+                onClick={() => (window.location.href = '/')}
+                className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
+              >
+                <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/40 transition-colors duration-300">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                </div>
+                <span className="font-medium hidden sm:inline">返回主页</span>
+              </button>
+            </div>
 
             {/* 中间：标题 */}
             <div className="flex items-center space-x-3">
@@ -333,6 +349,12 @@ export function PortalClient({
           </div>
         </div>
       </div>
+
+      {/* 用户资料Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </div>
   )
 }

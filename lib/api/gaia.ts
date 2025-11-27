@@ -15,6 +15,7 @@ interface RawMessageData {
   isGaia?: boolean
   is_gaia?: boolean
   from?: string
+  role?: 'user' | 'assistant'  // 支持新格式（GlobalGaiaV3使用）
   timestamp?: string | Date
 }
 
@@ -166,7 +167,8 @@ class GaiaAPI {
       const normalizedMessages: ChatMessage[] = rawMessages.map((msg) => ({
         id: typeof msg.id === 'string' ? msg.id : String(Date.now()),
         content: String(msg.content || msg.text || ''),
-        isGaia: Boolean(msg.isGaia ?? msg.is_gaia ?? (msg.from === 'gaia')),
+        // 支持多种格式：isGaia, is_gaia, from='gaia', role='assistant'
+        isGaia: Boolean(msg.isGaia ?? msg.is_gaia ?? (msg.from === 'gaia') ?? (msg.role === 'assistant')),
         timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
       }))
 
@@ -293,7 +295,8 @@ class GaiaAPI {
       const normalizedMessages: ChatMessage[] = rawMessages.map((msg) => ({
         id: typeof msg.id === 'string' ? msg.id : String(Date.now()),
         content: String(msg.content || msg.text || ''),
-        isGaia: Boolean(msg.isGaia ?? msg.is_gaia ?? (msg.from === 'gaia')),
+        // 支持多种格式：isGaia, is_gaia, from='gaia', role='assistant'
+        isGaia: Boolean(msg.isGaia ?? msg.is_gaia ?? (msg.from === 'gaia') ?? (msg.role === 'assistant')),
         timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
       }))
 
