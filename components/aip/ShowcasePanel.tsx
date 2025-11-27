@@ -12,6 +12,7 @@ interface Showcase {
   description: string | null
   image_urls: string[] | null
   likes_count: number | null
+  is_public: boolean
   created_at: string | null
   user?: {
     id: string
@@ -23,9 +24,10 @@ interface Showcase {
 
 interface ShowcasePanelProps {
   projectId: string
+  isMember?: boolean
 }
 
-export function ShowcasePanel({ projectId }: ShowcasePanelProps) {
+export function ShowcasePanel({ projectId, isMember = false }: ShowcasePanelProps) {
   const [showcases, setShowcases] = useState<Showcase[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -35,7 +37,7 @@ export function ShowcasePanel({ projectId }: ShowcasePanelProps) {
   useEffect(() => {
     loadShowcases()
     loadCurrentUser()
-  }, [projectId])
+  }, [projectId, isMember])
 
   const loadCurrentUser = async () => {
     const supabase = createClient()
@@ -50,11 +52,17 @@ export function ShowcasePanel({ projectId }: ShowcasePanelProps) {
       const { data: { user } } = await supabase.auth.getUser()
 
       // 加载成果列表
-      const { data, error } = await supabase
+      // 项目成员可以看到所有成果，非成员只能看到公开的成果
+      let query = supabase
         .from('project_showcases')
         .select('*')
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
+
+      if (!isMember) {
+        query = query.eq('is_public', true)
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) throw error
 
@@ -174,13 +182,15 @@ export function ShowcasePanel({ projectId }: ShowcasePanelProps) {
             </span>
           )}
         </h2>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm"
-        >
-          <Plus className="h-4 w-4" />
-          发布成果
-        </button>
+        {isMember && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm"
+          >
+            <Plus className="h-4 w-4" />
+            发布成果
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -224,7 +234,18 @@ export function ShowcasePanel({ projectId }: ShowcasePanelProps) {
 
               {/* 内容区域 */}
               <div className="p-4">
-                <h3 className="font-medium text-white mb-2">{showcase.title}</h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-medium text-white">{showcase.title}</h3>
+                  {isMember && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      showcase.is_public
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-zinc-700 text-zinc-400'
+                    }`}>
+                      {showcase.is_public ? '公开' : '私有'}
+                    </span>
+                  )}
+                </div>
                 {showcase.description && (
                   <p className="text-sm text-zinc-400 mb-3 line-clamp-2">{showcase.description}</p>
                 )}
@@ -312,6 +333,7 @@ function CreateShowcaseModal({
 }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [isPublic, setIsPublic] = useState(false)
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -399,7 +421,8 @@ function CreateShowcaseModal({
           user_id: user.id,
           title: title.trim(),
           description: description.trim() || null,
-          image_urls: imageUrls
+          image_urls: imageUrls,
+          is_public: isPublic
         })
 
       if (insertError) throw insertError
@@ -459,6 +482,30 @@ function CreateShowcaseModal({
               disabled={submitting}
               className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 resize-none disabled:opacity-50"
             />
+          </div>
+
+          {/* 公开设置 */}
+          <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-lg">
+            <div>
+              <div className="text-sm font-medium text-zinc-300">公开展示</div>
+              <div className="text-xs text-zinc-500 mt-1">
+                {isPublic ? '所有人都可以看到这个成果' : '仅项目成员可见'}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsPublic(!isPublic)}
+              disabled={submitting}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
+                isPublic ? 'bg-green-600' : 'bg-zinc-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isPublic ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
 
           {/* 图片上传 */}

@@ -23,6 +23,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const [showInvite, setShowInvite] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'documents' | 'showcases' | 'members'>('overview')
   const [isManager, setIsManager] = useState(false)
+  const [isMember, setIsMember] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [documentsCount, setDocumentsCount] = useState(0)
   const [documents, setDocuments] = useState<any[]>([])
@@ -46,6 +47,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         .eq('user_id', user.id)
         .single()
 
+      setIsMember(!!membership)
       setIsManager(membership?.role_in_project === 'manager' || membership?.role_in_project === 'owner')
     }
 
@@ -289,12 +291,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           {/* Tabs */}
           <div className="flex items-center gap-6 mt-6 border-b border-white/10">
             {[
-              { key: 'overview', label: '概览' },
-              { key: 'tasks', label: '任务' },
-              { key: 'documents', label: '文档' },
-              { key: 'showcases', label: '成果展示' },
-              { key: 'members', label: '成员' },
-            ].map((tab) => (
+              { key: 'overview', label: '概览', memberOnly: false },
+              { key: 'tasks', label: '任务', memberOnly: true },
+              { key: 'documents', label: '文档', memberOnly: true },
+              { key: 'showcases', label: '成果展示', memberOnly: false },
+              { key: 'members', label: '成员', memberOnly: true },
+            ].filter(tab => isMember || !tab.memberOnly).map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as any)}
@@ -569,7 +571,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         )}
 
         {activeTab === 'showcases' && (
-          <ShowcasePanel projectId={projectId} />
+          <ShowcasePanel projectId={projectId} isMember={isMember} />
         )}
 
         {activeTab === 'members' && (

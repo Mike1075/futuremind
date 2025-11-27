@@ -1446,6 +1446,7 @@ export type Database = {
           description: string | null
           id: string
           image_urls: string[] | null
+          is_public: boolean
           likes_count: number | null
           project_id: string
           task_id: string | null
@@ -1458,6 +1459,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_urls?: string[] | null
+          is_public?: boolean
           likes_count?: number | null
           project_id: string
           task_id?: string | null
@@ -1470,6 +1472,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_urls?: string[] | null
+          is_public?: boolean
           likes_count?: number | null
           project_id?: string
           task_id?: string | null
