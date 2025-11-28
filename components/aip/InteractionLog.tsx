@@ -590,11 +590,11 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
         {/* 管理模式下的全选栏 */}
         {isManageMode && filteredInteractions.length > 0 && (
           <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-800/30">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <button
-                onClick={toggleSelectAll}
-                className="flex items-center justify-center w-5 h-5"
-              >
+            <div
+              className="flex items-center gap-3 cursor-pointer"
+              onClick={toggleSelectAll}
+            >
+              <div className="flex items-center justify-center w-5 h-5">
                 {(() => {
                   const deletableItems = filteredInteractions.filter(i =>
                     i.interactionType === 'notification' ||
@@ -607,14 +607,14 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                     <Square className="h-5 w-5 text-zinc-500" />
                   )
                 })()}
-              </button>
+              </div>
               <span className="text-sm text-zinc-400">
                 全选可删除项 ({filteredInteractions.filter(i =>
                   i.interactionType === 'notification' ||
                   (i.interactionType === 'project_request' && i.status !== 'pending')
                 ).length})
               </span>
-            </label>
+            </div>
             <p className="text-xs text-zinc-500 mt-1 ml-8">
               提示：待处理的项目申请不可删除，需先批准或拒绝
             </p>

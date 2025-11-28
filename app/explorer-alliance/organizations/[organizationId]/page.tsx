@@ -13,6 +13,7 @@ import { EditDescriptionModal } from '@/components/aip/EditDescriptionModal'
 import { InviteModal } from '@/components/aip/InviteModal'
 import { PendingRequestsPanel } from '@/components/aip/PendingRequestsPanel'
 import { NotificationBadge } from '@/components/aip/NotificationBadge'
+import { InteractionLog } from '@/components/aip/InteractionLog'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project, Task } from '@/lib/aip/types'
 
@@ -34,6 +35,7 @@ export default function OrganizationDashboardPage() {
   const [showCreateProject, setShowCreateProject] = useState(false)
   const [showEditDescription, setShowEditDescription] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const [showInteractionLog, setShowInteractionLog] = useState(false)
   const [editingProject, setEditingProject] = useState<{ id: string; name: string; description: string } | null>(null)
 
   const { projects, loading: projectsLoading, reload: reloadProjects } = useOrganizationProjects(organizationId)
@@ -365,7 +367,7 @@ export default function OrganizationDashboardPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <NotificationBadge />
+              <NotificationBadge onClick={() => setShowInteractionLog(true)} />
               <button
                 onClick={() => router.push('/')}
                 className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
@@ -653,6 +655,10 @@ export default function OrganizationDashboardPage() {
         <InviteModal
           onClose={() => setShowInvite(false)}
         />
+      )}
+
+      {showInteractionLog && (
+        <InteractionLog onClose={() => setShowInteractionLog(false)} />
       )}
     </div>
   )

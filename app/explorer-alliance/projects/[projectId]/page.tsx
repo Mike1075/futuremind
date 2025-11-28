@@ -6,6 +6,7 @@ import { TaskList } from '@/components/aip/TaskList'
 import { CreateTaskModal } from '@/components/aip/CreateTaskModal'
 import { FloatingChatBot } from '@/components/aip/FloatingChatBot'
 import { NotificationBadge } from '@/components/aip/NotificationBadge'
+import { InteractionLog } from '@/components/aip/InteractionLog'
 import { PendingRequestsPanel } from '@/components/aip/PendingRequestsPanel'
 import { FileUploadModal } from '@/components/aip/FileUploadModal'
 import { InviteModal } from '@/components/aip/InviteModal'
@@ -36,6 +37,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const [rejectComment, setRejectComment] = useState('')
   const [showRenameDialog, setShowRenameDialog] = useState<{id: string, title: string} | null>(null)
   const [newDocTitle, setNewDocTitle] = useState('')
+  const [showInteractionLog, setShowInteractionLog] = useState(false)
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -376,7 +378,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   <Settings className="h-5 w-5" />
                 </Link>
               )}
-              <NotificationBadge />
+              <NotificationBadge onClick={() => setShowInteractionLog(true)} />
             </div>
           </div>
 
@@ -1010,6 +1012,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         <InviteModal
           onClose={() => setShowInvite(false)}
         />
+      )}
+
+      {/* Interaction Log */}
+      {showInteractionLog && (
+        <InteractionLog onClose={() => setShowInteractionLog(false)} />
       )}
     </div>
   )
