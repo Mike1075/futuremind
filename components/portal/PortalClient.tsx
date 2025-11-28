@@ -91,18 +91,18 @@ export function PortalClient({
     }
   }
 
-  // 获取课程默认边框颜色
+  // 获取课程默认边框颜色（浅色，不那么亮）
   const getCourseBorderColor = (systemKey: string) => {
     switch (systemKey) {
       case 'listening':
-        return 'rgba(168, 85, 247, 0.5)' // 紫色
+        return 'rgba(168, 85, 247, 0.25)' // 紫色 - 浅
       case 'earth':
-        return 'rgba(34, 211, 238, 0.5)' // 青色
+        return 'rgba(34, 211, 238, 0.25)' // 青色 - 浅
       case 'icarus':
       case 'pbl':
-        return 'rgba(251, 146, 60, 0.5)' // 橙色
+        return 'rgba(251, 146, 60, 0.25)' // 橙色 - 浅
       default:
-        return 'rgba(156, 163, 175, 0.5)' // 灰色
+        return 'rgba(156, 163, 175, 0.25)' // 灰色 - 浅
     }
   }
 

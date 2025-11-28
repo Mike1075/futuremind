@@ -1382,14 +1382,14 @@ body {
    Portal课程卡片 - 炫彩边框效果（类似盖亚图标）
    ============================================ */
 
-/* 外层容器 - 默认显示课程主题色边框 */
+/* 外层容器 - 默认显示课程主题色边框（浅色） */
 .portal-card-aurora {
   position: relative;
   padding: 2px; /* 边框宽度 */
   border-radius: 1rem;
-  background: var(--course-border-color, rgba(156, 163, 175, 0.5));
+  background: var(--course-border-color, rgba(156, 163, 175, 0.2));
   transition: all 0.4s ease;
-  --course-border-color: rgba(156, 163, 175, 0.5);
+  --course-border-color: rgba(156, 163, 175, 0.2);
 }
 
 /* 悬停时显示炫彩渐变边框 */
@@ -1432,15 +1432,17 @@ body {
   animation: card-border-spin 4s linear infinite;
 }
 
-/* 内层内容 - 不透明背景遮住中间 */
+/* 内层内容 - 透明玻璃效果，能看见背景星星 */
 .portal-card-aurora-inner {
   position: relative;
-  background: rgba(10, 10, 31, 0.95);
+  background: rgba(10, 10, 31, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: calc(1rem - 2px);
   transition: all 0.3s ease;
 }
 
-/* 悬停时内层微调 */
+/* 悬停时内层稍微加深一点 */
 .portal-card-aurora:hover .portal-card-aurora-inner {
-  background: rgba(10, 10, 31, 0.98);
+  background: rgba(10, 10, 31, 0.6);
 }
