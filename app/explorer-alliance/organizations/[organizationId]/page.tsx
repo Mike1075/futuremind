@@ -78,7 +78,7 @@ export default function OrganizationDashboardPage() {
         { data: memberships },
         { data: orgMembership }
       ] = await Promise.all([
-        supabase.from('tasks').select('*, project:projects(*)').eq('assigned_to', user.id).order('created_at', { ascending: false }),
+        supabase.from('tasks').select('*, project:projects(*)').eq('assignee_id', user.id).order('created_at', { ascending: false }),
         supabase.from('project_members').select('project_id, role_in_project').eq('user_id', user.id),
         supabase.from('user_organizations').select('role_in_org').eq('user_id', user.id).eq('organization_id', organizationId).single()
       ])
