@@ -887,19 +887,29 @@ body {
 }
 
 /* ============================================
-   盖亚地球仪图标 - 炫彩旋转边框
+   盖亚图标 - 地球+对话气泡+炫彩旋转边框
    ============================================ */
 
-/* 地球仪容器 */
-.gaia-orb-container {
+/* 盖亚图标容器 */
+.gaia-icon {
   position: relative;
   width: 64px;
   height: 64px;
   cursor: pointer;
 }
 
-/* 炫彩旋转边框 */
-.gaia-orb-border {
+.gaia-icon-small {
+  width: 44px;
+  height: 44px;
+}
+
+.gaia-icon-tiny {
+  width: 28px;
+  height: 28px;
+}
+
+/* 炫彩旋转边框 - 8秒一圈 */
+.gaia-icon-border {
   position: absolute;
   inset: 0;
   border-radius: 50%;
@@ -913,143 +923,143 @@ body {
     #00FF88,
     #FFD700
   );
-  animation: gaia-border-spin 4s linear infinite;
+  animation: gaia-spin 8s linear infinite;
 }
 
-/* 内层遮罩 - 创造边框效果 */
-.gaia-orb-border::before {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border-radius: 50%;
-  background: #000;
+.gaia-icon-small .gaia-icon-border {
+  padding: 2px;
+}
+
+.gaia-icon-tiny .gaia-icon-border {
+  padding: 2px;
 }
 
 /* 发光光晕效果 */
-.gaia-orb-glow {
+.gaia-icon-glow {
   position: absolute;
   inset: -8px;
   border-radius: 50%;
   background: conic-gradient(
     from 0deg,
-    rgba(255, 215, 0, 0.4),
-    rgba(255, 107, 107, 0.4),
-    rgba(157, 0, 255, 0.4),
-    rgba(0, 255, 255, 0.4),
-    rgba(0, 255, 136, 0.4),
-    rgba(255, 215, 0, 0.4)
+    rgba(255, 215, 0, 0.5),
+    rgba(255, 107, 107, 0.5),
+    rgba(157, 0, 255, 0.5),
+    rgba(0, 255, 255, 0.5),
+    rgba(0, 255, 136, 0.5),
+    rgba(255, 215, 0, 0.5)
   );
   filter: blur(12px);
-  animation: gaia-glow-pulse 3s ease-in-out infinite, gaia-border-spin 4s linear infinite;
-  opacity: 0.7;
+  animation: gaia-glow-pulse 3s ease-in-out infinite, gaia-spin 8s linear infinite;
+  opacity: 0.6;
 }
 
-/* 地球仪核心 */
-.gaia-orb-core {
+.gaia-icon-small .gaia-icon-glow {
+  inset: -6px;
+  filter: blur(8px);
+}
+
+.gaia-icon-tiny .gaia-icon-glow {
+  inset: -4px;
+  filter: blur(6px);
+}
+
+/* 地球核心 - 清晰的蓝色地球 */
+.gaia-icon-earth {
   position: absolute;
   inset: 6px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 70% 70%, rgba(0, 100, 200, 0.3) 0%, transparent 40%),
-    linear-gradient(135deg,
-      #1a4a7a 0%,
-      #0d6b4d 25%,
-      #1a5a4a 50%,
-      #0d4a7a 75%,
-      #1a4a6a 100%
-    );
+    /* 高光 */
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.4) 0%, transparent 30%),
+    /* 海洋渐变 */
+    radial-gradient(circle at 50% 50%, #1e90ff 0%, #0066cc 50%, #004499 100%);
   box-shadow:
-    inset 0 0 20px rgba(0, 255, 255, 0.2),
-    inset -5px -5px 15px rgba(0, 0, 0, 0.4),
-    0 0 30px rgba(0, 200, 255, 0.3);
+    inset -4px -4px 12px rgba(0, 0, 0, 0.4),
+    inset 2px 2px 8px rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
 
-/* 地球经纬线 */
-.gaia-orb-core::before {
+.gaia-icon-small .gaia-icon-earth {
+  inset: 4px;
+}
+
+.gaia-icon-tiny .gaia-icon-earth {
+  inset: 3px;
+}
+
+/* 大陆 - 简化清晰的绿色块 */
+.gaia-icon-earth::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 50%;
   background:
-    repeating-linear-gradient(
-      0deg,
-      transparent 0%,
-      transparent 8%,
-      rgba(255, 255, 255, 0.08) 8%,
-      rgba(255, 255, 255, 0.08) 9%
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0%,
-      transparent 10%,
-      rgba(255, 255, 255, 0.06) 10%,
-      rgba(255, 255, 255, 0.06) 11%
-    );
-  animation: gaia-earth-rotate 20s linear infinite;
+    /* 北美/欧洲大陆 */
+    radial-gradient(ellipse 35% 28% at 35% 35%, #228B22 0%, #228B22 60%, transparent 70%),
+    /* 亚洲大陆 */
+    radial-gradient(ellipse 30% 22% at 70% 40%, #2E8B2E 0%, #2E8B2E 60%, transparent 70%),
+    /* 南美/非洲 */
+    radial-gradient(ellipse 20% 25% at 40% 65%, #32CD32 0%, #32CD32 55%, transparent 65%),
+    /* 澳洲 */
+    radial-gradient(ellipse 12% 10% at 80% 70%, #3CB371 0%, #3CB371 60%, transparent 70%);
 }
 
-/* 大陆轮廓效果 */
-.gaia-orb-core::after {
-  content: '';
+/* 对话气泡图标 - 居中显示 */
+.gaia-icon-chat {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
-  background:
-    radial-gradient(ellipse 40% 30% at 30% 40%, rgba(34, 139, 34, 0.4) 0%, transparent 70%),
-    radial-gradient(ellipse 35% 25% at 60% 50%, rgba(34, 139, 34, 0.35) 0%, transparent 60%),
-    radial-gradient(ellipse 25% 20% at 75% 35%, rgba(34, 139, 34, 0.3) 0%, transparent 50%);
-  animation: gaia-earth-rotate 20s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
 }
 
-/* 地球旋转动画 */
-@keyframes gaia-earth-rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.gaia-icon-chat svg {
+  width: 50%;
+  height: 50%;
+  color: white;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
-/* 边框旋转动画 */
-@keyframes gaia-border-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.gaia-icon-tiny .gaia-icon-chat svg {
+  width: 55%;
+  height: 55%;
+}
+
+/* 旋转动画 - 8秒一圈 */
+@keyframes gaia-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* 发光脉冲动画 */
 @keyframes gaia-glow-pulse {
   0%, 100% {
     opacity: 0.5;
-    filter: blur(12px);
   }
   50% {
     opacity: 0.8;
-    filter: blur(16px);
   }
 }
 
-/* 悬停效果增强 */
-.gaia-orb-container:hover .gaia-orb-glow {
-  opacity: 1;
-  filter: blur(20px);
+/* 停止旋转状态 - 对话框打开时 */
+.gaia-icon-static .gaia-icon-border,
+.gaia-icon-static .gaia-icon-glow {
+  animation: gaia-glow-pulse 3s ease-in-out infinite;
 }
 
-.gaia-orb-container:hover .gaia-orb-border {
-  animation-duration: 2s;
+/* 悬停效果 */
+.gaia-icon:hover .gaia-icon-glow {
+  opacity: 0.9;
+  filter: blur(16px);
 }
 
-.gaia-orb-container:hover .gaia-orb-core {
-  box-shadow:
-    inset 0 0 25px rgba(0, 255, 255, 0.3),
-    inset -5px -5px 15px rgba(0, 0, 0, 0.4),
-    0 0 40px rgba(0, 200, 255, 0.5);
+.gaia-icon:hover .gaia-icon-border {
+  animation-duration: 4s;
+}
+
+.gaia-icon-static:hover .gaia-icon-border {
+  animation: gaia-spin 4s linear infinite;
 }
 
 /* ============================================

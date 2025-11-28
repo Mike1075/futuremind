@@ -1,19 +1,26 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Send, Loader2, History, Edit3, Check, Trash2 } from 'lucide-react'
+import { X, Send, Loader2, History, Edit3, Check, Trash2, MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AuthModal from '@/components/AuthModal'
 
-// 地球仪图标组件
-function GaiaOrbIcon({ size = 'normal' }: { size?: 'normal' | 'small' }) {
-  const containerClass = size === 'small' ? 'gaia-avatar-small' : 'gaia-orb-container'
+// 盖亚图标组件 - 地球+对话气泡+炫彩旋转边框
+function GaiaIcon({ size = 'normal', isStatic = false }: { size?: 'normal' | 'small' | 'tiny', isStatic?: boolean }) {
+  const sizeClass = size === 'small' ? 'gaia-icon-small' : size === 'tiny' ? 'gaia-icon-tiny' : ''
+  const staticClass = isStatic ? 'gaia-icon-static' : ''
 
   return (
-    <div className={containerClass}>
-      <div className="gaia-orb-glow" />
-      <div className="gaia-orb-border">
-        <div className="gaia-orb-core" />
+    <div className={`gaia-icon ${sizeClass} ${staticClass}`}>
+      {/* 发光光晕 */}
+      <div className="gaia-icon-glow" />
+      {/* 炫彩旋转边框 */}
+      <div className="gaia-icon-border" />
+      {/* 地球 */}
+      <div className="gaia-icon-earth" />
+      {/* 对话气泡图标 */}
+      <div className="gaia-icon-chat">
+        <MessageCircle strokeWidth={2.5} />
       </div>
     </div>
   )
@@ -712,7 +719,7 @@ export function GlobalGaiaV3() {
           className="fixed bottom-8 right-8 z-50 cursor-pointer hover:scale-110 transition-transform duration-300"
           aria-label="打开盖亚对话"
         >
-          <GaiaOrbIcon />
+          <GaiaIcon />
         </div>
       )}
 
@@ -722,7 +729,7 @@ export function GlobalGaiaV3() {
           {/* 头部 */}
           <div className="flex items-center justify-between px-6 py-4 gaia-header">
             <div className="flex items-center gap-3">
-              <GaiaOrbIcon size="small" />
+              <GaiaIcon size="small" isStatic={true} />
               <div>
                 <h2 className="font-semibold text-white text-lg">与盖亚对话</h2>
                 <p className="text-xs text-starlight-muted">你的意识觉醒导师</p>

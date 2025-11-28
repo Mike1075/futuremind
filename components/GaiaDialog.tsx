@@ -2,31 +2,25 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Edit3, Trash2, Check } from 'lucide-react'
+import { X, Send, Edit3, Trash2, Check, MessageCircle } from 'lucide-react'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
 
-// 地球仪图标组件
-function GaiaOrbIcon({ size = 'normal' }: { size?: 'normal' | 'small' | 'tiny' }) {
-  const sizeClasses = {
-    normal: 'gaia-orb-container',
-    small: 'gaia-avatar-small',
-    tiny: 'w-6 h-6'
-  }
-
-  if (size === 'tiny') {
-    return (
-      <div className="w-6 h-6 relative">
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gaia-gold via-mystic-purple to-ethereal-blue animate-spin" style={{ animationDuration: '4s' }} />
-        <div className="absolute inset-[2px] rounded-full bg-gradient-to-br from-blue-700 via-green-600 to-blue-800" />
-      </div>
-    )
-  }
+// 盖亚图标组件 - 地球+对话气泡+炫彩旋转边框
+function GaiaIcon({ size = 'normal', isStatic = false }: { size?: 'normal' | 'small' | 'tiny', isStatic?: boolean }) {
+  const sizeClass = size === 'small' ? 'gaia-icon-small' : size === 'tiny' ? 'gaia-icon-tiny' : ''
+  const staticClass = isStatic ? 'gaia-icon-static' : ''
 
   return (
-    <div className={sizeClasses[size]}>
-      <div className="gaia-orb-glow" />
-      <div className="gaia-orb-border">
-        <div className="gaia-orb-core" />
+    <div className={`gaia-icon ${sizeClass} ${staticClass}`}>
+      {/* 发光光晕 */}
+      <div className="gaia-icon-glow" />
+      {/* 炫彩旋转边框 */}
+      <div className="gaia-icon-border" />
+      {/* 地球 */}
+      <div className="gaia-icon-earth" />
+      {/* 对话气泡图标 */}
+      <div className="gaia-icon-chat">
+        <MessageCircle strokeWidth={2.5} />
       </div>
     </div>
   )
@@ -393,7 +387,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             {/* Header */}
             <div className="flex items-center justify-between p-6 gaia-header">
               <div className="flex items-center gap-4">
-                <GaiaOrbIcon size="small" />
+                <GaiaIcon size="small" isStatic={true} />
                 <div>
                   <h2 className="text-h2 text-white">与盖亚对话</h2>
                   <p className="text-small text-starlight-dim">你的意识觉醒导师</p>
@@ -513,7 +507,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <div className={`max-w-[80%] ${message.isGaia ? 'order-2' : 'order-1'}`}>
                     {message.isGaia && (
                       <div className="flex items-center mb-2 gap-2">
-                        <GaiaOrbIcon size="tiny" />
+                        <GaiaIcon size="tiny" isStatic={true} />
                         <span className="text-small text-gaia-gold font-medium">盖亚</span>
                       </div>
                     )}
@@ -562,7 +556,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 >
                   <div className="max-w-[80%]">
                     <div className="flex items-center mb-2 gap-2">
-                      <GaiaOrbIcon size="tiny" />
+                      <GaiaIcon size="tiny" isStatic={true} />
                       <span className="text-small text-gaia-gold font-medium">盖亚</span>
                     </div>
                     <div className="gaia-message-bubble px-4 py-3">
