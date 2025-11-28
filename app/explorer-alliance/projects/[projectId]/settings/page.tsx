@@ -227,7 +227,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
             <div className="flex items-center gap-3">
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="px-4 py-2 btn-stardust flex items-center gap-2"
               >
                 <Trash2 className="h-4 w-4" />
                 删除项目
@@ -249,7 +249,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
       <div className="container mx-auto px-6 py-8 max-w-4xl">
         <div className="space-y-8">
           {/* Basic Information */}
-          <div className="card-glass">
+          <div className="card-glass border border-white/10">
             <h2 className="text-h3 mb-6">基本信息</h2>
             <div className="space-y-4">
               <div>
@@ -296,7 +296,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
           </div>
 
           {/* Visibility & Permissions */}
-          <div className="card-glass">
+          <div className="card-glass border border-white/10">
             <h2 className="text-h3 mb-6">可见性与权限</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-black/30 rounded-lg">
@@ -358,7 +358,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
           </div>
 
           {/* Project Members */}
-          <div className="card-glass">
+          <div className="card-glass border border-white/10">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-h3">项目成员 ({members.length})</h2>
             </div>

@@ -184,7 +184,7 @@ export function KnowledgeSectionV2({
 
                   <button
                     onClick={() => handleClickQuestion(question)}
-                    className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                    className="btn-stardust w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium"
                   >
                     <MessageSquare className="w-4 h-4" />
                     与盖亚深入探讨

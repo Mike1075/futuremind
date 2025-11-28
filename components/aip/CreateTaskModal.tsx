@@ -53,7 +53,7 @@ export function CreateTaskModal({ projectId, onClose, onSuccess }: CreateTaskMod
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-black border border-white/20 rounded-xl max-w-2xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="card-glass border border-white/10 rounded-xl max-w-2xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
@@ -180,14 +180,14 @@ export function CreateTaskModal({ projectId, onClose, onSuccess }: CreateTaskMod
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity duration-200"
+              className="flex-1 px-6 py-3 btn-stardust text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '创建中...' : '创建任务'}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 bg-white/10 border border-white/20 text-white font-medium rounded-lg hover:bg-white/20 transition-colors duration-200"
+              className="flex-1 px-6 py-3 btn-stardust text-white font-medium rounded-lg"
             >
               取消
             </button>

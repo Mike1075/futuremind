@@ -126,7 +126,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+      <div className="card-glass border border-white/10 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         {/* 头部 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
           <h2 className="text-xl font-semibold text-white">个人资料</h2>
@@ -217,7 +217,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           <button
             onClick={handleSaveProfile}
             disabled={isSaving}
-            className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 btn-stardust text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? '保存中...' : '保存修改'}
           </button>

@@ -299,7 +299,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               {/* Project Info */}
-              <div className="card-glass">
+              <div className="card-glass border border-white/10">
                 <h3 className="text-h3 mb-4">项目信息</h3>
                 <div className="space-y-3 text-small">
                   <div className="flex justify-between">
@@ -368,7 +368,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               </div>
 
               {/* Quick Stats */}
-              <div className="card-glass">
+              <div className="card-glass border border-white/10">
                 <h3 className="text-h3 mb-4">团队统计</h3>
                 <div className="space-y-4">
                   <div>
@@ -443,7 +443,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                     <button
                       onClick={handleBatchDelete}
                       disabled={isDeleting || selectedDocuments.size === 0}
-                      className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-4 py-2 btn-stardust disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Trash2 className="w-4 h-4" />
                       {isDeleting ? '删除中...' : `删除 (${selectedDocuments.size})`}
@@ -477,7 +477,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 <span className="ml-3 text-starlight-muted">加载文档中...</span>
               </div>
             ) : documentsCount === 0 ? (
-              <div className="card-glass p-12 text-center">
+              <div className="card-glass border border-white/10 p-12 text-center">
                 <div className="bg-blue-500/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Upload className="w-10 h-10 text-blue-400" />
                 </div>

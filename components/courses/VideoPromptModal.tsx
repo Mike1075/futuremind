@@ -117,7 +117,7 @@ export function VideoPromptModal({
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={onClose}
-                  className="flex-1 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-starlight rounded-lg font-medium transition-all border border-gray-700 hover:border-gray-600"
+                  className="btn-stardust flex-1 px-6 py-3 rounded-lg font-medium"
                 >
                   我先去看视频，下次再学
                 </button>

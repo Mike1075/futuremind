@@ -392,7 +392,7 @@ export default function OrganizationDashboardPage() {
           {/* Right Columns: Project Sections */}
           <div className="lg:col-span-3 space-y-8">
             {/* Welcome Section with Statistics */}
-            <div className="card-glass">
+            <div className="card-glass border border-white/10">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-h2 text-starlight mb-2">
@@ -463,7 +463,7 @@ export default function OrganizationDashboardPage() {
             </div>
 
 {projectsLoading ? (
-              <div className="card-glass p-12 text-center">
+              <div className="card-glass border border-white/10 p-12 text-center">
                 <div className="loader-ethereal"></div>
                 <p className="text-starlight-muted">加载项目中...</p>
               </div>
@@ -482,7 +482,7 @@ export default function OrganizationDashboardPage() {
                   </h2>
                 </div>
                 {projects.length === 0 ? (
-                  <div className="card-glass p-12 text-center">
+                  <div className="card-glass border border-white/10 p-12 text-center">
                     <Folder className="w-16 h-16 text-starlight-dim mx-auto mb-4" />
                     <p className="text-starlight-muted mb-4">暂无公开项目</p>
                     <button
@@ -511,7 +511,7 @@ export default function OrganizationDashboardPage() {
               </div>
             ) : allMyProjects.length === 0 ? (
               /* 普通组织：用户没有参与任何项目 */
-              <div className="card-glass p-12 text-center">
+              <div className="card-glass border border-white/10 p-12 text-center">
                 <Folder className="w-16 h-16 text-starlight-dim mx-auto mb-4" />
                 <p className="text-starlight-muted mb-4">你还没有参与任何项目</p>
                 <button

@@ -186,7 +186,7 @@ export function ChatBot() {
       {/* Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full shadow-lg hover:opacity-90 transition-opacity duration-200 flex items-center justify-center z-50"
+        className="fixed bottom-6 right-6 w-16 h-16 btn-stardust rounded-full shadow-lg flex items-center justify-center z-50"
         title="AIP AI 助手"
       >
         {isOpen ? (
@@ -201,7 +201,7 @@ export function ChatBot() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="flex items-start gap-4 mx-4 max-w-[1320px] w-full">
             {/* Main Chat Window */}
-            <div className="bg-zinc-900 border border-white/20 rounded-xl shadow-2xl w-full max-w-[960px] h-[600px] flex flex-col">
+            <div className="card-glass border border-white/10 rounded-xl shadow-2xl w-full max-w-[960px] h-[600px] flex flex-col">
               {/* Header */}
               <div className="p-4 border-b border-white/10 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 flex items-center justify-between">
                 <div>
@@ -322,7 +322,7 @@ export function ChatBot() {
                   <button
                     onClick={sendMessage}
                     disabled={loading || !input.trim()}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity duration-200"
+                    className="px-4 py-2 btn-stardust text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send className="w-5 h-5" />
                   </button>
@@ -331,7 +331,7 @@ export function ChatBot() {
             </div>
 
             {/* Project Selector Panel */}
-            <div className="bg-zinc-900 border border-white/20 rounded-xl shadow-2xl w-[360px] min-w-[360px] h-[600px] p-4 flex flex-col flex-shrink-0">
+            <div className="card-glass border border-white/10 rounded-xl shadow-2xl w-[360px] min-w-[360px] h-[600px] p-4 flex flex-col flex-shrink-0">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-semibold text-white">我的项目</h4>
                 <label className="inline-flex items-center cursor-pointer select-none text-xs text-gray-400">

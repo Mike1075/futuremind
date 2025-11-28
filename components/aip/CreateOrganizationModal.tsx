@@ -39,7 +39,7 @@ export function CreateOrganizationModal({ onClose, onSuccess }: CreateOrganizati
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-gray-900 to-black border border-white/20 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div className="card-glass border border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl">
         <h2 className="text-2xl font-bold text-white mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
           创建新组织
         </h2>
@@ -82,14 +82,14 @@ export function CreateOrganizationModal({ onClose, onSuccess }: CreateOrganizati
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-gray-700/50 hover:bg-gray-700/70 text-white rounded-lg transition-colors duration-200"
+              className="flex-1 px-4 py-3 btn-stardust text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
               取消
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:opacity-90 text-white font-medium rounded-lg transition-opacity duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 btn-stardust text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
               {loading ? '创建中...' : '创建组织'}

@@ -101,7 +101,7 @@ export function SocraticQuestionsV2({
                 <p className="text-gray-200 leading-relaxed mb-4">{question}</p>
                 <button
                   onClick={() => handleClickQuestion(question, 'pre_watch')}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all"
+                  className="btn-stardust flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
                 >
                   <MessageCircle className="w-4 h-4" />
                   与盖亚深入探讨
@@ -123,7 +123,7 @@ export function SocraticQuestionsV2({
                 <p className="text-gray-200 leading-relaxed mb-4">{question}</p>
                 <button
                   onClick={() => handleClickQuestion(question, 'during_watch')}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all"
+                  className="btn-stardust flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
                 >
                   <MessageCircle className="w-4 h-4" />
                   与盖亚深入探讨
@@ -145,7 +145,7 @@ export function SocraticQuestionsV2({
                 <p className="text-gray-200 leading-relaxed mb-4">{question}</p>
                 <button
                   onClick={() => handleClickQuestion(question, 'post_watch')}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all"
+                  className="btn-stardust flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
                 >
                   <MessageCircle className="w-4 h-4" />
                   与盖亚深入探讨

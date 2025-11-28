@@ -101,7 +101,7 @@ export function PostReflectionV2({
               {/* 探讨按钮 */}
               <button
                 onClick={() => handleClickReflection(reflection)}
-                className="w-full px-4 py-2.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all flex items-center justify-center gap-2"
+                className="btn-stardust w-full px-4 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
               >
                 <MessageCircle className="w-4 h-4" />
                 与盖亚深入探讨
