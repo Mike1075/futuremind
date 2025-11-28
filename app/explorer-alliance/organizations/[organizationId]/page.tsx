@@ -3,14 +3,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Home, ArrowLeft, Plus, UserPlus, Folder, CheckCircle2, Briefcase } from 'lucide-react'
+import { Home, ArrowLeft, Plus, Folder, CheckCircle2, Briefcase, Users } from 'lucide-react'
 import { useOrganizationProjects, useProjectTasks } from '@/lib/aip/hooks'
 import { FloatingChatBot } from '@/components/aip/FloatingChatBot'
 import { ProjectGrid } from '@/components/aip/ProjectGrid'
 import { CompactTaskList } from '@/components/aip/CompactTaskList'
 import { CreateProjectModal } from '@/components/aip/CreateProjectModal'
 import { EditDescriptionModal } from '@/components/aip/EditDescriptionModal'
-import { InviteModal } from '@/components/aip/InviteModal'
 import { PendingRequestsPanel } from '@/components/aip/PendingRequestsPanel'
 import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { InteractionLog } from '@/components/aip/InteractionLog'
@@ -34,7 +33,6 @@ export default function OrganizationDashboardPage() {
   // Modal states
   const [showCreateProject, setShowCreateProject] = useState(false)
   const [showEditDescription, setShowEditDescription] = useState(false)
-  const [showInvite, setShowInvite] = useState(false)
   const [showInteractionLog, setShowInteractionLog] = useState(false)
   const [editingProject, setEditingProject] = useState<{ id: string; name: string; description: string } | null>(null)
 
@@ -455,13 +453,6 @@ export default function OrganizationDashboardPage() {
                 <Plus className="w-4 h-4" />
                 创建项目
               </button>
-              <button
-                onClick={() => setShowInvite(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-              >
-                <UserPlus className="w-4 h-4" />
-                邀请成员
-              </button>
             </div>
 
 {projectsLoading ? (
@@ -561,7 +552,7 @@ export default function OrganizationDashboardPage() {
                   <div className="mb-8">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-lg p-2">
-                        <UserPlus className="w-5 h-5 text-blue-400" />
+                        <Users className="w-5 h-5 text-blue-400" />
                       </div>
                       <h2 className="text-2xl font-bold text-white">
                         我参与的项目
@@ -648,12 +639,6 @@ export default function OrganizationDashboardPage() {
           onConfirm={handleEditDescriptionConfirm}
           projectName={editingProject.name}
           currentDescription={editingProject.description}
-        />
-      )}
-
-      {showInvite && (
-        <InviteModal
-          onClose={() => setShowInvite(false)}
         />
       )}
 
