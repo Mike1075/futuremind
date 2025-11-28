@@ -140,10 +140,6 @@ export default function Home() {
           <UnifiedNavbar
             transparent
             onOpenProfile={() => setShowProfileModal(true)}
-            rightButton={{
-              label: '个人门户',
-              href: '/portal'
-            }}
           />
         </div>
       ) : (

@@ -13,6 +13,8 @@ import { KnowledgeSectionV2 } from '@/components/courses/tabs/KnowledgeSectionV2
 import { SocraticQuestionsV2 } from '@/components/courses/tabs/SocraticQuestionsV2'
 import { PostReflectionV2 } from '@/components/courses/tabs/PostReflectionV2'
 import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
+import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
+import UserProfileModal from '@/components/UserProfileModal'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -63,6 +65,7 @@ export function EarthContentDetail({
   const [contentProgress, setContentProgress] = useState(0) // 当前内容的进度
   const [showMilestone, setShowMilestone] = useState<number | null>(null) // 里程碑动画
   const [selectedProject, setSelectedProject] = useState<any>(null) // 选中的探险家项目
+  const [showProfileModal, setShowProfileModal] = useState(false) // 个人资料弹窗
 
   // 提交相关状态
   const supabase = createClient()
@@ -428,18 +431,16 @@ export function EarthContentDetail({
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* 返回按钮 */}
-        <Link
-          href={`/courses/${systemKey}`}
-          className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition-colors"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          返回课程
-        </Link>
+      {/* 统一导航栏 */}
+      <UnifiedNavbar
+        onOpenProfile={() => setShowProfileModal(true)}
+        rightButton={{
+          label: '返回课程',
+          href: `/courses/${systemKey}`
+        }}
+      />
 
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* 内容头部 */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
@@ -1420,6 +1421,12 @@ export function EarthContentDetail({
           )}
         </AnimatePresence>
       </div>
+
+      {/* 用户资料弹窗 */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </div>
   )
 }

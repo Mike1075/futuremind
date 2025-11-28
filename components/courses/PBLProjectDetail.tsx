@@ -11,6 +11,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Toast } from '@/components/ui/Toast'
+import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
+import UserProfileModal from '@/components/UserProfileModal'
 
 // 伊卡洛斯项目模块名称映射（与主界面保持一致）
 const MODULE_NAMES: Record<number, string> = {
@@ -185,6 +187,7 @@ export function PBLProjectDetail({
     message: '',
     type: 'success'
   })
+  const [showProfileModal, setShowProfileModal] = useState(false) // 个人资料弹窗
 
   // 提交记录相关状态
   const [showSubmissionsHistory, setShowSubmissionsHistory] = useState(false)
@@ -584,18 +587,16 @@ export function PBLProjectDetail({
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* 返回按钮 */}
-        <Link
-          href={`/courses/${systemKey}`}
-          className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition-colors"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          返回项目列表
-        </Link>
+      {/* 统一导航栏 */}
+      <UnifiedNavbar
+        onOpenProfile={() => setShowProfileModal(true)}
+        rightButton={{
+          label: '返回项目列表',
+          href: `/courses/${systemKey}`
+        }}
+      />
 
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* 项目头部 */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
@@ -1572,6 +1573,12 @@ export function PBLProjectDetail({
         message={toast.message}
         type={toast.type}
         duration={3000}
+      />
+
+      {/* 用户资料弹窗 */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
       />
     </div>
   )
