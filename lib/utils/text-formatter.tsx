@@ -37,6 +37,35 @@ export function formatCourseText(
   // 5. 将文本分段（按双换行）
   const paragraphs = formatted.split('\n\n')
 
+  // 6. 预处理：标记哪些段落属于引用区块（冥想引导语）
+  // 检测以"开头到以"结尾的多段落引用
+  let inQuoteBlock = false
+  const quoteFlags: boolean[] = []
+
+  for (let i = 0; i < paragraphs.length; i++) {
+    const trimmed = paragraphs[i].trim()
+    const startsWithQuote = trimmed.startsWith('"') || trimmed.startsWith('"') || trimmed.startsWith('「')
+    const endsWithQuote = trimmed.endsWith('"') || trimmed.endsWith('"') || trimmed.endsWith('」')
+
+    if (startsWithQuote && endsWithQuote) {
+      // 单段落完整引用
+      quoteFlags[i] = true
+    } else if (startsWithQuote) {
+      // 引用开始
+      inQuoteBlock = true
+      quoteFlags[i] = true
+    } else if (endsWithQuote && inQuoteBlock) {
+      // 引用结束
+      quoteFlags[i] = true
+      inQuoteBlock = false
+    } else if (inQuoteBlock) {
+      // 引用中间段落
+      quoteFlags[i] = true
+    } else {
+      quoteFlags[i] = false
+    }
+  }
+
   return (
     <div className="space-y-4">
       {paragraphs.map((paragraph, index) => {
@@ -126,14 +155,12 @@ export function formatCourseText(
           )
         }
 
-        // === 冥想引导文本（包含引号对话）===
-        if (trimmed.startsWith('"') || trimmed.startsWith('"') || trimmed.startsWith('「')) {
+        // === 冥想引导文本（多段落引用，使用预处理的标记）===
+        if (quoteFlags[index]) {
           return (
-            <blockquote key={index} className="border-l-4 border-green-400/50 pl-4 py-2 bg-green-500/5 rounded-r-lg">
-              <p className="text-gray-300 italic leading-relaxed">
-                {formatInlineText(trimmed)}
-              </p>
-            </blockquote>
+            <p key={index} className="text-gray-300 italic leading-relaxed pl-4">
+              {formatInlineText(trimmed)}
+            </p>
           )
         }
 
