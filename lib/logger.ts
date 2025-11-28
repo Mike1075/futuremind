@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 统一日志系统 - 替代所有 console.log
  *

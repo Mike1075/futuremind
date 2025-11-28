@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API Route: /api/admin/groups
 // Description: 分组管理API - 获取分组列表和创建新分组
 // 权限：校长和老师

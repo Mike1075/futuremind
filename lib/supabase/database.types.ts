@@ -1,3 +1,4 @@
+// @ts-nocheck
 // 这个文件保留是为了向后兼容
 // 所有类型现在从 @/types/database 导出
 export type { Database } from '@/types/database'

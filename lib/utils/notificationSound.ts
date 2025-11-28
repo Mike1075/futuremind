@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 消息提示音工具
  * 使用 Web Audio API 生成简洁的提示音

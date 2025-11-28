@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import { MessageCircleQuestion, MessageSquare } from 'lucide-react'

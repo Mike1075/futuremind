@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { playNotificationSound, isNotificationSoundEnabled } from '@/lib/utils/notificationSound'

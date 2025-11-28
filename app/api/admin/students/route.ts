@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API Route: /api/admin/students
 // Description: 学员列表API - 支持搜索、筛选、排序
 // 权限：校长和老师

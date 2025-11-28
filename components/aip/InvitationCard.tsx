@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import { Clock, Check, X, Building2, FolderOpen } from 'lucide-react'

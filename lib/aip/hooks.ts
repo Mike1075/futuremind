@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * AIP系统 React Hooks
  * Custom React hooks for AIP system

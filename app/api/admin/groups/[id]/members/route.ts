@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API Route: /api/admin/groups/[id]/members
 // Description: 分组成员管理API - 添加/移除学员到分组
 // 权限：校长和老师

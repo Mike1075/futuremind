@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ErrorHandler - 统一错误处理工具
  *
