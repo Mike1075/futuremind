@@ -199,99 +199,94 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     if (resources.length === 0) return null
 
     return (
-      <section className="mb-8">
-        <h2 className="text-h3 font-semibold mb-4 text-green-400">📦 课程资源</h2>
-        <div className="space-y-4">
-          {resources.map((resource: Resource, index: number) => {
-            if (resource.type === 'audio') {
-              return (
-                <div key={index} className="card-glass p-6">
-                  <div className="flex items-center mb-4">
-                    <svg className="w-6 h-6 text-green-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
-                    </svg>
-                    <div>
-                      <h3 className="font-semibold text-starlight">{resource.title}</h3>
-                      {resource.duration && (
-                        <p className="text-small text-starlight-muted">时长: {resource.duration}</p>
-                      )}
-                    </div>
-                  </div>
-                  <AudioPlayer src={resource.url} title={resource.title} />
-                </div>
-              )
-            }
-
-            if (resource.type === 'video') {
-              return (
-                <div key={index} className="card-glass p-6">
-                  <div className="flex items-center mb-3">
-                    <svg className="w-6 h-6 text-purple-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                    </svg>
-                    <div>
-                      <h3 className="font-semibold text-starlight">{resource.title}</h3>
-                      {resource.duration && (
-                        <p className="text-small text-starlight-muted">时长: {resource.duration}</p>
-                      )}
-                    </div>
-                  </div>
-                  <video controls className="w-full rounded-lg">
-                    <source src={resource.url} type="video/mp4" />
-                    您的浏览器不支持视频播放
-                  </video>
-                </div>
-              )
-            }
-
-            if (resource.type === 'pdf' || resource.type === 'document') {
-              return (
-                <div key={index} className="card-glass p-6">
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center hover:bg-white/5 transition-colors rounded-lg p-3"
-                  >
-                    <svg className="w-6 h-6 text-blue-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                    </svg>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-starlight">{resource.title}</h3>
-                      <p className="text-small text-starlight-muted">{resource.type === 'pdf' ? 'PDF文档' : '文档'}</p>
-                    </div>
-                    <svg className="w-5 h-5 text-starlight-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </a>
-                </div>
-              )
-            }
-
-            // 通用链接资源
+      <section className="mb-6 space-y-6">
+        {resources.map((resource: Resource, index: number) => {
+          if (resource.type === 'audio') {
             return (
-              <div key={index} className="card-glass p-6">
-                <a
-                  href={resource.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center hover:bg-white/5 transition-colors rounded-lg p-3"
-                >
-                  <svg className="w-6 h-6 text-starlight-muted mr-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              <div key={index} className="collapsible-section-wrapper rounded-xl">
+                {/* 标题栏 - 与CollapsibleSection样式一致 */}
+                <div className="collapsible-section-inner w-full flex items-center gap-3 p-4 rounded-t-xl">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
                   </svg>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-starlight">{resource.title}</h3>
-                    <p className="text-small text-starlight-muted">{resource.type || '链接'}</p>
+                  <h2 className="text-h3 font-semibold text-starlight">{resource.title}</h2>
+                </div>
+                {/* 播放器区域 */}
+                <div className="collapsible-content-wrapper rounded-b-xl">
+                  <div className="collapsible-content-inner rounded-b-xl p-4">
+                    <AudioPlayer src={resource.url} title={resource.title} />
                   </div>
+                </div>
+              </div>
+            )
+          }
+
+          if (resource.type === 'video') {
+            return (
+              <div key={index} className="collapsible-section-wrapper rounded-xl">
+                {/* 标题栏 - 与CollapsibleSection样式一致 */}
+                <div className="collapsible-section-inner w-full flex items-center gap-3 p-4 rounded-t-xl">
+                  <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                  </svg>
+                  <h2 className="text-h3 font-semibold text-starlight">{resource.title}</h2>
+                </div>
+                {/* 视频区域 */}
+                <div className="collapsible-content-wrapper rounded-b-xl">
+                  <div className="collapsible-content-inner rounded-b-xl p-4">
+                    <video controls className="w-full rounded-lg">
+                      <source src={resource.url} type="video/mp4" />
+                      您的浏览器不支持视频播放
+                    </video>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          if (resource.type === 'pdf' || resource.type === 'document') {
+            return (
+              <a
+                key={index}
+                href={resource.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="collapsible-section-wrapper rounded-xl block"
+              >
+                <div className="collapsible-section-inner w-full flex items-center gap-3 p-4 rounded-xl">
+                  <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                  </svg>
+                  <h2 className="text-h3 font-semibold text-starlight flex-1">{resource.title}</h2>
                   <svg className="w-5 h-5 text-starlight-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
-                </a>
-              </div>
+                </div>
+              </a>
             )
-          })}
-        </div>
+          }
+
+          // 通用链接资源
+          return (
+            <a
+              key={index}
+              href={resource.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="collapsible-section-wrapper rounded-xl block"
+            >
+              <div className="collapsible-section-inner w-full flex items-center gap-3 p-4 rounded-xl">
+                <svg className="w-5 h-5 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+                </svg>
+                <h2 className="text-h3 font-semibold text-starlight flex-1">{resource.title}</h2>
+                <svg className="w-5 h-5 text-starlight-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </div>
+            </a>
+          )
+        })}
       </section>
     )
   }
