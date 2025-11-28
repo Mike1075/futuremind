@@ -1461,3 +1461,112 @@ body {
   background: #0a0a1f;
   border-color: transparent;
 }
+
+/* ========== 折叠区域炫彩边框 ========== */
+/* 标题栏wrapper */
+.collapsible-section-wrapper {
+  position: relative;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.4s ease;
+}
+
+.collapsible-section-wrapper:hover {
+  background: conic-gradient(
+    from var(--card-border-angle, 0deg),
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700
+  );
+  animation: card-border-spin 4s linear infinite;
+}
+
+/* 悬停时的发光效果 */
+.collapsible-section-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border-radius: 1rem;
+  background: conic-gradient(
+    from var(--card-border-angle, 0deg),
+    rgba(255, 215, 0, 0.4),
+    rgba(255, 107, 107, 0.4),
+    rgba(157, 0, 255, 0.4),
+    rgba(0, 255, 255, 0.4),
+    rgba(0, 255, 136, 0.4),
+    rgba(255, 215, 0, 0.4)
+  );
+  filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.collapsible-section-wrapper:hover::before {
+  opacity: 0.5;
+  animation: card-border-spin 4s linear infinite;
+}
+
+/* 内层 - 保持原有背景色 */
+.collapsible-section-inner {
+  border-radius: calc(0.75rem - 2px);
+  transition: all 0.3s ease;
+}
+
+/* 内容区域wrapper */
+.collapsible-content-wrapper {
+  position: relative;
+  padding: 2px;
+  padding-top: 0;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.4s ease;
+}
+
+.collapsible-content-wrapper:hover {
+  background: conic-gradient(
+    from var(--card-border-angle, 0deg),
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700
+  );
+  animation: card-border-spin 4s linear infinite;
+}
+
+/* 内容区域悬停发光效果 */
+.collapsible-content-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  top: 0;
+  z-index: -1;
+  border-radius: 0 0 1rem 1rem;
+  background: conic-gradient(
+    from var(--card-border-angle, 0deg),
+    rgba(255, 215, 0, 0.4),
+    rgba(255, 107, 107, 0.4),
+    rgba(157, 0, 255, 0.4),
+    rgba(0, 255, 255, 0.4),
+    rgba(0, 255, 136, 0.4),
+    rgba(255, 215, 0, 0.4)
+  );
+  filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.collapsible-content-wrapper:hover::before {
+  opacity: 0.5;
+  animation: card-border-spin 4s linear infinite;
+}
+
+.collapsible-content-inner {
+  border-radius: calc(0.75rem - 2px);
+}

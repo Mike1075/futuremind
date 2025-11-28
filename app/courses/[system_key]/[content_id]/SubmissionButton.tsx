@@ -43,15 +43,12 @@ export default function SubmissionButton({
           提交作业/感悟
         </button>
 
-        {/* 次级按钮：查看提交记录 */}
+        {/* 次级按钮：查看提交记录 - 使用炫彩边框效果 */}
         <button
           onClick={() => setIsHistoryOpen(true)}
           className="
-            card-glass
+            btn-stardust
             px-6 py-4 font-medium text-h3
-            text-starlight hover:text-starlight
-            border border-white/10 hover:border-white/20
-            transition-all duration-200
             flex items-center justify-center gap-2
           "
         >
