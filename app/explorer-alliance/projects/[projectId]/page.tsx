@@ -495,7 +495,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                     管理文档
                   </button>
                 )}
-                {isManager && (
+                {/* 所有成员都能上传文档，普通成员上传后需要审核 */}
+                {isMember && (
                   <button
                     onClick={() => setShowFileUpload(true)}
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20"
@@ -518,14 +519,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   <Upload className="w-10 h-10 text-blue-400" />
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-2">开始分享文档</h3>
-                <p className="text-gray-400 mb-6">上传项目相关文档，让团队成员快速了解项目进展</p>
-                <button
-                  onClick={() => setShowFileUpload(true)}
-                  className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20 mx-auto"
-                >
-                  <Upload className="w-5 h-5" />
-                  上传第一份文档
-                </button>
+                <p className="text-gray-400 mb-6">
+                  上传项目相关文档，让团队成员快速了解项目进展
+                  {!isManager && <span className="block text-yellow-400 text-sm mt-1">您上传的文档需要项目管理员审核后才能进入知识库</span>}
+                </p>
+                {isMember && (
+                  <button
+                    onClick={() => setShowFileUpload(true)}
+                    className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20 mx-auto"
+                  >
+                    <Upload className="w-5 h-5" />
+                    上传第一份文档
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -535,13 +541,24 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   const fileSize = doc.file_size ? (doc.file_size / 1024).toFixed(1) + ' KB' : '未知'
                   const fileIcon = doc.file_type?.includes('pdf') ? '📄' :
                                    doc.file_type?.includes('word') ? '📝' : '📰'
+                  const isPending = doc.review_status === 'pending'
+                  const isRejected = doc.review_status === 'rejected'
+                  const isApproved = doc.review_status === 'approved'
+
+                  // 获取审核状态样式
+                  const getStatusStyle = () => {
+                    if (isPending) return 'border-yellow-500/50 bg-yellow-500/5'
+                    if (isRejected) return 'border-red-500/50 bg-red-500/5'
+                    return 'border-zinc-700/50'
+                  }
+
                   return (
                     <div
                       key={doc.id}
                       className={`bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border rounded-xl p-6 transition-all duration-200 ${
                         isSelected
                           ? 'border-blue-500 ring-2 ring-blue-500/50'
-                          : 'border-zinc-700/50 hover:border-zinc-600/50'
+                          : getStatusStyle() + ' hover:border-zinc-600/50'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-4">
@@ -556,7 +573,25 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                           )}
                           <span className="text-3xl">{fileIcon}</span>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-white truncate">{doc.title}</h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-white truncate">{doc.title}</h3>
+                              {/* 审核状态标签 */}
+                              {isPending && (
+                                <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-500/20 text-yellow-400 whitespace-nowrap">
+                                  待审核
+                                </span>
+                              )}
+                              {isApproved && (
+                                <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400 whitespace-nowrap">
+                                  已通过
+                                </span>
+                              )}
+                              {isRejected && (
+                                <span className="px-2 py-0.5 text-xs rounded-full bg-red-500/20 text-red-400 whitespace-nowrap">
+                                  已拒绝
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-zinc-500 truncate">{doc.file_name}</p>
                           </div>
                         </div>
@@ -574,6 +609,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                           <span className="text-gray-500">上传时间:</span>
                           <span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString('zh-CN') : '未知'}</span>
                         </div>
+                        {/* 显示拒绝原因 */}
+                        {isRejected && doc.review_comment && (
+                          <div className="pt-2 border-t border-zinc-700/50">
+                            <span className="text-red-400 text-xs">拒绝原因：{doc.review_comment}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )

@@ -28,6 +28,10 @@ interface ProjectFile {
   file_size: number
   file_type: string
   created_at: string
+  review_status?: 'pending' | 'approved' | 'rejected' | string | null
+  reviewed_by?: string | null
+  reviewed_at?: string | null
+  review_comment?: string | null
   uploader?: {
     id?: string
     full_name: string | null
@@ -41,6 +45,10 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
   const [loading, setLoading] = useState(true)
   const [isManager, setIsManager] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [reviewingFileId, setReviewingFileId] = useState<string | null>(null)
+  const [rejectComment, setRejectComment] = useState('')
+  const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all')
 
   useEffect(() => {
     loadUserData()
@@ -279,6 +287,60 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
     alert('下载功能暂不可用。文档已被处理为知识库内容，原文件不再保留。')
   }
 
+  // 审核文档
+  const handleReviewDocument = async (fileId: string, action: 'approve' | 'reject', comment?: string) => {
+    setReviewingFileId(fileId)
+    try {
+      const response = await fetch('/api/aip/review-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file_id: fileId,
+          action: action,
+          comment: comment
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '审核失败')
+      }
+
+      alert(action === 'approve' ? '文档已通过审核' : '文档已拒绝')
+      loadDocuments()
+      setShowRejectDialog(null)
+      setRejectComment('')
+    } catch (error) {
+      console.error('审核文档失败:', error)
+      alert('审核失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    } finally {
+      setReviewingFileId(null)
+    }
+  }
+
+  // 获取审核状态标签
+  const getStatusBadge = (status: string | null | undefined) => {
+    switch (status) {
+      case 'pending':
+        return <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-500/20 text-yellow-400">待审核</span>
+      case 'approved':
+        return <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400">已通过</span>
+      case 'rejected':
+        return <span className="px-2 py-0.5 text-xs rounded-full bg-red-500/20 text-red-400">已拒绝</span>
+      default:
+        return null
+    }
+  }
+
+  // 过滤文档
+  const filteredDocuments = activeTab === 'pending'
+    ? existingDocuments.filter(doc => doc.review_status === 'pending')
+    : existingDocuments
+
+  // 待审核数量
+  const pendingCount = existingDocuments.filter(doc => doc.review_status === 'pending').length
+
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
@@ -323,35 +385,77 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
         <div className="flex-1 overflow-y-auto p-6">
           {/* Existing Documents */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-400" />
-              项目文档
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <FileText className="h-5 w-5 text-blue-400" />
+                项目文档
+              </h3>
+
+              {/* 管理员可以筛选待审核 */}
+              {isManager && pendingCount > 0 && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setActiveTab('all')}
+                    className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                      activeTab === 'all'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    全部
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('pending')}
+                    className={`px-3 py-1 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                      activeTab === 'pending'
+                        ? 'bg-yellow-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    待审核
+                    <span className="bg-yellow-500 text-black px-1.5 rounded-full text-xs font-bold">
+                      {pendingCount}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {loading ? (
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
               </div>
-            ) : existingDocuments.length === 0 ? (
+            ) : filteredDocuments.length === 0 ? (
               <div className="text-center py-8 text-zinc-500">
                 <FileText className="h-12 w-12 text-zinc-700 mx-auto mb-2" />
-                <p>此项目暂无文档</p>
+                <p>{activeTab === 'pending' ? '暂无待审核文档' : '此项目暂无文档'}</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {existingDocuments.map((doc: any) => {
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {filteredDocuments.map((doc: ProjectFile) => {
                   const uploaderName = doc.uploader?.full_name || '未知用户'
                   const fileSize = doc.file_size ? (doc.file_size / 1024).toFixed(1) + ' KB' : '未知'
                   const fileIcon = doc.file_type?.includes('pdf') ? '📄' :
                                    doc.file_type?.includes('word') ? '📝' : '📰'
+                  const isOwnFile = doc.user_id === userId
+                  const isPending = doc.review_status === 'pending'
+                  const isRejected = doc.review_status === 'rejected'
+
                   return (
                     <div
                       key={doc.id}
-                      className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
+                      className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                        isPending ? 'bg-yellow-500/10 border border-yellow-500/30' :
+                        isRejected ? 'bg-red-500/10 border border-red-500/30' :
+                        'bg-zinc-800/50 hover:bg-zinc-800'
+                      }`}
                     >
                       <span className="text-lg">{fileIcon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white truncate">{doc.title}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-white truncate">{doc.title}</p>
+                          {getStatusBadge(doc.review_status)}
+                        </div>
                         <div className="flex items-center gap-2 text-xs text-zinc-500">
                           <span>{uploaderName}</span>
                           <span>•</span>
@@ -359,10 +463,37 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
                           <span>•</span>
                           <span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString('zh-CN') : '未知日期'}</span>
                         </div>
+                        {/* 显示拒绝原因 */}
+                        {isRejected && doc.review_comment && (
+                          <p className="text-xs text-red-400 mt-1">拒绝原因：{doc.review_comment}</p>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {(isManager || doc.user_id === userId) && (
+                        {/* 审核按钮 - 仅管理员可见，且文件待审核 */}
+                        {isManager && isPending && (
+                          <>
+                            <button
+                              onClick={() => handleReviewDocument(doc.id, 'approve')}
+                              disabled={reviewingFileId === doc.id}
+                              className="px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition-colors disabled:opacity-50"
+                              title="通过"
+                            >
+                              {reviewingFileId === doc.id ? '...' : '✓ 通过'}
+                            </button>
+                            <button
+                              onClick={() => setShowRejectDialog(doc.id)}
+                              disabled={reviewingFileId === doc.id}
+                              className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors disabled:opacity-50"
+                              title="拒绝"
+                            >
+                              ✗ 拒绝
+                            </button>
+                          </>
+                        )}
+
+                        {/* 删除按钮 - 管理员或自己的文件可删除 */}
+                        {(isManager || isOwnFile) && (
                           <button
                             onClick={() => handleDeleteDocument(doc)}
                             className="p-1 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300"
@@ -375,6 +506,39 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
                     </div>
                   )
                 })}
+              </div>
+            )}
+
+            {/* 拒绝对话框 */}
+            {showRejectDialog && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-96">
+                  <h4 className="text-lg font-semibold text-white mb-4">拒绝文档</h4>
+                  <textarea
+                    value={rejectComment}
+                    onChange={(e) => setRejectComment(e.target.value)}
+                    placeholder="请输入拒绝原因（可选）..."
+                    className="w-full h-24 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white text-sm resize-none focus:outline-none focus:border-blue-500"
+                  />
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={() => {
+                        setShowRejectDialog(null)
+                        setRejectComment('')
+                      }}
+                      className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={() => handleReviewDocument(showRejectDialog, 'reject', rejectComment)}
+                      disabled={reviewingFileId === showRejectDialog}
+                      className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      确认拒绝
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
