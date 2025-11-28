@@ -1,10 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Send, Inbox, Mail, Trash2, Eraser, Eye, MessageSquare, Check as CheckIcon, XIcon, Users, FolderOpen, Settings2, CheckSquare, Square } from 'lucide-react'
+import { X, Send, Inbox, Mail, Trash2, Eraser, Eye, MessageSquare, Check as CheckIcon, XIcon, Users, FolderOpen, Settings2, CheckSquare, Square, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { InvitationCard } from './InvitationCard'
 import { reviewProjectJoinRequest } from '@/lib/aip/api'
+
+// 检查是否是需要审核的文档通知（未处理的）
+const isFileReviewNotification = (interaction: any): boolean => {
+  if (interaction.interactionType !== 'notification') return false
+  const notif = interaction.originalRequest
+  return notif?.type === 'file_review_request'
+}
+
+// 检查文档是否待审核（未处理）
+const isPendingFileReview = (interaction: any): boolean => {
+  return isFileReviewNotification(interaction) && interaction.status === 'unread'
+}
 
 interface InteractionLogProps {
   onClose: () => void
@@ -207,6 +219,44 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     }
   }
 
+  // 处理文档审核
+  const handleFileReview = async (notificationId: string, fileId: string, action: 'approve' | 'reject', comment?: string) => {
+    setProcessing(notificationId)
+    try {
+      const response = await fetch('/api/aip/review-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file_id: fileId,
+          action: action,
+          comment: comment
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '审核失败')
+      }
+
+      // 标记通知为已读
+      const supabase = createClient()
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId)
+
+      alert(action === 'approve' ? '文档已通过审核' : '文档已拒绝')
+      await loadInteractions()
+      onUnreadCountChange?.()
+    } catch (error: any) {
+      console.error('审核文档失败:', error)
+      alert(`操作失败：${error.message || '请重试'}`)
+    } finally {
+      setProcessing(null)
+    }
+  }
+
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       const supabase = createClient()
@@ -288,12 +338,22 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     })
   }
 
+  // 判断项目是否可删除
+  const canDeleteItem = (interaction: UnifiedInteraction): boolean => {
+    // 待审核的项目申请不可删除
+    if (interaction.interactionType === 'project_request' && interaction.status === 'pending') {
+      return false
+    }
+    // 待审核的文档通知不可删除
+    if (isPendingFileReview(interaction)) {
+      return false
+    }
+    return true
+  }
+
   // 全选/取消全选
   const toggleSelectAll = () => {
-    const deletableItems = filteredInteractions.filter(i =>
-      i.interactionType === 'notification' ||
-      (i.interactionType === 'project_request' && i.status !== 'pending')
-    )
+    const deletableItems = filteredInteractions.filter(i => canDeleteItem(i))
 
     if (selectedItems.size === deletableItems.length && deletableItems.length > 0) {
       setSelectedItems(new Set())
@@ -414,7 +474,15 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
       }
     }
 
-    // 通知的状态显示
+    // 文档审核通知的状态显示
+    if (isPendingFileReview(interaction)) {
+      return <span className="px-2 py-1 bg-amber-500/10 text-amber-500 text-xs rounded-full border border-amber-500/20">待审核</span>
+    }
+    if (isFileReviewNotification(interaction) && interaction.status === 'read') {
+      return <span className="px-2 py-1 bg-green-500/10 text-green-500 text-xs rounded-full border border-green-500/20">已处理</span>
+    }
+
+    // 普通通知的状态显示
     if (interaction.status === 'unread') {
       return <span className="px-2 py-1 bg-orange-500/10 text-orange-500 text-xs rounded-full border border-orange-500/20">未读</span>
     }
@@ -596,10 +664,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
             >
               <div className="flex items-center justify-center w-5 h-5">
                 {(() => {
-                  const deletableItems = filteredInteractions.filter(i =>
-                    i.interactionType === 'notification' ||
-                    (i.interactionType === 'project_request' && i.status !== 'pending')
-                  )
+                  const deletableItems = filteredInteractions.filter(i => canDeleteItem(i))
                   const isAllSelected = selectedItems.size === deletableItems.length && deletableItems.length > 0
                   return isAllSelected ? (
                     <CheckSquare className="h-5 w-5 text-blue-500" />
@@ -609,14 +674,11 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                 })()}
               </div>
               <span className="text-sm text-zinc-400">
-                全选可删除项 ({filteredInteractions.filter(i =>
-                  i.interactionType === 'notification' ||
-                  (i.interactionType === 'project_request' && i.status !== 'pending')
-                ).length})
+                全选可删除项 ({filteredInteractions.filter(i => canDeleteItem(i)).length})
               </span>
             </div>
             <p className="text-xs text-zinc-500 mt-1 ml-8">
-              提示：待处理的项目申请不可删除，需先批准或拒绝
+              提示：待处理的项目申请和待审核的文档不可删除，需先处理
             </p>
           </div>
         )}
@@ -644,9 +706,10 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
             <div className="space-y-2">
               {filteredInteractions.map((interaction) => {
                 const isExpanded = expandedItems.has(interaction.id)
-                const canDelete = interaction.interactionType === 'notification' ||
-                  (interaction.interactionType === 'project_request' && interaction.status !== 'pending')
+                const canDelete = canDeleteItem(interaction)
                 const isSelected = selectedItems.has(interaction.id)
+                const isFileReview = isFileReviewNotification(interaction)
+                const isPendingReview = isPendingFileReview(interaction)
 
                 return (
                   <div
@@ -695,6 +758,8 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                         <div className="flex-shrink-0">
                           {interaction.interactionType === 'project_request' ? (
                             <Users className="h-5 w-5 text-purple-500" />
+                          ) : isFileReview ? (
+                            <FileText className="h-5 w-5 text-amber-500" />
                           ) : (interaction.originalRequest as Notification)?.type === 'invitation_sent' ? (
                             <Send className="h-5 w-5 text-blue-500" />
                           ) : (
@@ -720,8 +785,8 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                           <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                         )}
 
-                        {/* 删除按钮 (只对通知显示，非管理模式) */}
-                        {!isManageMode && interaction.interactionType === 'notification' && (
+                        {/* 删除按钮 (只对可删除项显示，非管理模式) */}
+                        {!isManageMode && canDelete && interaction.interactionType === 'notification' && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -812,8 +877,61 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                             </div>
                           )}
 
-                          {/* 通知的详细信息 */}
-                          {interaction.interactionType === 'notification' && (
+                          {/* 文档审核通知的详细信息和按钮 */}
+                          {isFileReview && (
+                            <div className="space-y-3">
+                              {interaction.metadata && (
+                                <div className="bg-zinc-900/50 rounded-md p-3 text-xs text-zinc-400 space-y-1">
+                                  {interaction.metadata.file_title && (
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-3 w-3" />
+                                      <span>文档: {interaction.metadata.file_title}</span>
+                                    </div>
+                                  )}
+                                  {interaction.metadata.project_id && (
+                                    <div className="flex items-center gap-2">
+                                      <FolderOpen className="h-3 w-3" />
+                                      <span>项目ID: {interaction.metadata.project_id}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* 文档审核按钮 - 只对待审核的显示 */}
+                              {isPendingReview && interaction.metadata?.file_id && (
+                                <div className="flex items-center gap-2 pt-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleFileReview(interaction.id, interaction.metadata.file_id, 'approve')
+                                    }}
+                                    disabled={processing === interaction.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 text-green-500 rounded-md hover:bg-green-500/20 transition-colors text-sm border border-green-500/20 disabled:opacity-50"
+                                  >
+                                    <CheckIcon className="h-3 w-3" />
+                                    {processing === interaction.id ? '处理中...' : '通过审核'}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      const reason = prompt('请输入拒绝原因（可选）：')
+                                      if (reason !== null) {
+                                        handleFileReview(interaction.id, interaction.metadata.file_id, 'reject', reason || undefined)
+                                      }
+                                    }}
+                                    disabled={processing === interaction.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 text-red-500 rounded-md hover:bg-red-500/20 transition-colors text-sm border border-red-500/20 disabled:opacity-50"
+                                  >
+                                    <XIcon className="h-3 w-3" />
+                                    {processing === interaction.id ? '处理中...' : '拒绝'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* 普通通知的详细信息 */}
+                          {interaction.interactionType === 'notification' && !isFileReview && (
                             <>
                               {interaction.metadata && (
                                 <div className="bg-zinc-900/50 rounded-md p-3 text-xs text-zinc-400 space-y-1">
