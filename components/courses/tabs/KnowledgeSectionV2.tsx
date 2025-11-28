@@ -79,14 +79,17 @@ export function KnowledgeSectionV2({
     setPrefetching(false)
   }
 
-  // 点击知识点时获取问题（如果预获取失败则重试）
+  // 点击知识点时获取问题
   const fetchQuestion = async (point: string, index: number) => {
-    if (questions[index]) {
-      // 已获取过，直接展开/收起
+    const existingQuestion = questions[index]
+
+    // 如果已回答过，直接展开/收起（使用缓存）
+    if (existingQuestion?.hasResponded) {
       setExpandedIndex(expandedIndex === index ? null : index)
       return
     }
 
+    // 未回答的问题：每次点击都重新获取（实现随机变化）
     setLoadingIndex(index)
     setExpandedIndex(index)
 

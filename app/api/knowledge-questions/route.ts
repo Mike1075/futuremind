@@ -72,32 +72,49 @@ export async function POST(request: NextRequest) {
 
     const questions = questionData.questions as string[]
 
-    // 4. 如果用户已有分配
-    if (assignment) {
+    // 4. 如果用户已有分配且已回答，返回相同问题
+    if (assignment && assignment.has_responded) {
       const questionIndex = assignment.assigned_question_index
       return NextResponse.json({
         question: questions[questionIndex] || questions[0],
         questionIndex,
-        hasResponded: assignment.has_responded
+        hasResponded: true
       })
     }
 
-    // 5. 用户还没有分配，随机分配一个问题
+    // 5. 用户未回答或没有分配，随机分配一个新问题
     const randomIndex = Math.floor(Math.random() * questions.length)
 
-    // 保存分配记录
-    const { error: insertError } = await supabase
-      .from('user_knowledge_point_assignments')
-      .insert({
-        user_id: user.id,
-        content_id: contentId,
-        knowledge_point_index: knowledgePointIndex,
-        assigned_question_index: randomIndex,
-        has_responded: false
-      })
+    if (assignment) {
+      // 更新现有分配为新的随机问题
+      const { error: updateError } = await supabase
+        .from('user_knowledge_point_assignments')
+        .update({
+          assigned_question_index: randomIndex,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('content_id', contentId)
+        .eq('knowledge_point_index', knowledgePointIndex)
 
-    if (insertError) {
-      console.error('[Knowledge Questions] 保存分配失败:', insertError)
+      if (updateError) {
+        console.error('[Knowledge Questions] 更新分配失败:', updateError)
+      }
+    } else {
+      // 保存新分配记录
+      const { error: insertError } = await supabase
+        .from('user_knowledge_point_assignments')
+        .insert({
+          user_id: user.id,
+          content_id: contentId,
+          knowledge_point_index: knowledgePointIndex,
+          assigned_question_index: randomIndex,
+          has_responded: false
+        })
+
+      if (insertError) {
+        console.error('[Knowledge Questions] 保存分配失败:', insertError)
+      }
     }
 
     return NextResponse.json({

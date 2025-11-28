@@ -457,15 +457,12 @@ export function EarthContentDetail({
           <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-400 via-green-400 to-cyan-400 bg-clip-text text-transparent">
             {content.title}
           </h1>
-          {content.subtitle && (
-            <p className="text-xl text-gray-400 mb-6">{content.subtitle}</p>
-          )}
         </div>
 
-        {/* 1. 视频链接 */}
+        {/* 1. 视频链接 - 使用副标题作为标题 */}
         {content.documentary_url && (
           <CollapsibleSection
-            title="课程视频"
+            title={content.subtitle || "课程视频"}
             subtitle="点击观看本阶段的视频内容"
             icon={<Play className="w-6 h-6 text-white" />}
             iconBgClass="bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/20"
