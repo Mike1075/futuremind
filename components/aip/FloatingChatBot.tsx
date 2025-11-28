@@ -1,16 +1,18 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Bot, X, Send, Trash2, Check, FolderOpen, Building2, Loader2 } from 'lucide-react'
+import { Bot, X, Send, Trash2, Check, FolderOpen, Building2, Loader2, History, Edit3 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project } from '@/lib/aip/types'
 import aipChatAPI from '@/lib/api/aip-chat'
 
 // 探索者联盟图标组件 - 炫彩旋转边框 + 机器人
-function ExplorerBotIcon() {
+function ExplorerBotIcon({ size = 'normal' }: { size?: 'normal' | 'small' | 'tiny' }) {
+  const sizeClass = size === 'small' ? 'gaia-icon-small' : size === 'tiny' ? 'gaia-icon-tiny' : ''
+
   return (
-    <div className="gaia-icon">
+    <div className={`gaia-icon ${sizeClass}`}>
       <div className="gaia-icon-glow" />
       <div className="gaia-icon-border" />
       <div className="gaia-icon-inner" />
@@ -401,16 +403,14 @@ export function FloatingChatBot({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-4xl h-[600px] flex flex-col">
+      <div className="gaia-sidebar rounded-xl shadow-2xl w-full max-w-4xl h-[600px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between p-4 gaia-header rounded-t-xl">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
-              <Bot className="h-5 w-5 text-blue-400" />
-            </div>
+            <ExplorerBotIcon size="small" />
             <div>
-              <h3 className="font-semibold text-white">AI智能助手</h3>
-              <p className="text-xs text-zinc-500">
+              <h3 className="font-semibold text-white text-lg">AI智能助手</h3>
+              <p className="text-xs text-starlight-muted">
                 {selectedProjects.length > 0
                   ? `已选择 ${selectedProjects.length} 个项目`
                   : '选择项目以获得更精准的回答'}
@@ -421,24 +421,25 @@ export function FloatingChatBot({
             {showProjectSelector && (
               <button
                 onClick={() => setShowProjectPanel(!showProjectPanel)}
-                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
+                className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
                 title="选择项目"
               >
-                <FolderOpen className="h-5 w-5" />
+                <FolderOpen className="h-5 w-5 text-starlight-muted group-hover:text-gaia-gold transition-colors" />
               </button>
             )}
             <button
-              onClick={handleClearChat}
-              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
-              title="清空聊天"
+              onClick={() => {/* TODO: 加载历史记录 */}}
+              className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
+              title="查看历史记录"
             >
-              <Trash2 className="h-5 w-5" />
+              <History className="h-5 w-5 text-starlight-muted group-hover:text-gaia-gold transition-colors" />
             </button>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
+              className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
+              title="关闭"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5 text-starlight-muted group-hover:text-white transition-colors" />
             </button>
           </div>
         </div>
@@ -532,11 +533,11 @@ export function FloatingChatBot({
 
           {/* Chat Messages */}
           <div className="flex-1 flex flex-col">
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 gaia-messages-area">
               {isLoadingHistory ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3">
-                  <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
-                  <p className="text-sm text-zinc-400">加载聊天记录中...</p>
+                  <Loader2 className="w-12 h-12 text-gaia-gold animate-spin" />
+                  <p className="text-sm text-starlight-muted">加载聊天记录中...</p>
                 </div>
               ) : (
                 <>
@@ -546,16 +547,14 @@ export function FloatingChatBot({
                   className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.role === 'assistant' && (
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-500/20 rounded-lg border border-blue-500/30 flex items-center justify-center">
-                      <Bot className="w-4 h-4 text-blue-400" />
-                    </div>
+                    <ExplorerBotIcon size="tiny" />
                   )}
 
                   <div
-                    className={`max-w-[70%] rounded-lg p-3 ${
+                    className={`max-w-[70%] px-4 py-3 ${
                       message.role === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-zinc-800 text-zinc-100 border border-zinc-700'
+                        ? 'user-message-bubble text-starlight'
+                        : 'gaia-message-bubble text-starlight-dim'
                     }`}
                   >
                     {message.role === 'assistant' ? (
@@ -570,10 +569,8 @@ export function FloatingChatBot({
                   </div>
 
                   {message.role === 'user' && (
-                    <div className="flex-shrink-0 w-8 h-8 bg-emerald-500/20 rounded-lg border border-emerald-500/30 flex items-center justify-center">
-                      <div className="w-4 h-4 text-emerald-400 text-xs font-bold flex items-center justify-center">
-                        我
-                      </div>
+                    <div className="flex-shrink-0 w-8 h-8 bg-mystic-purple/20 rounded-full border border-mystic-purple/30 flex items-center justify-center">
+                      <span className="text-mystic-purple-light text-xs font-bold">我</span>
                     </div>
                     )}
                   </div>
@@ -581,13 +578,13 @@ export function FloatingChatBot({
 
                 {isLoading && (
                 <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-500/20 rounded-lg border border-blue-500/30 flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-3">
+                  <ExplorerBotIcon size="tiny" />
+                  <div className="gaia-message-bubble px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-                      <span className="text-sm text-zinc-400">正在思考...</span>
+                      <div className="w-2 h-2 bg-gaia-gold rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-mystic-purple rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-ethereal-blue rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="text-xs text-starlight-muted ml-2">正在思考...</span>
                     </div>
                   </div>
                   </div>
@@ -599,8 +596,8 @@ export function FloatingChatBot({
             </div>
 
             {/* Input */}
-            <div className="p-4 border-t border-zinc-800">
-              <div className="flex gap-2">
+            <div className="p-4 gaia-input-area rounded-b-xl">
+              <div className="flex gap-3">
                 <input
                   type="text"
                   value={input}
@@ -613,14 +610,14 @@ export function FloatingChatBot({
                   }}
                   placeholder="输入您的问题..."
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-3 gaia-input disabled:opacity-50"
                 />
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-3 gaia-send-btn disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-5 w-5 text-white" />
                 </button>
               </div>
             </div>

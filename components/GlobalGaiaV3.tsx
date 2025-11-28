@@ -774,10 +774,10 @@ export function GlobalGaiaV3() {
                   </button>
                   <button
                     onClick={loadAllHistoryMessages}
-                    className="px-3 py-1.5 text-sm bg-gaia-gold/10 hover:bg-gaia-gold/20 text-gaia-gold rounded-lg border border-gaia-gold/30 flex items-center gap-1.5 transition-colors"
-                    title="加载历史记录"
+                    className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
+                    title="查看历史记录"
                   >
-                    清除记录
+                    <History className="w-5 h-5 text-starlight-muted group-hover:text-gaia-gold transition-colors" />
                   </button>
                   <button
                     onClick={() => setIsOpen(false)}
