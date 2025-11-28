@@ -157,16 +157,16 @@ export default function SubmissionHistory({
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-800">
+      <div className="card-glass rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/10">
         {/* 头部 */}
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-6 flex justify-between items-center">
+        <div className="sticky top-0 bg-cosmic-void border-b border-white/10 p-6 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-white">我的提交记录</h2>
-            <p className="text-gray-400 text-sm mt-1">共 {submissions.length} 次提交</p>
+            <h2 className="text-h2 font-bold text-starlight">我的提交记录</h2>
+            <p className="text-starlight-muted text-small mt-1">共 {submissions.length} 次提交</p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-starlight-muted hover:text-starlight transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -194,7 +194,7 @@ export default function SubmissionHistory({
               {submissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden hover:border-gray-600 transition-colors"
+                  className="card-glass rounded-lg overflow-hidden border border-white/10 hover:border-white/20 transition-colors"
                 >
                   {/* 摘要行 */}
                   <div
@@ -351,10 +351,10 @@ export default function SubmissionHistory({
         </div>
 
         {/* 底部关闭按钮 */}
-        <div className="sticky bottom-0 bg-gray-900 border-t border-gray-800 p-6">
+        <div className="sticky bottom-0 bg-cosmic-void border-t border-white/10 p-6">
           <button
             onClick={onClose}
-            className="w-full py-3 px-6 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+            className="btn-stardust w-full py-3 px-6 font-medium"
           >
             关闭
           </button>

@@ -657,11 +657,7 @@ export function PBLProjectDetail({
           {/* 选择/取消项目按钮 */}
           <button
             onClick={handleToggleSelection}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              isSelected
-                ? 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white'
-            }`}
+            className="btn-stardust px-6 py-3 font-medium"
           >
             {isSelected ? '取消项目' : '选择这个项目'}
           </button>
@@ -822,7 +818,7 @@ export function PBLProjectDetail({
                             <div className="px-4 pb-3 flex gap-2">
                               <button
                                 onClick={() => openSubmitDialog(week.week, dayNumber, activityDayLabel)}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                                className="btn-stardust flex-1 px-4 py-2 text-sm font-medium"
                               >
                                 {isCompleted ? '再次提交' : '提交任务'}
                               </button>
@@ -837,7 +833,7 @@ export function PBLProjectDetail({
                                   setShowSubmissionsHistory(true)
                                   fetchSubmissionsHistory(dayKey)
                                 }}
-                                className="flex-shrink-0 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm font-medium transition-colors"
+                                className="btn-stardust flex-shrink-0 px-4 py-2 text-sm font-medium"
                               >
                                 查看记录
                               </button>
@@ -1087,7 +1083,7 @@ export function PBLProjectDetail({
                   <button
                     onClick={handleSubmitTask}
                     disabled={!!submittingDay || !submissionContent.trim() || uploading}
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn-stardust flex-1 px-4 py-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {uploading ? '上传中...' : submittingDay ? '提交中...' : '确认提交'}
                   </button>
@@ -1097,7 +1093,7 @@ export function PBLProjectDetail({
                       setHistoryDayLabel(null)
                     }}
                     disabled={!!submittingDay || uploading}
-                    className="px-4 py-2 bg-gray-800 rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="btn-stardust px-4 py-2 font-medium disabled:opacity-50"
                   >
                     取消
                   </button>
@@ -1156,7 +1152,7 @@ export function PBLProjectDetail({
                     setHistoryDayLabel(null)
                     router.refresh()
                   }}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                  className="btn-stardust w-full px-4 py-2 font-medium"
                 >
                   关闭
                 </button>
@@ -1304,7 +1300,7 @@ export function PBLProjectDetail({
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => setSelectedSubmission(submission)}
-                        className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors text-white"
+                        className="btn-stardust flex-1 px-4 py-2 text-sm font-medium"
                       >
                         查看详情
                       </button>
@@ -1434,7 +1430,7 @@ export function PBLProjectDetail({
               {/* 关闭按钮 */}
               <button
                 onClick={() => setSelectedSubmission(null)}
-                className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-semibold hover:opacity-90 transition-all text-white"
+                className="btn-stardust w-full px-6 py-3 font-semibold"
               >
                 关闭
               </button>
@@ -1527,13 +1523,13 @@ export function PBLProjectDetail({
                   // 滚动到页面顶部（项目选择按钮位置）
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
-                className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 rounded-lg font-semibold transition-all shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50"
+                className="btn-stardust w-full px-6 py-3 font-semibold"
               >
                 前往选择项目
               </button>
               <button
                 onClick={() => setShowSelectProjectModal(false)}
-                className="w-full px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors text-gray-300"
+                className="btn-stardust w-full px-6 py-3 font-medium"
               >
                 我知道了
               </button>

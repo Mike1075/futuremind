@@ -278,7 +278,7 @@ export default function SubmissionDialog({
                 <button
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="flex-1 py-3 px-6 card-glass text-starlight rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-stardust flex-1 py-3 px-6 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   取消
                 </button>
