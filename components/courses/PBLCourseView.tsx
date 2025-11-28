@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { IcarusTriangleView } from './IcarusTriangleView'
+import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
+import UserProfileModal from '@/components/UserProfileModal'
 
 interface Project {
   id: string
@@ -61,6 +63,7 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
   const [allProjects, setAllProjects] = useState<Project[]>([])
   const [activeTab, setActiveTab] = useState<'my' | 'explore'>('explore')
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   useEffect(() => {
     loadData()

@@ -5,11 +5,14 @@ import { motion } from 'framer-motion'
 import { Sparkles, MessageCircle, TreePine, Users, Shield } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
 import AuthModal from '@/components/AuthModal'
+import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
+import UserProfileModal from '@/components/UserProfileModal'
 import { createClient } from '@/lib/supabase/client'
 
 export default function Home() {
   const [showGaiaDialog, setShowGaiaDialog] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -131,33 +134,33 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Header with login/logout button */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="absolute top-8 right-8 z-20"
-      >
-        {isLoggedIn ? (
-          <button
-            onClick={async () => {
-              const supabase = createClient()
-              await supabase.auth.signOut()
-              window.location.reload()
+      {/* Header - 登录后显示统一导航栏，未登录显示登录按钮 */}
+      {isLoggedIn ? (
+        <div className="absolute top-0 left-0 right-0 z-20">
+          <UnifiedNavbar
+            transparent
+            onOpenProfile={() => setShowProfileModal(true)}
+            rightButton={{
+              label: '个人门户',
+              href: '/portal'
             }}
-            className="px-6 py-2 bg-purple-600/20 border border-purple-400/50 rounded-full text-purple-300 hover:bg-purple-600/40 transition-all duration-300"
-          >
-            退出登录
-          </button>
-        ) : (
+          />
+        </div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="absolute top-8 right-8 z-20"
+        >
           <button
             onClick={() => setShowAuthModal(true)}
             className="px-6 py-2 bg-purple-600/20 border border-purple-400/50 rounded-full text-purple-300 hover:bg-purple-600/40 transition-all duration-300"
           >
             登录
           </button>
-        )}
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Main content */}
       <motion.div
@@ -291,6 +294,12 @@ export default function Home() {
 
       {/* Auth Modal */}
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+
+      {/* 用户资料弹窗 */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </div>
   )
 }
