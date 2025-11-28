@@ -1438,10 +1438,10 @@ body {
   -webkit-backdrop-filter: blur(8px);
   border-radius: calc(1rem - 2px);
   border: 1px solid var(--course-border-color, rgba(156, 163, 175, 0.2));
-  transition: all 0.4s ease;
+  transition: border-color 0.4s ease; /* 只有边框颜色有过渡，背景即时变化 */
 }
 
-/* 悬停时内层变成不透明深色背景，完全遮住炫彩 */
+/* 悬停时内层变成不透明深色背景，完全遮住炫彩（背景即时变化，不闪烁） */
 .portal-card-wrapper:hover .portal-card-inner {
   background: #0a0a1f;
   border-color: transparent;
