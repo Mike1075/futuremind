@@ -963,45 +963,20 @@ body {
   filter: blur(6px);
 }
 
-/* 地球核心 - 清晰的蓝色地球 */
-.gaia-icon-earth {
+/* 内部背景 - 纯黑色 */
+.gaia-icon-inner {
   position: absolute;
-  inset: 6px;
-  border-radius: 50%;
-  background:
-    /* 高光 */
-    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.4) 0%, transparent 30%),
-    /* 海洋渐变 */
-    radial-gradient(circle at 50% 50%, #1e90ff 0%, #0066cc 50%, #004499 100%);
-  box-shadow:
-    inset -4px -4px 12px rgba(0, 0, 0, 0.4),
-    inset 2px 2px 8px rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-}
-
-.gaia-icon-small .gaia-icon-earth {
-  inset: 4px;
-}
-
-.gaia-icon-tiny .gaia-icon-earth {
   inset: 3px;
+  border-radius: 50%;
+  background: #000;
 }
 
-/* 大陆 - 简化清晰的绿色块 */
-.gaia-icon-earth::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background:
-    /* 北美/欧洲大陆 */
-    radial-gradient(ellipse 35% 28% at 35% 35%, #228B22 0%, #228B22 60%, transparent 70%),
-    /* 亚洲大陆 */
-    radial-gradient(ellipse 30% 22% at 70% 40%, #2E8B2E 0%, #2E8B2E 60%, transparent 70%),
-    /* 南美/非洲 */
-    radial-gradient(ellipse 20% 25% at 40% 65%, #32CD32 0%, #32CD32 55%, transparent 65%),
-    /* 澳洲 */
-    radial-gradient(ellipse 12% 10% at 80% 70%, #3CB371 0%, #3CB371 60%, transparent 70%);
+.gaia-icon-small .gaia-icon-inner {
+  inset: 2px;
+}
+
+.gaia-icon-tiny .gaia-icon-inner {
+  inset: 2px;
 }
 
 /* 对话气泡图标 - 居中显示 */

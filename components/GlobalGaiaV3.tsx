@@ -5,7 +5,7 @@ import { X, Send, Loader2, History, Edit3, Check, Trash2, MessageCircle } from '
 import { createClient } from '@/lib/supabase/client'
 import AuthModal from '@/components/AuthModal'
 
-// 盖亚图标组件 - 地球+对话气泡+炫彩旋转边框
+// 盖亚图标组件 - 炫彩旋转边框 + 对话气泡
 function GaiaIcon({ size = 'normal', isStatic = false }: { size?: 'normal' | 'small' | 'tiny', isStatic?: boolean }) {
   const sizeClass = size === 'small' ? 'gaia-icon-small' : size === 'tiny' ? 'gaia-icon-tiny' : ''
   const staticClass = isStatic ? 'gaia-icon-static' : ''
@@ -16,8 +16,8 @@ function GaiaIcon({ size = 'normal', isStatic = false }: { size?: 'normal' | 'sm
       <div className="gaia-icon-glow" />
       {/* 炫彩旋转边框 */}
       <div className="gaia-icon-border" />
-      {/* 地球 */}
-      <div className="gaia-icon-earth" />
+      {/* 黑色背景 */}
+      <div className="gaia-icon-inner" />
       {/* 对话气泡图标 */}
       <div className="gaia-icon-chat">
         <MessageCircle strokeWidth={2.5} />
