@@ -10,8 +10,11 @@ import { recordInteraction, getEarthProgress, type ItemType } from '@/lib/utils/
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
 import { KnowledgeSectionV2 } from '@/components/courses/tabs/KnowledgeSectionV2'
-import { SocraticQuestionsV2 } from '@/components/courses/tabs/SocraticQuestionsV2'
-import { PostReflectionV2 } from '@/components/courses/tabs/PostReflectionV2'
+import { CollapsibleSection } from '@/components/courses/tabs/CollapsibleSection'
+import { PreWatchThinking } from '@/components/courses/tabs/PreWatchThinking'
+import { DuringWatchThinking } from '@/components/courses/tabs/DuringWatchThinking'
+import { PostWatchThinking } from '@/components/courses/tabs/PostWatchThinking'
+import { Play, ExternalLink } from 'lucide-react'
 import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
 import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
 import UserProfileModal from '@/components/UserProfileModal'
@@ -458,46 +461,76 @@ export function EarthContentDetail({
           )}
         </div>
 
-        {/* 知识点 - 使用统一的KnowledgeSectionV2组件 */}
+        {/* 1. 视频链接 */}
+        {content.documentary_url && (
+          <CollapsibleSection
+            title="课程视频"
+            subtitle="点击观看本阶段的视频内容"
+            icon={<Play className="w-6 h-6 text-white" />}
+            iconBgClass="bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/20"
+          >
+            <a
+              href={content.documentary_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-gradient-to-r from-red-500/10 to-rose-500/10 border border-red-500/30 rounded-xl hover:border-red-400 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center">
+                  <Play className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium">观看视频</p>
+                  <p className="text-sm text-gray-400 truncate max-w-md">{content.documentary_url}</p>
+                </div>
+              </div>
+              <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-red-400 transition-colors" />
+            </a>
+          </CollapsibleSection>
+        )}
+
+        {/* 2. 观看前思考 */}
+        <PreWatchThinking
+          questions={socraticQuestions.pre_watch || []}
+          contentId={content.id}
+        />
+
+        {/* 3. 核心知识点 */}
         {knowledgePoints.length > 0 && (
-          <div className="mb-12">
+          <CollapsibleSection
+            title="核心知识点"
+            subtitle="点击任意知识点，盖亚会为你生成启发性问题"
+            icon="💡"
+            iconBgClass="bg-gradient-to-br from-green-400 to-emerald-500 shadow-green-500/20"
+          >
             <KnowledgeSectionV2
               knowledgePoints={knowledgePoints}
               contentId={content.id}
             />
-          </div>
+          </CollapsibleSection>
         )}
 
-        {/* 苏格拉底式问题 */}
-        <SocraticQuestionsV2
-          socraticQuestions={socraticQuestions}
+        {/* 4. 观看中思考 */}
+        <DuringWatchThinking
+          questions={socraticQuestions.during_watch || []}
           contentId={content.id}
         />
 
-        {/* 课后反思 */}
-        <PostReflectionV2
-          postReflection={postReflection}
+        {/* 5. 观看后思考 */}
+        <PostWatchThinking
+          questions={socraticQuestions.post_watch || []}
+          reflections={postReflection}
           contentId={content.id}
         />
 
-        {/* 小探险家项目 - 探索者联盟 */}
+        {/* 6. 小探险家项目 */}
         {explorerProjects.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mb-12"
+          <CollapsibleSection
+            title="小探险家项目"
+            subtitle="动手实践，化知识为体验"
+            icon="🔬"
+            iconBgClass="bg-gradient-to-br from-orange-400 via-amber-400 to-yellow-400 shadow-orange-500/20"
           >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 via-amber-400 to-yellow-400 flex items-center justify-center text-2xl shadow-lg shadow-orange-500/20">
-                🔬
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">探索者联盟 - 小探险家项目</h2>
-                <p className="text-sm text-gray-400">动手实践，化知识为体验</p>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {explorerProjects.map((project, index) => (
                 <motion.div
@@ -601,7 +634,7 @@ export function EarthContentDetail({
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </CollapsibleSection>
         )}
 
         {/* 阶段进度条和下一阶段 */}

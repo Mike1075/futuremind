@@ -689,7 +689,7 @@ export default function EarthCoursePage() {
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">苏格拉底问题 - 课前引导（每行一个）</label>
+                  <label className="block text-white font-medium mb-2">观看前思考问题（每行一个）</label>
                   <textarea
                     value={formData.socratic_questions.pre_watch.join('\n')}
                     onChange={(e) => setFormData({
@@ -701,12 +701,12 @@ export default function EarthCoursePage() {
                     })}
                     rows={4}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入课前问题，每行一个..."
+                    placeholder="输入观看前思考问题，每行一个..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">苏格拉底问题 - 观看时（每行一个）</label>
+                  <label className="block text-white font-medium mb-2">观看中思考问题（每行一个）</label>
                   <textarea
                     value={formData.socratic_questions.during_watch.join('\n')}
                     onChange={(e) => setFormData({
@@ -718,12 +718,12 @@ export default function EarthCoursePage() {
                     })}
                     rows={6}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入观看时问题，每行一个..."
+                    placeholder="输入观看中思考问题，每行一个..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">苏格拉底问题 - 课后思辨（每行一个）</label>
+                  <label className="block text-white font-medium mb-2">观看后思考问题（每行一个）</label>
                   <textarea
                     value={formData.socratic_questions.post_watch.join('\n')}
                     onChange={(e) => setFormData({
@@ -735,12 +735,12 @@ export default function EarthCoursePage() {
                     })}
                     rows={4}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入课后问题，每行一个..."
+                    placeholder="输入观看后思考问题，每行一个..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">课后反思问题（每行一个）</label>
+                  <label className="block text-white font-medium mb-2">观看后反思问题（每行一个）</label>
                   <textarea
                     value={formData.post_reflection.join('\n')}
                     onChange={(e) => setFormData({
@@ -749,7 +749,7 @@ export default function EarthCoursePage() {
                     })}
                     rows={6}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入课后反思问题，每行一个..."
+                    placeholder="输入观看后反思问题，每行一个..."
                   />
                 </div>
 

@@ -1,12 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Lightbulb, MessageSquare, Loader2, Sparkles } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { Lightbulb, MessageSquare, Loader2, Sparkles, Check } from 'lucide-react'
 
 interface KnowledgeSectionV2Props {
   knowledgePoints: string[]
   contentId: string
+}
+
+interface QuestionData {
+  question: string
+  questionIndex: number
+  hasResponded: boolean
 }
 
 export function KnowledgeSectionV2({
@@ -15,12 +20,12 @@ export function KnowledgeSectionV2({
 }: KnowledgeSectionV2Props) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
-  const [questions, setQuestions] = useState<Record<number, string>>({})
+  const [questions, setQuestions] = useState<Record<number, QuestionData>>({})
 
-  // 生成启发性问题
-  const generateQuestion = async (point: string, index: number) => {
+  // 获取问题（从预生成列表中随机或已分配的）
+  const fetchQuestion = async (point: string, index: number) => {
     if (questions[index]) {
-      // 已生成过，直接展开
+      // 已获取过，直接展开/收起
       setExpandedIndex(expandedIndex === index ? null : index)
       return
     }
@@ -29,41 +34,78 @@ export function KnowledgeSectionV2({
     setExpandedIndex(index)
 
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-
-      const { data, error } = await supabase.functions.invoke('generate-inspiring-questions', {
-        body: {
-          topic: point,
-          originalText: point,
-          userId: user?.id || null,
-          contentId: contentId
-        }
+      const response = await fetch('/api/knowledge-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentId,
+          knowledgePointIndex: index,
+          knowledgePointText: point
+        })
       })
 
-      if (!error && data?.questions) {
-        setQuestions(prev => ({ ...prev, [index]: data.questions }))
+      if (response.ok) {
+        const data = await response.json()
+        setQuestions(prev => ({
+          ...prev,
+          [index]: {
+            question: data.question,
+            questionIndex: data.questionIndex,
+            hasResponded: data.hasResponded
+          }
+        }))
       } else {
         // 失败时使用默认问题
         setQuestions(prev => ({
           ...prev,
-          [index]: `很开心你对这个话题感兴趣！😊\n\n你有什么想法吗？`
+          [index]: {
+            question: `很开心你对这个话题感兴趣！让我们一起探讨这个有趣的知识点吧！`,
+            questionIndex: -1,
+            hasResponded: false
+          }
         }))
       }
     } catch (error) {
       setQuestions(prev => ({
         ...prev,
-        [index]: `很开心你对这个话题感兴趣！😊\n\n你有什么想法吗？`
+        [index]: {
+          question: `很开心你对这个话题感兴趣！让我们一起探讨这个有趣的知识点吧！`,
+          questionIndex: -1,
+          hasResponded: false
+        }
       }))
     } finally {
       setLoadingIndex(null)
     }
   }
 
-  // 点击问题，打开全局盖亚（先检查是否已讨论过）
-  const handleClickQuestion = async (question: string) => {
+  // 点击问题，打开全局盖亚并标记已回复
+  const handleClickQuestion = async (question: string, knowledgePointIndex: number) => {
     if (typeof window === 'undefined') {
       return
+    }
+
+    // 标记用户已回复（用户点击"与盖亚深入探讨"即视为已回复）
+    try {
+      await fetch('/api/knowledge-questions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentId,
+          knowledgePointIndex
+        })
+      })
+
+      // 更新本地状态
+      setQuestions(prev => ({
+        ...prev,
+        [knowledgePointIndex]: {
+          ...prev[knowledgePointIndex],
+          hasResponded: true
+        }
+      }))
+    } catch (error) {
+      // 忽略错误，不影响主流程
     }
 
     try {
@@ -117,21 +159,11 @@ export function KnowledgeSectionV2({
 
   return (
     <div className="space-y-4">
-      <div className="mb-6">
-        <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-          <Lightbulb className="w-5 h-5 text-green-400" />
-          核心知识点
-        </h3>
-        <p className="text-gray-400 text-sm">
-          点击任意知识点，盖亚会为你生成启发性问题
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 gap-4">
         {knowledgePoints.map((point, index) => {
           const isExpanded = expandedIndex === index
           const isLoading = loadingIndex === index
-          const question = questions[index]
+          const questionData = questions[index]
 
           return (
             <div
@@ -141,7 +173,7 @@ export function KnowledgeSectionV2({
               {/* 知识点 */}
               <div
                 className="p-5 cursor-pointer"
-                onClick={() => generateQuestion(point, index)}
+                onClick={() => fetchQuestion(point, index)}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -152,6 +184,12 @@ export function KnowledgeSectionV2({
                       <span className="text-xs text-gray-500 uppercase font-medium tracking-wider">
                         Knowledge Point
                       </span>
+                      {questionData?.hasResponded && (
+                        <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">
+                          <Check className="w-3 h-3" />
+                          已探讨
+                        </span>
+                      )}
                     </div>
                     <p className="text-gray-200 leading-relaxed text-lg">
                       {point}
@@ -168,26 +206,33 @@ export function KnowledgeSectionV2({
               </div>
 
               {/* 盖亚的问题 */}
-              {isExpanded && question && (
+              {isExpanded && questionData && (
                 <div className="border-t border-gray-800 bg-purple-900/10 p-5">
                   <div className="flex items-start gap-3 mb-3">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-purple-400 font-medium mb-2">盖亚的问题</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="text-xs text-purple-400 font-medium">盖亚的问题</p>
+                        {questionData.hasResponded && (
+                          <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">
+                            这是你的专属问题
+                          </span>
+                        )}
+                      </div>
                       <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">
-                        {question}
+                        {questionData.question}
                       </p>
                     </div>
                   </div>
 
                   <button
-                    onClick={() => handleClickQuestion(question)}
+                    onClick={() => handleClickQuestion(questionData.question, index)}
                     className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    与盖亚深入探讨
+                    {questionData.hasResponded ? '继续探讨' : '与盖亚深入探讨'}
                   </button>
                 </div>
               )}
