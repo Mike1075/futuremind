@@ -276,6 +276,8 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
 
       alert('文档删除成功')
       loadDocuments()
+      // 通知父页面刷新文档列表
+      onSuccess()
     } catch (error) {
       console.error('删除文档失败:', error)
       alert('删除文档失败: ' + (error instanceof Error ? error.message : '未知错误'))
@@ -309,6 +311,8 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
 
       alert(action === 'approve' ? '文档已通过审核' : '文档已拒绝')
       loadDocuments()
+      // 通知父页面刷新文档列表
+      onSuccess()
       setShowRejectDialog(null)
       setRejectComment('')
     } catch (error) {

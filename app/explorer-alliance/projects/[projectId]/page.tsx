@@ -689,18 +689,30 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         <FileUploadModal
           projectId={projectId}
           onClose={() => setShowFileUpload(false)}
-          onSuccess={() => {
-            // 重新加载文档数量
-            const loadDocumentsCount = async () => {
-              const supabase = createClient()
-              const { count } = await supabase
-                .from('project_documents')
-                .select('*', { count: 'exact', head: true })
-                .eq('project_id', projectId)
+          onSuccess={async () => {
+            // 重新加载文档列表和数量
+            const supabase = createClient()
+            const { data, count, error } = await supabase
+              .from('project_files')
+              .select('*', { count: 'exact' })
+              .eq('project_id', projectId)
+              .order('created_at', { ascending: false })
 
-              setDocumentsCount(count || 0)
+            if (!error && data) {
+              // 获取上传者信息
+              const userIds = [...new Set(data.map(d => d.user_id))]
+              const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, full_name')
+                .in('id', userIds)
+
+              const docsWithUploader = data.map(doc => ({
+                ...doc,
+                uploader: profiles?.find(p => p.id === doc.user_id) || null
+              }))
+              setDocuments(docsWithUploader)
             }
-            loadDocumentsCount()
+            setDocumentsCount(count || 0)
           }}
         />
       )}
