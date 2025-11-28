@@ -5,7 +5,32 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send, Edit3, Trash2, Check } from 'lucide-react'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
 
-// 使用从 GaiaAPI 导入的 ChatMessage 类型
+// 地球仪图标组件
+function GaiaOrbIcon({ size = 'normal' }: { size?: 'normal' | 'small' | 'tiny' }) {
+  const sizeClasses = {
+    normal: 'gaia-orb-container',
+    small: 'gaia-avatar-small',
+    tiny: 'w-6 h-6'
+  }
+
+  if (size === 'tiny') {
+    return (
+      <div className="w-6 h-6 relative">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gaia-gold via-mystic-purple to-ethereal-blue animate-spin" style={{ animationDuration: '4s' }} />
+        <div className="absolute inset-[2px] rounded-full bg-gradient-to-br from-blue-700 via-green-600 to-blue-800" />
+      </div>
+    )
+  }
+
+  return (
+    <div className={sizeClasses[size]}>
+      <div className="gaia-orb-glow" />
+      <div className="gaia-orb-border">
+        <div className="gaia-orb-core" />
+      </div>
+    </div>
+  )
+}
 
 interface GaiaDialogProps {
   isOpen: boolean
@@ -366,11 +391,9 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             className="fixed inset-4 md:inset-8 lg:inset-16 modal-ethereal z-50 flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
-              <div className="flex items-center">
-                <div className="avatar-gaia mr-3">
-                  <span className="text-lg">🌍</span>
-                </div>
+            <div className="flex items-center justify-between p-6 gaia-header">
+              <div className="flex items-center gap-4">
+                <GaiaOrbIcon size="small" />
                 <div>
                   <h2 className="text-h2 text-white">与盖亚对话</h2>
                   <p className="text-small text-starlight-dim">你的意识觉醒导师</p>
@@ -456,7 +479,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 gaia-messages-area">
               {isLoading && (
                 <div className="text-center py-8">
                   <div className="loader-ethereal mx-auto"></div>
@@ -489,26 +512,24 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
 
                   <div className={`max-w-[80%] ${message.isGaia ? 'order-2' : 'order-1'}`}>
                     {message.isGaia && (
-                      <div className="flex items-center mb-2">
-                        <div className="avatar-gaia w-6 h-6 mr-2">
-                          <span className="text-xs">🌍</span>
-                        </div>
+                      <div className="flex items-center mb-2 gap-2">
+                        <GaiaOrbIcon size="tiny" />
                         <span className="text-small text-gaia-gold font-medium">盖亚</span>
                       </div>
                     )}
                     <div
-                      className={`message-bubble ${
+                      className={`px-4 py-3 ${
                         message.isGaia
-                          ? 'message-bubble-gaia'
-                          : 'message-bubble-user ml-auto'
+                          ? 'gaia-message-bubble'
+                          : 'user-message-bubble ml-auto'
                       } ${
                         isEditMode && selectedMessages.has(message.id)
                           ? 'ring-2 ring-ethereal-blue'
                           : ''
                       }`}
                     >
-                      <p className="text-body leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                      <p className="text-caption text-starlight-muted mt-2">
+                      <p className="text-body leading-relaxed whitespace-pre-wrap text-starlight-dim">{message.content}</p>
+                      <p className={`text-caption mt-2 ${message.isGaia ? 'text-gaia-gold/50' : 'text-mystic-purple-light/70'}`}>
                         {message.timestamp.toLocaleTimeString()}
                       </p>
                     </div>
@@ -540,17 +561,16 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   className="flex justify-start"
                 >
                   <div className="max-w-[80%]">
-                    <div className="flex items-center mb-2">
-                      <div className="avatar-gaia w-6 h-6 mr-2">
-                        <span className="text-xs">🌍</span>
-                      </div>
+                    <div className="flex items-center mb-2 gap-2">
+                      <GaiaOrbIcon size="tiny" />
                       <span className="text-small text-gaia-gold font-medium">盖亚</span>
                     </div>
-                    <div className="message-bubble message-bubble-gaia">
-                      <div className="loader-dots">
-                        <div className="loader-dot"></div>
-                        <div className="loader-dot"></div>
-                        <div className="loader-dot"></div>
+                    <div className="gaia-message-bubble px-4 py-3">
+                      <div className="flex gap-2 items-center">
+                        <div className="w-2 h-2 bg-gaia-gold rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 bg-mystic-purple rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 bg-ethereal-blue rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        <span className="text-xs text-starlight-muted ml-2">盖亚正在思考...</span>
                       </div>
                     </div>
                   </div>
@@ -560,27 +580,25 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             </div>
 
             {/* Input */}
-            <div className="chat-input-container">
-              <div className="flex space-x-4">
-                <div className="flex-1 relative">
-                  <textarea
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="向盖亚提出你的问题..."
-                    className="chat-input resize-none"
-                    rows={3}
-                  />
-                </div>
+            <div className="gaia-input-area px-6 py-4">
+              <div className="flex gap-3">
+                <textarea
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="向盖亚提出你的问题..."
+                  className="flex-1 px-4 py-3 gaia-input resize-none"
+                  rows={3}
+                />
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isTyping}
-                  className="btn-send"
+                  className="px-4 py-3 gaia-send-btn self-end disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-5 h-5 text-white" />
                 </button>
               </div>
-              <p className="text-caption text-starlight-muted mt-2">
+              <p className="text-caption text-starlight-muted/50 mt-2">
                 按 Enter 发送，Shift + Enter 换行
               </p>
             </div>
