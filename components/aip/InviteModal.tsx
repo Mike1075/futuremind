@@ -37,6 +37,9 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
   const [willingUsers, setWillingUsers] = useState<WillingUser[]>([])
   const [isLoadingWillingUsers, setIsLoadingWillingUsers] = useState(false)
 
+  // 项目成员ID（用于排除已是成员的用户）
+  const [projectMemberIds, setProjectMemberIds] = useState<Map<string, Set<string>>>(new Map())
+
   // 多选功能
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
@@ -44,16 +47,29 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
   // 用户资料预览
   const [previewUser, setPreviewUser] = useState<WillingUser | null>(null)
 
-  // 过滤后的用户列表
+  // 过滤后的用户列表（排除已是项目成员的用户）
   const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return willingUsers
-    const query = searchQuery.toLowerCase()
-    return willingUsers.filter(user =>
-      (user.full_name?.toLowerCase().includes(query)) ||
-      (user.email?.toLowerCase().includes(query)) ||
-      (user.profession?.toLowerCase().includes(query))
-    )
-  }, [willingUsers, searchQuery])
+    // 获取当前选中项目的成员ID
+    const currentProjectMembers = selectedProject ? projectMemberIds.get(selectedProject) : null
+
+    // 先排除已是成员的用户
+    let filtered = willingUsers.filter(user => {
+      if (!currentProjectMembers) return true
+      return !currentProjectMembers.has(user.id)
+    })
+
+    // 再根据搜索词过滤
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(user =>
+        (user.full_name?.toLowerCase().includes(query)) ||
+        (user.email?.toLowerCase().includes(query)) ||
+        (user.profession?.toLowerCase().includes(query))
+      )
+    }
+
+    return filtered
+  }, [willingUsers, searchQuery, selectedProject, projectMemberIds])
 
   // 是否全选
   const isAllSelected = filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.has(u.id))
@@ -86,6 +102,19 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
         } else if (managedProjects.length > 0) {
           setSelectedProject(managedProjects[0].id)
         }
+
+        // 获取各项目的成员ID（用于排除）
+        const memberIdsMap = new Map<string, Set<string>>()
+        for (const project of managedProjects) {
+          const { data: members } = await supabase
+            .from('project_members')
+            .select('user_id')
+            .eq('project_id', project.id)
+
+          const memberIds = new Set<string>(members?.map(m => m.user_id) || [])
+          memberIdsMap.set(project.id, memberIds)
+        }
+        setProjectMemberIds(memberIdsMap)
 
         // 获取愿意参与项目的用户（排除当前用户）
         const { data: willingUsersData } = await supabase
@@ -167,21 +196,7 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
 
     if (inviteError) throw inviteError
 
-    // 创建发送者的通知记录
-    await supabase
-      .from('notifications')
-      .insert({
-        user_id: currentUserId,
-        type: 'invitation_sent',
-        title: '邀请已发送',
-        message: `您已向 ${inviteeEmail} 发送加入项目"${targetProject.name}"的邀请`,
-        metadata: {
-          invitation_id: invitationData.id,
-          invitation_type: 'project',
-          target_id: selectedProject,
-          target_name: targetProject.name
-        }
-      })
+    // 注意：不再创建发送者的通知，因为弹窗已有成功提示，避免重复打扰
 
     // 如果被邀请者已注册，创建接收者的通知记录
     if (inviteeId) {
