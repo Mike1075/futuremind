@@ -9,6 +9,7 @@ import { EarthContentWrapperV2 } from './EarthContentWrapperV2'
 import { CourseContentClient } from './CourseContentClient'
 import { CollapsibleSection } from '@/components/courses/CollapsibleSection'
 import { formatCourseText } from '@/lib/utils/text-formatter'
+import AudioPlayer from '@/components/ui/AudioPlayer'
 
 // Resource 类型定义（对应 course_contents.resources 的结构）
 interface Resource {
@@ -205,7 +206,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
             if (resource.type === 'audio') {
               return (
                 <div key={index} className="card-glass p-6">
-                  <div className="flex items-center mb-3">
+                  <div className="flex items-center mb-4">
                     <svg className="w-6 h-6 text-green-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
                     </svg>
@@ -216,10 +217,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
                       )}
                     </div>
                   </div>
-                  <audio controls className="w-full">
-                    <source src={resource.url} type="audio/mpeg" />
-                    您的浏览器不支持音频播放
-                  </audio>
+                  <AudioPlayer src={resource.url} title={resource.title} />
                 </div>
               )
             }

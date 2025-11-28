@@ -1572,3 +1572,66 @@ body {
   border-radius: calc(0.75rem - 2px);
   background-color: rgb(10, 10, 31); /* 深色不透明背景 */
 }
+
+/* ========== 自定义音频播放器 ========== */
+/* 外层wrapper - 炫彩边框容器 */
+.audio-player-wrapper {
+  position: relative;
+  padding: 2px;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.4s ease;
+}
+
+.audio-player-wrapper:hover {
+  background: conic-gradient(
+    from var(--card-border-angle, 0deg),
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700
+  );
+  animation: card-border-spin 4s linear infinite;
+}
+
+/* 外层悬停时的外发光效果 */
+.audio-player-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border-radius: 1.25rem;
+  background: conic-gradient(
+    from var(--card-border-angle, 0deg),
+    rgba(255, 215, 0, 0.4),
+    rgba(255, 107, 107, 0.4),
+    rgba(157, 0, 255, 0.4),
+    rgba(0, 255, 255, 0.4),
+    rgba(0, 255, 136, 0.4),
+    rgba(255, 215, 0, 0.4)
+  );
+  filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.audio-player-wrapper:hover::before {
+  opacity: 0.5;
+  animation: card-border-spin 4s linear infinite;
+}
+
+/* 内层 - 不透明背景遮住彩虹边框中间部分 */
+.audio-player-inner {
+  position: relative;
+  padding: 1rem 1.5rem;
+  border-radius: calc(1rem - 2px);
+  background-color: rgb(10, 10, 31);
+  transition: all 0.3s ease;
+}
+
+.audio-player-inner.hovered {
+  background-color: rgb(15, 15, 40);
+}
