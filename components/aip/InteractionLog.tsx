@@ -290,13 +290,18 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
           .delete()
           .eq('id', interactionId)
 
-        if (error) throw error
+        if (error) {
+          console.error('删除通知失败:', error)
+          alert('删除失败: ' + error.message)
+          return
+        }
 
         setInteractions(prev => prev.filter(i => i.id !== interactionId))
         onUnreadCountChange?.()
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('删除通知失败:', error)
+      alert('删除失败: ' + (error?.message || '未知错误'))
     }
   }
 
