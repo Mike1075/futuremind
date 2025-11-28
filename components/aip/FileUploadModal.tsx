@@ -244,8 +244,14 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
   const handleDeleteDocument = async (doc: any) => {
     const docTitle = doc.title || '未命名文档'
 
-    // 权限检查：项目经理或文档创建者可以删除
-    const canDelete = isManager || doc.user_id === userId
+    // 权限检查：必须登录，且是项目经理或文档创建者才能删除
+    if (!userId) {
+      alert('请先登录')
+      return
+    }
+
+    const isOwnDocument = doc.user_id && userId && doc.user_id === userId
+    const canDelete = isManager || isOwnDocument
 
     if (!canDelete) {
       alert('您没有权限删除此文档')
@@ -441,7 +447,7 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
                   const fileSize = doc.file_size ? (doc.file_size / 1024).toFixed(1) + ' KB' : '未知'
                   const fileIcon = doc.file_type?.includes('pdf') ? '📄' :
                                    doc.file_type?.includes('word') ? '📝' : '📰'
-                  const isOwnFile = doc.user_id === userId
+                  const isOwnFile = !!(doc.user_id && userId && doc.user_id === userId)
                   const isPending = doc.review_status === 'pending'
                   const isRejected = doc.review_status === 'rejected'
 
@@ -496,8 +502,8 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
                           </>
                         )}
 
-                        {/* 删除按钮 - 管理员或自己的文件可删除 */}
-                        {(isManager || isOwnFile) && (
+                        {/* 删除按钮 - 管理员或自己的文件可删除（必须已登录） */}
+                        {userId && (isManager || isOwnFile) && (
                           <button
                             onClick={() => handleDeleteDocument(doc)}
                             className="p-1 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300"

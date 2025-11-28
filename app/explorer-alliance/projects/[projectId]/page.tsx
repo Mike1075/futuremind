@@ -552,6 +552,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                     return 'border-zinc-700/50'
                   }
 
+                  // 检查是否是自己的文件
+                  const isOwnFile = doc.user_id === userId
+
                   return (
                     <div
                       key={doc.id}
@@ -595,6 +598,44 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                             <p className="text-xs text-zinc-500 truncate">{doc.file_name}</p>
                           </div>
                         </div>
+                        {/* 删除按钮 - 管理员或自己的文件可删除 */}
+                        {(isManager || isOwnFile) && !isManageMode && (
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`确定要删除文档"${doc.title}"吗？此操作不可撤销。`)) return
+                              const supabase = createClient()
+                              try {
+                                await supabase.from('project_files').delete().eq('id', doc.id)
+                                // 刷新文档列表
+                                const { data, count } = await supabase
+                                  .from('project_files')
+                                  .select('*', { count: 'exact' })
+                                  .eq('project_id', projectId)
+                                  .order('created_at', { ascending: false })
+                                if (data) {
+                                  const userIds = [...new Set(data.map(d => d.user_id))]
+                                  const { data: profiles } = await supabase
+                                    .from('profiles')
+                                    .select('id, full_name')
+                                    .in('id', userIds)
+                                  setDocuments(data.map(d => ({
+                                    ...d,
+                                    uploader: profiles?.find(p => p.id === d.user_id) || null
+                                  })))
+                                }
+                                setDocumentsCount(count || 0)
+                                alert('文档已删除')
+                              } catch (err) {
+                                console.error('删除失败:', err)
+                                alert('删除失败')
+                              }
+                            }}
+                            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-zinc-400 hover:text-red-400"
+                            title="删除文档"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
                       <div className="space-y-2 text-sm text-gray-400">
                         <div className="flex items-center gap-2">
