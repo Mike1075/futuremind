@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Send, Inbox, Mail, Trash2, Eraser, Eye, MessageSquare, Check as CheckIcon, XIcon, Users, FolderOpen, Settings2, CheckSquare, Square, FileText } from 'lucide-react'
+import { X, Send, Inbox, Mail, Trash2, Eye, MessageSquare, Check as CheckIcon, XIcon, Users, FolderOpen, Settings2, CheckSquare, Square, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { InvitationCard } from './InvitationCard'
 import { reviewProjectJoinRequest } from '@/lib/aip/api'
@@ -300,31 +300,6 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     }
   }
 
-  const handleClearCompleted = async () => {
-    try {
-      const supabase = createClient()
-      const readNotificationIds = interactions
-        .filter(i => i.interactionType === 'notification' && i.status === 'read')
-        .map(i => i.id)
-
-      if (readNotificationIds.length === 0) return
-
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .in('id', readNotificationIds)
-
-      if (error) throw error
-
-      setInteractions(prev => prev.filter(i =>
-        !(i.interactionType === 'notification' && i.status === 'read')
-      ))
-      onUnreadCountChange?.()
-    } catch (error) {
-      console.error('清空已读失败:', error)
-    }
-  }
-
   // 切换选择项
   const toggleSelectItem = (id: string) => {
     setSelectedItems(prev => {
@@ -518,7 +493,6 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     return true
   })
 
-  const readCount = interactions.filter(i => i.interactionType === 'notification' && i.status === 'read').length
   const receivedCount = interactions.filter(i => {
     if (i.interactionType === 'project_request') return true
     if (i.interactionType === 'notification') {
@@ -575,20 +549,6 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
               </>
             ) : (
               <>
-                {/* 清空已读按钮 */}
-                {readCount > 0 && (
-                  <button
-                    onClick={handleClearCompleted}
-                    className="flex items-center gap-2 px-3 py-2 text-sm bg-orange-500/10 text-orange-500 rounded-lg hover:bg-orange-500/20 transition-colors border border-orange-500/20"
-                    title="清空所有已读通知"
-                  >
-                    <Eraser className="h-4 w-4" />
-                    清空已完成
-                    <span className="bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full text-xs">
-                      {readCount}
-                    </span>
-                  </button>
-                )}
                 {/* 管理按钮 */}
                 {interactions.length > 0 && (
                   <button
