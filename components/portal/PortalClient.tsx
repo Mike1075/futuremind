@@ -91,17 +91,18 @@ export function PortalClient({
     }
   }
 
-  const getCourseGradient = (systemKey: string) => {
+  // 获取课程默认边框颜色
+  const getCourseBorderColor = (systemKey: string) => {
     switch (systemKey) {
       case 'listening':
-        return 'from-purple-500/20 to-indigo-500/20 border-purple-400/30'
+        return 'rgba(168, 85, 247, 0.5)' // 紫色
       case 'earth':
-        return 'from-cyan-500/20 to-teal-500/20 border-cyan-400/30'
+        return 'rgba(34, 211, 238, 0.5)' // 青色
       case 'icarus':
       case 'pbl':
-        return 'from-orange-500/20 to-red-500/20 border-orange-400/30'
+        return 'rgba(251, 146, 60, 0.5)' // 橙色
       default:
-        return 'from-gray-500/20 to-gray-600/20 border-gray-400/30'
+        return 'rgba(156, 163, 175, 0.5)' // 灰色
     }
   }
 
@@ -256,44 +257,27 @@ export function PortalClient({
                 <div className="space-y-4">
                   {enrolledCourses.map((course, index) => {
                     const Icon = getCourseIcon(course.course_system_key)
-                    const gradient = getCourseGradient(course.course_system_key)
+                    const borderColor = getCourseBorderColor(course.course_system_key)
                     return (
                       <motion.div
                         key={course.course_id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="relative group/card cursor-pointer rounded-2xl p-[2px] transition-all duration-500"
+                        className="portal-course-card relative group/card cursor-pointer rounded-2xl transition-all duration-500"
                         onClick={() => router.push(`/courses/${course.course_system_key}`)}
+                        style={{ '--course-border-color': borderColor } as React.CSSProperties}
                       >
-                        {/* 炫彩边框背景 - 悬停时显示 */}
-                        <div
-                          className="absolute inset-0 rounded-2xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500"
-                          style={{
-                            background: 'linear-gradient(90deg, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #00FF88, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #FFD700)',
-                            backgroundSize: '300% 100%',
-                            animation: 'border-flow 8s linear infinite',
-                          }}
-                        />
-                        {/* 炫彩发光效果 - 悬停时显示 */}
-                        <div
-                          className="absolute -inset-1 rounded-2xl opacity-0 group-hover/card:opacity-40 transition-opacity duration-500 -z-10"
-                          style={{
-                            background: 'linear-gradient(90deg, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #00FF88, #FFD700)',
-                            backgroundSize: '300% 100%',
-                            animation: 'border-flow 8s linear infinite',
-                            filter: 'blur(12px)',
-                          }}
-                        />
+                        {/* 炫彩边框层 - 悬停时显示 */}
+                        <div className="portal-card-border" />
+                        {/* 炫彩发光层 - 悬停时显示 */}
+                        <div className="portal-card-glow" />
 
-                        {/* 卡片内容 - 内层完全不透明背景遮住渐变 */}
-                        <div
-                          className="relative rounded-[calc(1rem-1px)] p-6"
-                          style={{ background: '#0a0a1f' }}
-                        >
+                        {/* 玻璃质感内容层 */}
+                        <div className="portal-card-content relative rounded-2xl p-6">
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center">
-                              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4 border border-white/20">
+                              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4 border border-white/20 backdrop-blur-sm">
                                 <Icon className="w-6 h-6 text-starlight" />
                               </div>
                               <div>

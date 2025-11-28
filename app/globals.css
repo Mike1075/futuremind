@@ -1377,3 +1377,88 @@ body {
 .course-card-hover:hover {
   transform: translateY(-2px) scale(1.01);
 }
+
+/* ============================================
+   Portal课程卡片 - 透明玻璃质感 + 悬停炫彩
+   ============================================ */
+
+.portal-course-card {
+  position: relative;
+  --course-border-color: rgba(156, 163, 175, 0.5);
+}
+
+/* 默认边框 - 使用课程主题色 */
+.portal-card-content {
+  background: rgba(10, 10, 31, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--course-border-color);
+  transition: all 0.4s ease;
+}
+
+/* 炫彩边框层 */
+.portal-card-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--card-border-angle, 0deg),
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+/* 炫彩发光层 */
+.portal-card-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 1.25rem;
+  background: conic-gradient(
+    from var(--card-border-angle, 0deg),
+    rgba(255, 215, 0, 0.4),
+    rgba(255, 107, 107, 0.4),
+    rgba(157, 0, 255, 0.4),
+    rgba(0, 255, 255, 0.4),
+    rgba(0, 255, 136, 0.4),
+    rgba(255, 215, 0, 0.4)
+  );
+  filter: blur(12px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 悬停效果 */
+.portal-course-card:hover .portal-card-border {
+  opacity: 1;
+  animation: card-border-spin 4s linear infinite;
+}
+
+.portal-course-card:hover .portal-card-glow {
+  opacity: 0.6;
+  animation: card-border-spin 4s linear infinite;
+}
+
+.portal-course-card:hover .portal-card-content {
+  border-color: transparent;
+  background: rgba(10, 10, 31, 0.8);
+  transform: translateY(-2px);
+}
+
+.portal-course-card:hover {
+  transform: scale(1.01);
+}
