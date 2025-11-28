@@ -1379,29 +1379,21 @@ body {
 }
 
 /* ============================================
-   Portal课程卡片 - 透明玻璃质感 + 悬停炫彩
+   Portal课程卡片 - 炫彩边框效果（类似盖亚图标）
    ============================================ */
 
-.portal-course-card {
+/* 外层容器 - 默认显示课程主题色边框 */
+.portal-card-aurora {
   position: relative;
+  padding: 2px; /* 边框宽度 */
+  border-radius: 1rem;
+  background: var(--course-border-color, rgba(156, 163, 175, 0.5));
+  transition: all 0.4s ease;
   --course-border-color: rgba(156, 163, 175, 0.5);
 }
 
-/* 默认边框 - 使用课程主题色 */
-.portal-card-content {
-  background: rgba(10, 10, 31, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--course-border-color);
-  transition: all 0.4s ease;
-}
-
-/* 炫彩边框层 */
-.portal-card-border {
-  position: absolute;
-  inset: 0;
-  border-radius: 1rem;
-  padding: 1px;
+/* 悬停时显示炫彩渐变边框 */
+.portal-card-aurora:hover {
   background: conic-gradient(
     from var(--card-border-angle, 0deg),
     #FFD700,
@@ -1411,54 +1403,44 @@ body {
     #00FF88,
     #FFD700
   );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
+  animation: card-border-spin 4s linear infinite;
 }
 
-/* 炫彩发光层 */
-.portal-card-glow {
+/* 悬停时的发光效果 */
+.portal-card-aurora::before {
+  content: '';
   position: absolute;
-  inset: -4px;
+  inset: -6px;
+  z-index: -1;
   border-radius: 1.25rem;
   background: conic-gradient(
     from var(--card-border-angle, 0deg),
-    rgba(255, 215, 0, 0.4),
-    rgba(255, 107, 107, 0.4),
-    rgba(157, 0, 255, 0.4),
-    rgba(0, 255, 255, 0.4),
-    rgba(0, 255, 136, 0.4),
-    rgba(255, 215, 0, 0.4)
+    rgba(255, 215, 0, 0.5),
+    rgba(255, 107, 107, 0.5),
+    rgba(157, 0, 255, 0.5),
+    rgba(0, 255, 255, 0.5),
+    rgba(0, 255, 136, 0.5),
+    rgba(255, 215, 0, 0.5)
   );
   filter: blur(12px);
   opacity: 0;
   transition: opacity 0.4s ease;
-  pointer-events: none;
-  z-index: -1;
 }
 
-/* 悬停效果 */
-.portal-course-card:hover .portal-card-border {
-  opacity: 1;
-  animation: card-border-spin 4s linear infinite;
-}
-
-.portal-course-card:hover .portal-card-glow {
+.portal-card-aurora:hover::before {
   opacity: 0.6;
   animation: card-border-spin 4s linear infinite;
 }
 
-.portal-course-card:hover .portal-card-content {
-  border-color: transparent;
-  background: rgba(10, 10, 31, 0.8);
-  transform: translateY(-2px);
+/* 内层内容 - 不透明背景遮住中间 */
+.portal-card-aurora-inner {
+  position: relative;
+  background: rgba(10, 10, 31, 0.95);
+  border-radius: calc(1rem - 2px);
+  transition: all 0.3s ease;
 }
 
-.portal-course-card:hover {
-  transform: scale(1.01);
+/* 悬停时内层微调 */
+.portal-card-aurora:hover .portal-card-aurora-inner {
+  background: rgba(10, 10, 31, 0.98);
 }
