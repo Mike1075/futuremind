@@ -14,6 +14,8 @@ import { ShowcasePanel } from '@/components/aip/ShowcasePanel'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Settings, UserPlus, Upload, ArrowLeft, Trash2, CheckCircle, XCircle, Pencil } from 'lucide-react'
+import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
+import UserProfileModal from '@/components/UserProfileModal'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params)
@@ -38,6 +40,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const [showRenameDialog, setShowRenameDialog] = useState<{id: string, title: string} | null>(null)
   const [newDocTitle, setNewDocTitle] = useState('')
   const [showInteractionLog, setShowInteractionLog] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -334,8 +337,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <div className="border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-10">
+      {/* 统一导航栏 */}
+      <UnifiedNavbar
+        onOpenProfile={() => setShowProfileModal(true)}
+        rightExtra={<NotificationBadge onClick={() => setShowInteractionLog(true)} />}
+      />
+
+      {/* 项目信息头部 */}
+      <div className="border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-12 z-10">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-4">
             {/* Breadcrumb with Back Button */}
@@ -378,7 +387,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   <Settings className="h-5 w-5" />
                 </Link>
               )}
-              <NotificationBadge onClick={() => setShowInteractionLog(true)} />
             </div>
           </div>
 
@@ -1019,6 +1027,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       {showInteractionLog && (
         <InteractionLog onClose={() => setShowInteractionLog(false)} />
       )}
+
+      {/* 用户资料弹窗 */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </div>
   )
 }

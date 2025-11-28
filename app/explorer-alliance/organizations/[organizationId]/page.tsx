@@ -3,8 +3,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Home, ArrowLeft, Plus, Folder, CheckCircle2, Briefcase, Users } from 'lucide-react'
+import { ArrowLeft, Plus, Folder, CheckCircle2, Briefcase, Users } from 'lucide-react'
 import { useOrganizationProjects, useProjectTasks } from '@/lib/aip/hooks'
+import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
+import UserProfileModal from '@/components/UserProfileModal'
 import { FloatingChatBot } from '@/components/aip/FloatingChatBot'
 import { ProjectGrid } from '@/components/aip/ProjectGrid'
 import { CompactTaskList } from '@/components/aip/CompactTaskList'
@@ -34,6 +36,7 @@ export default function OrganizationDashboardPage() {
   const [showCreateProject, setShowCreateProject] = useState(false)
   const [showEditDescription, setShowEditDescription] = useState(false)
   const [showInteractionLog, setShowInteractionLog] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const [editingProject, setEditingProject] = useState<{ id: string; name: string; description: string } | null>(null)
 
   const { projects, loading: projectsLoading, reload: reloadProjects } = useOrganizationProjects(organizationId)
@@ -346,33 +349,28 @@ export default function OrganizationDashboardPage() {
         ))}
       </div>
 
-      {/* Header */}
-      <div className="relative border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-20">
+      {/* 统一导航栏 */}
+      <UnifiedNavbar
+        transparent
+        onOpenProfile={() => setShowProfileModal(true)}
+        rightExtra={<NotificationBadge onClick={() => setShowInteractionLog(true)} />}
+      />
+
+      {/* 组织信息头部 */}
+      <div className="relative border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-12 z-20">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/explorer-alliance')}
-                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  {organization.name}
-                </h1>
-                <p className="text-gray-400 mt-1">{organization.description || '暂无描述'}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <NotificationBadge onClick={() => setShowInteractionLog(true)} />
-              <button
-                onClick={() => router.push('/')}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
-              >
-                <Home className="w-5 h-5" />
-                返回首页
-              </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/explorer-alliance')}
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                {organization.name}
+              </h1>
+              <p className="text-gray-400 mt-1">{organization.description || '暂无描述'}</p>
             </div>
           </div>
         </div>
@@ -645,6 +643,12 @@ export default function OrganizationDashboardPage() {
       {showInteractionLog && (
         <InteractionLog onClose={() => setShowInteractionLog(false)} />
       )}
+
+      {/* 用户资料弹窗 */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </div>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Building2, Home } from 'lucide-react'
+import { Plus, Building2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useOrganizations } from '@/lib/aip/hooks'
 import { OrganizationList } from '@/components/aip/OrganizationList'
@@ -10,6 +10,8 @@ import { FloatingChatBot } from '@/components/aip/FloatingChatBot'
 import { CreateOrganizationModal } from '@/components/aip/CreateOrganizationModal'
 import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { InteractionLog } from '@/components/aip/InteractionLog'
+import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
+import UserProfileModal from '@/components/UserProfileModal'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ExplorerAlliancePage() {
@@ -17,6 +19,7 @@ export default function ExplorerAlliancePage() {
   const { organizations, loading: orgsLoading, reload: reloadOrganizations } = useOrganizations()
   const [showCreateOrganization, setShowCreateOrganization] = useState(false)
   const [showInteractionLog, setShowInteractionLog] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
@@ -95,29 +98,12 @@ export default function ExplorerAlliancePage() {
           />
         ))}
       </div>
-      {/* Header */}
-      <div className="relative border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-20">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                探索者联盟 - AIP项目管理系统
-              </h1>
-              <p className="text-gray-400 mt-2">AI驱动的智能项目协作平台</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <NotificationBadge onClick={() => setShowInteractionLog(true)} />
-              <button
-                onClick={() => router.push('/')}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
-              >
-                <Home className="w-5 h-5" />
-                返回首页
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* 统一导航栏 */}
+      <UnifiedNavbar
+        transparent
+        onOpenProfile={() => setShowProfileModal(true)}
+        rightExtra={<NotificationBadge onClick={() => setShowInteractionLog(true)} />}
+      />
 
       <div className="relative container mx-auto px-6 py-12 z-10 max-w-7xl">
         {/* 页面标题 */}
@@ -224,6 +210,12 @@ export default function ExplorerAlliancePage() {
           }}
         />
       )}
+
+      {/* 用户资料弹窗 */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </div>
   )
 }
