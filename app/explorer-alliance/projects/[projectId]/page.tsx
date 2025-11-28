@@ -12,7 +12,7 @@ import { InviteModal } from '@/components/aip/InviteModal'
 import { ShowcasePanel } from '@/components/aip/ShowcasePanel'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { Settings, UserPlus, Upload, ArrowLeft, Trash2 } from 'lucide-react'
+import { Settings, UserPlus, Upload, ArrowLeft, Trash2, CheckCircle, XCircle } from 'lucide-react'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params)
@@ -31,6 +31,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
   const [isManageMode, setIsManageMode] = useState(false)
+  const [reviewingDocId, setReviewingDocId] = useState<string | null>(null)
+  const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null)
+  const [rejectComment, setRejectComment] = useState('')
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -92,6 +95,92 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     checkUserRole()
     loadDocuments()
   }, [projectId])
+
+  // 刷新文档列表的函数
+  const refreshDocuments = async () => {
+    const supabase = createClient()
+    setDocumentsLoading(true)
+    try {
+      const { data, count, error } = await supabase
+        .from('project_files')
+        .select('*', { count: 'exact' })
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(d => d.user_id))]
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds)
+
+        const docsWithUploader = data.map(doc => ({
+          ...doc,
+          uploader: profiles?.find(p => p.id === doc.user_id) || null
+        }))
+        setDocuments(docsWithUploader)
+      } else {
+        setDocuments([])
+      }
+      setDocumentsCount(count || 0)
+    } catch (error) {
+      console.error('加载文档失败:', error)
+    } finally {
+      setDocumentsLoading(false)
+    }
+  }
+
+  // 审核文档
+  const handleReviewDocument = async (docId: string, action: 'approve' | 'reject', comment?: string) => {
+    setReviewingDocId(docId)
+    try {
+      const response = await fetch('/api/aip/review-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file_id: docId,
+          action: action,
+          comment: comment
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '审核失败')
+      }
+
+      alert(action === 'approve' ? '文档已通过审核' : '文档已拒绝')
+      setShowRejectDialog(null)
+      setRejectComment('')
+      refreshDocuments()
+    } catch (error) {
+      console.error('审核文档失败:', error)
+      alert('审核失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    } finally {
+      setReviewingDocId(null)
+    }
+  }
+
+  // 过滤可见的文档
+  // 规则：待审核/已拒绝的文档只有上传者和管理员可见，已通过的文档所有成员可见
+  const visibleDocuments = documents.filter(doc => {
+    const isOwnDoc = doc.user_id === userId
+    const isPending = doc.review_status === 'pending'
+    const isRejected = doc.review_status === 'rejected'
+
+    // 已通过的文档所有成员可见
+    if (doc.review_status === 'approved') return true
+    // 待审核或已拒绝的文档只有上传者和管理员可见
+    if (isPending || isRejected) return isOwnDoc || isManager
+    // 默认显示（兼容旧数据）
+    return true
+  })
+
+  // 待审核数量（管理员专用）
+  const pendingCount = documents.filter(doc => doc.review_status === 'pending').length
 
   const toggleSelectDocument = (docId: string) => {
     const newSelected = new Set(selectedDocuments)
@@ -452,7 +541,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               <div>
                 <h2 className="text-2xl font-bold">项目文档</h2>
                 <p className="text-sm text-gray-400 mt-1">
-                  共 {documentsCount} 份文档
+                  共 {visibleDocuments.length} 份文档
+                  {isManager && pendingCount > 0 && (
+                    <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-500/20 text-yellow-400">
+                      {pendingCount} 份待审核
+                    </span>
+                  )}
                   {selectedDocuments.size > 0 && (
                     <span className="ml-2 text-blue-400">（已选择 {selectedDocuments.size} 份）</span>
                   )}
@@ -513,7 +607,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                 <span className="ml-3 text-gray-400">加载文档中...</span>
               </div>
-            ) : documentsCount === 0 ? (
+            ) : visibleDocuments.length === 0 ? (
               <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-12 text-center">
                 <div className="bg-blue-500/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Upload className="w-10 h-10 text-blue-400" />
@@ -535,7 +629,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {documents.map((doc) => {
+                {visibleDocuments.map((doc) => {
                   const isSelected = selectedDocuments.has(doc.id)
                   const uploaderName = doc.uploader?.full_name || '未知用户'
                   const fileSize = doc.file_size ? (doc.file_size / 1024).toFixed(1) + ' KB' : '未知'
@@ -656,10 +750,64 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                             <span className="text-red-400 text-xs">拒绝原因：{doc.review_comment}</span>
                           </div>
                         )}
+                        {/* 审核按钮 - 管理员可对待审核文档进行审核 */}
+                        {isManager && isPending && (
+                          <div className="flex gap-2 pt-3 mt-3 border-t border-zinc-700/50">
+                            <button
+                              onClick={() => handleReviewDocument(doc.id, 'approve')}
+                              disabled={reviewingDocId === doc.id}
+                              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              {reviewingDocId === doc.id ? '处理中...' : '通过'}
+                            </button>
+                            <button
+                              onClick={() => setShowRejectDialog(doc.id)}
+                              disabled={reviewingDocId === doc.id}
+                              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              拒绝
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )
                 })}
+              </div>
+            )}
+
+            {/* 拒绝文档对话框 */}
+            {showRejectDialog && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-96">
+                  <h4 className="text-lg font-semibold text-white mb-4">拒绝文档</h4>
+                  <textarea
+                    value={rejectComment}
+                    onChange={(e) => setRejectComment(e.target.value)}
+                    placeholder="请输入拒绝原因（可选）..."
+                    className="w-full h-24 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white text-sm resize-none focus:outline-none focus:border-blue-500"
+                  />
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={() => {
+                        setShowRejectDialog(null)
+                        setRejectComment('')
+                      }}
+                      className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={() => handleReviewDocument(showRejectDialog, 'reject', rejectComment)}
+                      disabled={reviewingDocId === showRejectDialog}
+                      className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      确认拒绝
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
