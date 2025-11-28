@@ -113,10 +113,8 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
           <div
             key={org.id}
             onClick={() => onSelect(org.organization_id)}
-            className="group relative bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all duration-300 cursor-pointer overflow-hidden"
+            className="group explorer-card cursor-pointer"
           >
-            {/* 悬停光效 */}
-            <div className="absolute inset-0 bg-gradient-to-br from-zinc-800/0 via-zinc-800/0 to-zinc-800/0 group-hover:from-zinc-800/20 group-hover:via-zinc-800/10 group-hover:to-transparent transition-all duration-500" />
 
             {/* 卡片内容 */}
             <div className="relative p-6">

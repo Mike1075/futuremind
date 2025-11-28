@@ -1192,3 +1192,156 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ============================================
+   卡片悬停炫彩发光效果
+   ============================================ */
+
+/* 炫彩悬停卡片 - 基础样式 */
+.card-hover-glow {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.card-hover-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0),
+    rgba(255, 107, 107, 0),
+    rgba(157, 0, 255, 0),
+    rgba(0, 255, 255, 0),
+    rgba(0, 255, 136, 0),
+    rgba(255, 215, 0, 0)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.card-hover-glow:hover::before {
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0.6),
+    rgba(255, 107, 107, 0.6),
+    rgba(157, 0, 255, 0.6),
+    rgba(0, 255, 255, 0.6),
+    rgba(0, 255, 136, 0.6),
+    rgba(255, 215, 0, 0.6)
+  );
+  opacity: 1;
+  animation: card-border-spin 4s linear infinite;
+}
+
+.card-hover-glow:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 20px rgba(157, 0, 255, 0.2),
+    0 0 40px rgba(0, 255, 255, 0.1);
+}
+
+@keyframes card-border-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 炫彩悬停卡片 - 内层遮罩 */
+.card-hover-glow-inner {
+  position: relative;
+  background: inherit;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* 探索者联盟卡片样式 */
+.explorer-card {
+  position: relative;
+  background: rgba(20, 20, 30, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.explorer-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent 0%, transparent 100%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.explorer-card:hover::before {
+  background: conic-gradient(
+    from 0deg,
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700
+  );
+  opacity: 1;
+  animation: card-border-spin 3s linear infinite;
+}
+
+.explorer-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 8px 32px rgba(157, 0, 255, 0.2),
+    0 0 60px rgba(255, 215, 0, 0.1);
+  border-color: transparent;
+}
+
+/* Portal课程卡片悬停效果增强 */
+.course-card-hover {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.course-card-hover::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    transparent,
+    transparent,
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.course-card-hover:hover::after {
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0.4),
+    rgba(255, 107, 107, 0.4),
+    rgba(157, 0, 255, 0.4),
+    rgba(0, 255, 255, 0.4),
+    rgba(0, 255, 136, 0.4),
+    rgba(255, 215, 0, 0.4)
+  );
+  opacity: 1;
+  animation: card-border-spin 4s linear infinite;
+}
+
+.course-card-hover:hover {
+  transform: translateY(-2px) scale(1.01);
+}

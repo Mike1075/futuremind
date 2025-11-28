@@ -4,6 +4,20 @@ import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { MessageCircle, TreePine, Users, Shield } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
+
+// 盖亚图标组件 - 炫彩旋转边框 + 对话气泡
+function GaiaIcon() {
+  return (
+    <div className="gaia-icon">
+      <div className="gaia-icon-glow" />
+      <div className="gaia-icon-border" />
+      <div className="gaia-icon-inner" />
+      <div className="gaia-icon-chat">
+        <MessageCircle strokeWidth={2.5} />
+      </div>
+    </div>
+  )
+}
 import AuthModal from '@/components/AuthModal'
 import { createClient } from '@/lib/supabase/client'
 
@@ -308,26 +322,18 @@ export default function Home() {
         </motion.div>
       </motion.div>
 
-      {/* 浮动盖亚按钮 - 呼吸动画 */}
-      <motion.button
+      {/* 浮动盖亚按钮 - 炫彩旋转边框 */}
+      <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.6, delay: 2 }}
         onClick={handleGaiaClick}
-        className="fixed bottom-8 right-8 w-18 h-18 rounded-full flex items-center justify-center z-50 group"
+        className="fixed bottom-8 right-8 z-50 cursor-pointer hover:scale-110 transition-transform duration-300"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
       >
-        {/* 多层呼吸光环 */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-mystic-purple/40 to-ethereal-blue/40 animate-breathe" />
-        <div className="absolute -inset-2 rounded-full border border-gaia-gold/30 animate-glow-pulse" />
-        <div className="absolute -inset-4 rounded-full border border-mystic-purple/20 opacity-50" />
-
-        {/* 核心按钮 */}
-        <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-mystic-purple via-life-pink to-ethereal-blue flex items-center justify-center shadow-glow-purple">
-          <MessageCircle className="w-7 h-7 text-starlight" />
-        </div>
-      </motion.button>
+        <GaiaIcon />
+      </motion.div>
 
       {/* 底部装饰线 */}
       <motion.div

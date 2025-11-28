@@ -7,6 +7,20 @@ import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project } from '@/lib/aip/types'
 import aipChatAPI from '@/lib/api/aip-chat'
 
+// 探索者联盟图标组件 - 炫彩旋转边框 + 机器人
+function ExplorerBotIcon() {
+  return (
+    <div className="gaia-icon">
+      <div className="gaia-icon-glow" />
+      <div className="gaia-icon-border" />
+      <div className="gaia-icon-inner" />
+      <div className="gaia-icon-chat">
+        <Bot strokeWidth={2.5} />
+      </div>
+    </div>
+  )
+}
+
 interface FloatingChatBotProps {
   organization?: Organization
   currentProject?: Project
@@ -375,20 +389,12 @@ export function FloatingChatBot({
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-12 right-12 z-40">
-        <button
-          onClick={() => setIsOpen(true)}
-          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group border-0 outline-none"
-          title="AI智能助手"
-          style={{
-            width: '72px',
-            height: '72px',
-            minWidth: '72px',
-            minHeight: '72px'
-          }}
-        >
-          <Bot className="w-8 h-8 flex-shrink-0 group-hover:scale-110 transition-transform" />
-        </button>
+      <div
+        className="fixed bottom-8 right-8 z-40 cursor-pointer hover:scale-110 transition-transform duration-300"
+        onClick={() => setIsOpen(true)}
+        title="AI智能助手"
+      >
+        <ExplorerBotIcon />
       </div>
     )
   }
