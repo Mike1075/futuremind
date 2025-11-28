@@ -908,14 +908,22 @@ body {
   height: 28px;
 }
 
-/* 炫彩旋转边框 - 8秒一圈（颜色流动，边框固定） */
+/* 炫彩流光边框 - 边框固定，颜色流动 */
 .gaia-icon-border {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  padding: 3px;
+  z-index: 2;
+  overflow: hidden;
+}
+
+/* 使用伪元素创建旋转的渐变 */
+.gaia-icon-border::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
   background: conic-gradient(
-    from var(--gaia-border-angle, 0deg),
+    from 0deg,
     #FFD700,
     #FF6B6B,
     #9D00FF,
@@ -923,28 +931,13 @@ body {
     #00FF88,
     #FFD700
   );
-  animation: gaia-color-spin 8s linear infinite;
+  animation: gaia-border-rotate 8s linear infinite;
 }
 
-.gaia-icon-small .gaia-icon-border {
-  padding: 2px;
-}
-
-.gaia-icon-tiny .gaia-icon-border {
-  padding: 2px;
-}
-
-/* 颜色流动动画 - 使用CSS变量控制渐变起始角度 */
-@keyframes gaia-color-spin {
-  from { --gaia-border-angle: 0deg; }
-  to { --gaia-border-angle: 360deg; }
-}
-
-/* 注册CSS变量为可动画属性 */
-@property --gaia-border-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
+/* 边框旋转动画 - 伪元素旋转，边框固定 */
+@keyframes gaia-border-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* 发光光晕效果 */
@@ -952,30 +945,28 @@ body {
   position: absolute;
   inset: -8px;
   border-radius: 50%;
-  background: conic-gradient(
-    from var(--gaia-glow-angle, 0deg),
-    rgba(255, 215, 0, 0.5),
-    rgba(255, 107, 107, 0.5),
-    rgba(157, 0, 255, 0.5),
-    rgba(0, 255, 255, 0.5),
-    rgba(0, 255, 136, 0.5),
-    rgba(255, 215, 0, 0.5)
-  );
+  z-index: 1;
+  overflow: hidden;
   filter: blur(12px);
-  animation: gaia-glow-pulse 3s ease-in-out infinite, gaia-glow-spin 8s linear infinite;
+  animation: gaia-glow-pulse 3s ease-in-out infinite;
   opacity: 0.6;
 }
 
-/* 光晕颜色流动动画 */
-@keyframes gaia-glow-spin {
-  from { --gaia-glow-angle: 0deg; }
-  to { --gaia-glow-angle: 360deg; }
-}
-
-@property --gaia-glow-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
+/* 光晕旋转渐变 */
+.gaia-icon-glow::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0.6),
+    rgba(255, 107, 107, 0.6),
+    rgba(157, 0, 255, 0.6),
+    rgba(0, 255, 255, 0.6),
+    rgba(0, 255, 136, 0.6),
+    rgba(255, 215, 0, 0.6)
+  );
+  animation: gaia-border-rotate 8s linear infinite;
 }
 
 .gaia-icon-small .gaia-icon-glow {
@@ -988,12 +979,13 @@ body {
   filter: blur(6px);
 }
 
-/* 内部背景 - 纯黑色 */
+/* 内部背景 - 纯黑色遮罩（只露出边框） */
 .gaia-icon-inner {
   position: absolute;
   inset: 3px;
   border-radius: 50%;
   background: #000;
+  z-index: 3;
 }
 
 .gaia-icon-small .gaia-icon-inner {
@@ -1036,13 +1028,13 @@ body {
   }
 }
 
-/* 停止旋转状态 - 对话框打开时 */
-.gaia-icon-static .gaia-icon-border {
-  animation: gaia-glow-pulse 3s ease-in-out infinite;
+/* 静态状态 - 停止旋转（对话框打开时） */
+.gaia-icon-static .gaia-icon-border::before {
+  animation: none;
 }
 
-.gaia-icon-static .gaia-icon-glow {
-  animation: gaia-glow-pulse 3s ease-in-out infinite;
+.gaia-icon-static .gaia-icon-glow::before {
+  animation: none;
 }
 
 /* 悬停效果 */
@@ -1051,16 +1043,22 @@ body {
   filter: blur(16px);
 }
 
-.gaia-icon:hover .gaia-icon-border {
+/* 悬停时加速旋转 */
+.gaia-icon:hover .gaia-icon-border::before {
   animation-duration: 4s;
 }
 
-.gaia-icon-static:hover .gaia-icon-border {
-  animation: gaia-color-spin 4s linear infinite;
+.gaia-icon:hover .gaia-icon-glow::before {
+  animation-duration: 4s;
 }
 
-.gaia-icon-static:hover .gaia-icon-glow {
-  animation: gaia-glow-pulse 3s ease-in-out infinite, gaia-glow-spin 4s linear infinite;
+/* 静态图标悬停时恢复旋转 */
+.gaia-icon-static:hover .gaia-icon-border::before {
+  animation: gaia-border-rotate 4s linear infinite;
+}
+
+.gaia-icon-static:hover .gaia-icon-glow::before {
+  animation: gaia-border-rotate 4s linear infinite;
 }
 
 /* ============================================
