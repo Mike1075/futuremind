@@ -179,19 +179,19 @@ export function CreateProjectModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] md:w-full max-w-2xl max-h-[90vh] bg-gray-900 rounded-xl border border-gray-800 shadow-2xl z-50 overflow-hidden"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] md:w-full max-w-2xl max-h-[90vh] bg-cosmic-void rounded-xl border border-gray-800 shadow-2xl z-50 overflow-hidden"
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 px-6 py-4 border-b border-gray-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-6 h-6 text-purple-400" />
-                <h2 className="text-xl font-bold text-white">创建新项目</h2>
+                <h2 className="text-h2 font-bold text-starlight">创建新项目</h2>
               </div>
               <button
                 onClick={handleClose}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-400" />
+                <X className="w-5 h-5 text-starlight-muted" />
               </button>
             </div>
 
@@ -270,7 +270,7 @@ export function CreateProjectModal({
 
                 {/* Project Visibility */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-3">
+                  <label className="block text-small font-medium text-starlight-muted mb-3">
                     项目可见性
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -284,14 +284,14 @@ export function CreateProjectModal({
                       }`}
                     >
                       <Lock className={`w-6 h-6 mb-2 ${
-                        formData.projectVisibility === 'private' ? 'text-purple-400' : 'text-gray-400'
+                        formData.projectVisibility === 'private' ? 'text-purple-400' : 'text-starlight-muted'
                       }`} />
                       <p className={`font-medium ${
-                        formData.projectVisibility === 'private' ? 'text-white' : 'text-gray-400'
+                        formData.projectVisibility === 'private' ? 'text-starlight' : 'text-starlight-muted'
                       }`}>
                         私有项目
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">仅自己可见</p>
+                      <p className="text-small text-starlight-dim mt-1">仅自己可见</p>
                     </button>
 
                     <button
@@ -304,18 +304,18 @@ export function CreateProjectModal({
                       }`}
                     >
                       <Globe className={`w-6 h-6 mb-2 ${
-                        formData.projectVisibility === 'public' ? 'text-blue-400' : 'text-gray-400'
+                        formData.projectVisibility === 'public' ? 'text-blue-400' : 'text-starlight-muted'
                       }`} />
                       <p className={`font-medium ${
-                        formData.projectVisibility === 'public' ? 'text-white' : 'text-gray-400'
+                        formData.projectVisibility === 'public' ? 'text-starlight' : 'text-starlight-muted'
                       }`}>
                         公开项目
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">所有人可见（需审核）</p>
+                      <p className="text-small text-starlight-dim mt-1">所有人可见（需审核）</p>
                     </button>
                   </div>
                   {formData.projectVisibility === 'public' && (
-                    <p className="text-xs text-amber-400 mt-2 flex items-center gap-1">
+                    <p className="text-small text-amber-400 mt-2 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       公开项目将经过AI审核，确保内容符合社区准则
                     </p>
@@ -324,7 +324,7 @@ export function CreateProjectModal({
 
                 {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-small font-medium text-starlight-muted mb-2">
                     项目标题 <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -332,14 +332,14 @@ export function CreateProjectModal({
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="例如：太阳系探索计划"
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                    className="input-ethereal"
                     maxLength={100}
                   />
                 </div>
 
                 {/* Subtitle */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-small font-medium text-starlight-muted mb-2">
                     副标题
                   </label>
                   <input
@@ -347,14 +347,14 @@ export function CreateProjectModal({
                     value={formData.subtitle}
                     onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
                     placeholder="例如：探索宇宙的奥秘"
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                    className="input-ethereal"
                     maxLength={200}
                   />
                 </div>
 
                 {/* Project Intro */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-small font-medium text-starlight-muted mb-2">
                     项目简介 <span className="text-red-400">*</span>
                   </label>
                   <textarea
@@ -362,17 +362,17 @@ export function CreateProjectModal({
                     onChange={(e) => setFormData({ ...formData, projectIntro: e.target.value })}
                     placeholder="详细描述你的项目目标、内容和特色..."
                     rows={4}
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors resize-none"
+                    className="input-ethereal resize-none"
                     maxLength={1000}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-small text-starlight-dim mt-1">
                     {formData.projectIntro.length} / 1000
                   </p>
                 </div>
 
                 {/* Difficulty Level */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-small font-medium text-starlight-muted mb-2">
                     难度等级
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -381,10 +381,10 @@ export function CreateProjectModal({
                         key={level}
                         type="button"
                         onClick={() => setFormData({ ...formData, difficultyLevel: level })}
-                        className={`px-4 py-2 rounded-lg border transition-all text-sm ${
+                        className={`px-4 py-2 rounded-lg border transition-all text-small ${
                           formData.difficultyLevel === level
                             ? 'border-purple-500 bg-purple-500/10 text-purple-400'
-                            : 'border-gray-700 bg-gray-800/50 text-gray-400 hover:border-gray-600'
+                            : 'border-gray-700 bg-gray-800/50 text-starlight-muted hover:border-gray-600'
                         }`}
                       >
                         {level}
@@ -395,7 +395,7 @@ export function CreateProjectModal({
 
                 {/* Tags */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-small font-medium text-starlight-muted mb-2">
                     项目标签
                   </label>
                   <div className="flex gap-2 mb-2">
@@ -405,13 +405,13 @@ export function CreateProjectModal({
                       onChange={(e) => setCurrentTag(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
                       placeholder="输入标签后按回车"
-                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                      className="input-ethereal flex-1"
                       maxLength={20}
                     />
                     <button
                       type="button"
                       onClick={handleAddTag}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                      className="btn-stardust"
                     >
                       添加
                     </button>
@@ -421,7 +421,7 @@ export function CreateProjectModal({
                       {formData.projectTags.map((tag) => (
                         <span
                           key={tag}
-                          className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm flex items-center gap-2"
+                          className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-small flex items-center gap-2"
                         >
                           {tag}
                           <button
@@ -439,7 +439,7 @@ export function CreateProjectModal({
 
                 {/* Estimated Duration */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-small font-medium text-starlight-muted mb-2">
                     预计时长（分钟）
                   </label>
                   <input
@@ -448,25 +448,25 @@ export function CreateProjectModal({
                     onChange={(e) => setFormData({ ...formData, estimatedDuration: parseInt(e.target.value) || 0 })}
                     min={0}
                     max={9999}
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                    className="input-ethereal"
                   />
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 bg-gray-900/50 border-t border-gray-800 flex items-center justify-end gap-3">
+              <div className="px-6 py-4 bg-cosmic-void/50 border-t border-gray-800 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={handleClose}
                   disabled={submitting}
-                  className="px-6 py-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                  className="px-6 py-2 text-starlight-muted hover:text-starlight transition-colors disabled:opacity-50"
                 >
                   取消
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || !formData.title.trim() || !formData.projectIntro.trim()}
-                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-700 disabled:to-gray-600 disabled:text-gray-500 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                  className="btn-stardust disabled:from-gray-700 disabled:to-gray-600 disabled:text-gray-500 flex items-center gap-2"
                 >
                   {submitting ? (
                     <>

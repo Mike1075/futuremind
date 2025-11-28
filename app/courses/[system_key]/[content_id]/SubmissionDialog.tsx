@@ -148,16 +148,16 @@ export default function SubmissionDialog({
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-800">
+      <div className="card-glass rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/10">
         {/* 头部 */}
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-6 flex justify-between items-center">
+        <div className="sticky top-0 bg-cosmic-void border-b border-white/10 p-6 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-white">提交作业</h2>
-            <p className="text-gray-400 text-sm mt-1">{contentTitle}</p>
+            <h2 className="text-h2 font-bold text-starlight">提交作业</h2>
+            <p className="text-starlight-muted text-small mt-1">{contentTitle}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-starlight-muted hover:text-starlight transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -171,20 +171,20 @@ export default function SubmissionDialog({
             <>
               {/* 作业内容输入 */}
               <div>
-                <label className="block text-white font-medium mb-3">
+                <label className="block text-starlight font-medium mb-3">
                   你的学习感悟
                 </label>
                 <textarea
                   value={submissionContent}
                   onChange={(e) => setSubmissionContent(e.target.value)}
                   placeholder="分享你在本次学习中的感悟、体会和收获..."
-                  className="w-full h-64 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none resize-none"
+                  className="input-ethereal w-full h-64 px-4 py-3 resize-none"
                 />
                 <div className="flex justify-between items-center mt-2">
-                  <span className="text-sm text-gray-500">
+                  <span className="text-small text-starlight-dim">
                     {submissionContent.length} 字
                   </span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-small text-starlight-dim">
                     建议至少 50 字
                   </span>
                 </div>
@@ -208,11 +208,11 @@ export default function SubmissionDialog({
               </div>
 
               {/* 公开/私密选项 */}
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+              <div className="card-glass p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-white mb-1">作业可见性</h4>
-                    <p className="text-xs text-gray-400">
+                    <h4 className="text-small font-semibold text-starlight mb-1">作业可见性</h4>
+                    <p className="text-xs text-starlight-muted">
                       {isPublic
                         ? '你的作业将对其他同学公开展示（需评分≥90分）'
                         : '你的作业仅自己和老师可见'}
@@ -278,14 +278,14 @@ export default function SubmissionDialog({
                 <button
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="flex-1 py-3 px-6 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 px-6 card-glass text-starlight rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   取消
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-stardust flex-1 py-3 px-6 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center justify-center">
@@ -307,23 +307,23 @@ export default function SubmissionDialog({
               {/* 分数展示 */}
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 mb-4">
-                  <div className="text-5xl font-bold text-white">
+                  <div className="text-5xl font-bold text-starlight">
                     {result.evaluation?.score || 0}
                   </div>
                 </div>
-                <p className="text-xl font-semibold text-white">评估完成</p>
+                <p className="text-h3 font-semibold text-starlight">评估完成</p>
               </div>
 
               {/* AI反馈 */}
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+              <div className="card-glass p-6">
+                <h3 className="text-h3 font-semibold text-starlight mb-3 flex items-center">
                   <svg className="w-5 h-5 mr-2 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
                     <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
                   </svg>
                   AI导师的反馈
                 </h3>
-                <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
+                <p className="text-starlight whitespace-pre-wrap leading-relaxed">
                   {result.evaluation?.feedback || ''}
                 </p>
               </div>
@@ -367,7 +367,7 @@ export default function SubmissionDialog({
                   onSuccess()
                   onClose()
                 }}
-                className="w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all"
+                className="btn-stardust w-full py-3 px-6 font-medium"
               >
                 太棒了！继续学习
               </button>

@@ -32,10 +32,8 @@ export default function SubmissionButton({
         <button
           onClick={() => setIsDialogOpen(true)}
           className="
-            flex-1 py-4 px-6 rounded-lg font-semibold text-lg
-            bg-gradient-to-r from-purple-600 to-pink-600
-            hover:from-purple-700 hover:to-pink-700
-            text-white transition-all duration-200 transform hover:scale-[1.02]
+            btn-stardust
+            flex-1 py-4 px-6 font-semibold text-h3
             flex items-center justify-center gap-2
           "
         >
@@ -49,10 +47,10 @@ export default function SubmissionButton({
         <button
           onClick={() => setIsHistoryOpen(true)}
           className="
-            px-6 py-4 rounded-lg font-medium text-lg
-            bg-gray-800 hover:bg-gray-700
-            text-gray-300 hover:text-white
-            border border-gray-700 hover:border-gray-600
+            card-glass
+            px-6 py-4 font-medium text-h3
+            text-starlight hover:text-starlight
+            border border-white/10 hover:border-white/20
             transition-all duration-200
             flex items-center justify-center gap-2
           "

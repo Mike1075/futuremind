@@ -49,13 +49,13 @@ export function CollapsibleSection({
           )}
 
           {/* 标题 */}
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-h3 font-semibold text-starlight">
             {title}
           </h2>
         </div>
 
         {/* 展开/收起图标 */}
-        <div className="text-gray-400 group-hover:text-white transition-colors">
+        <div className="text-starlight-muted group-hover:text-starlight transition-colors">
           {isOpen ? (
             <ChevronUp className="w-5 h-5" />
           ) : (

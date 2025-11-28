@@ -116,10 +116,10 @@ export default function OrganizationDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">加载组织信息中...</p>
+          <div className="loader-ethereal"></div>
+          <p className="text-starlight-muted">加载组织信息中...</p>
         </div>
       </div>
     )
@@ -127,12 +127,12 @@ export default function OrganizationDashboardPage() {
 
   if (error || !organization) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">{error || '组织不存在'}</p>
           <button
             onClick={() => router.push('/explorer-alliance')}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            className="btn-stardust"
           >
             返回组织列表
           </button>
@@ -322,7 +322,7 @@ export default function OrganizationDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden bg-black">
+    <div className="min-h-screen text-starlight relative overflow-hidden bg-cosmic-void">
       {/* 星空背景 */}
       <div className="absolute inset-0 overflow-hidden">
         {isMounted && particles.map((particle) => (
@@ -347,28 +347,28 @@ export default function OrganizationDashboardPage() {
       </div>
 
       {/* Header */}
-      <div className="relative border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-20">
+      <div className="nav-ethereal sticky top-0 z-20">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/explorer-alliance')}
-                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
+                className="badge-ethereal"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <h1 className="text-h1 text-gradient-gold-purple text-glow-gold">
                   {organization.name}
                 </h1>
-                <p className="text-gray-400 mt-1">{organization.description || '暂无描述'}</p>
+                <p className="text-starlight-muted mt-1">{organization.description || '暂无描述'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <NotificationBadge />
               <button
                 onClick={() => router.push('/')}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
+                className="badge-ethereal flex items-center gap-2"
               >
                 <Home className="w-5 h-5" />
                 返回首页
@@ -392,13 +392,13 @@ export default function OrganizationDashboardPage() {
           {/* Right Columns: Project Sections */}
           <div className="lg:col-span-3 space-y-8">
             {/* Welcome Section with Statistics */}
-            <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-6 backdrop-blur-sm">
+            <div className="card-glass">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-2">
+                  <h2 className="text-h2 text-starlight mb-2">
                     欢迎回来 👋
                   </h2>
-                  <p className="text-zinc-400">
+                  <p className="text-starlight-muted">
                     继续你的探索之旅，与团队一起创造精彩
                   </p>
                 </div>
@@ -410,9 +410,9 @@ export default function OrganizationDashboardPage() {
                 <div className="bg-gradient-to-br from-blue-600/10 to-blue-500/5 border border-blue-500/20 rounded-lg p-4 hover:border-blue-500/40 transition-all duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-blue-400 font-medium mb-1">我的任务</p>
-                      <p className="text-3xl font-bold text-white">{userTasks.length}</p>
-                      <p className="text-xs text-zinc-500 mt-1">待完成的任务</p>
+                      <p className="text-small text-blue-400 font-medium mb-1">我的任务</p>
+                      <p className="text-h1 text-starlight">{userTasks.length}</p>
+                      <p className="text-xs text-starlight-dim mt-1">待完成的任务</p>
                     </div>
                     <div className="bg-blue-500/10 p-3 rounded-lg">
                       <CheckCircle2 className="w-8 h-8 text-blue-400" />
@@ -424,9 +424,9 @@ export default function OrganizationDashboardPage() {
                 <div className="bg-gradient-to-br from-emerald-600/10 to-emerald-500/5 border border-emerald-500/20 rounded-lg p-4 hover:border-emerald-500/40 transition-all duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-emerald-400 font-medium mb-1">参与项目</p>
-                      <p className="text-3xl font-bold text-white">{allMyProjects.length}</p>
-                      <p className="text-xs text-zinc-500 mt-1">正在进行的项目</p>
+                      <p className="text-small text-emerald-400 font-medium mb-1">参与项目</p>
+                      <p className="text-h1 text-starlight">{allMyProjects.length}</p>
+                      <p className="text-xs text-starlight-dim mt-1">正在进行的项目</p>
                     </div>
                     <div className="bg-emerald-500/10 p-3 rounded-lg">
                       <Briefcase className="w-8 h-8 text-emerald-400" />
@@ -448,14 +448,14 @@ export default function OrganizationDashboardPage() {
             <div className="flex items-center justify-end gap-3 mb-6">
               <button
                 onClick={() => setShowCreateProject(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium"
+                className="btn-stardust flex items-center gap-2 text-small"
               >
                 <Plus className="w-4 h-4" />
                 创建项目
               </button>
               <button
                 onClick={() => setShowInvite(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                className="btn-stardust flex items-center gap-2 text-small"
               >
                 <UserPlus className="w-4 h-4" />
                 邀请成员
@@ -463,9 +463,9 @@ export default function OrganizationDashboardPage() {
             </div>
 
 {projectsLoading ? (
-              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-                <p className="text-zinc-400">加载项目中...</p>
+              <div className="card-glass p-12 text-center">
+                <div className="loader-ethereal"></div>
+                <p className="text-starlight-muted">加载项目中...</p>
               </div>
             ) : isCommunityOrg ? (
               /* 社区项目：显示所有公开项目，不分类 */
@@ -474,20 +474,20 @@ export default function OrganizationDashboardPage() {
                   <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg p-2">
                     <Folder className="w-5 h-5 text-blue-400" />
                   </div>
-                  <h2 className="text-2xl font-bold text-white">
+                  <h2 className="text-h2 text-starlight">
                     所有公开项目
-                    <span className="ml-3 text-lg font-normal text-zinc-500">
+                    <span className="ml-3 text-body font-normal text-starlight-dim">
                       ({projects.length})
                     </span>
                   </h2>
                 </div>
                 {projects.length === 0 ? (
-                  <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
-                    <Folder className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-                    <p className="text-zinc-400 mb-4">暂无公开项目</p>
+                  <div className="card-glass p-12 text-center">
+                    <Folder className="w-16 h-16 text-starlight-dim mx-auto mb-4" />
+                    <p className="text-starlight-muted mb-4">暂无公开项目</p>
                     <button
                       onClick={() => setShowCreateProject(true)}
-                      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                      className="btn-stardust"
                     >
                       创建第一个项目
                     </button>
@@ -511,12 +511,12 @@ export default function OrganizationDashboardPage() {
               </div>
             ) : allMyProjects.length === 0 ? (
               /* 普通组织：用户没有参与任何项目 */
-              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-12 text-center">
-                <Folder className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-                <p className="text-zinc-400 mb-4">你还没有参与任何项目</p>
+              <div className="card-glass p-12 text-center">
+                <Folder className="w-16 h-16 text-starlight-dim mx-auto mb-4" />
+                <p className="text-starlight-muted mb-4">你还没有参与任何项目</p>
                 <button
                   onClick={() => setShowCreateProject(true)}
-                  className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                  className="btn-stardust"
                 >
                   创建第一个项目
                 </button>
@@ -531,9 +531,9 @@ export default function OrganizationDashboardPage() {
                       <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg p-2">
                         <Briefcase className="w-5 h-5 text-purple-400" />
                       </div>
-                      <h2 className="text-2xl font-bold text-white">
+                      <h2 className="text-h2 text-starlight">
                         我发起的项目
-                        <span className="ml-3 text-lg font-normal text-zinc-500">
+                        <span className="ml-3 text-body font-normal text-starlight-dim">
                           ({myOwnedProjects.length})
                         </span>
                       </h2>
@@ -559,9 +559,9 @@ export default function OrganizationDashboardPage() {
                       <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-lg p-2">
                         <UserPlus className="w-5 h-5 text-blue-400" />
                       </div>
-                      <h2 className="text-2xl font-bold text-white">
+                      <h2 className="text-h2 text-starlight">
                         我参与的项目
-                        <span className="ml-3 text-lg font-normal text-zinc-500">
+                        <span className="ml-3 text-body font-normal text-starlight-dim">
                           ({myJoinedProjects.length})
                         </span>
                       </h2>
@@ -586,13 +586,13 @@ export default function OrganizationDashboardPage() {
             {!isCommunityOrg && otherProjects.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold text-white">
+                  <h2 className="text-h2 text-starlight">
                     组织项目
-                    <span className="ml-3 text-lg font-normal text-zinc-500">
+                    <span className="ml-3 text-body font-normal text-starlight-dim">
                       ({otherProjects.length})
                     </span>
                   </h2>
-                  <p className="text-sm text-zinc-500">
+                  <p className="text-small text-starlight-dim">
                     发现更多可以加入的项目
                   </p>
                 </div>

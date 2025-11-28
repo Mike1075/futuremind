@@ -143,17 +143,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
   if (projectLoading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-cosmic-void text-starlight flex items-center justify-center">
+        <div className="loader-ethereal"></div>
       </div>
     )
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void text-starlight flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-400">项目不存在</h1>
+          <h1 className="text-h2 text-starlight-muted">项目不存在</h1>
           <Link href="/explorer-alliance" className="text-purple-400 hover:text-purple-300 mt-4 inline-block">
             返回首页
           </Link>
@@ -175,22 +175,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-cosmic-void text-starlight">
       {/* Header */}
-      <div className="border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="nav-ethereal sticky top-0 z-10">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-4">
             {/* Breadcrumb with Back Button */}
             <div className="flex items-center gap-3">
               <Link
                 href={project.organization_id ? `/explorer-alliance/organizations/${project.organization_id}` : '/explorer-alliance'}
-                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
+                className="badge-ethereal"
                 title="返回上一级"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Link href="/explorer-alliance" className="hover:text-white transition-colors">
+              <div className="flex items-center gap-2 text-small text-starlight-muted">
+                <Link href="/explorer-alliance" className="hover:text-starlight transition-colors">
                   探索者联盟
                 </Link>
                 <span>/</span>
@@ -198,14 +198,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   <>
                     <Link
                       href={`/explorer-alliance/organizations/${project.organization_id}`}
-                      className="hover:text-white transition-colors"
+                      className="hover:text-starlight transition-colors"
                     >
                       我的组织
                     </Link>
                     <span>/</span>
                   </>
                 )}
-                <span className="text-white">{project.name}</span>
+                <span className="text-starlight">{project.name}</span>
               </div>
             </div>
 
@@ -214,7 +214,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               {isManager && (
                 <Link
                   href={`/explorer-alliance/projects/${projectId}/settings`}
-                  className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
+                  className="badge-ethereal"
                   title="项目设置"
                 >
                   <Settings className="h-5 w-5" />
@@ -228,7 +228,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-2">
-                <h1 className="text-3xl font-bold">{project.name}</h1>
+                <h1 className="text-h1">{project.name}</h1>
                 <span className={`text-xs px-3 py-1 rounded border ${statusColors[project.status]}`}>
                   {statusLabels[project.status]}
                 </span>
@@ -244,9 +244,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 )}
               </div>
               {project.description && (
-                <p className="text-gray-400 mt-2">{project.description}</p>
+                <p className="text-starlight-muted mt-2">{project.description}</p>
               )}
-              <div className="flex items-center gap-6 mt-4 text-sm text-gray-500">
+              <div className="flex items-center gap-6 mt-4 text-small text-starlight-dim">
                 {project.creator && (
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -277,10 +277,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as any)}
-                className={`pb-3 px-2 text-sm font-medium transition-colors relative ${
+                className={`pb-3 px-2 text-small font-medium transition-colors relative ${
                   activeTab === tab.key
                     ? 'text-purple-400'
-                    : 'text-gray-400 hover:text-white'
+                    : 'text-starlight-muted hover:text-starlight'
                 }`}
               >
                 {tab.label}
@@ -299,19 +299,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               {/* Project Info */}
-              <div className="bg-black/30 border border-white/10 rounded-xl p-6">
-                <h3 className="text-lg font-semibold mb-4">项目信息</h3>
-                <div className="space-y-3 text-sm">
+              <div className="card-glass">
+                <h3 className="text-h3 mb-4">项目信息</h3>
+                <div className="space-y-3 text-small">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">状态</span>
+                    <span className="text-starlight-muted">状态</span>
                     <span>{statusLabels[project.status]}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">创建时间</span>
+                    <span className="text-starlight-muted">创建时间</span>
                     <span>{new Date(project.created_at).toLocaleDateString('zh-CN')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">更新时间</span>
+                    <span className="text-starlight-muted">更新时间</span>
                     <span>{new Date(project.updated_at).toLocaleDateString('zh-CN')}</span>
                   </div>
                 </div>
@@ -321,7 +321,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             <div className="space-y-6">
               {/* Progress Card */}
               <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6">
-                <h3 className="text-lg font-semibold mb-4">项目进度</h3>
+                <h3 className="text-h3 mb-4">项目进度</h3>
                 <div className="space-y-4">
                   {/* Percentage */}
                   <div className="text-center">
@@ -330,7 +330,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                         ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100)
                         : 0}%
                     </div>
-                    <div className="text-sm text-gray-400 mt-1">完成度</div>
+                    <div className="text-small text-starlight-muted mt-1">完成度</div>
                   </div>
 
                   {/* Progress Bar */}
@@ -348,36 +348,36 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   {/* Task Breakdown */}
                   <div className="grid grid-cols-3 gap-2 text-center pt-2">
                     <div className="bg-zinc-900/50 rounded-lg p-2">
-                      <div className="text-xl font-bold text-purple-400">{tasks.length}</div>
-                      <div className="text-xs text-gray-500">总计</div>
+                      <div className="text-h3 text-purple-400">{tasks.length}</div>
+                      <div className="text-xs text-starlight-dim">总计</div>
                     </div>
                     <div className="bg-zinc-900/50 rounded-lg p-2">
-                      <div className="text-xl font-bold text-green-400">
+                      <div className="text-h3 text-green-400">
                         {tasks.filter(t => t.status === 'completed').length}
                       </div>
-                      <div className="text-xs text-gray-500">已完成</div>
+                      <div className="text-xs text-starlight-dim">已完成</div>
                     </div>
                     <div className="bg-zinc-900/50 rounded-lg p-2">
-                      <div className="text-xl font-bold text-blue-400">
+                      <div className="text-h3 text-blue-400">
                         {tasks.filter(t => t.status === 'in_progress').length}
                       </div>
-                      <div className="text-xs text-gray-500">进行中</div>
+                      <div className="text-xs text-starlight-dim">进行中</div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Quick Stats */}
-              <div className="bg-black/30 border border-white/10 rounded-xl p-6">
-                <h3 className="text-lg font-semibold mb-4">团队统计</h3>
+              <div className="card-glass">
+                <h3 className="text-h3 mb-4">团队统计</h3>
                 <div className="space-y-4">
                   <div>
-                    <div className="text-2xl font-bold text-blue-400">{project.members?.length || 0}</div>
-                    <div className="text-sm text-gray-400">团队成员</div>
+                    <div className="text-h2 text-blue-400">{project.members?.length || 0}</div>
+                    <div className="text-small text-starlight-muted">团队成员</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-amber-400">{documentsCount}</div>
-                    <div className="text-sm text-gray-400">项目文档</div>
+                    <div className="text-h2 text-amber-400">{documentsCount}</div>
+                    <div className="text-small text-starlight-muted">项目文档</div>
                   </div>
                 </div>
               </div>
@@ -397,10 +397,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">任务列表</h2>
+                <h2 className="text-h2">任务列表</h2>
                 <button
                   onClick={() => setShowCreateTask(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity duration-200"
+                  className="btn-stardust"
                 >
                   + 创建任务
                 </button>
@@ -414,8 +414,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold">项目文档</h2>
-                <p className="text-sm text-gray-400 mt-1">
+                <h2 className="text-h2">项目文档</h2>
+                <p className="text-small text-starlight-muted mt-1">
                   共 {documentsCount} 份文档
                   {selectedDocuments.size > 0 && (
                     <span className="ml-2 text-blue-400">（已选择 {selectedDocuments.size} 份）</span>
@@ -430,13 +430,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                         setIsManageMode(false)
                         setSelectedDocuments(new Set())
                       }}
-                      className="px-4 py-2 bg-zinc-600 hover:bg-zinc-500 text-white rounded-lg transition-colors"
+                      className="badge-ethereal"
                     >
                       退出管理
                     </button>
                     <button
                       onClick={toggleSelectAll}
-                      className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                      className="badge-ethereal"
                     >
                       {selectedDocuments.size === documents.length ? '取消全选' : '全选'}
                     </button>
@@ -453,7 +453,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 {!isManageMode && isManager && documentsCount > 0 && (
                   <button
                     onClick={() => setIsManageMode(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                    className="badge-ethereal flex items-center gap-2"
                   >
                     <Trash2 className="w-4 h-4" />
                     管理文档
@@ -462,7 +462,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 {isManager && (
                   <button
                     onClick={() => setShowFileUpload(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20"
+                    className="btn-stardust flex items-center gap-2"
                   >
                     <Upload className="w-5 h-5" />
                     上传文档
@@ -473,19 +473,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
             {documentsLoading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                <span className="ml-3 text-gray-400">加载文档中...</span>
+                <div className="loader-ethereal"></div>
+                <span className="ml-3 text-starlight-muted">加载文档中...</span>
               </div>
             ) : documentsCount === 0 ? (
-              <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-12 text-center">
+              <div className="card-glass p-12 text-center">
                 <div className="bg-blue-500/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Upload className="w-10 h-10 text-blue-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">开始分享文档</h3>
-                <p className="text-gray-400 mb-6">上传项目相关文档，让团队成员快速了解项目进展</p>
+                <h3 className="text-h3 text-starlight mb-2">开始分享文档</h3>
+                <p className="text-starlight-muted mb-6">上传项目相关文档，让团队成员快速了解项目进展</p>
                 <button
                   onClick={() => setShowFileUpload(true)}
-                  className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20 mx-auto"
+                  className="btn-stardust flex items-center gap-2 mx-auto"
                 >
                   <Upload className="w-5 h-5" />
                   上传第一份文档
@@ -502,10 +502,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   return (
                     <div
                       key={doc.id}
-                      className={`bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border rounded-xl p-6 transition-all duration-200 ${
+                      className={`card-glass transition-all duration-200 ${
                         isSelected
                           ? 'border-blue-500 ring-2 ring-blue-500/50'
-                          : 'border-zinc-700/50 hover:border-zinc-600/50'
+                          : 'hover:border-zinc-600/50'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-4">
@@ -520,20 +520,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                           )}
                           <span className="text-3xl">{isKnowledgeBase ? '📚' : '📄'}</span>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-white truncate">{docTitle}</h3>
+                            <h3 className="font-semibold text-starlight truncate">{docTitle}</h3>
                             {isKnowledgeBase && (
                               <span className="text-xs text-blue-400">系统默认</span>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="space-y-2 text-sm text-gray-400">
+                      <div className="space-y-2 text-small text-starlight-muted">
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-500">内容:</span>
+                          <span className="text-starlight-dim">内容:</span>
                           <span>{contentLength} 字符</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-500">创建时间:</span>
+                          <span className="text-starlight-dim">创建时间:</span>
                           <span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString('zh-CN') : '未知'}</span>
                         </div>
                       </div>
@@ -554,13 +554,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             {/* Enhanced Header with Invite Button */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold">团队成员</h2>
-                <p className="text-sm text-gray-400 mt-1">共 {project.members?.length || 0} 位成员</p>
+                <h2 className="text-h2">团队成员</h2>
+                <p className="text-small text-starlight-muted mt-1">共 {project.members?.length || 0} 位成员</p>
               </div>
               {isManager && (
                 <button
                   onClick={() => setShowInvite(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-emerald-500/20"
+                  className="btn-stardust flex items-center gap-2"
                 >
                   <UserPlus className="w-5 h-5" />
                   邀请成员
@@ -571,14 +571,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             {/* Members Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {project.members?.map((member) => (
-                <div key={member.user_id} className="bg-black/30 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-colors">
+                <div key={member.user_id} className="card-glass hover:border-white/20 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
                       {member.user?.full_name?.[0] || member.user?.email?.[0] || 'U'}
                     </div>
                     <div className="flex-1">
                       <div className="font-medium">{member.user?.full_name || member.user?.email}</div>
-                      <div className="text-sm text-gray-400">
+                      <div className="text-small text-starlight-muted">
                         {member.role_in_project === 'owner' ? '所有者' :
                          member.role_in_project === 'manager' ? '管理员' : '成员'}
                       </div>
