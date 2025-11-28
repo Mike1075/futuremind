@@ -18,6 +18,18 @@ const isPendingFileReview = (interaction: any): boolean => {
   return isFileReviewNotification(interaction) && interaction.status === 'unread'
 }
 
+// 检查是否是收到的邀请通知
+const isInvitationReceivedNotification = (interaction: any): boolean => {
+  if (interaction.interactionType !== 'notification') return false
+  const notif = interaction.originalRequest
+  return notif?.type === 'invitation_received'
+}
+
+// 检查邀请是否待响应
+const isPendingInvitation = (interaction: any): boolean => {
+  return isInvitationReceivedNotification(interaction) && interaction.status === 'unread'
+}
+
 interface InteractionLogProps {
   onClose: () => void
   onUnreadCountChange?: () => void
@@ -219,6 +231,43 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     }
   }
 
+  // 处理邀请响应
+  const handleInvitationResponse = async (notificationId: string, invitationId: string, action: 'accept' | 'reject') => {
+    setProcessing(notificationId)
+    try {
+      const response = await fetch('/api/aip/respond-invitation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invitation_id: invitationId,
+          action: action
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '操作失败')
+      }
+
+      // 标记通知为已读
+      const supabase = createClient()
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId)
+
+      alert(action === 'accept' ? '已接受邀请，您已加入项目' : '已拒绝邀请')
+      await loadInteractions()
+      onUnreadCountChange?.()
+    } catch (error: any) {
+      console.error('响应邀请失败:', error)
+      alert(`操作失败：${error.message || '请重试'}`)
+    } finally {
+      setProcessing(null)
+    }
+  }
+
   // 处理文档审核
   const handleFileReview = async (notificationId: string, fileId: string, action: 'approve' | 'reject', comment?: string) => {
     setProcessing(notificationId)
@@ -326,6 +375,10 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     }
     // 待审核的文档通知不可删除
     if (isPendingFileReview(interaction)) {
+      return false
+    }
+    // 待响应的邀请不可删除
+    if (isPendingInvitation(interaction)) {
       return false
     }
     return true
@@ -460,6 +513,14 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     }
     if (isFileReviewNotification(interaction) && interaction.status === 'read') {
       return <span className="px-2 py-1 bg-green-500/10 text-green-500 text-xs rounded-full border border-green-500/20">已处理</span>
+    }
+
+    // 邀请通知的状态显示
+    if (isPendingInvitation(interaction)) {
+      return <span className="px-2 py-1 bg-purple-500/10 text-purple-500 text-xs rounded-full border border-purple-500/20">待响应</span>
+    }
+    if (isInvitationReceivedNotification(interaction) && interaction.status === 'read') {
+      return <span className="px-2 py-1 bg-green-500/10 text-green-500 text-xs rounded-full border border-green-500/20">已响应</span>
     }
 
     // 普通通知的状态显示
@@ -675,6 +736,8 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                 const isSelected = selectedItems.has(interaction.id)
                 const isFileReview = isFileReviewNotification(interaction)
                 const isPendingReview = isPendingFileReview(interaction)
+                const isInvitationReceived = isInvitationReceivedNotification(interaction)
+                const isPendingInvite = isPendingInvitation(interaction)
 
                 return (
                   <div
@@ -900,7 +963,13 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                             <>
                               {interaction.metadata && (
                                 <div className="bg-zinc-900/50 rounded-md p-3 text-xs text-zinc-400 space-y-1">
-                                  {interaction.metadata.project_name && (
+                                  {interaction.metadata.target_name && (
+                                    <div className="flex items-center gap-2">
+                                      <FolderOpen className="h-3 w-3" />
+                                      <span>项目: {interaction.metadata.target_name}</span>
+                                    </div>
+                                  )}
+                                  {interaction.metadata.project_name && !interaction.metadata.target_name && (
                                     <div>项目: {interaction.metadata.project_name}</div>
                                   )}
                                   {interaction.metadata.organization_name && (
@@ -912,8 +981,36 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                                 </div>
                               )}
 
-                              {/* 标记为已读按钮 */}
-                              {interaction.status === 'unread' && (
+                              {/* 邀请响应按钮 - 只对收到的邀请且待响应的显示 */}
+                              {isInvitationReceived && isPendingInvite && interaction.metadata?.invitation_id && (
+                                <div className="flex items-center gap-2 pt-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleInvitationResponse(interaction.id, interaction.metadata.invitation_id, 'accept')
+                                    }}
+                                    disabled={processing === interaction.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 text-green-500 rounded-md hover:bg-green-500/20 transition-colors text-sm border border-green-500/20 disabled:opacity-50"
+                                  >
+                                    <CheckIcon className="h-3 w-3" />
+                                    {processing === interaction.id ? '处理中...' : '接受邀请'}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleInvitationResponse(interaction.id, interaction.metadata.invitation_id, 'reject')
+                                    }}
+                                    disabled={processing === interaction.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 text-red-500 rounded-md hover:bg-red-500/20 transition-colors text-sm border border-red-500/20 disabled:opacity-50"
+                                  >
+                                    <XIcon className="h-3 w-3" />
+                                    {processing === interaction.id ? '处理中...' : '拒绝'}
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* 标记为已读按钮 - 不是邀请或已响应的显示 */}
+                              {interaction.status === 'unread' && !isPendingInvite && (
                                 <div className="flex items-center gap-2 pt-2">
                                   <button
                                     onClick={(e) => {

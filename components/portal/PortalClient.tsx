@@ -16,7 +16,10 @@ import {
   ChevronRight,
   Sparkles,
   Atom,
-  User
+  User,
+  Home,
+  ChevronDown,
+  Key
 } from 'lucide-react'
 import { usePortalCourses } from '@/lib/hooks/usePortalCourses'
 import { ConsciousnessTreeView } from '@/components/consciousness/ConsciousnessTreeView'
@@ -40,6 +43,7 @@ export function PortalClient({
   const router = useRouter()
   const supabase = createClient()
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
   // ✅ 使用SWR缓存课程数据（首次3秒，后续瞬间）
   const { courses: enrolledCourses, loading: coursesLoading } = usePortalCourses(userId)
@@ -120,7 +124,7 @@ export function PortalClient({
         ))}
       </div>
 
-      {/* 顶部导航栏 */}
+      {/* 顶部导航栏 - 简洁版 */}
       <motion.nav
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -129,69 +133,98 @@ export function PortalClient({
       >
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* 左侧：用户资料 + 返回主页 */}
-            <div className="flex items-center space-x-4">
-              {/* 用户名按钮 */}
+            {/* 左侧：用户名下拉菜单 */}
+            <div className="relative">
               <button
-                onClick={() => setIsProfileModalOpen(true)}
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                onBlur={() => setTimeout(() => setIsUserMenuOpen(false), 200)}
                 className="flex items-center space-x-2 text-white hover:text-purple-200 transition-colors duration-300 group"
               >
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <span className="font-medium">{userName || userEmail?.split('@')[0] || '用户'}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* 分隔线 */}
-              <div className="h-6 w-px bg-white/20"></div>
-
-              {/* 返回主页 */}
-              <button
-                onClick={() => (window.location.href = '/')}
-                className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
-              >
-                <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/40 transition-colors duration-300">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                </div>
-                <span className="font-medium hidden sm:inline">返回主页</span>
-              </button>
-            </div>
-
-            {/* 中间：标题 */}
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center">
-                <TreePine className="w-5 h-5 text-purple-400" />
-              </div>
-              <h2 className="text-lg font-semibold text-white">个人探索基地</h2>
-            </div>
-
-            {/* 右侧：快捷入口与登出 */}
-            <div className="flex items-center space-x-4">
-              {/* 管理后台入口 - 仅管理员可见 */}
-              {userRole && ['principal', 'teacher'].includes(userRole) && (
-                <button
-                  onClick={() => router.push('/admin')}
-                  className="flex items-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors duration-300 group"
-                >
-                  <span className="font-medium">管理后台</span>
-                  <div className="w-8 h-8 bg-blue-600/20 rounded-full flex items-center justify-center group-hover:bg-blue-600/40 transition-colors duration-300">
-                    <Settings className="w-5 h-5 text-blue-400" />
+              {/* 下拉菜单 */}
+              {isUserMenuOpen && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden z-50">
+                  {/* 用户信息头部 */}
+                  <div className="px-4 py-3 border-b border-zinc-700">
+                    <p className="text-sm font-medium text-white">{userName || userEmail?.split('@')[0] || '用户'}</p>
+                    <p className="text-xs text-zinc-400 truncate">{userEmail}</p>
                   </div>
-                </button>
-              )}
 
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 text-red-300 hover:text-red-200 transition-colors duration-300 group"
-              >
-                <span className="font-medium">登出</span>
-                <div className="w-8 h-8 bg-red-600/20 rounded-full flex items-center justify-center group-hover:bg-red-600/40 transition-colors duration-300">
-                  <LogOut className="w-5 h-5 text-red-400" />
+                  {/* 菜单项 */}
+                  <div className="py-2">
+                    {/* 个人资料 */}
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false)
+                        setIsProfileModalOpen(true)
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>个人资料</span>
+                    </button>
+
+                    {/* 修改密码 */}
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false)
+                        router.push('/reset-password')
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+                    >
+                      <Key className="w-4 h-4" />
+                      <span>修改密码</span>
+                    </button>
+
+                    {/* 管理后台 - 仅管理员可见 */}
+                    {userRole && ['principal', 'teacher'].includes(userRole) && (
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false)
+                          router.push('/admin')
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+                      >
+                        <Settings className="w-4 h-4" />
+                        <span>管理后台</span>
+                      </button>
+                    )}
+
+                    {/* 分隔线 */}
+                    <div className="my-2 border-t border-zinc-700"></div>
+
+                    {/* 退出登录 */}
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false)
+                        handleLogout()
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-zinc-800 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>退出登录</span>
+                    </button>
+                  </div>
                 </div>
-              </button>
+              )}
             </div>
+
+            {/* 右侧：返回首页 */}
+            <button
+              onClick={() => (window.location.href = '/')}
+              className="flex items-center space-x-2 text-orange-300 hover:text-orange-200 transition-colors duration-300 group"
+            >
+              <span className="font-medium">返回首页</span>
+              <div className="w-8 h-8 bg-orange-600/20 rounded-full flex items-center justify-center group-hover:bg-orange-600/40 transition-colors duration-300">
+                <Home className="w-5 h-5 text-orange-400" />
+              </div>
+            </button>
           </div>
         </div>
       </motion.nav>
