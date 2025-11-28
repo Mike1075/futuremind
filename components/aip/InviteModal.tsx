@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { X, Mail, Send, FolderOpen, Loader2, Check, AlertCircle, Users, Eye, Briefcase, Heart, FileText } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { X, Mail, Send, FolderOpen, Loader2, Check, AlertCircle, Users, Eye, Briefcase, Heart, FileText, Search, CheckSquare, Square } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Project } from '@/lib/aip/types'
 
@@ -27,6 +27,7 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successCount, setSuccessCount] = useState(0)
 
   // 可邀请的项目
   const [projects, setProjects] = useState<Project[]>([])
@@ -36,8 +37,26 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
   const [willingUsers, setWillingUsers] = useState<WillingUser[]>([])
   const [isLoadingWillingUsers, setIsLoadingWillingUsers] = useState(false)
 
+  // 多选功能
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+
   // 用户资料预览
   const [previewUser, setPreviewUser] = useState<WillingUser | null>(null)
+
+  // 过滤后的用户列表
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return willingUsers
+    const query = searchQuery.toLowerCase()
+    return willingUsers.filter(user =>
+      (user.full_name?.toLowerCase().includes(query)) ||
+      (user.email?.toLowerCase().includes(query)) ||
+      (user.profession?.toLowerCase().includes(query))
+    )
+  }, [willingUsers, searchQuery])
+
+  // 是否全选
+  const isAllSelected = filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.has(u.id))
 
   // 加载数据
   useEffect(() => {
@@ -88,6 +107,102 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
     loadData()
   }, [projectId])
 
+  // 切换用户选择
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(userId)) {
+        newSet.delete(userId)
+      } else {
+        newSet.add(userId)
+      }
+      return newSet
+    })
+  }
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      // 取消选择所有过滤后的用户
+      setSelectedUserIds(prev => {
+        const newSet = new Set(prev)
+        filteredUsers.forEach(u => newSet.delete(u.id))
+        return newSet
+      })
+    } else {
+      // 选择所有过滤后的用户（只选有邮箱的）
+      setSelectedUserIds(prev => {
+        const newSet = new Set(prev)
+        filteredUsers.forEach(u => {
+          if (u.email) newSet.add(u.id)
+        })
+        return newSet
+      })
+    }
+  }
+
+  // 发送单个邀请
+  const sendInvitation = async (
+    supabase: ReturnType<typeof createClient>,
+    inviteeEmail: string,
+    inviteeId: string | null,
+    targetProject: Project,
+    currentUserId: string // 添加参数，确保类型安全
+  ) => {
+    // 创建邀请记录
+    const { data: invitationData, error: inviteError } = await supabase
+      .from('invitations')
+      .insert({
+        inviter_id: currentUserId,
+        invitee_email: inviteeEmail,
+        invitee_id: inviteeId,
+        invitation_type: 'project',
+        target_id: selectedProject,
+        target_name: targetProject.name,
+        message: message.trim() || null,
+        status: 'pending'
+      })
+      .select()
+      .single()
+
+    if (inviteError) throw inviteError
+
+    // 创建发送者的通知记录
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id: currentUserId,
+        type: 'invitation_sent',
+        title: '邀请已发送',
+        message: `您已向 ${inviteeEmail} 发送加入项目"${targetProject.name}"的邀请`,
+        metadata: {
+          invitation_id: invitationData.id,
+          invitation_type: 'project',
+          target_id: selectedProject,
+          target_name: targetProject.name
+        }
+      })
+
+    // 如果被邀请者已注册，创建接收者的通知记录
+    if (inviteeId) {
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: inviteeId,
+          type: 'invitation_received',
+          title: '收到邀请',
+          message: `您收到了加入项目"${targetProject.name}"的邀请`,
+          metadata: {
+            invitation_id: invitationData.id,
+            invitation_type: 'project',
+            target_id: selectedProject,
+            target_name: targetProject.name,
+            inviter_id: currentUserId
+          }
+        })
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -97,14 +212,29 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
       return
     }
 
-    if (!email.trim()) {
-      setError('请输入邮箱地址或选择用户')
-      return
+    // 收集要邀请的邮箱
+    const emailsToInvite: { email: string; id: string | null }[] = []
+
+    // 添加手动输入的邮箱
+    if (email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email.trim())) {
+        setError('请输入有效的邮箱地址')
+        return
+      }
+      emailsToInvite.push({ email: email.trim(), id: null })
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email.trim())) {
-      setError('请输入有效的邮箱地址')
+    // 添加选中的用户
+    selectedUserIds.forEach(userId => {
+      const user = willingUsers.find(u => u.id === userId)
+      if (user?.email && !emailsToInvite.some(e => e.email === user.email)) {
+        emailsToInvite.push({ email: user.email, id: user.id })
+      }
+    })
+
+    if (emailsToInvite.length === 0) {
+      setError('请输入邮箱地址或选择用户')
       return
     }
 
@@ -120,91 +250,46 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
     }
 
     setIsLoading(true)
+    let successfulInvites = 0
+    const errors: string[] = []
+
     try {
       const supabase = createClient()
 
-      // 1. 查找被邀请者的用户ID（如果已注册）
-      const { data: inviteeProfile, error: inviteeQueryError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email.trim())
-        .maybeSingle()
-
-      if (inviteeQueryError) {
-        throw new Error(`查询被邀请者信息失败：${inviteeQueryError.message}`)
+      // 如果手动输入的邮箱没有关联用户ID，先查询
+      for (const item of emailsToInvite) {
+        if (item.id === null) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', item.email)
+            .maybeSingle()
+          item.id = profile?.id || null
+        }
       }
 
-      const inviteeId = inviteeProfile?.id || null
-
-      // 2. 创建邀请记录
-      const { data: invitationData, error: inviteError } = await supabase
-        .from('invitations')
-        .insert({
-          inviter_id: userId,
-          invitee_email: email.trim(),
-          invitee_id: inviteeId || null,
-          invitation_type: 'project',
-          target_id: selectedProject,
-          target_name: targetProject.name,
-          message: message.trim() || null,
-          status: 'pending'
-        })
-        .select()
-        .single()
-
-      if (inviteError) {
-        throw new Error(`创建邀请失败：${inviteError.message}`)
+      // 批量发送邀请
+      for (const item of emailsToInvite) {
+        try {
+          await sendInvitation(supabase, item.email, item.id, targetProject, userId)
+          successfulInvites++
+        } catch (err) {
+          errors.push(`${item.email}: ${err instanceof Error ? err.message : '发送失败'}`)
+        }
       }
 
-      // 3. 创建发送者的通知记录
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: userId,
-          type: 'invitation_sent',
-          title: '邀请已发送',
-          message: `您已向 ${email.trim()} 发送加入项目"${targetProject.name}"的邀请`,
-          metadata: {
-            invitation_id: invitationData.id,
-            invitation_type: 'project',
-            target_id: selectedProject,
-            target_name: targetProject.name
-          }
-        })
-
-      // 4. 如果被邀请者已注册，创建接收者的通知记录
-      if (inviteeId) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: inviteeId,
-            type: 'invitation_received',
-            title: '收到邀请',
-            message: `您收到了加入项目"${targetProject.name}"的邀请`,
-            metadata: {
-              invitation_id: invitationData.id,
-              invitation_type: 'project',
-              target_id: selectedProject,
-              target_name: targetProject.name,
-              inviter_id: userId
-            }
-          })
+      if (successfulInvites > 0) {
+        setSuccessCount(successfulInvites)
+        setIsSuccess(true)
+        setTimeout(() => onClose(), 2000)
+      } else {
+        setError(errors.join('\n'))
       }
-
-      setIsSuccess(true)
-      setTimeout(() => onClose(), 2000)
     } catch (err) {
       console.error('发送邀请失败:', err)
       setError(err instanceof Error ? err.message : '发送邀请失败')
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  // 选择愿意参与的用户
-  const handleSelectWillingUser = (user: WillingUser) => {
-    if (user.email) {
-      setEmail(user.email)
     }
   }
 
@@ -217,7 +302,9 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
               <Check className="w-8 h-8 text-emerald-500" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">邀请发送成功！</h3>
-            <p className="text-zinc-400">邀请已发送到 {email}</p>
+            <p className="text-zinc-400">
+              已成功发送 {successCount} 份邀请
+            </p>
           </div>
         </div>
       </div>
@@ -275,7 +362,7 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
           {/* 邮箱地址 */}
           <section>
             <label className="flex items-center gap-2 text-sm font-medium text-zinc-300 mb-2">
-              <Mail className="h-4 w-4" /> 邮箱地址
+              <Mail className="h-4 w-4" /> 邮箱地址 <span className="text-zinc-500 font-normal">(可选)</span>
             </label>
             <input
               type="email"
@@ -289,9 +376,15 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
 
           {/* 愿意参与项目的用户 */}
           <section>
-            <label className="flex items-center gap-2 text-sm font-medium text-zinc-300 mb-2">
-              <Users className="h-4 w-4" /> 愿意参与项目的用户
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-zinc-300">
+                <Users className="h-4 w-4" /> 愿意参与项目的用户
+                {selectedUserIds.size > 0 && (
+                  <span className="text-blue-400">({selectedUserIds.size} 已选)</span>
+                )}
+              </label>
+            </div>
+
             {isLoadingWillingUsers ? (
               <div className="flex items-center gap-2 text-zinc-500 text-sm py-2">
                 <Loader2 className="h-4 w-4 animate-spin" /> 加载中...
@@ -301,45 +394,100 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
                 暂无愿意参与项目的用户
               </div>
             ) : (
-              <div className="bg-zinc-800/50 rounded-lg border border-zinc-700 max-h-40 overflow-y-auto">
-                {willingUsers.map(user => (
-                  <div
-                    key={user.id}
-                    className="flex items-center justify-between p-3 hover:bg-zinc-700/50 border-b border-zinc-700/50 last:border-0"
+              <div className="space-y-2">
+                {/* 搜索框 */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="搜索姓名、邮箱或职业..."
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors text-sm"
+                  />
+                </div>
+
+                {/* 全选按钮 */}
+                <div className="flex items-center justify-between px-1">
+                  <button
+                    type="button"
+                    onClick={toggleSelectAll}
+                    className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-medium truncate">
-                        {user.full_name || '未命名用户'}
-                      </div>
-                      <div className="text-zinc-400 text-sm truncate">
-                        {user.email || '无邮箱'}
-                      </div>
-                      {user.profession && (
-                        <div className="text-zinc-500 text-xs truncate mt-0.5">
-                          {user.profession}
+                    {isAllSelected ? (
+                      <CheckSquare className="h-4 w-4 text-blue-400" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                    全选 ({filteredUsers.filter(u => u.email).length})
+                  </button>
+                  <span className="text-xs text-zinc-500">
+                    共 {filteredUsers.length} 人
+                  </span>
+                </div>
+
+                {/* 用户列表 */}
+                <div className="bg-zinc-800/50 rounded-lg border border-zinc-700 max-h-48 overflow-y-auto">
+                  {filteredUsers.length === 0 ? (
+                    <div className="p-3 text-zinc-500 text-sm text-center">
+                      没有找到匹配的用户
+                    </div>
+                  ) : (
+                    filteredUsers.map(user => {
+                      const isSelected = selectedUserIds.has(user.id)
+                      return (
+                        <div
+                          key={user.id}
+                          className={`flex items-center gap-3 p-3 hover:bg-zinc-700/50 border-b border-zinc-700/50 last:border-0 cursor-pointer ${
+                            isSelected ? 'bg-blue-500/10' : ''
+                          }`}
+                          onClick={() => user.email && toggleUserSelection(user.id)}
+                        >
+                          {/* 复选框 */}
+                          <div className="flex-shrink-0">
+                            {user.email ? (
+                              isSelected ? (
+                                <CheckSquare className="h-5 w-5 text-blue-400" />
+                              ) : (
+                                <Square className="h-5 w-5 text-zinc-500" />
+                              )
+                            ) : (
+                              <Square className="h-5 w-5 text-zinc-700" />
+                            )}
+                          </div>
+
+                          {/* 用户信息 */}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-white font-medium truncate">
+                              {user.full_name || '未命名用户'}
+                            </div>
+                            <div className="text-zinc-400 text-sm truncate">
+                              {user.email || '无邮箱'}
+                            </div>
+                            {user.profession && (
+                              <div className="text-zinc-500 text-xs truncate mt-0.5">
+                                {user.profession}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 查看资料按钮 */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setPreviewUser(user)
+                            }}
+                            className="p-1.5 hover:bg-zinc-600 rounded text-zinc-400 hover:text-white transition-colors flex-shrink-0"
+                            title="查看资料"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 ml-2">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewUser(user)}
-                        className="p-1.5 hover:bg-zinc-600 rounded text-zinc-400 hover:text-white transition-colors"
-                        title="查看资料"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSelectWillingUser(user)}
-                        disabled={!user.email}
-                        className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded border border-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        选择
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                      )
+                    })
+                  )}
+                </div>
               </div>
             )}
           </section>
@@ -362,7 +510,7 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-2">
               <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
-              <span className="text-sm text-red-400">{error}</span>
+              <span className="text-sm text-red-400 whitespace-pre-wrap">{error}</span>
             </div>
           )}
 
@@ -377,7 +525,7 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
             </button>
             <button
               type="submit"
-              disabled={isLoading || projects.length === 0}
+              disabled={isLoading || projects.length === 0 || (!email.trim() && selectedUserIds.size === 0)}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
@@ -386,7 +534,8 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4" /> 发送邀请
+                  <Send className="h-4 w-4" />
+                  发送邀请 {selectedUserIds.size > 0 && `(${selectedUserIds.size + (email.trim() ? 1 : 0)})`}
                 </>
               )}
             </button>
@@ -468,13 +617,15 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
               <button
                 type="button"
                 onClick={() => {
-                  handleSelectWillingUser(previewUser)
+                  if (previewUser.email) {
+                    toggleUserSelection(previewUser.id)
+                  }
                   setPreviewUser(null)
                 }}
                 disabled={!previewUser.email}
                 className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
-                选择该用户
+                {selectedUserIds.has(previewUser.id) ? '取消选择' : '选择该用户'}
               </button>
             </div>
           </div>

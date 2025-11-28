@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, memo } from 'react'
+import { useState, useEffect, useCallback, memo, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -85,6 +85,9 @@ export function EarthContentDetail({
 
   // 公开作业刷新机制
   const [publicSubmissionsRefreshKey, setPublicSubmissionsRefreshKey] = useState(0)
+
+  // 文件输入ref（用于重置以允许重复选择同一文件）
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // PF-02: 使用useCallback优化fetchStageProgress
   const fetchStageProgress = useCallback(async () => {
@@ -245,6 +248,11 @@ export function EarthContentDetail({
 
     if (processedFiles.length > 0) {
       setUploadedFiles(prev => [...prev, ...processedFiles])
+    }
+
+    // 重置文件输入，允许用户再次选择相同的文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
@@ -932,6 +940,7 @@ export function EarthContentDetail({
                             <p className="text-xs text-gray-500 mt-1">仅支持图片格式 (JPG, PNG, GIF, WEBP)</p>
                           </div>
                           <input
+                            ref={fileInputRef}
                             type="file"
                             multiple
                             accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
