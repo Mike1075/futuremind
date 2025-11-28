@@ -12,7 +12,7 @@ import { InviteModal } from '@/components/aip/InviteModal'
 import { ShowcasePanel } from '@/components/aip/ShowcasePanel'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { Settings, UserPlus, Upload, ArrowLeft, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { Settings, UserPlus, Upload, ArrowLeft, Trash2, CheckCircle, XCircle, Pencil } from 'lucide-react'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params)
@@ -34,6 +34,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const [reviewingDocId, setReviewingDocId] = useState<string | null>(null)
   const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null)
   const [rejectComment, setRejectComment] = useState('')
+  const [showRenameDialog, setShowRenameDialog] = useState<{id: string, title: string} | null>(null)
+  const [newDocTitle, setNewDocTitle] = useState('')
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -132,6 +134,35 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     }
   }
 
+  // 重命名文档
+  const handleRenameDocument = async () => {
+    if (!showRenameDialog || !newDocTitle.trim()) return
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('project_files')
+        .update({ title: newDocTitle.trim() })
+        .eq('id', showRenameDialog.id)
+
+      if (error) throw error
+
+      // 更新本地状态
+      setDocuments(docs => docs.map(doc =>
+        doc.id === showRenameDialog.id
+          ? { ...doc, title: newDocTitle.trim() }
+          : doc
+      ))
+
+      setShowRenameDialog(null)
+      setNewDocTitle('')
+      alert('文档已重命名')
+    } catch (error) {
+      console.error('重命名失败:', error)
+      alert('重命名失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    }
+  }
+
   // 审核文档
   const handleReviewDocument = async (docId: string, action: 'approve' | 'reject', comment?: string) => {
     setReviewingDocId(docId)
@@ -167,7 +198,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   // 过滤可见的文档
   // 规则：待审核/已拒绝的文档只有上传者和管理员可见，已通过的文档所有成员可见
   const visibleDocuments = documents.filter(doc => {
-    const isOwnDoc = doc.user_id === userId
+    const isOwnDoc = !!(doc.user_id && userId && doc.user_id === userId)
     const isPending = doc.review_status === 'pending'
     const isRejected = doc.review_status === 'rejected'
 
@@ -175,7 +206,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     if (doc.review_status === 'approved') return true
     // 待审核或已拒绝的文档只有上传者和管理员可见
     if (isPending || isRejected) return isOwnDoc || isManager
-    // 默认显示（兼容旧数据）
+    // 默认显示（兼容旧数据，没有 review_status 的文档）
     return true
   })
 
@@ -646,8 +677,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                     return 'border-zinc-700/50'
                   }
 
-                  // 检查是否是自己的文件
-                  const isOwnFile = doc.user_id === userId
+                  // 检查是否是自己的文件（确保 userId 不为空）
+                  const isOwnFile = !!(doc.user_id && userId && doc.user_id === userId)
 
                   return (
                     <div
@@ -692,43 +723,57 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                             <p className="text-xs text-zinc-500 truncate">{doc.file_name}</p>
                           </div>
                         </div>
-                        {/* 删除按钮 - 管理员或自己的文件可删除 */}
+                        {/* 重命名和删除按钮 - 管理员或自己的文件可操作 */}
                         {(isManager || isOwnFile) && !isManageMode && (
-                          <button
-                            onClick={async () => {
-                              if (!confirm(`确定要删除文档"${doc.title}"吗？此操作不可撤销。`)) return
-                              const supabase = createClient()
-                              try {
-                                await supabase.from('project_files').delete().eq('id', doc.id)
-                                // 刷新文档列表
-                                const { data, count } = await supabase
-                                  .from('project_files')
-                                  .select('*', { count: 'exact' })
-                                  .eq('project_id', projectId)
-                                  .order('created_at', { ascending: false })
-                                if (data) {
-                                  const userIds = [...new Set(data.map(d => d.user_id))]
-                                  const { data: profiles } = await supabase
-                                    .from('profiles')
-                                    .select('id, full_name')
-                                    .in('id', userIds)
-                                  setDocuments(data.map(d => ({
-                                    ...d,
-                                    uploader: profiles?.find(p => p.id === d.user_id) || null
-                                  })))
+                          <div className="flex items-center gap-1">
+                            {/* 重命名按钮 */}
+                            <button
+                              onClick={() => {
+                                setShowRenameDialog({ id: doc.id, title: doc.title })
+                                setNewDocTitle(doc.title)
+                              }}
+                              className="p-2 hover:bg-blue-500/20 rounded-lg transition-colors text-zinc-400 hover:text-blue-400"
+                              title="重命名文档"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            {/* 删除按钮 */}
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`确定要删除文档"${doc.title}"吗？此操作不可撤销。`)) return
+                                const supabase = createClient()
+                                try {
+                                  await supabase.from('project_files').delete().eq('id', doc.id)
+                                  // 刷新文档列表
+                                  const { data, count } = await supabase
+                                    .from('project_files')
+                                    .select('*', { count: 'exact' })
+                                    .eq('project_id', projectId)
+                                    .order('created_at', { ascending: false })
+                                  if (data) {
+                                    const userIds = [...new Set(data.map(d => d.user_id))]
+                                    const { data: profiles } = await supabase
+                                      .from('profiles')
+                                      .select('id, full_name')
+                                      .in('id', userIds)
+                                    setDocuments(data.map(d => ({
+                                      ...d,
+                                      uploader: profiles?.find(p => p.id === d.user_id) || null
+                                    })))
+                                  }
+                                  setDocumentsCount(count || 0)
+                                  alert('文档已删除')
+                                } catch (err) {
+                                  console.error('删除失败:', err)
+                                  alert('删除失败')
                                 }
-                                setDocumentsCount(count || 0)
-                                alert('文档已删除')
-                              } catch (err) {
-                                console.error('删除失败:', err)
-                                alert('删除失败')
-                              }
-                            }}
-                            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-zinc-400 hover:text-red-400"
-                            title="删除文档"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+                              }}
+                              className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-zinc-400 hover:text-red-400"
+                              title="删除文档"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         )}
                       </div>
                       <div className="space-y-2 text-sm text-gray-400">
@@ -805,6 +850,48 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                       className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
                     >
                       确认拒绝
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 重命名文档对话框 */}
+            {showRenameDialog && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-96">
+                  <h4 className="text-lg font-semibold text-white mb-4">重命名文档</h4>
+                  <input
+                    type="text"
+                    value={newDocTitle}
+                    onChange={(e) => setNewDocTitle(e.target.value)}
+                    placeholder="请输入新的文档名称..."
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-blue-500"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRenameDocument()
+                      if (e.key === 'Escape') {
+                        setShowRenameDialog(null)
+                        setNewDocTitle('')
+                      }
+                    }}
+                  />
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={() => {
+                        setShowRenameDialog(null)
+                        setNewDocTitle('')
+                      }}
+                      className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={handleRenameDocument}
+                      disabled={!newDocTitle.trim() || newDocTitle.trim() === showRenameDialog.title}
+                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      确认
                     </button>
                   </div>
                 </div>
