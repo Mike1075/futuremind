@@ -1248,7 +1248,7 @@ body {
 
 .card-hover-glow:hover::before {
   background: conic-gradient(
-    from 0deg,
+    from var(--card-border-angle, 0deg),
     rgba(255, 215, 0, 0.6),
     rgba(255, 107, 107, 0.6),
     rgba(157, 0, 255, 0.6),
@@ -1267,9 +1267,17 @@ body {
     0 0 40px rgba(0, 255, 255, 0.1);
 }
 
+/* 卡片边框颜色流动动画 - 使用CSS变量控制渐变角度 */
 @keyframes card-border-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from { --card-border-angle: 0deg; }
+  to { --card-border-angle: 360deg; }
+}
+
+/* 注册CSS变量为可动画属性 */
+@property --card-border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
 
 /* 炫彩悬停卡片 - 内层遮罩 */
@@ -1308,7 +1316,7 @@ body {
 
 .explorer-card:hover::before {
   background: conic-gradient(
-    from 0deg,
+    from var(--card-border-angle, 0deg),
     #FFD700,
     #FF6B6B,
     #9D00FF,
@@ -1354,7 +1362,7 @@ body {
 
 .course-card-hover:hover::after {
   background: conic-gradient(
-    from 0deg,
+    from var(--card-border-angle, 0deg),
     rgba(255, 215, 0, 0.4),
     rgba(255, 107, 107, 0.4),
     rgba(157, 0, 255, 0.4),
