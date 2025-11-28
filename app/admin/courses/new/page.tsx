@@ -121,23 +121,23 @@ export default function NewCoursePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-cosmic-void">
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-md border-b border-white/10">
+      <header className="bg-cosmic-void/50 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/admin/courses')}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-white" />
+              <ArrowLeft className="w-5 h-5 text-starlight" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <h1 className="text-h2 font-bold text-starlight flex items-center gap-2">
                 <Sparkles className="w-6 h-6 text-purple-400" />
                 AI 创建课程体系
               </h1>
-              <p className="text-sm text-gray-400 mt-1">上传课程设计文档，AI 自动解析并生成课程结构</p>
+              <p className="text-small text-starlight-muted mt-1">上传课程设计文档，AI 自动解析并生成课程结构</p>
             </div>
           </div>
         </div>
@@ -151,28 +151,28 @@ export default function NewCoursePage() {
             <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-md rounded-xl p-8 border border-purple-500/20">
               <div className="text-center mb-6">
                 <Sparkles className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-white mb-2">AI 智能解析</h2>
-                <p className="text-gray-300">只需上传课程文档，AI 将自动识别课程类型、提取标题、描述等所有信息</p>
+                <h2 className="text-h2 font-bold text-starlight mb-2">AI 智能解析</h2>
+                <p className="text-body text-gray-300">只需上传课程文档，AI 将自动识别课程类型、提取标题、描述等所有信息</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-white/5 rounded-lg p-4 text-center">
                   <div className="text-purple-400 mb-2">✨</div>
-                  <p className="text-sm text-gray-300">自动识别<br/>课程类型</p>
+                  <p className="text-small text-gray-300">自动识别<br/>课程类型</p>
                 </div>
                 <div className="bg-white/5 rounded-lg p-4 text-center">
                   <div className="text-pink-400 mb-2">🎯</div>
-                  <p className="text-sm text-gray-300">智能提取<br/>课程结构</p>
+                  <p className="text-small text-gray-300">智能提取<br/>课程结构</p>
                 </div>
                 <div className="bg-white/5 rounded-lg p-4 text-center">
                   <div className="text-blue-400 mb-2">🚀</div>
-                  <p className="text-sm text-gray-300">一键生成<br/>完整课程</p>
+                  <p className="text-small text-gray-300">一键生成<br/>完整课程</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10">
-              <h2 className="text-lg font-semibold text-white mb-4">📄 上传课程文档</h2>
+            <div className="card-glass p-6">
+              <h2 className="text-h3 font-semibold text-starlight mb-4">📄 上传课程文档</h2>
 
               <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center hover:border-purple-400/50 transition-all">
                 <input
@@ -184,8 +184,8 @@ export default function NewCoursePage() {
                 />
                 <label htmlFor="file-upload" className="cursor-pointer">
                   <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-white mb-2">点击上传文档</p>
-                  <p className="text-sm text-gray-400">支持 .md 和 .txt 格式</p>
+                  <p className="text-starlight mb-2">点击上传文档</p>
+                  <p className="text-small text-starlight-muted">支持 .md 和 .txt 格式</p>
                 </label>
 
                 {fileName && (
@@ -198,8 +198,8 @@ export default function NewCoursePage() {
 
               {documentContent && (
                 <div className="mt-4 p-4 bg-black/50 rounded-lg border border-white/10">
-                  <p className="text-sm text-gray-400 mb-2">文档预览（前300字符）：</p>
-                  <p className="text-white text-sm whitespace-pre-wrap">
+                  <p className="text-small text-starlight-muted mb-2">文档预览（前300字符）：</p>
+                  <p className="text-starlight text-small whitespace-pre-wrap">
                     {documentContent.substring(0, 300)}...
                   </p>
                 </div>
@@ -210,8 +210,8 @@ export default function NewCoursePage() {
               <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-red-300 text-sm font-medium mb-2">❌ 解析失败</p>
-                  <pre className="text-red-200 text-xs whitespace-pre-wrap font-mono bg-black/30 p-3 rounded overflow-x-auto max-h-96 overflow-y-auto">{error}</pre>
+                  <p className="text-red-300 text-small font-medium mb-2">❌ 解析失败</p>
+                  <pre className="text-red-200 text-small whitespace-pre-wrap font-mono bg-black/30 p-3 rounded overflow-x-auto max-h-96 overflow-y-auto">{error}</pre>
                 </div>
               </div>
             )}
@@ -219,7 +219,7 @@ export default function NewCoursePage() {
             <button
               onClick={handleParse}
               disabled={!documentContent}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-starlight rounded-lg font-medium transition-all flex items-center justify-center gap-2 disabled:cursor-not-allowed"
             >
               <Sparkles className="w-5 h-5" />
               {documentContent ? 'AI 一键智能解析' : '请先上传文档'}
@@ -231,8 +231,8 @@ export default function NewCoursePage() {
         {step === 'parsing' && (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-16 h-16 text-purple-400 animate-spin mb-4" />
-            <p className="text-white text-lg mb-2">AI 正在解析课程文档...</p>
-            <p className="text-gray-400 text-sm">这可能需要10-30秒，请耐心等待</p>
+            <p className="text-starlight text-h3 mb-2">AI 正在解析课程文档...</p>
+            <p className="text-starlight-muted text-small">这可能需要10-30秒，请耐心等待</p>
           </div>
         )}
 
@@ -244,35 +244,35 @@ export default function NewCoursePage() {
               <p className="text-green-300">✨ 解析成功！共生成 {parsedCourse.contents.length} 个内容单元</p>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10">
-              <h2 className="text-lg font-semibold text-white mb-4">课程信息预览</h2>
+            <div className="card-glass p-6">
+              <h2 className="text-h3 font-semibold text-starlight mb-4">课程信息预览</h2>
               <dl className="space-y-3">
                 <div>
-                  <dt className="text-sm text-gray-400">课程标题</dt>
-                  <dd className="text-white">{parsedCourse.title}</dd>
+                  <dt className="text-small text-starlight-muted">课程标题</dt>
+                  <dd className="text-starlight">{parsedCourse.title}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-400">课程描述</dt>
-                  <dd className="text-white">{parsedCourse.description}</dd>
+                  <dt className="text-small text-starlight-muted">课程描述</dt>
+                  <dd className="text-starlight">{parsedCourse.description}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-400">课程类型</dt>
-                  <dd className="text-white">{parsedCourse.structure_type}</dd>
+                  <dt className="text-small text-starlight-muted">课程类型</dt>
+                  <dd className="text-starlight">{parsedCourse.structure_type}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-400">内容单元数</dt>
-                  <dd className="text-white">{parsedCourse.contents.length} 个</dd>
+                  <dt className="text-small text-starlight-muted">内容单元数</dt>
+                  <dd className="text-starlight">{parsedCourse.contents.length} 个</dd>
                 </div>
               </dl>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10">
-              <h2 className="text-lg font-semibold text-white mb-4">内容单元预览（前3个）</h2>
+            <div className="card-glass p-6">
+              <h2 className="text-h3 font-semibold text-starlight mb-4">内容单元预览（前3个）</h2>
               <div className="space-y-3">
                 {parsedCourse.contents.slice(0, 3).map((content: any, index: number) => (
                   <div key={index} className="p-4 bg-black/50 rounded-lg border border-white/10">
-                    <h3 className="text-white font-medium mb-1">{content.title}</h3>
-                    <p className="text-sm text-gray-400">
+                    <h3 className="text-starlight font-medium mb-1">{content.title}</h3>
+                    <p className="text-small text-starlight-muted">
                       {content.original_text?.substring(0, 100)}...
                     </p>
                   </div>
@@ -284,8 +284,8 @@ export default function NewCoursePage() {
               <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-red-300 text-sm font-medium mb-2">❌ 解析失败</p>
-                  <pre className="text-red-200 text-xs whitespace-pre-wrap font-mono bg-black/30 p-3 rounded overflow-x-auto max-h-96 overflow-y-auto">{error}</pre>
+                  <p className="text-red-300 text-small font-medium mb-2">❌ 解析失败</p>
+                  <pre className="text-red-200 text-small whitespace-pre-wrap font-mono bg-black/30 p-3 rounded overflow-x-auto max-h-96 overflow-y-auto">{error}</pre>
                 </div>
               </div>
             )}
@@ -293,13 +293,13 @@ export default function NewCoursePage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setStep('upload')}
-                className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-all"
+                className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-starlight rounded-lg font-medium transition-all"
               >
                 返回修改
               </button>
               <button
                 onClick={handleSave}
-                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-starlight rounded-lg font-medium transition-all flex items-center justify-center gap-2"
               >
                 <CheckCircle className="w-5 h-5" />
                 确认并保存
@@ -312,8 +312,8 @@ export default function NewCoursePage() {
         {step === 'saving' && (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-16 h-16 text-purple-400 animate-spin mb-4" />
-            <p className="text-white text-lg mb-2">正在保存课程数据...</p>
-            <p className="text-gray-400 text-sm">请稍候</p>
+            <p className="text-starlight text-h3 mb-2">正在保存课程数据...</p>
+            <p className="text-starlight-muted text-small">请稍候</p>
           </div>
         )}
 
@@ -323,8 +323,8 @@ export default function NewCoursePage() {
             <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
               <CheckCircle className="w-12 h-12 text-green-400" />
             </div>
-            <p className="text-white text-2xl font-bold mb-2">🎉 课程创建成功！</p>
-            <p className="text-gray-400 text-sm">即将跳转到课程管理页面...</p>
+            <p className="text-starlight text-h1 font-bold mb-2">🎉 课程创建成功！</p>
+            <p className="text-starlight-muted text-small">即将跳转到课程管理页面...</p>
           </div>
         )}
       </main>

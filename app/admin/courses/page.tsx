@@ -157,14 +157,14 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-cosmic-void relative overflow-hidden">
       {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden">
         {isMounted && particles.map((particle) => (
@@ -190,19 +190,19 @@ export default function CoursesPage() {
       </div>
 
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-md border-b border-white/10 relative z-10">
+      <header className="card-glass border-b border-white/10 relative z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/admin')}
-                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all"
+                className="p-2 card-glass hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-white">课程管理</h1>
-                <p className="text-sm text-purple-300 mt-1">管理员：{userEmail}</p>
+                <h1 className="text-h2 font-bold text-starlight">课程管理</h1>
+                <p className="text-small text-starlight-muted mt-1">管理员：{userEmail}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -211,7 +211,7 @@ export default function CoursesPage() {
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg border border-purple-500/30 transition-all group"
               >
                 <Brain className="w-5 h-5" />
-                <span className="text-sm font-medium">盖亚知识库</span>
+                <span className="text-small font-medium">盖亚知识库</span>
               </button>
               <BookOpen className="w-6 h-6 text-purple-400" />
             </div>
@@ -238,7 +238,7 @@ export default function CoursesPage() {
             const isDeletable = !protectedCourses.includes(course.system_key)
 
             return (
-              <div key={course.id} className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center">
+              <div key={course.id} className="group relative card-glass rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center">
                 {/* Gradient Background Effect */}
                 <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none`} />
 
@@ -270,21 +270,21 @@ export default function CoursesPage() {
                 >
                   {/* Icon */}
                   <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="w-10 h-10 text-white" />
+                    <Icon className="w-10 h-10 text-starlight" />
                   </div>
 
                   {/* Title */}
-                  <h2 className="relative text-2xl font-bold text-white mb-3 group-hover:scale-105 transition-transform duration-300">
+                  <h2 className="relative text-h2 font-bold text-starlight mb-3 group-hover:scale-105 transition-transform duration-300">
                     {course.title}
                   </h2>
 
                   {/* Description */}
-                  <p className="relative text-sm text-gray-300 group-hover:text-white transition-colors duration-300">
+                  <p className="relative text-small text-starlight-muted group-hover:text-starlight transition-colors duration-300">
                     {course.description}
                   </p>
 
                   {/* Arrow Indicator */}
-                  <div className="mt-6 flex items-center text-purple-300 group-hover:text-white transition-colors duration-300">
+                  <div className="mt-6 flex items-center text-starlight-muted group-hover:text-starlight transition-colors duration-300">
                     <span className="text-xs mr-1">进入管理</span>
                     <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -298,20 +298,20 @@ export default function CoursesPage() {
           {/* 新增课程体系卡片 */}
           <button
             onClick={() => router.push('/admin/courses/new')}
-            className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border-2 border-dashed border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center"
+            className="group relative card-glass rounded-2xl p-8 border-2 border-dashed border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center"
           >
             {/* Icon */}
             <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-              <Plus className="w-10 h-10 text-white" />
+              <Plus className="w-10 h-10 text-starlight" />
             </div>
 
             {/* Title */}
-            <h2 className="relative text-2xl font-bold text-white mb-3 group-hover:scale-105 transition-transform duration-300">
+            <h2 className="relative text-h2 font-bold text-starlight mb-3 group-hover:scale-105 transition-transform duration-300">
               新增课程体系
             </h2>
 
             {/* Description */}
-            <p className="relative text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+            <p className="relative text-small text-starlight-muted group-hover:text-starlight-dim transition-colors duration-300">
               点击创建新的课程体系
             </p>
           </button>

@@ -387,7 +387,7 @@ export default function CourseDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
           <p className="text-purple-300 mt-4">加载中...</p>
@@ -401,9 +401,9 @@ export default function CourseDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-cosmic-void">
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-md border-b border-white/10">
+      <header className="bg-cosmic-void/50 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -411,11 +411,11 @@ export default function CourseDetailPage() {
                 onClick={() => router.push('/admin/courses')}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-400" />
+                <ArrowLeft className="w-5 h-5 text-starlight-muted" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-white">{course.title}</h1>
-                <p className="text-sm text-purple-300 mt-1">{course.description}</p>
+                <h1 className="text-h2 font-bold text-starlight">{course.title}</h1>
+                <p className="text-small text-purple-300 mt-1">{course.description}</p>
               </div>
             </div>
           </div>
@@ -423,15 +423,15 @@ export default function CourseDetailPage() {
       </header>
 
       {/* Tabs */}
-      <div className="bg-black/30 border-b border-white/10">
+      <div className="bg-cosmic-void/30 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-1">
             <button
               onClick={() => setActiveTab('students')}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
                 activeTab === 'students'
-                  ? 'border-purple-500 text-white'
-                  : 'border-transparent text-gray-400 hover:text-white'
+                  ? 'border-purple-500 text-starlight'
+                  : 'border-transparent text-starlight-muted hover:text-starlight'
               }`}
             >
               <Users className="w-4 h-4" />
@@ -441,8 +441,8 @@ export default function CourseDetailPage() {
               onClick={() => setActiveTab('materials')}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
                 activeTab === 'materials'
-                  ? 'border-purple-500 text-white'
-                  : 'border-transparent text-gray-400 hover:text-white'
+                  ? 'border-purple-500 text-starlight'
+                  : 'border-transparent text-starlight-muted hover:text-starlight'
               }`}
             >
               <Upload className="w-4 h-4" />
@@ -452,8 +452,8 @@ export default function CourseDetailPage() {
               onClick={() => setActiveTab('groups')}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
                 activeTab === 'groups'
-                  ? 'border-purple-500 text-white'
-                  : 'border-transparent text-gray-400 hover:text-white'
+                  ? 'border-purple-500 text-starlight'
+                  : 'border-transparent text-starlight-muted hover:text-starlight'
               }`}
             >
               <UsersRound className="w-4 h-4" />
@@ -469,10 +469,10 @@ export default function CourseDetailPage() {
         {activeTab === 'students' && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white">选课学员列表 ({students.length}人)</h2>
+              <h2 className="text-h3 font-bold text-starlight">选课学员列表 ({students.length}人)</h2>
               <button
                 onClick={() => setShowAddStudentModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                className="btn-stardust flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 添加学员
@@ -480,35 +480,35 @@ export default function CourseDetailPage() {
             </div>
 
             {students.length === 0 ? (
-              <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+              <div className="text-center py-12 card-glass">
                 <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400">暂无学员选修此课程</p>
+                <p className="text-starlight-muted">暂无学员选修此课程</p>
               </div>
             ) : (
-              <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 overflow-hidden">
+              <div className="card-glass overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-white/5">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">姓名</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">邮箱</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">选课时间</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">操作</th>
+                      <th className="px-6 py-3 text-left text-small font-medium text-starlight-muted uppercase">姓名</th>
+                      <th className="px-6 py-3 text-left text-small font-medium text-starlight-muted uppercase">邮箱</th>
+                      <th className="px-6 py-3 text-left text-small font-medium text-starlight-muted uppercase">选课时间</th>
+                      <th className="px-6 py-3 text-right text-small font-medium text-starlight-muted uppercase">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
                     {students.map((student) => (
                       <tr key={student.id} className="hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4 text-sm text-white">
+                        <td className="px-6 py-4 text-small text-starlight">
                           {student.full_name || '未设置'}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-300">{student.email}</td>
-                        <td className="px-6 py-4 text-sm text-gray-400">
+                        <td className="px-6 py-4 text-small text-gray-300">{student.email}</td>
+                        <td className="px-6 py-4 text-small text-starlight-muted">
                           {new Date(student.assigned_at).toLocaleDateString('zh-CN')}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button
                             onClick={() => handleRemoveStudent(student)}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-1 text-small text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                             移除
@@ -527,10 +527,10 @@ export default function CourseDetailPage() {
         {activeTab === 'materials' && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white">课程资料 ({materials.length}个)</h2>
+              <h2 className="text-h3 font-bold text-starlight">课程资料 ({materials.length}个)</h2>
               <button
                 onClick={() => setShowUploadModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                className="btn-stardust flex items-center gap-2"
               >
                 <Upload className="w-4 h-4" />
                 上传资料
@@ -538,29 +538,29 @@ export default function CourseDetailPage() {
             </div>
 
             {materials.length === 0 ? (
-              <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+              <div className="text-center py-12 card-glass">
                 <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400">暂无课程资料</p>
-                <p className="text-gray-500 text-sm mt-2">点击上方按钮上传资料</p>
+                <p className="text-starlight-muted">暂无课程资料</p>
+                <p className="text-starlight-dim text-small mt-2">点击上方按钮上传资料</p>
               </div>
             ) : (
-              <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+              <div className="card-glass overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-white/5 border-b border-white/10">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-small font-medium text-starlight-muted uppercase tracking-wider">
                         文件名
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-small font-medium text-starlight-muted uppercase tracking-wider">
                         类型
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-small font-medium text-starlight-muted uppercase tracking-wider">
                         描述
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-small font-medium text-starlight-muted uppercase tracking-wider">
                         上传时间
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-right text-small font-medium text-starlight-muted uppercase tracking-wider">
                         操作
                       </th>
                     </tr>
@@ -572,13 +572,13 @@ export default function CourseDetailPage() {
                           <div className="flex items-center gap-3">
                             <FileText className="w-5 h-5 text-purple-400" />
                             <div>
-                              <div className="text-white font-medium">{material.file_name}</div>
+                              <div className="text-starlight font-medium">{material.file_name}</div>
                               {material.external_url && (
                                 <a
                                   href={material.external_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-cyan-400 hover:text-cyan-300"
+                                  className="text-small text-cyan-400 hover:text-cyan-300"
                                 >
                                   查看链接 ↗
                                 </a>
@@ -587,20 +587,20 @@ export default function CourseDetailPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded">
+                          <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-small rounded">
                             {material.resource_type || '文件'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-300">
+                        <td className="px-6 py-4 text-small text-gray-300">
                           {material.description || '-'}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-400">
+                        <td className="px-6 py-4 text-small text-starlight-muted">
                           {material.created_at ? new Date(material.created_at).toLocaleDateString('zh-CN') : '-'}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button
                             onClick={() => handleDeleteMaterial(material.id)}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-1 text-small text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                             删除
@@ -619,10 +619,10 @@ export default function CourseDetailPage() {
         {activeTab === 'groups' && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white">课程分组 ({groups.length}个)</h2>
+              <h2 className="text-h3 font-bold text-starlight">课程分组 ({groups.length}个)</h2>
               <button
                 onClick={() => setShowAddGroupModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                className="btn-stardust flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 创建分组
@@ -630,23 +630,23 @@ export default function CourseDetailPage() {
             </div>
 
             {groups.length === 0 ? (
-              <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+              <div className="text-center py-12 card-glass">
                 <UsersRound className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400">暂无课程分组</p>
-                <p className="text-gray-500 text-sm mt-2">点击上方按钮创建分组</p>
+                <p className="text-starlight-muted">暂无课程分组</p>
+                <p className="text-starlight-dim text-small mt-2">点击上方按钮创建分组</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {groups.map((group) => (
                   <div
                     key={group.id}
-                    className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10 hover:border-white/20 transition-colors"
+                    className="card-glass p-6 hover:border-white/20 transition-colors"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-white mb-2">{group.name}</h3>
+                        <h3 className="text-h3 font-semibold text-starlight mb-2">{group.name}</h3>
                         {group.description && (
-                          <p className="text-sm text-gray-400 mb-3">{group.description}</p>
+                          <p className="text-small text-starlight-muted mb-3">{group.description}</p>
                         )}
                       </div>
                       <button
@@ -658,7 +658,7 @@ export default function CourseDetailPage() {
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between text-small">
                       <div className="flex items-center gap-2 text-cyan-400">
                         <Users className="w-4 h-4" />
                         <span>{group.member_ids?.length || 0} 名成员</span>
@@ -681,11 +681,11 @@ export default function CourseDetailPage() {
       {/* Add Student Modal */}
       {showAddStudentModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-xl p-6 w-full max-w-md border border-white/10">
-            <h2 className="text-xl font-bold text-white mb-4">添加学员</h2>
+          <div className="card-glass p-6 w-full max-w-md">
+            <h2 className="text-h3 font-bold text-starlight mb-4">添加学员</h2>
             <form onSubmit={handleAddStudent}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-small font-medium text-gray-300 mb-2">
                   学员邮箱
                 </label>
                 <input
@@ -693,7 +693,7 @@ export default function CourseDetailPage() {
                   value={newStudentEmail}
                   onChange={(e) => setNewStudentEmail(e.target.value)}
                   placeholder="请输入已注册用户的邮箱"
-                  className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  className="input-ethereal"
                   required
                 />
               </div>
@@ -704,14 +704,14 @@ export default function CourseDetailPage() {
                     setShowAddStudentModal(false)
                     setNewStudentEmail('')
                   }}
-                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                  className="px-4 py-2 text-starlight-muted hover:text-starlight transition-colors"
                   disabled={submitting}
                 >
                   取消
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  className="btn-stardust disabled:opacity-50"
                   disabled={submitting}
                 >
                   {submitting ? '添加中...' : '添加'}
@@ -725,11 +725,11 @@ export default function CourseDetailPage() {
       {/* Add Group Modal */}
       {showAddGroupModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-xl p-6 w-full max-w-md border border-white/10">
-            <h2 className="text-xl font-bold text-white mb-4">创建课程分组</h2>
+          <div className="card-glass p-6 w-full max-w-md">
+            <h2 className="text-h3 font-bold text-starlight mb-4">创建课程分组</h2>
             <form onSubmit={handleCreateGroup}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-small font-medium text-gray-300 mb-2">
                   分组名称
                 </label>
                 <input
@@ -737,12 +737,12 @@ export default function CourseDetailPage() {
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
                   placeholder="例如：高级班、实验组等"
-                  className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  className="input-ethereal"
                   required
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-small font-medium text-gray-300 mb-2">
                   描述（可选）
                 </label>
                 <textarea
@@ -750,7 +750,7 @@ export default function CourseDetailPage() {
                   onChange={(e) => setNewGroupDescription(e.target.value)}
                   placeholder="分组说明..."
                   rows={3}
-                  className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 resize-none"
+                  className="input-ethereal resize-none"
                 />
               </div>
               <div className="flex justify-end gap-3">
@@ -761,14 +761,14 @@ export default function CourseDetailPage() {
                     setNewGroupName('')
                     setNewGroupDescription('')
                   }}
-                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                  className="px-4 py-2 text-starlight-muted hover:text-starlight transition-colors"
                   disabled={submitting}
                 >
                   取消
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  className="btn-stardust disabled:opacity-50"
                   disabled={submitting}
                 >
                   {submitting ? '创建中...' : '创建'}

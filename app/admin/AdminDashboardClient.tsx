@@ -114,14 +114,14 @@ export default function AdminDashboardClient() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-cosmic-void relative overflow-hidden">
       {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden">
         {isMounted && particles.map((particle) => (
@@ -147,16 +147,16 @@ export default function AdminDashboardClient() {
       </div>
 
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-md border-b border-white/10 relative z-10">
+      <header className="card-glass border-b border-white/10 relative z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white">未来心智学院 - 管理后台</h1>
-              <p className="text-sm text-purple-300 mt-1">欢迎回来，{userEmail}</p>
+              <h1 className="text-h2 font-bold text-starlight">未来心智学院 - 管理后台</h1>
+              <p className="text-small text-starlight-muted mt-1">欢迎回来，{userEmail}</p>
             </div>
             <button
               onClick={() => router.push('/')}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all"
+              className="px-4 py-2 card-glass hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all"
             >
               返回首页
             </button>
@@ -168,7 +168,7 @@ export default function AdminDashboardClient() {
       <main className="max-w-7xl mx-auto px-6 py-12 min-h-[calc(100vh-120px)] flex items-center justify-center relative z-10">
         {portalCards.length === 0 ? (
           <div className="text-center">
-            <p className="text-gray-400 text-lg">正在加载管理功能...</p>
+            <p className="text-starlight-muted text-body">正在加载管理功能...</p>
           </div>
         ) : (
           <div className="w-full flex justify-center">
@@ -179,28 +179,28 @@ export default function AdminDashboardClient() {
                   <button
                     key={card.title}
                     onClick={() => router.push(card.href)}
-                    className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-10 border border-white/10 hover:border-white/30 transition-all duration-500 hover:scale-105 hover:bg-white/10 min-h-[320px] w-full flex flex-col items-center justify-center"
+                    className="group relative card-glass rounded-2xl p-10 border border-white/10 hover:border-white/30 transition-all duration-500 hover:scale-105 hover:bg-white/10 min-h-[320px] w-full flex flex-col items-center justify-center"
                   >
                   {/* Gradient Background Effect */}
                   <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
 
                   {/* Icon */}
                   <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500`}>
-                    <Icon className="w-10 h-10 text-white" />
+                    <Icon className="w-10 h-10 text-starlight" />
                   </div>
 
                   {/* Title */}
-                  <h2 className="relative text-2xl font-bold text-white mb-2 group-hover:scale-105 transition-transform duration-300">
+                  <h2 className="relative text-h2 font-bold text-starlight mb-2 group-hover:scale-105 transition-transform duration-300">
                     {card.title}
                   </h2>
 
                   {/* Description */}
-                  <p className="relative text-sm text-gray-300 text-center group-hover:text-white transition-colors duration-300">
+                  <p className="relative text-small text-starlight-muted text-center group-hover:text-starlight transition-colors duration-300">
                     {card.description}
                   </p>
 
                   {/* Arrow Indicator */}
-                  <div className="relative mt-4 flex items-center text-purple-300 group-hover:text-white transition-colors duration-300">
+                  <div className="relative mt-4 flex items-center text-starlight-muted group-hover:text-starlight transition-colors duration-300">
                     <span className="text-xs mr-1">进入</span>
                     <svg className="w-4 h-4 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />

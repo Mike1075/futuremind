@@ -132,7 +132,7 @@ export default function ListeningGroupsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
           <p className="text-purple-300 mt-4">加载中...</p>
@@ -142,26 +142,26 @@ export default function ListeningGroupsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-cosmic-void">
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-md border-b border-white/10">
+      <header className="bg-cosmic-void/50 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/admin/courses/listening')}
-                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all"
+                className="p-2 bg-white/10 hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-white">自在聆听 - 课程分组</h1>
-                <p className="text-sm text-purple-300 mt-1">管理课程分组</p>
+                <h1 className="text-h2 font-bold text-starlight">自在聆听 - 课程分组</h1>
+                <p className="text-small text-purple-300 mt-1">管理课程分组</p>
               </div>
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-starlight rounded-lg font-medium transition-all flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
               创建分组
@@ -175,16 +175,16 @@ export default function ListeningGroupsPage() {
         {/* 分组列表 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {groups.length === 0 ? (
-            <div className="col-span-full bg-white/5 backdrop-blur-md rounded-lg border border-white/10 p-12 text-center">
-              <UsersRound className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-400 text-lg">暂无分组</p>
-              <p className="text-gray-500 text-sm mt-2">点击右上角按钮创建第一个分组</p>
+            <div className="col-span-full card-glass p-12 text-center">
+              <UsersRound className="w-16 h-16 text-starlight-muted mx-auto mb-4" />
+              <p className="text-starlight-muted text-h3">暂无分组</p>
+              <p className="text-starlight-dim text-small mt-2">点击右上角按钮创建第一个分组</p>
             </div>
           ) : (
             groups.map((group) => (
               <div
                 key={group.id}
-                className="bg-white/5 backdrop-blur-md rounded-lg border border-white/10 p-6 hover:bg-white/10 transition-all"
+                className="card-glass p-6 hover:bg-white/10 transition-all"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -192,8 +192,8 @@ export default function ListeningGroupsPage() {
                       <UsersRound className="w-6 h-6 text-purple-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white">{group.name}</h3>
-                      <p className="text-gray-400 text-sm flex items-center gap-1 mt-1">
+                      <h3 className="text-h3 font-bold text-starlight">{group.name}</h3>
+                      <p className="text-starlight-muted text-small flex items-center gap-1 mt-1">
                         <Users className="w-4 h-4" />
                         {group.member_ids?.length || 0} 名成员
                       </p>
@@ -209,16 +209,16 @@ export default function ListeningGroupsPage() {
                 </div>
 
                 {group.description && (
-                  <p className="text-gray-300 text-sm mb-4">{group.description}</p>
+                  <p className="text-gray-300 text-small mb-4">{group.description}</p>
                 )}
 
                 <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                  <p className="text-gray-500 text-xs">
+                  <p className="text-starlight-dim text-xs">
                     创建于: {group.created_at ? new Date(group.created_at).toLocaleDateString('zh-CN') : '-'}
                   </p>
                   <button
                     onClick={() => router.push(`/admin/groups/${group.id}`)}
-                    className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-all"
+                    className="text-purple-400 hover:text-purple-300 text-small font-medium transition-all"
                   >
                     管理成员 →
                   </button>
@@ -231,14 +231,14 @@ export default function ListeningGroupsPage() {
 
       {/* 创建分组模态框 */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-lg border border-white/10 w-full max-w-md">
+        <div className="fixed inset-0 bg-cosmic-void/80 flex items-center justify-center z-50 p-4">
+          <div className="card-glass w-full max-w-md">
             <div className="p-6 border-b border-white/10">
-              <h2 className="text-xl font-bold text-white">创建新分组</h2>
+              <h2 className="text-h3 font-bold text-starlight">创建新分组</h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-small font-medium text-gray-300 mb-2">
                   分组名称 *
                 </label>
                 <input
@@ -246,11 +246,11 @@ export default function ListeningGroupsPage() {
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
                   placeholder="例如：第一期学员"
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  className="input-ethereal focus:border-purple-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-small font-medium text-gray-300 mb-2">
                   分组描述
                 </label>
                 <textarea
@@ -258,7 +258,7 @@ export default function ListeningGroupsPage() {
                   onChange={(e) => setGroupDescription(e.target.value)}
                   placeholder="可选：描述该分组的用途"
                   rows={3}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 resize-none"
+                  className="input-ethereal focus:border-purple-500 resize-none"
                 />
               </div>
             </div>
@@ -269,13 +269,13 @@ export default function ListeningGroupsPage() {
                   setGroupName('')
                   setGroupDescription('')
                 }}
-                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-starlight rounded-lg transition-all"
               >
                 取消
               </button>
               <button
                 onClick={handleCreateGroup}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all"
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-starlight rounded-lg transition-all"
               >
                 创建
               </button>
