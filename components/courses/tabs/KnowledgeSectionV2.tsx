@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Lightbulb, MessageSquare, Loader2, Sparkles, Check } from 'lucide-react'
 
 interface KnowledgeSectionV2Props {
@@ -22,8 +22,64 @@ export function KnowledgeSectionV2({
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
   const [questions, setQuestions] = useState<Record<number, QuestionData>>({})
+  const [prefetching, setPrefetching] = useState(false)
 
-  // 获取问题（从预生成列表中随机或已分配的）
+  // 页面加载时预获取所有问题
+  useEffect(() => {
+    if (knowledgePoints.length > 0 && !prefetching) {
+      prefetchAllQuestions()
+    }
+  }, [contentId, knowledgePoints.length])
+
+  // 批量预获取所有知识点的问题
+  const prefetchAllQuestions = async () => {
+    setPrefetching(true)
+
+    // 并行获取所有问题
+    const promises = knowledgePoints.map(async (point, index) => {
+      try {
+        const response = await fetch('/api/knowledge-questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contentId,
+            knowledgePointIndex: index,
+            knowledgePointText: point
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          return {
+            index,
+            data: {
+              question: data.question,
+              questionIndex: data.questionIndex,
+              hasResponded: data.hasResponded
+            }
+          }
+        }
+      } catch (error) {
+        // 静默失败，用户点击时会再次尝试
+      }
+      return null
+    })
+
+    const results = await Promise.all(promises)
+
+    // 更新所有成功获取的问题
+    const newQuestions: Record<number, QuestionData> = {}
+    results.forEach(result => {
+      if (result) {
+        newQuestions[result.index] = result.data
+      }
+    })
+
+    setQuestions(prev => ({ ...prev, ...newQuestions }))
+    setPrefetching(false)
+  }
+
+  // 点击知识点时获取问题（如果预获取失败则重试）
   const fetchQuestion = async (point: string, index: number) => {
     if (questions[index]) {
       // 已获取过，直接展开/收起
@@ -56,11 +112,11 @@ export function KnowledgeSectionV2({
           }
         }))
       } else {
-        // 失败时使用默认问题
+        // 失败时使用默认问题（无夸赞）
         setQuestions(prev => ({
           ...prev,
           [index]: {
-            question: `很开心你对这个话题感兴趣！让我们一起探讨这个有趣的知识点吧！`,
+            question: `这个概念与你的日常生活有什么联系？你能想到哪些具体的例子来说明它？`,
             questionIndex: -1,
             hasResponded: false
           }
@@ -70,7 +126,7 @@ export function KnowledgeSectionV2({
       setQuestions(prev => ({
         ...prev,
         [index]: {
-          question: `很开心你对这个话题感兴趣！让我们一起探讨这个有趣的知识点吧！`,
+          question: `这个概念与你的日常生活有什么联系？你能想到哪些具体的例子来说明它？`,
           questionIndex: -1,
           hasResponded: false
         }

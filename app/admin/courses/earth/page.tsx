@@ -15,7 +15,6 @@ interface EarthStage {
   title: string
   subtitle: string | null
   documentary_url: string | null
-  pre_watch_guide: string | null
   knowledge_points: any | null
   socratic_questions: any | null
   post_reflection: any | null
@@ -68,7 +67,6 @@ export default function EarthCoursePage() {
     title: '',
     subtitle: '',
     documentary_url: '',
-    pre_watch_guide: '',
     knowledge_points: [] as string[],
     socratic_questions: {
       pre_watch: [] as string[],
@@ -101,7 +99,6 @@ export default function EarthCoursePage() {
         title: selectedStage.title || '',
         subtitle: selectedStage.subtitle || '',
         documentary_url: selectedStage.documentary_url || '',
-        pre_watch_guide: selectedStage.pre_watch_guide || '',
         knowledge_points: selectedStage.knowledge_points || [],
         socratic_questions: selectedStage.socratic_questions || {
           pre_watch: [],
@@ -196,7 +193,6 @@ export default function EarthCoursePage() {
           title: formData.title,
           subtitle: formData.subtitle,
           documentary_url: formData.documentary_url,
-          pre_watch_guide: formData.pre_watch_guide,
           knowledge_points: formData.knowledge_points,
           socratic_questions: formData.socratic_questions,
           post_reflection: formData.post_reflection,
@@ -290,7 +286,6 @@ export default function EarthCoursePage() {
           title: `第${newSequenceNumber}阶段`,
           subtitle: '',
           documentary_url: '',
-          pre_watch_guide: '',
           knowledge_points: [],
           socratic_questions: {
             pre_watch: [],
@@ -662,17 +657,6 @@ export default function EarthCoursePage() {
                   <p className="text-gray-400 text-xs mt-1">
                     💡 这是本阶段的主要视频内容。补充视频资源请使用下方的"补充视频资源"模块添加。
                   </p>
-                </div>
-
-                <div>
-                  <label className="block text-white font-medium mb-2">观看前思考</label>
-                  <textarea
-                    value={formData.pre_watch_guide}
-                    onChange={(e) => setFormData({ ...formData, pre_watch_guide: e.target.value })}
-                    rows={6}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="输入观看前思考..."
-                  />
                 </div>
 
                 <div>
