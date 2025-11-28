@@ -1379,11 +1379,19 @@ body {
 }
 
 /* ============================================
-   Portal课程卡片 - 炫彩边框效果
+   Portal课程卡片 - 炫彩边框效果（与盖亚图标相同结构）
    ============================================ */
 
-/* 炫彩边框层 - 使用mask只显示边框部分 */
-.portal-aurora-border {
+/* 外层容器 - 默认浅色边框，悬停时炫彩边框 */
+.portal-card-wrapper {
+  padding: 2px; /* 边框宽度 */
+  border-radius: 1rem;
+  background: var(--course-border-color, rgba(156, 163, 175, 0.2));
+  transition: background 0.4s ease;
+}
+
+/* 悬停时显示炫彩渐变边框 */
+.portal-card-wrapper:hover {
   background: conic-gradient(
     from var(--card-border-angle, 0deg),
     #FFD700,
@@ -1394,26 +1402,47 @@ body {
     #FFD700
   );
   animation: card-border-spin 4s linear infinite;
-  /* 使用mask挖空中间，只显示边框 */
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 2px; /* 边框宽度 */
 }
 
-/* 炫彩发光层 */
-.portal-aurora-glow {
+/* 悬停时的发光效果 */
+.portal-card-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: 1.25rem;
   background: conic-gradient(
     from var(--card-border-angle, 0deg),
-    rgba(255, 215, 0, 0.6),
-    rgba(255, 107, 107, 0.6),
-    rgba(157, 0, 255, 0.6),
-    rgba(0, 255, 255, 0.6),
-    rgba(0, 255, 136, 0.6),
-    rgba(255, 215, 0, 0.6)
+    rgba(255, 215, 0, 0.5),
+    rgba(255, 107, 107, 0.5),
+    rgba(157, 0, 255, 0.5),
+    rgba(0, 255, 255, 0.5),
+    rgba(0, 255, 136, 0.5),
+    rgba(255, 215, 0, 0.5)
   );
-  animation: card-border-spin 4s linear infinite;
   filter: blur(12px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.portal-card-wrapper:hover::before {
+  opacity: 0.6;
+  animation: card-border-spin 4s linear infinite;
+}
+
+/* 内层 - 默认透明玻璃，悬停时不透明背景（遮住炫彩中间部分） */
+.portal-card-inner {
+  background: rgba(10, 10, 31, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: calc(1rem - 2px);
+  border: 1px solid var(--course-border-color, rgba(156, 163, 175, 0.2));
+  transition: all 0.4s ease;
+}
+
+/* 悬停时内层变成不透明深色背景，完全遮住炫彩 */
+.portal-card-wrapper:hover .portal-card-inner {
+  background: #0a0a1f;
+  border-color: transparent;
 }

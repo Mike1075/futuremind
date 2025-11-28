@@ -264,27 +264,12 @@ export function PortalClient({
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="relative group/card cursor-pointer transition-all duration-500"
+                        className="portal-card-wrapper relative group/card cursor-pointer transition-all duration-500"
                         onClick={() => router.push(`/courses/${course.course_system_key}`)}
+                        style={{ '--course-border-color': borderColor } as React.CSSProperties}
                       >
-                        {/* 炫彩边框层 - 悬停时显示，使用mask只显示边框 */}
-                        <div
-                          className="absolute inset-0 rounded-2xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none portal-aurora-border"
-                        />
-                        {/* 炫彩发光层 - 悬停时显示 */}
-                        <div
-                          className="absolute -inset-2 rounded-2xl opacity-0 group-hover/card:opacity-50 transition-opacity duration-500 pointer-events-none -z-10 portal-aurora-glow"
-                        />
-                        {/* 玻璃质感内容层 */}
-                        <div
-                          className="relative rounded-2xl p-6 transition-all duration-300"
-                          style={{
-                            background: 'rgba(10, 10, 31, 0.5)',
-                            backdropFilter: 'blur(8px)',
-                            WebkitBackdropFilter: 'blur(8px)',
-                            border: `1px solid ${borderColor}`,
-                          }}
-                        >
+                        {/* 内容层 - 悬停时背景变不透明以遮住炫彩 */}
+                        <div className="portal-card-inner relative rounded-2xl p-6">
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center">
                               <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4 border border-white/20 backdrop-blur-sm">
