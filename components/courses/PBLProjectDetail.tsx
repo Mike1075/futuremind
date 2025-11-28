@@ -679,12 +679,30 @@ export function PBLProjectDetail({
                 className="bg-gray-900/50 border border-gray-800 rounded-lg overflow-hidden"
               >
                 {/* 周标题 */}
+                {(() => {
+                  // 判断该周是否解锁：第1周始终解锁，其他周需要前一周有任务完成
+                  const isWeekUnlocked = week.week === 1 || (() => {
+                    const prevWeekPlan = project.week_plan?.find(w => w.week === week.week - 1)
+                    if (!prevWeekPlan) return false
+                    // 检查前一周是否有任何任务完成
+                    return prevWeekPlan.activities?.some((_, idx) => {
+                      const dayNumber = idx + 1
+                      const prevDayKey = `project_${project.sequence_number}_week${week.week - 1}_day${dayNumber}`
+                      return (userProgress[prevDayKey] || 0) > 0
+                    }) || false
+                  })()
+
+                  return (
                 <button
                   onClick={() => toggleWeek(week.week)}
                   className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-900/70 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <span className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold">
+                    <span className={`flex items-center justify-center w-10 h-10 rounded-full font-bold ${
+                      isWeekUnlocked
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                        : 'bg-gray-700 text-gray-500'
+                    }`}>
                       {week.week}
                     </span>
                     <div className="text-left">
@@ -707,6 +725,8 @@ export function PBLProjectDetail({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
+                  )
+                })()}
 
                 {/* 周目标 (展开时显示) */}
                 {isWeekExpanded && week.goals && week.goals.length > 0 && (
@@ -816,33 +836,6 @@ export function PBLProjectDetail({
                             )}
                           </div>
 
-                          {/* 操作按钮区域 - 始终显示（仅当解锁时） */}
-                          {isUnlocked && (
-                            <div className="px-4 pb-3 flex gap-2">
-                              <button
-                                onClick={() => openSubmitDialog(week.week, dayNumber, activityDayLabel)}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-                              >
-                                {isCompleted ? '再次提交' : '提交任务'}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (!isSelected) {
-                                    setShowSelectProjectModal(true)
-                                    return
-                                  }
-                                  setHistoryDayKey(dayKey)
-                                  setHistoryDayLabel(activityDayLabel) // 存储实际的day标签
-                                  setShowSubmissionsHistory(true)
-                                  fetchSubmissionsHistory(dayKey)
-                                }}
-                                className="flex-shrink-0 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm font-medium transition-colors"
-                              >
-                                查看记录
-                              </button>
-                            </div>
-                          )}
-
                           {/* 详细内容 (展开时显示) */}
                           {isDayExpanded && isUnlocked && (
                             <div className="px-4 pb-4 space-y-4 border-t border-gray-800 mt-4">
@@ -924,6 +917,31 @@ export function PBLProjectDetail({
                                   )}
                                 </>
                               )}
+
+                              {/* 操作按钮区域 - 在任务详情展开后显示 */}
+                              <div className="pt-4 mt-4 border-t border-gray-700 flex gap-2">
+                                <button
+                                  onClick={() => openSubmitDialog(week.week, dayNumber, activityDayLabel)}
+                                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                                >
+                                  {isCompleted ? '再次提交' : '提交任务'}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (!isSelected) {
+                                      setShowSelectProjectModal(true)
+                                      return
+                                    }
+                                    setHistoryDayKey(dayKey)
+                                    setHistoryDayLabel(activityDayLabel)
+                                    setShowSubmissionsHistory(true)
+                                    fetchSubmissionsHistory(dayKey)
+                                  }}
+                                  className="flex-shrink-0 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm font-medium transition-colors"
+                                >
+                                  查看记录
+                                </button>
+                              </div>
                             </div>
                           )}
 

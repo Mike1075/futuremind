@@ -34,40 +34,17 @@ export async function POST(request: NextRequest) {
       .eq('knowledge_point_index', knowledgePointIndex)
       .single()
 
-    // 3. 如果没有预生成问题，触发预生成
+    // 3. 如果没有预生成问题，使用默认问题（不再触发边缘函数，问题应由管理员提前生成）
     if (!questionData || !questionData.questions || questionData.questions.length === 0) {
-      // 调用边缘函数预生成问题
-      const { data: pregenerateResult, error: pregenerateError } = await supabase.functions.invoke(
-        'pregenerate-knowledge-questions',
-        {
-          body: {
-            contentId,
-            knowledgePointIndex,
-            knowledgePointText
-          }
-        }
-      )
-
-      if (pregenerateError) {
-        console.error('[Knowledge Questions] 预生成失败:', pregenerateError)
-        // 回退到旧的生成方式
-        const { data: fallbackResult } = await supabase.functions.invoke(
-          'generate-inspiring-questions',
-          {
-            body: {
-              topic: knowledgePointText,
-              originalText: knowledgePointText
-            }
-          }
-        )
-        return NextResponse.json({
-          question: fallbackResult?.questions || '让我们一起探讨这个有趣的话题吧！',
-          questionIndex: -1,
-          hasResponded: false
-        })
-      }
-
-      questionData = { questions: pregenerateResult.questions }
+      // 返回默认问题
+      const defaultQuestions = [
+        `这个概念与你的日常生活有什么联系？你能想到哪些具体的例子来说明它？`,
+        `如果这个知识点不存在，世界会有什么不同？`,
+        `这个概念的核心原理是什么？它是如何运作的？`,
+        `你能用自己的话向一个小朋友解释这个概念吗？`,
+        `这个知识点与其他学科有什么联系？能举例说明吗？`
+      ]
+      questionData = { questions: defaultQuestions }
     }
 
     const questions = questionData.questions as string[]
