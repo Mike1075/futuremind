@@ -264,17 +264,39 @@ export function PortalClient({
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="portal-course-card relative group/card cursor-pointer rounded-2xl transition-all duration-500"
+                        className="relative group/card cursor-pointer rounded-2xl p-[2px] transition-all duration-500"
                         onClick={() => router.push(`/courses/${course.course_system_key}`)}
-                        style={{ '--course-border-color': borderColor } as React.CSSProperties}
                       >
-                        {/* 炫彩边框层 - 悬停时显示 */}
-                        <div className="portal-card-border" />
-                        {/* 炫彩发光层 - 悬停时显示 */}
-                        <div className="portal-card-glow" />
+                        {/* 炫彩边框背景 - 悬停时显示 */}
+                        <div
+                          className="absolute inset-0 rounded-2xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500"
+                          style={{
+                            background: 'linear-gradient(90deg, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #00FF88, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #FFD700)',
+                            backgroundSize: '300% 100%',
+                            animation: 'border-flow 8s linear infinite',
+                          }}
+                        />
+                        {/* 炫彩发光效果 - 悬停时显示 */}
+                        <div
+                          className="absolute -inset-1 rounded-2xl opacity-0 group-hover/card:opacity-40 transition-opacity duration-500 -z-10"
+                          style={{
+                            background: 'linear-gradient(90deg, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #00FF88, #FFD700)',
+                            backgroundSize: '300% 100%',
+                            animation: 'border-flow 8s linear infinite',
+                            filter: 'blur(12px)',
+                          }}
+                        />
 
                         {/* 玻璃质感内容层 */}
-                        <div className="portal-card-content relative rounded-2xl p-6">
+                        <div
+                          className="relative rounded-[calc(1rem-1px)] p-6 transition-all duration-300"
+                          style={{
+                            background: 'rgba(10, 10, 31, 0.7)',
+                            backdropFilter: 'blur(16px)',
+                            WebkitBackdropFilter: 'blur(16px)',
+                            border: `1px solid ${borderColor}`,
+                          }}
+                        >
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center">
                               <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4 border border-white/20 backdrop-blur-sm">
