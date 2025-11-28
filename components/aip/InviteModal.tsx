@@ -1,39 +1,43 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Mail, Send, Building2, FolderOpen, Loader2, Check, AlertCircle } from 'lucide-react'
+import { X, Mail, Send, FolderOpen, Loader2, Check, AlertCircle, Users, Eye, Briefcase, Heart, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { Organization, Project } from '@/lib/aip/types'
+import type { Project } from '@/lib/aip/types'
 
 interface InviteModalProps {
   onClose: () => void
+  projectId?: string // 如果传入，默认选中该项目
 }
 
-type InvitationType = 'organization' | 'project'
+interface WillingUser {
+  id: string
+  full_name: string | null
+  email: string | null
+  profession: string | null
+  hobbies: string | null
+  bio: string | null
+}
 
-export function InviteModal({ onClose }: InviteModalProps) {
+export function InviteModal({ onClose, projectId }: InviteModalProps) {
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState('')
-  const [invitationType, setInvitationType] = useState<InvitationType>('organization')
-  const [selectedTarget, setSelectedTarget] = useState('')
+  const [selectedProject, setSelectedProject] = useState(projectId || '')
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // 目标（去哪里）
-  const [targetOrganizations, setTargetOrganizations] = useState<Organization[]>([])
+  // 可邀请的项目
   const [projects, setProjects] = useState<Project[]>([])
-  const [isLoadingTargets, setIsLoadingTargets] = useState(false)
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
 
-  // 邀请谁：方式 + 源组织 + 成员
-  const [inviteMethod, setInviteMethod] = useState<'member' | 'email'>('member')
-  const [sourceOrganizations, setSourceOrganizations] = useState<Organization[]>([])
-  const [selectedSourceOrg, setSelectedSourceOrg] = useState('')
-  const [isLoadingSourceOrgs, setIsLoadingSourceOrgs] = useState(false)
-  const [orgMembers, setOrgMembers] = useState<Array<{ id: string; name: string; email: string }>>([])
-  const [isLoadingMembers, setIsLoadingMembers] = useState(false)
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('')
+  // 愿意参与项目的用户列表
+  const [willingUsers, setWillingUsers] = useState<WillingUser[]>([])
+  const [isLoadingWillingUsers, setIsLoadingWillingUsers] = useState(false)
+
+  // 用户资料预览
+  const [previewUser, setPreviewUser] = useState<WillingUser | null>(null)
 
   // 加载数据
   useEffect(() => {
@@ -43,20 +47,10 @@ export function InviteModal({ onClose }: InviteModalProps) {
       if (!user) return
 
       setUserId(user.id)
-      setIsLoadingTargets(true)
-      setIsLoadingSourceOrgs(true)
+      setIsLoadingProjects(true)
+      setIsLoadingWillingUsers(true)
 
       try {
-        // 获取用户管理的组织（可以邀请人的组织）
-        const { data: userOrgs } = await supabase
-          .from('user_organizations')
-          .select('*, organization:organizations(*)')
-          .eq('user_id', user.id)
-          .in('role_in_org', ['owner', 'admin'])
-
-        const managedOrgs = userOrgs?.map(uo => uo.organization).filter(Boolean) || []
-        setTargetOrganizations(managedOrgs as Organization[])
-
         // 获取用户管理的项目（owner和manager都可以邀请人）
         const { data: projectMembers } = await supabase
           .from('project_members')
@@ -67,106 +61,32 @@ export function InviteModal({ onClose }: InviteModalProps) {
         const managedProjects = projectMembers?.map(pm => pm.project).filter(Boolean) || []
         setProjects(managedProjects as Project[])
 
-        // 获取用户参与的所有组织（用于选择成员）
-        const { data: allUserOrgs } = await supabase
-          .from('user_organizations')
-          .select('*, organization:organizations(*)')
-          .eq('user_id', user.id)
-
-        const allOrgs = allUserOrgs?.map(uo => uo.organization).filter(Boolean) || []
-        setSourceOrganizations(allOrgs as Organization[])
-
-        // 默认选择
-        if (managedOrgs.length > 0) {
-          setInvitationType('organization')
-          setSelectedTarget(managedOrgs[0].id)
+        // 默认选择传入的项目或第一个
+        if (projectId && managedProjects.some(p => p.id === projectId)) {
+          setSelectedProject(projectId)
         } else if (managedProjects.length > 0) {
-          setInvitationType('project')
-          setSelectedTarget(managedProjects[0].id)
+          setSelectedProject(managedProjects[0].id)
         }
 
-        if (allOrgs.length > 0) {
-          setSelectedSourceOrg(allOrgs[0].id)
-        }
+        // 获取愿意参与项目的用户（排除当前用户）
+        const { data: willingUsersData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, profession, hobbies, bio')
+          .eq('willing_to_join_projects', true)
+          .neq('id', user.id)
+
+        setWillingUsers(willingUsersData || [])
       } catch (err) {
         console.error('加载数据失败:', err)
         setError(err instanceof Error ? err.message : '加载失败')
       } finally {
-        setIsLoadingTargets(false)
-        setIsLoadingSourceOrgs(false)
+        setIsLoadingProjects(false)
+        setIsLoadingWillingUsers(false)
       }
     }
 
     loadData()
-  }, [])
-
-  // 加载组织成员
-  useEffect(() => {
-    const loadMembers = async () => {
-      if (inviteMethod !== 'member' || !selectedSourceOrg) {
-        setOrgMembers([])
-        setSelectedMemberId('')
-        return
-      }
-
-      setIsLoadingMembers(true)
-      try {
-        const supabase = createClient()
-        const { data: userOrgData } = await supabase
-          .from('user_organizations')
-          .select('user_id')
-          .eq('organization_id', selectedSourceOrg)
-
-        if (!userOrgData || userOrgData.length === 0) {
-          setOrgMembers([])
-          setSelectedMemberId('')
-          setIsLoadingMembers(false)
-          return
-        }
-
-        const userIds = userOrgData.map(uo => uo.user_id).filter(id => id !== userId)
-
-        if (userIds.length === 0) {
-          setOrgMembers([])
-          setSelectedMemberId('')
-          setIsLoadingMembers(false)
-          return
-        }
-
-        // 获取这些用户的profile信息
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .in('id', userIds)
-
-        const members = profilesData?.map(profile => ({
-          id: profile.id,
-          name: profile.full_name || '未命名用户',
-          email: profile.email || ''
-        })) || []
-
-        setOrgMembers(members)
-        setSelectedMemberId('')
-      } catch (err) {
-        console.error('加载成员失败:', err)
-      } finally {
-        setIsLoadingMembers(false)
-      }
-    }
-
-    loadMembers()
-  }, [inviteMethod, selectedSourceOrg, userId])
-
-  // 切换邀请类型时重置目标
-  useEffect(() => {
-    if (invitationType === 'organization' && targetOrganizations.length > 0) {
-      setSelectedTarget(targetOrganizations[0].id)
-    } else if (invitationType === 'project' && projects.length > 0) {
-      setSelectedTarget(projects[0].id)
-    } else {
-      setSelectedTarget('')
-    }
-  }, [invitationType, targetOrganizations, projects])
+  }, [projectId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -178,7 +98,7 @@ export function InviteModal({ onClose }: InviteModalProps) {
     }
 
     if (!email.trim()) {
-      setError(inviteMethod === 'member' ? '请选择成员' : '请输入邮箱地址')
+      setError('请输入邮箱地址或选择用户')
       return
     }
 
@@ -188,17 +108,14 @@ export function InviteModal({ onClose }: InviteModalProps) {
       return
     }
 
-    if (!selectedTarget) {
-      setError('请选择邀请的目标')
+    if (!selectedProject) {
+      setError('请选择邀请的项目')
       return
     }
 
-    const targetName = invitationType === 'organization'
-      ? targetOrganizations.find(o => o.id === selectedTarget)?.name || ''
-      : projects.find(p => p.id === selectedTarget)?.name || ''
-
-    if (!targetName) {
-      setError('无法获取目标名称')
+    const targetProject = projects.find(p => p.id === selectedProject)
+    if (!targetProject) {
+      setError('无法获取项目信息')
       return
     }
 
@@ -214,7 +131,6 @@ export function InviteModal({ onClose }: InviteModalProps) {
         .maybeSingle()
 
       if (inviteeQueryError) {
-        console.error('查询被邀请者信息失败:', inviteeQueryError)
         throw new Error(`查询被邀请者信息失败：${inviteeQueryError.message}`)
       }
 
@@ -227,9 +143,9 @@ export function InviteModal({ onClose }: InviteModalProps) {
           inviter_id: userId,
           invitee_email: email.trim(),
           invitee_id: inviteeId || null,
-          invitation_type: invitationType,
-          target_id: selectedTarget,
-          target_name: targetName,
+          invitation_type: 'project',
+          target_id: selectedProject,
+          target_name: targetProject.name,
           message: message.trim() || null,
           status: 'pending'
         })
@@ -240,25 +156,23 @@ export function InviteModal({ onClose }: InviteModalProps) {
         throw new Error(`创建邀请失败：${inviteError.message}`)
       }
 
-      // 3. 创建发送者的通知记录（失败不阻断流程）
-      const { error: notifySenderError } = await supabase
+      // 3. 创建发送者的通知记录
+      await supabase
         .from('notifications')
         .insert({
           user_id: userId,
           type: 'invitation_sent',
           title: '邀请已发送',
-          message: `您已向 ${email.trim()} 发送加入${invitationType === 'organization' ? '组织' : '项目'}"${targetName}"的邀请`,
+          message: `您已向 ${email.trim()} 发送加入项目"${targetProject.name}"的邀请`,
           metadata: {
             invitation_id: invitationData.id,
-            invitation_type: invitationType,
-            target_id: selectedTarget,
-            target_name: targetName
+            invitation_type: 'project',
+            target_id: selectedProject,
+            target_name: targetProject.name
           }
         })
 
-      // 通知发送者（失败不阻断流程，静默处理）
-
-      // 4. 如果被邀请者已注册，创建接收者的通知记录（失败不阻断流程）
+      // 4. 如果被邀请者已注册，创建接收者的通知记录
       if (inviteeId) {
         await supabase
           .from('notifications')
@@ -266,12 +180,12 @@ export function InviteModal({ onClose }: InviteModalProps) {
             user_id: inviteeId,
             type: 'invitation_received',
             title: '收到邀请',
-            message: `您收到了加入${invitationType === 'organization' ? '组织' : '项目'}"${targetName}"的邀请`,
+            message: `您收到了加入项目"${targetProject.name}"的邀请`,
             metadata: {
               invitation_id: invitationData.id,
-              invitation_type: invitationType,
-              target_id: selectedTarget,
-              target_name: targetName,
+              invitation_type: 'project',
+              target_id: selectedProject,
+              target_name: targetProject.name,
               inviter_id: userId
             }
           })
@@ -287,7 +201,12 @@ export function InviteModal({ onClose }: InviteModalProps) {
     }
   }
 
-  const currentTargets = invitationType === 'organization' ? targetOrganizations : projects
+  // 选择愿意参与的用户
+  const handleSelectWillingUser = (user: WillingUser) => {
+    if (user.email) {
+      setEmail(user.email)
+    }
+  }
 
   if (isSuccess) {
     return (
@@ -307,7 +226,7 @@ export function InviteModal({ onClose }: InviteModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-xl mx-4">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         {/* 头部 */}
         <div className="flex items-center justify-between p-6 border-b border-zinc-800">
           <div className="flex items-center gap-3">
@@ -315,8 +234,8 @@ export function InviteModal({ onClose }: InviteModalProps) {
               <Mail className="h-5 w-5 text-blue-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-white">发送邀请</h3>
-              <p className="text-sm text-zinc-500">邀请成员加入组织或项目</p>
+              <h3 className="font-semibold text-white">邀请成员</h3>
+              <p className="text-sm text-zinc-500">邀请成员加入项目</p>
             </div>
           </div>
           <button
@@ -327,173 +246,114 @@ export function InviteModal({ onClose }: InviteModalProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* 邀请谁 */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
+          {/* 选择项目 */}
           <section>
-            <h4 className="text-sm font-semibold text-white mb-3">邀请谁</h4>
-            <div className="flex gap-2 mb-3">
-              <button
-                type="button"
-                onClick={() => setInviteMethod('member')}
-                className={`flex-1 p-2 rounded-lg border text-sm transition-colors ${
-                  inviteMethod === 'member'
-                    ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
-                }`}
+            <label className="flex items-center gap-2 text-sm font-medium text-zinc-300 mb-2">
+              <FolderOpen className="h-4 w-4" /> 选择项目
+            </label>
+            {isLoadingProjects ? (
+              <div className="flex justify-center py-2">
+                <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="text-zinc-500 text-sm">暂无可邀请的项目</div>
+            ) : (
+              <select
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                disabled={isLoading}
               >
-                从组织选择成员
-              </button>
-              <button
-                type="button"
-                onClick={() => setInviteMethod('email')}
-                className={`flex-1 p-2 rounded-lg border text-sm transition-colors ${
-                  inviteMethod === 'email'
-                    ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
-                }`}
-              >
-                填写邮箱
-              </button>
-            </div>
+                {projects.map(project => (
+                  <option key={project.id} value={project.id}>{project.name}</option>
+                ))}
+              </select>
+            )}
+          </section>
 
-            {inviteMethod === 'member' ? (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">选择组织</label>
-                  {isLoadingSourceOrgs ? (
-                    <div className="flex justify-center py-2">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                    </div>
-                  ) : sourceOrganizations.length === 0 ? (
-                    <div className="text-zinc-500 text-sm">你尚未加入任何组织，无法从组织成员中选择。</div>
-                  ) : (
-                    <select
-                      value={selectedSourceOrg}
-                      onChange={(e) => setSelectedSourceOrg(e.target.value)}
-                      className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                    >
-                      {sourceOrganizations.map(org => (
-                        <option key={org.id} value={org.id}>{org.name}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+          {/* 邮箱地址 */}
+          <section>
+            <label className="flex items-center gap-2 text-sm font-medium text-zinc-300 mb-2">
+              <Mail className="h-4 w-4" /> 邮箱地址
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="输入被邀请者的邮箱"
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              disabled={isLoading}
+            />
+          </section>
 
-                <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">选择成员</label>
-                  {isLoadingMembers ? (
-                    <div className="flex items-center gap-2 text-zinc-500 text-sm">
-                      <Loader2 className="h-4 w-4 animate-spin" /> 正在加载成员...
-                    </div>
-                  ) : orgMembers.length === 0 ? (
-                    <div className="text-zinc-500 text-sm">
-                      {selectedSourceOrg ? '该组织暂无其他成员可邀请' : '请先选择组织'}
-                    </div>
-                  ) : (
-                    <select
-                      value={selectedMemberId}
-                      onChange={(e) => {
-                        const id = e.target.value
-                        setSelectedMemberId(id)
-                        const picked = orgMembers.find(m => m.id === id)
-                        setEmail(picked?.email || '')
-                      }}
-                      className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                    >
-                      <option value="">选择成员...</option>
-                      {orgMembers.map(m => (
-                        <option key={m.id} value={m.id}>{`${m.name} (${m.email})`}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+          {/* 愿意参与项目的用户 */}
+          <section>
+            <label className="flex items-center gap-2 text-sm font-medium text-zinc-300 mb-2">
+              <Users className="h-4 w-4" /> 愿意参与项目的用户
+            </label>
+            {isLoadingWillingUsers ? (
+              <div className="flex items-center gap-2 text-zinc-500 text-sm py-2">
+                <Loader2 className="h-4 w-4 animate-spin" /> 加载中...
+              </div>
+            ) : willingUsers.length === 0 ? (
+              <div className="text-zinc-500 text-sm bg-zinc-800/50 rounded-lg p-3">
+                暂无愿意参与项目的用户
               </div>
             ) : (
-              <div>
-                <label htmlFor="email" className="block text-xs font-medium text-zinc-400 mb-1">
-                  邮箱地址
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="输入被邀请者的邮箱"
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                  disabled={isLoading}
-                />
+              <div className="bg-zinc-800/50 rounded-lg border border-zinc-700 max-h-40 overflow-y-auto">
+                {willingUsers.map(user => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between p-3 hover:bg-zinc-700/50 border-b border-zinc-700/50 last:border-0"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-medium truncate">
+                        {user.full_name || '未命名用户'}
+                      </div>
+                      <div className="text-zinc-400 text-sm truncate">
+                        {user.email || '无邮箱'}
+                      </div>
+                      {user.profession && (
+                        <div className="text-zinc-500 text-xs truncate mt-0.5">
+                          {user.profession}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 ml-2">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewUser(user)}
+                        className="p-1.5 hover:bg-zinc-600 rounded text-zinc-400 hover:text-white transition-colors"
+                        title="查看资料"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectWillingUser(user)}
+                        disabled={!user.email}
+                        className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded border border-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        选择
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </section>
 
-          {/* 到哪里去 */}
-          <section>
-            <h4 className="text-sm font-semibold text-white mb-3">到哪里去</h4>
-            <div className="flex gap-2 mb-3">
-              <button
-                type="button"
-                onClick={() => setInvitationType('organization')}
-                disabled={targetOrganizations.length === 0 || isLoading}
-                className={`flex-1 flex items-center justify-center gap-2 p-2 rounded-lg border text-sm transition-colors ${
-                  invitationType === 'organization'
-                    ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
-                } ${targetOrganizations.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <Building2 className="h-4 w-4" /> 组织
-              </button>
-              <button
-                type="button"
-                onClick={() => setInvitationType('project')}
-                disabled={projects.length === 0 || isLoading}
-                className={`flex-1 flex items-center justify-center gap-2 p-2 rounded-lg border text-sm transition-colors ${
-                  invitationType === 'project'
-                    ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
-                } ${projects.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <FolderOpen className="h-4 w-4" /> 项目
-              </button>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">
-                选择{invitationType === 'organization' ? '组织' : '项目'}
-              </label>
-              {isLoadingTargets ? (
-                <div className="flex justify-center py-2">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                </div>
-              ) : currentTargets.length === 0 ? (
-                <div className="text-zinc-500 text-sm">
-                  暂无可邀请的{invitationType === 'organization' ? '组织' : '项目'}
-                </div>
-              ) : (
-                <select
-                  value={selectedTarget}
-                  onChange={(e) => setSelectedTarget(e.target.value)}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                  disabled={isLoading}
-                >
-                  {currentTargets.map(target => (
-                    <option key={target.id} value={target.id}>{target.name}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-          </section>
-
           {/* 邀请消息 */}
           <section>
-            <label htmlFor="message" className="block text-sm font-medium text-zinc-300 mb-2">
+            <label className="block text-sm font-medium text-zinc-300 mb-2">
               邀请消息 <span className="text-zinc-500 font-normal">(可选)</span>
             </label>
             <textarea
-              id="message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="输入一些个人化的邀请消息..."
-              rows={3}
+              rows={2}
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-none"
               disabled={isLoading}
             />
@@ -517,7 +377,7 @@ export function InviteModal({ onClose }: InviteModalProps) {
             </button>
             <button
               type="submit"
-              disabled={isLoading || currentTargets.length === 0}
+              disabled={isLoading || projects.length === 0}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
@@ -533,6 +393,93 @@ export function InviteModal({ onClose }: InviteModalProps) {
           </div>
         </form>
       </div>
+
+      {/* 用户资料预览弹窗 */}
+      {previewUser && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+          onClick={() => setPreviewUser(null)}
+        >
+          <div
+            className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-zinc-700 flex items-center justify-between">
+              <h4 className="text-white font-semibold">用户资料</h4>
+              <button
+                onClick={() => setPreviewUser(null)}
+                className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              {/* 基本信息 */}
+              <div>
+                <div className="text-lg font-semibold text-white">
+                  {previewUser.full_name || '未命名用户'}
+                </div>
+                <div className="text-zinc-400 text-sm">
+                  {previewUser.email || '无邮箱'}
+                </div>
+              </div>
+
+              {/* 职业 */}
+              {previewUser.profession && (
+                <div className="flex items-start gap-2">
+                  <Briefcase className="h-4 w-4 text-zinc-500 mt-0.5" />
+                  <div>
+                    <div className="text-xs text-zinc-500 mb-0.5">职业</div>
+                    <div className="text-zinc-300 text-sm">{previewUser.profession}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* 爱好 */}
+              {previewUser.hobbies && (
+                <div className="flex items-start gap-2">
+                  <Heart className="h-4 w-4 text-zinc-500 mt-0.5" />
+                  <div>
+                    <div className="text-xs text-zinc-500 mb-0.5">爱好</div>
+                    <div className="text-zinc-300 text-sm">{previewUser.hobbies}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* 简介 */}
+              {previewUser.bio && (
+                <div className="flex items-start gap-2">
+                  <FileText className="h-4 w-4 text-zinc-500 mt-0.5" />
+                  <div>
+                    <div className="text-xs text-zinc-500 mb-0.5">个人简介</div>
+                    <div className="text-zinc-300 text-sm">{previewUser.bio}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* 无额外信息 */}
+              {!previewUser.profession && !previewUser.hobbies && !previewUser.bio && (
+                <div className="text-zinc-500 text-sm text-center py-2">
+                  该用户暂未填写详细资料
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-zinc-700">
+              <button
+                type="button"
+                onClick={() => {
+                  handleSelectWillingUser(previewUser)
+                  setPreviewUser(null)
+                }}
+                disabled={!previewUser.email}
+                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                选择该用户
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

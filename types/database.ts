@@ -1206,55 +1206,73 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
           avatar_url: string | null
+          bio: string | null
           composite_score: number | null
           consciousness_level: number | null
           consciousness_tree_view: Json | null
           created_at: string | null
           email: string
           full_name: string | null
+          gender: string | null
+          hobbies: string | null
           id: string
           is_ai_assist_enabled: boolean | null
           level_progress: number | null
           level_updated_at: string | null
           percentile_rank: number | null
+          profession: string | null
           role: string | null
           settings: Json | null
           updated_at: string | null
+          willing_to_join_projects: boolean | null
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
+          bio?: string | null
           composite_score?: number | null
           consciousness_level?: number | null
           consciousness_tree_view?: Json | null
           created_at?: string | null
           email: string
           full_name?: string | null
+          gender?: string | null
+          hobbies?: string | null
           id: string
           is_ai_assist_enabled?: boolean | null
           level_progress?: number | null
           level_updated_at?: string | null
           percentile_rank?: number | null
+          profession?: string | null
           role?: string | null
           settings?: Json | null
           updated_at?: string | null
+          willing_to_join_projects?: boolean | null
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
+          bio?: string | null
           composite_score?: number | null
           consciousness_level?: number | null
           consciousness_tree_view?: Json | null
           created_at?: string | null
           email?: string
           full_name?: string | null
+          gender?: string | null
+          hobbies?: string | null
           id?: string
           is_ai_assist_enabled?: boolean | null
           level_progress?: number | null
           level_updated_at?: string | null
           percentile_rank?: number | null
+          profession?: string | null
           role?: string | null
           settings?: Json | null
           updated_at?: string | null
+          willing_to_join_projects?: boolean | null
         }
         Relationships: []
       }

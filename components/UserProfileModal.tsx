@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
+import { X, User, Briefcase, Heart, FileText, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface UserProfileModalProps {
@@ -12,11 +12,17 @@ interface UserProfileModalProps {
 export default function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
   const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
-  const [currentPassword, setCurrentPassword] = useState('')
+  const [age, setAge] = useState<string>('')
+  const [gender, setGender] = useState<string>('')
+  const [profession, setProfession] = useState('')
+  const [hobbies, setHobbies] = useState('')
+  const [bio, setBio] = useState('')
+  const [willingToJoinProjects, setWillingToJoinProjects] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [activeTab, setActiveTab] = useState<'basic' | 'extended' | 'password'>('basic')
 
   const supabase = createClient()
 
@@ -32,8 +38,23 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setEmail(user.email || '')
-        // 从 user_metadata 中获取姓名（full_name）
         setNickname(user.user_metadata?.full_name || user.user_metadata?.nickname || '')
+
+        // 从 profiles 表加载扩展信息
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('age, gender, profession, hobbies, bio, willing_to_join_projects')
+          .eq('id', user.id)
+          .single()
+
+        if (profile) {
+          setAge(profile.age?.toString() || '')
+          setGender(profile.gender || '')
+          setProfession(profile.profession || '')
+          setHobbies(profile.hobbies || '')
+          setBio(profile.bio || '')
+          setWillingToJoinProjects(profile.willing_to_join_projects || false)
+        }
       }
     } catch (error) {
       console.error('加载用户信息失败:', error)
@@ -46,74 +67,62 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
 
     try {
       const supabase = createClient()
-
-      // 🔥 获取当前用户ID
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         throw new Error('未找到用户信息')
       }
 
-      // 1. 更新姓名（同时保存到 auth.users.user_metadata 和 profiles.full_name）
+      // 1. 更新姓名到 auth.users
       if (nickname.trim()) {
-        // 1.1 更新 auth.users.user_metadata.full_name
         const { error: authUpdateError } = await supabase.auth.updateUser({
           data: { full_name: nickname.trim() }
         })
-
-        if (authUpdateError) {
-          console.error('[UserProfile] ❌ auth更新失败:', authUpdateError)
-          throw authUpdateError
-        }
-
-        // 1.2 更新 profiles.full_name（N8N从这里读取姓名）
-        const { error: profileUpdateError } = await supabase
-          .from('profiles')
-          .update({ full_name: nickname.trim() })
-          .eq('id', user.id)
-
-        if (profileUpdateError) {
-          console.error('[UserProfile] ❌ profiles更新失败:', profileUpdateError)
-          throw profileUpdateError
-        }
+        if (authUpdateError) throw authUpdateError
       }
 
-      // 2. 更新密码（如果填写了新密码）
+      // 2. 更新 profiles 表（包括所有扩展字段）
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: nickname.trim() || null,
+          age: age ? parseInt(age) : null,
+          gender: gender || null,
+          profession: profession || null,
+          hobbies: hobbies || null,
+          bio: bio || null,
+          willing_to_join_projects: willingToJoinProjects
+        })
+        .eq('id', user.id)
+
+      if (profileUpdateError) throw profileUpdateError
+
+      // 3. 更新密码（如果填写了新密码）
       if (newPassword) {
         if (newPassword !== confirmPassword) {
           setMessage({ type: 'error', text: '两次输入的密码不一致' })
           setIsSaving(false)
           return
         }
-
         if (newPassword.length < 6) {
           setMessage({ type: 'error', text: '密码长度至少为6位' })
           setIsSaving(false)
           return
         }
-
         const { error: passwordError } = await supabase.auth.updateUser({
           password: newPassword
         })
-
-        if (passwordError) {
-          throw passwordError
-        }
+        if (passwordError) throw passwordError
       }
 
       setMessage({ type: 'success', text: '保存成功！' })
-
-      // 🔥 触发自定义事件通知其他组件刷新用户信息
       window.dispatchEvent(new CustomEvent('userProfileUpdated'))
 
-      // 清空密码字段
-      setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
 
-      // 2秒后关闭Modal
       setTimeout(() => {
         onClose()
-      }, 2000)
+      }, 1500)
     } catch (error: any) {
       console.error('保存失败:', error)
       setMessage({ type: 'error', text: error.message || '保存失败，请重试' })
@@ -126,7 +135,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
         {/* 头部 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
           <h2 className="text-xl font-semibold text-white">个人资料</h2>
@@ -138,41 +147,186 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           </button>
         </div>
 
+        {/* 标签页 */}
+        <div className="flex border-b border-gray-700">
+          <button
+            onClick={() => setActiveTab('basic')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'basic'
+                ? 'text-purple-400 border-b-2 border-purple-500'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            基本信息
+          </button>
+          <button
+            onClick={() => setActiveTab('extended')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'extended'
+                ? 'text-purple-400 border-b-2 border-purple-500'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            扩展资料
+          </button>
+          <button
+            onClick={() => setActiveTab('password')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'password'
+                ? 'text-purple-400 border-b-2 border-purple-500'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            修改密码
+          </button>
+        </div>
+
         {/* 内容 */}
-        <div className="px-6 py-6 space-y-6">
-          {/* 邮箱（只读） */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              邮箱
-            </label>
-            <input
-              type="email"
-              value={email}
-              disabled
-              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-gray-400 cursor-not-allowed"
-            />
-          </div>
+        <div className="px-6 py-6 space-y-5 overflow-y-auto flex-1">
+          {/* 基本信息 */}
+          {activeTab === 'basic' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  邮箱
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  disabled
+                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-gray-400 cursor-not-allowed"
+                />
+              </div>
 
-          {/* 姓名 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              姓名
-            </label>
-            <input
-              type="text"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="请输入您的姓名"
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  姓名
+                </label>
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="请输入您的姓名"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
 
-          {/* 分割线 */}
-          <div className="border-t border-gray-700 pt-6">
-            <h3 className="text-sm font-medium text-gray-300 mb-4">修改密码（选填）</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    年龄
+                  </label>
+                  <input
+                    type="number"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    placeholder="可选"
+                    min="1"
+                    max="150"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
 
-            {/* 新密码 */}
-            <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    性别
+                  </label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">不公开</option>
+                    <option value="male">男</option>
+                    <option value="female">女</option>
+                    <option value="other">其他</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* 扩展资料 */}
+          {activeTab === 'extended' && (
+            <>
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                  <Briefcase className="w-4 h-4" />
+                  职业
+                </label>
+                <input
+                  type="text"
+                  value={profession}
+                  onChange={(e) => setProfession(e.target.value)}
+                  placeholder="例如：学生、工程师、设计师..."
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                  <Heart className="w-4 h-4" />
+                  爱好
+                </label>
+                <input
+                  type="text"
+                  value={hobbies}
+                  onChange={(e) => setHobbies(e.target.value)}
+                  placeholder="例如：阅读、编程、音乐..."
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                  <FileText className="w-4 h-4" />
+                  个人简介
+                </label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="介绍一下自己吧..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                />
+              </div>
+
+              {/* 愿意参与项目开关 */}
+              <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Users className="w-5 h-5 text-blue-400" />
+                    <div>
+                      <div className="text-white font-medium">愿意参与各种项目</div>
+                      <div className="text-sm text-gray-400">
+                        开启后，其他人在邀请成员时可以看到你
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWillingToJoinProjects(!willingToJoinProjects)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      willingToJoinProjects ? 'bg-blue-500' : 'bg-gray-600'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        willingToJoinProjects ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* 修改密码 */}
+          {activeTab === 'password' && (
+            <>
+              <p className="text-sm text-gray-400 mb-4">
+                如果不需要修改密码，请留空
+              </p>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
                   新密码
@@ -186,7 +340,6 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                 />
               </div>
 
-              {/* 确认密码 */}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
                   确认新密码
@@ -199,8 +352,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* 提示消息 */}
           {message && (
@@ -212,8 +365,10 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
               {message.text}
             </div>
           )}
+        </div>
 
-          {/* 保存按钮 */}
+        {/* 底部保存按钮 */}
+        <div className="px-6 py-4 border-t border-gray-700">
           <button
             onClick={handleSaveProfile}
             disabled={isSaving}

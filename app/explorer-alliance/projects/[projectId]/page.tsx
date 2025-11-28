@@ -1010,6 +1010,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       {/* Invite Modal */}
       {showInvite && (
         <InviteModal
+          projectId={projectId}
           onClose={() => setShowInvite(false)}
         />
       )}
