@@ -100,8 +100,9 @@ export const ProjectGrid = memo(function ProjectGrid({
         return (
           <div
             key={project.id}
-            className="group relative bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-all duration-200"
+            className="portal-card-wrapper"
           >
+            <div className="portal-card-inner p-4 group">
             {/* 项目头部 */}
             <div className="flex items-start justify-between mb-3">
               <div
@@ -280,6 +281,7 @@ export const ProjectGrid = memo(function ProjectGrid({
                   查看详情 →
                 </button>
               )}
+            </div>
             </div>
           </div>
         )

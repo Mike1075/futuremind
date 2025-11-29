@@ -113,11 +113,10 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
           <div
             key={org.id}
             onClick={() => onSelect(org.organization_id)}
-            className="group explorer-card cursor-pointer"
+            className="portal-card-wrapper cursor-pointer"
           >
-
             {/* 卡片内容 */}
-            <div className="relative p-6">
+            <div className="portal-card-inner p-6 group">
               {/* 头部 */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
