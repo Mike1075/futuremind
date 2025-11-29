@@ -670,7 +670,7 @@ export function PBLProjectDetail({
         <div className="space-y-6">
           <h2 className="text-2xl font-bold mb-4">📅 项目计划</h2>
 
-          {project.week_plan?.map((week) => {
+          {[...(project.week_plan || [])].sort((a, b) => a.week - b.week).map((week) => {
             const isWeekExpanded = expandedWeeks.has(week.week)
 
             return (

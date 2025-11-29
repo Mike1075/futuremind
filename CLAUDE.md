@@ -100,6 +100,11 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
  N8N 读取 student_profile ← student_summaries 表 ← AI 更新用户画像
 ```
 
+### 伊卡洛斯项目修复 (2024-11-29)
+- [x] 修复周计划排序：第一周现在显示在最上面
+  - 文件：`components/courses/PBLProjectDetail.tsx:673`
+  - 修改：`.sort((a, b) => a.week - b.week)` 按周数升序排列
+
 ### UI 优化 (2024-11-29)
 - [x] 删除探索者联盟"欢迎回来"概览卡片（两个页面）
 - [x] 删除加载界面文字提示，只保留动画
@@ -141,6 +146,45 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 - [x] 所有课程页面统一宇宙背景
 - [x] 倾听课程地图节点优化
 - [x] 盖亚对话系统 V3.2（单对话模式）
+
+## 待办事项 - 向量知识库优化 (2024-11-30 计划)
+
+### 当前状态分析
+- **文档数量**：4,108 条
+- **平均内容长度**：353 字符（较短）
+- **Reranker**：已启用 Cohere（topN: 6, topK: 15）
+- **问题**：缺乏上下文连贯性，检索质量有提升空间
+
+### 优化方案一：父子分块结构 (Parent-Child Chunking)
+- [ ] 创建 `document_chunks` 表（子分块）
+- [ ] 添加 `parent_document_id` 外键关联 `documents` 表
+- [ ] 修改 N8N 文档入库工作流：
+  - 存储完整文档到 `documents`（父文档）
+  - 将文档拆分为小块存储到 `document_chunks`（子分块）
+  - 子分块用于向量检索，命中后返回父文档全文
+- [ ] 修改 RAG 检索逻辑：检索子块 → 去重父ID → 返回父文档
+
+**优势**：保留完整上下文，检索更精准
+
+### 优化方案二：混合检索 (Hybrid Search)
+- [ ] 创建全文检索索引：`CREATE INDEX ON documents USING gin(to_tsvector('chinese', content))`
+- [ ] 实现 BM25 关键词匹配
+- [ ] 融合策略：向量相似度 (0.7) + BM25 (0.3) 加权合并
+- [ ] 修改 N8N RAG 节点使用混合检索
+
+**优势**：关键词精确匹配 + 语义理解结合
+
+### 优化方案三：Rerank 参数调优
+- [ ] 测试不同 topK/topN 组合
+- [ ] 考虑替换为更强的 Reranker 模型
+- [ ] 添加相关性阈值过滤（score < 0.3 的结果丢弃）
+
+**实施顺序建议**：
+1. 先实施父子分块（影响最大）
+2. 再添加混合检索（锦上添花）
+3. 最后调优 Rerank 参数
+
+---
 
 ## 代码规范
 - 组件使用 PascalCase 命名
