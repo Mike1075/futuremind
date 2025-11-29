@@ -97,7 +97,10 @@ export function FloatingChatBot({
     const initializeChatBot = async () => {
       // 并行加载项目列表和聊天历史
       setIsLoadingProjects(true)
-      if (!hasLoadedHistory.current) {
+
+      // 只在首次打开且没有消息时加载历史
+      const shouldLoadHistory = !hasLoadedHistory.current && messages.length === 0
+      if (shouldLoadHistory) {
         setIsLoadingHistory(true)
         hasLoadedHistory.current = true
       }
@@ -108,14 +111,11 @@ export function FloatingChatBot({
 
         if (!user || !isMounted) return
 
-        // 并行执行两个查询
-        const [projectsResult, historyResult] = await Promise.all([
-          supabase
-            .from('project_members')
-            .select('*, project:projects(*)')
-            .eq('user_id', user.id),
-          aipChatAPI.loadChatHistory()
-        ])
+        // 加载项目列表
+        const projectsResult = await supabase
+          .from('project_members')
+          .select('*, project:projects(*)')
+          .eq('user_id', user.id)
 
         if (!isMounted) return
 
@@ -123,17 +123,24 @@ export function FloatingChatBot({
         const projects = projectsResult.data?.map(pm => pm.project).filter(Boolean) || []
         setUserProjects(projects as Project[])
 
-        // 处理聊天历史
-        if (historyResult.success && historyResult.data) {
-          if (historyResult.data.messages.length > 0) {
-            setMessages(historyResult.data.messages)
-          } else {
-            setMessages([{
-              id: 'welcome',
-              role: 'assistant',
-              content: getWelcomeMessage(),
-              timestamp: new Date()
-            }])
+        // 只在需要时加载聊天历史（避免覆盖当前会话）
+        if (shouldLoadHistory) {
+          const historyResult = await aipChatAPI.loadChatHistory()
+
+          if (!isMounted) return
+
+          // 处理聊天历史
+          if (historyResult.success && historyResult.data) {
+            if (historyResult.data.messages.length > 0) {
+              setMessages(historyResult.data.messages)
+            } else {
+              setMessages([{
+                id: 'welcome',
+                role: 'assistant',
+                content: getWelcomeMessage(),
+                timestamp: new Date()
+              }])
+            }
           }
         }
       } catch (error) {
@@ -152,7 +159,7 @@ export function FloatingChatBot({
     return () => {
       isMounted = false
     }
-  }, [isOpen, getWelcomeMessage])
+  }, [isOpen, getWelcomeMessage, messages.length])
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
