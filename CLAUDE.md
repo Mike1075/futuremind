@@ -55,6 +55,26 @@ types/                 # TypeScript 类型定义
 - `feature/ui-ux-redesign` - UI/UX 重新设计分支（使用 git worktree）
 
 ## 最近完成的工作
+
+### 系统清理与UI优化 (2024-11-29)
+- [x] 清理废弃边缘函数：删除 `proxy-gaia-dialogue`、`generate-gaia-variables`（本地代码已删除，线上需手动删除）
+- [x] 删除废弃数据库表：`gaia_context_variables`（已被 `student_summaries` 替代）
+- [x] UI优化：盖亚浮动按钮图标从 MessageCircle 改为 History
+- [x] UI优化：AIP 浮动按钮图标从 Bot 改为 History
+- [x] 新功能：盖亚侧边栏支持拖动调整宽度（320px-800px）
+- [x] AIP 流式输出优化：添加视觉缓冲队列实现打字机效果
+- [x] AIP 聊天历史修复：关闭对话框后消息不再丢失
+
+**边缘函数 vs N8N 架构说明**：
+- N8N 负责 AI 聊天核心流程（向量检索 → Reranker → AI 生成）
+- 边缘函数负责辅助功能（学生摘要更新、评估等）
+- `summarize-user-activity`：事件驱动更新学生摘要（使用中）
+- `generate-student-summary`：每周定时生成 AI 评价（使用中，建议改为事件驱动）
+
+**关键文件变更**：
+- `components/GlobalGaiaV3.tsx`：图标改为 History，添加侧边栏拖动功能
+- `components/aip/FloatingChatBot.tsx`：图标改为 History，添加打字机效果
+
 ### 探索者联盟文件审核系统 (2024-11-28)
 - [x] 数据库迁移：添加 `review_status`, `reviewed_by`, `reviewed_at`, `review_comment` 字段到 `project_files` 表
 - [x] 修改上传 API：基于用户角色设置审核状态（owner/manager 自动通过，member 需审核）

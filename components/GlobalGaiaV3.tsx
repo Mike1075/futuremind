@@ -45,6 +45,11 @@ export function GlobalGaiaV3() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)  // 是否正在加载更多
   const [loadedCount, setLoadedCount] = useState(0)  // 已加载的消息数量
 
+  // 侧边栏宽度调整
+  const [sidebarWidth, setSidebarWidth] = useState(440)  // 默认宽度440px
+  const [isResizing, setIsResizing] = useState(false)
+  const sidebarRef = useRef<HTMLDivElement>(null)
+
   // 检查登录状态
   useEffect(() => {
     const checkAuth = async () => {
@@ -60,6 +65,36 @@ export function GlobalGaiaV3() {
     }
     checkAuth()
   }, [])
+
+  // 侧边栏拖动调整宽度
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return
+      // 从右侧计算宽度
+      const newWidth = window.innerWidth - e.clientX
+      // 限制最小和最大宽度
+      const clampedWidth = Math.min(Math.max(newWidth, 320), 800)
+      setSidebarWidth(clampedWidth)
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    if (isResizing) {
+      document.body.style.cursor = 'ew-resize'
+      document.body.style.userSelect = 'none'
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isResizing])
 
   // 监听GaiaDialog打开事件，自动关闭侧边栏
   useEffect(() => {
@@ -705,14 +740,23 @@ export function GlobalGaiaV3() {
         >
           <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-xl opacity-60 group-hover:opacity-80 transition-opacity animate-pulse"></div>
           <div className="relative z-10">
-            <MessageCircle className="w-8 h-8 text-white" />
+            <History className="w-8 h-8 text-white" />
           </div>
         </button>
       )}
 
       {/* 侧边栏对话界面 */}
       {isOpen && (
-        <div className="fixed inset-y-0 right-0 w-full md:w-[440px] bg-gray-900 shadow-2xl z-50 flex flex-col border-l border-gray-800">
+        <div
+          ref={sidebarRef}
+          className="fixed inset-y-0 right-0 bg-gray-900 shadow-2xl z-50 flex flex-col border-l border-gray-800"
+          style={{ width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : `${sidebarWidth}px` }}
+        >
+          {/* 拖动手柄 - 仅在桌面端显示 */}
+          <div
+            className="hidden md:block absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-purple-500/50 transition-colors z-10"
+            onMouseDown={() => setIsResizing(true)}
+          />
           {/* 头部 */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
             <div className="flex items-center gap-3">

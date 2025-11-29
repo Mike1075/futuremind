@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Bot, X, Send, Trash2, Check, FolderOpen, Building2, Loader2 } from 'lucide-react'
+import { Bot, X, Send, Trash2, Check, FolderOpen, Building2, Loader2, History, Edit3 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project } from '@/lib/aip/types'
@@ -413,7 +413,7 @@ export function FloatingChatBot({
             minHeight: '72px'
           }}
         >
-          <Bot className="w-8 h-8 flex-shrink-0 group-hover:scale-110 transition-transform" />
+          <History className="w-8 h-8 flex-shrink-0 group-hover:scale-110 transition-transform" />
         </button>
       </div>
     )
