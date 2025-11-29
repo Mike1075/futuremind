@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Users, FileText, UsersRound, Plus, Trash2, Upload } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Course {
   id: string
@@ -48,6 +50,8 @@ export default function CourseDetailPage() {
   const searchParams = useSearchParams()
   const courseId = params?.id as string
   const tabParam = searchParams?.get('tab') as TabType | null
+  const toast = useToast()
+  const { confirm } = useConfirm()
 
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>(tabParam || 'students')
@@ -106,7 +110,7 @@ export default function CourseDetailPage() {
       const userRole = (profile as unknown as { role?: string })?.role
 
       if (!userRole || !['principal', 'teacher'].includes(userRole)) {
-        alert('⚠️ 您没有权限访问此页面')
+        toast.warning('您没有权限访问此页面')
         router.push('/admin')
         return
       }
@@ -134,7 +138,7 @@ export default function CourseDetailPage() {
       setCourse(data)
     } catch (error) {
       console.error('加载课程失败:', error)
-      alert('课程不存在')
+      toast.error('课程不存在')
       router.push('/admin/courses')
     }
   }
@@ -223,7 +227,7 @@ export default function CourseDetailPage() {
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newStudentEmail.trim()) {
-      alert('请输入邮箱')
+      toast.warning('请输入邮箱')
       return
     }
 
@@ -239,7 +243,7 @@ export default function CourseDetailPage() {
         .maybeSingle()
 
       if (findError || !targetUser) {
-        alert('未找到该邮箱的用户，请确认用户已注册')
+        toast.error('未找到该邮箱的用户，请确认用户已注册')
         return
       }
 
@@ -252,7 +256,7 @@ export default function CourseDetailPage() {
         .maybeSingle()
 
       if (existing) {
-        alert('该学员已选修此课程')
+        toast.warning('该学员已选修此课程')
         return
       }
 
@@ -271,20 +275,24 @@ export default function CourseDetailPage() {
 
       if (insertError) throw insertError
 
-      alert('✅ 成功添加学员')
+      toast.success('成功添加学员')
       setNewStudentEmail('')
       setShowAddStudentModal(false)
       await loadStudents()
     } catch (error) {
       console.error('添加学员失败:', error)
-      alert('❌ 添加失败，请重试')
+      toast.error('添加失败，请重试')
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleRemoveStudent = async (student: Student) => {
-    const confirmed = confirm(`确定要将「${student.full_name || student.email}」移出本课程吗？`)
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: `确定要将「${student.full_name || student.email}」移出本课程吗？`,
+      type: 'warning'
+    })
     if (!confirmed) return
 
     try {
@@ -297,16 +305,20 @@ export default function CourseDetailPage() {
 
       if (error) throw error
 
-      alert('✅ 已移除学员')
+      toast.success('已移除学员')
       await loadStudents()
     } catch (error) {
       console.error('移除学员失败:', error)
-      alert('❌ 移除失败，请重试')
+      toast.error('移除失败，请重试')
     }
   }
 
   const handleDeleteMaterial = async (materialId: string) => {
-    const confirmed = confirm('确定要删除这个资料吗？')
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: '确定要删除这个资料吗？',
+      type: 'warning'
+    })
     if (!confirmed) return
 
     try {
@@ -318,18 +330,18 @@ export default function CourseDetailPage() {
 
       if (error) throw error
 
-      alert('✅ 已删除资料')
+      toast.success('已删除资料')
       await loadMaterials()
     } catch (error) {
       console.error('删除资料失败:', error)
-      alert('❌ 删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newGroupName.trim()) {
-      alert('请输入分组名称')
+      toast.warning('请输入分组名称')
       return
     }
 
@@ -351,21 +363,25 @@ export default function CourseDetailPage() {
 
       if (error) throw error
 
-      alert('✅ 创建成功')
+      toast.success('创建成功')
       setNewGroupName('')
       setNewGroupDescription('')
       setShowAddGroupModal(false)
       await loadGroups()
     } catch (error) {
       console.error('创建分组失败:', error)
-      alert('❌ 创建失败，请重试')
+      toast.error('创建失败，请重试')
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleDeleteGroup = async (groupId: string) => {
-    const confirmed = confirm('确定要删除这个分组吗？\n\n删除分组不会删除学员，只会解除分组关系。')
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: '确定要删除这个分组吗？\n\n删除分组不会删除学员，只会解除分组关系。',
+      type: 'warning'
+    })
     if (!confirmed) return
 
     try {
@@ -377,11 +393,11 @@ export default function CourseDetailPage() {
 
       if (error) throw error
 
-      alert('✅ 已删除分组')
+      toast.success('已删除分组')
       await loadGroups()
     } catch (error) {
       console.error('删除分组失败:', error)
-      alert('❌ 删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 

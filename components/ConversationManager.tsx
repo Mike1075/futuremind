@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, MessageCircle, Trash2, ChevronRight } from 'lucide-react'
 import GaiaAPI, { type ConversationSummary } from '@/lib/api/gaia'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface ConversationManagerProps {
   isOpen: boolean
@@ -18,6 +20,8 @@ export default function ConversationManager({
   onSelectConversation,
   currentConversationId
 }: ConversationManagerProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [conversations, setConversations] = useState<ConversationSummary[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
@@ -60,7 +64,7 @@ export default function ConversationManager({
 
   // 删除对话
   const deleteConversation = async (conversationId: string) => {
-    if (!confirm('确定要删除这个对话吗？')) return
+    if (!await confirm({ title: '确认删除', message: '确定要删除这个对话吗？', type: 'warning' })) return
 
     try {
       const result = await GaiaAPI.deleteConversation(conversationId)
@@ -73,11 +77,14 @@ export default function ConversationManager({
             onSelectConversation(remaining[0].id)
           }
         }
+        toast.success('对话已删除')
       } else {
         console.error('删除对话失败:', result.error)
+        toast.error('删除对话失败')
       }
     } catch (error) {
       console.error('删除对话失败:', error)
+      toast.error('删除对话失败')
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Save } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
 
 interface EditDescriptionModalProps {
   isOpen: boolean
@@ -20,6 +21,7 @@ export function EditDescriptionModal({
   currentDescription,
   loading = false
 }: EditDescriptionModalProps) {
+  const toast = useToast()
   const [name, setName] = useState(projectName)
   const [description, setDescription] = useState(currentDescription)
 
@@ -31,7 +33,7 @@ export function EditDescriptionModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      alert('项目名称不能为空')
+      toast.error('项目名称不能为空')
       return
     }
     onConfirm(name.trim(), description.trim())

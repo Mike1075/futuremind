@@ -11,10 +11,12 @@ import { CreateOrganizationModal } from '@/components/aip/CreateOrganizationModa
 import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { InteractionLog } from '@/components/aip/InteractionLog'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/components/ui/ToastProvider'
 
 export default function ExplorerAlliancePage() {
   const router = useRouter()
   const { organizations, loading: orgsLoading, reload: reloadOrganizations } = useOrganizations()
+  const toast = useToast()
   const [showCreateOrganization, setShowCreateOrganization] = useState(false)
   const [showInteractionLog, setShowInteractionLog] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -172,13 +174,13 @@ export default function ExplorerAlliancePage() {
                     }
                     const data = await response.json()
                     if (data.success) {
-                      alert('组织数据已修复！正在刷新...')
+                      toast.success('组织数据已修复！正在刷新...')
                       reloadOrganizations()
                     } else {
-                      alert('修复失败：' + (data.error || '未知错误'))
+                      toast.error('修复失败：' + (data.error || '未知错误'))
                     }
                   } catch (error) {
-                    alert('修复失败，请联系管理员')
+                    toast.error('修复失败，请联系管理员')
                   }
                 }}
                 className="btn-stardust flex items-center gap-2 px-8 py-3"

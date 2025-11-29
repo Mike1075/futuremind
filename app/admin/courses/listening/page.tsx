@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, ChevronRight, Users, UsersRound } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface CourseContent {
   id: string
@@ -34,6 +36,8 @@ interface MediaResource {
 
 export default function ListeningCoursePage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
   const [courseContents, setCourseContents] = useState<CourseContent[]>([])
@@ -158,11 +162,11 @@ export default function ListeningCoursePage() {
 
       if (error) throw error
 
-      alert('保存成功！')
+      toast.success('保存成功')
       await loadCourseContents()
     } catch (error) {
       console.error('保存失败:', error)
-      alert('保存失败，请重试')
+      toast.error('保存失败，请重试')
     } finally {
       setSaving(false)
     }
@@ -207,18 +211,18 @@ export default function ListeningCoursePage() {
 
       if (dbError) throw dbError
 
-      alert('文件上传成功！')
+      toast.success('文件上传成功')
       await loadMediaResources(selectedContent.id)
     } catch (error) {
       console.error('文件上传失败:', error)
-      alert('文件上传失败，请重试')
+      toast.error('文件上传失败，请重试')
     } finally {
       setUploading(false)
     }
   }
 
   const handleDeleteMedia = async (mediaId: string) => {
-    if (!confirm('确定要删除这个文件吗？')) return
+    if (!await confirm({ title: '确认操作', message: '确定要删除这个文件吗？', type: 'warning' })) return
 
     try {
       const supabase = createClient()
@@ -229,13 +233,13 @@ export default function ListeningCoursePage() {
 
       if (error) throw error
 
-      alert('删除成功！')
+      toast.success('删除成功')
       if (selectedContent) {
         await loadMediaResources(selectedContent.id)
       }
     } catch (error) {
       console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 
@@ -266,23 +270,27 @@ export default function ListeningCoursePage() {
 
       if (error) throw error
 
-      alert('新增成功！')
+      toast.success('新增成功')
       await loadCourseContents()
       setSelectedContent(data)
     } catch (error) {
       console.error('新增失败:', error)
-      alert('新增失败，请重试')
+      toast.error('新增失败，请重试')
     }
   }
 
   const handleDeleteCourse = async (contentId: string, sequenceNumber: number) => {
     // 保护前14天的固定课程
     if (sequenceNumber <= 14) {
-      alert('前14天的课程是固定内容，不能删除，只能修改。')
+      toast.warning('前14天的课程是固定内容，不能删除，只能修改。')
       return
     }
 
-    if (!confirm(`确定要删除第 ${sequenceNumber} 天的课程吗？删除后将无法恢复。`)) return
+    if (!await confirm({
+      title: '确认操作',
+      message: `确定要删除第 ${sequenceNumber} 天的课程吗？删除后将无法恢复。`,
+      type: 'warning'
+    })) return
 
     try {
       const supabase = createClient()
@@ -303,7 +311,7 @@ export default function ListeningCoursePage() {
 
       if (error) throw error
 
-      alert('删除成功！')
+      toast.success('删除成功')
 
       // 如果删除的是当前选中的课程，清空选中状态
       if (selectedContent?.id === contentId) {
@@ -313,7 +321,7 @@ export default function ListeningCoursePage() {
       await loadCourseContents()
     } catch (error) {
       console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 

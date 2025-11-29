@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Upload, File, X, CheckCircle, AlertCircle, FileText, Trash2, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface FileUploadModalProps {
   projectId: string
@@ -31,6 +33,8 @@ interface ProjectDocument {
 }
 
 export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadModalProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [existingDocuments, setExistingDocuments] = useState<ProjectDocument[]>([])
@@ -222,7 +226,7 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
 
     // 防止删除项目智慧库
     if (docTitle === '项目智慧库') {
-      alert('项目智慧库不能被删除')
+      toast.error('项目智慧库不能被删除')
       return
     }
 
@@ -230,11 +234,11 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
     const canDelete = isManager || docUserId === userId
 
     if (!canDelete) {
-      alert('您没有权限删除此文档')
+      toast.error('您没有权限删除此文档')
       return
     }
 
-    if (!confirm(`确定要删除文档"${docTitle}"吗？此操作不可撤销。`)) {
+    if (!await confirm({ title: '确认删除', message: `确定要删除文档"${docTitle}"吗？此操作不可撤销。`, type: 'warning' })) {
       return
     }
 
@@ -249,11 +253,11 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
 
       if (dbError) throw dbError
 
-      alert('文档删除成功')
+      toast.success('文档删除成功')
       loadDocuments()
     } catch (error) {
       console.error('删除文档失败:', error)
-      alert('删除文档失败: ' + (error instanceof Error ? error.message : '未知错误'))
+      toast.error('删除文档失败: ' + (error instanceof Error ? error.message : '未知错误'))
     }
   }
 
@@ -272,7 +276,7 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       URL.revokeObjectURL(url)
     } catch (error) {
       console.error('下载文档失败:', error)
-      alert('下载文档失败')
+      toast.error('下载文档失败')
     }
   }
 

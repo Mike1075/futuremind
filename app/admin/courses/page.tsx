@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2, Brain } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface CourseSystem {
   id: string
@@ -19,6 +21,8 @@ export default function CoursesPage() {
   const [userEmail, setUserEmail] = useState<string>('')
   const [isMounted, setIsMounted] = useState(false)
   const [courseSystems, setCourseSystems] = useState<CourseSystem[]>([])
+  const toast = useToast()
+  const { confirm } = useConfirm()
 
   useEffect(() => {
     setIsMounted(true)
@@ -65,28 +69,32 @@ export default function CoursesPage() {
     // 检查是否是原始课程
     const protectedCourses = ['listening', 'earth', 'pbl', 'icarus']
     if (protectedCourses.includes(systemKey)) {
-      alert('⚠️ 原始课程不可删除\n\n「' + courseTitle + '」是系统预设课程，不能删除。\n只有新增的课程可以删除。')
+      toast.warning('原始课程不可删除\n\n「' + courseTitle + '」是系统预设课程，不能删除。\n只有新增的课程可以删除。')
       return
     }
 
     // 第一次确认
-    const confirmed = confirm(
-      `⚠️ 警告：确定要**永久删除**课程「${courseTitle}」吗？\n\n` +
-      `这将：\n` +
-      `1. 永久删除课程系统记录\n` +
-      `2. 永久删除该课程下的所有内容（视频、问题、项目等）\n` +
-      `3. 删除所有学生的学习记录和进度\n` +
-      `4. 已选择该课程的学生将无法再看到此课程\n\n` +
-      `此操作**不可恢复**！`
-    )
+    const confirmed = await confirm({
+      title: '警告',
+      message: `确定要**永久删除**课程「${courseTitle}」吗？\n\n` +
+        `这将：\n` +
+        `1. 永久删除课程系统记录\n` +
+        `2. 永久删除该课程下的所有内容（视频、问题、项目等）\n` +
+        `3. 删除所有学生的学习记录和进度\n` +
+        `4. 已选择该课程的学生将无法再看到此课程\n\n` +
+        `此操作**不可恢复**！`,
+      type: 'warning'
+    })
     if (!confirmed) return
 
     // 第二次确认
-    const finalConfirm = confirm(
-      `请再次确认删除「${courseTitle}」\n\n` +
-      `这是最后一次确认机会。\n` +
-      `点击"确定"将立即永久删除该课程。`
-    )
+    const finalConfirm = await confirm({
+      title: '最后确认',
+      message: `请再次确认删除「${courseTitle}」\n\n` +
+        `这是最后一次确认机会。\n` +
+        `点击"确定"将立即永久删除该课程。`,
+      type: 'warning'
+    })
     if (!finalConfirm) return
 
     try {
@@ -100,18 +108,18 @@ export default function CoursesPage() {
       if (!response.ok) {
         // 显示详细错误信息
         if (data.message) {
-          alert(`❌ ${data.error}\n\n${data.message}`)
+          toast.error(`${data.error}\n\n${data.message}`)
         } else {
-          alert(`❌ 删除失败：${data.error}\n\n${data.details || ''}`)
+          toast.error(`删除失败：${data.error}\n\n${data.details || ''}`)
         }
         return
       }
 
-      alert(`✅ 删除成功\n\n${data.message}\n\n删除统计：\n- 阶段：${data.deletedCounts.stages}个\n- 内容：${data.deletedCounts.contents}个`)
+      toast.success(`删除成功\n\n${data.message}\n\n删除统计：\n- 阶段：${data.deletedCounts.stages}个\n- 内容：${data.deletedCounts.contents}个`)
       await loadCourses() // 重新加载列表
     } catch (error) {
       console.error('删除课程失败:', error)
-      alert('❌ 删除失败，请检查网络连接后重试')
+      toast.error('删除失败，请检查网络连接后重试')
     }
   }
 

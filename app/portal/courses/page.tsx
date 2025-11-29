@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, BookOpen, CheckCircle, Plus, Loader2, Ear, Globe, Rocket } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
 
 interface Course {
   id: string
@@ -24,6 +25,7 @@ interface EnrolledCourse {
 export default function CoursesPage() {
   const router = useRouter()
   const supabase = createClient()
+  const toast = useToast()
 
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
@@ -88,7 +90,7 @@ export default function CoursesPage() {
 
     // Check if already enrolled
     if (enrolledCourses.some(c => c.course_id === courseId)) {
-      alert('您已经选修了这门课程')
+      toast.info('您已经选修了这门课程')
       return
     }
 
@@ -105,10 +107,10 @@ export default function CoursesPage() {
 
       if (error) throw error
 
-      alert('✅ 选课成功！')
+      toast.success('选课成功！')
       await loadData()
     } catch {
-      alert('❌ 选课失败，请重试')
+      toast.error('选课失败，请重试')
     } finally {
       setEnrolling(false)
     }

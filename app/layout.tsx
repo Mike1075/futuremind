@@ -4,6 +4,8 @@ import "./globals.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DynamicGaiaWrapper } from "@/components/DynamicGaiaWrapper";
 import CosmicBackground from "@/components/ui/CosmicBackground";
+import { ToastProvider } from "@/components/ui/ToastProvider";
+import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 
 // 神圣字体：用于标题，赋予"古老智慧"和"铭文"的感觉
 const cinzel = Cinzel({
@@ -38,11 +40,15 @@ export default function RootLayout({
         <CosmicBackground />
 
         <ErrorBoundary>
-          <div className="relative z-10">
-            {children}
-          </div>
-          {/* PF-12: 动态加载 GlobalGaia，减少初始包体积 */}
-          <DynamicGaiaWrapper />
+          <ToastProvider>
+            <ConfirmProvider>
+              <div className="relative z-10">
+                {children}
+              </div>
+              {/* PF-12: 动态加载 GlobalGaia，减少初始包体积 */}
+              <DynamicGaiaWrapper />
+            </ConfirmProvider>
+          </ToastProvider>
         </ErrorBoundary>
       </body>
     </html>

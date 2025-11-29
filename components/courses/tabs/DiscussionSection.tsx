@@ -5,6 +5,8 @@ import { MessageSquare, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { DiscussionCard } from '../discussion/DiscussionCard'
 import { CommentForm } from '../discussion/CommentForm'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Profile {
   id: string
@@ -32,6 +34,8 @@ interface DiscussionSectionProps {
 }
 
 export function DiscussionSection({ courseContentId }: DiscussionSectionProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [discussions, setDiscussions] = useState<Discussion[]>([])
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null)
@@ -94,7 +98,7 @@ export function DiscussionSection({ courseContentId }: DiscussionSectionProps) {
 
   const handleCommentSubmit = async (content: string) => {
     if (!currentUser) {
-      alert('请先登录')
+      toast.warning('请先登录')
       return
     }
 
@@ -117,13 +121,13 @@ export function DiscussionSection({ courseContentId }: DiscussionSectionProps) {
       setRefreshTrigger(prev => prev + 1)
     } catch (error) {
       console.error('Error posting comment:', error)
-      alert(error instanceof Error ? error.message : '发表评论失败，请重试')
+      toast.error(error instanceof Error ? error.message : '发表评论失败，请重试')
     }
   }
 
   const handleReplySubmit = async (parentId: string, content: string) => {
     if (!currentUser) {
-      alert('请先登录')
+      toast.warning('请先登录')
       return
     }
 
@@ -147,13 +151,13 @@ export function DiscussionSection({ courseContentId }: DiscussionSectionProps) {
       setRefreshTrigger(prev => prev + 1)
     } catch (error) {
       console.error('Error posting reply:', error)
-      alert(error instanceof Error ? error.message : '回复失败，请重试')
+      toast.error(error instanceof Error ? error.message : '回复失败，请重试')
     }
   }
 
   const handleLike = async (discussionId: string) => {
     if (!currentUser) {
-      alert('请先登录')
+      toast.warning('请先登录')
       return
     }
 
@@ -176,7 +180,7 @@ export function DiscussionSection({ courseContentId }: DiscussionSectionProps) {
 
   const handleUnlike = async (discussionId: string) => {
     if (!currentUser) {
-      alert('请先登录')
+      toast.warning('请先登录')
       return
     }
 
@@ -198,7 +202,13 @@ export function DiscussionSection({ courseContentId }: DiscussionSectionProps) {
   }
 
   const handleDelete = async (discussionId: string) => {
-    if (!confirm('确定要删除这条评论吗？')) return
+    const confirmed = await confirm({
+      title: '确认删除',
+      message: '确定要删除这条评论吗？',
+      type: 'warning'
+    })
+
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/discussions/${discussionId}`, {
@@ -214,7 +224,7 @@ export function DiscussionSection({ courseContentId }: DiscussionSectionProps) {
       setRefreshTrigger(prev => prev + 1)
     } catch (error) {
       console.error('Error deleting discussion:', error)
-      alert(error instanceof Error ? error.message : '删除失败，请重试')
+      toast.error(error instanceof Error ? error.message : '删除失败，请重试')
     }
   }
 

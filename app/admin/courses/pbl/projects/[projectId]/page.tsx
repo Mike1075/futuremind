@@ -6,6 +6,8 @@ import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Save, Users, UsersRound, FileText, Plus, Trash2, Search, UserPlus } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface PBLProject {
   id: string
@@ -77,6 +79,8 @@ export default function PBLProjectDetailPage() {
   const router = useRouter()
   const params = useParams()
   const projectId = params?.projectId as string
+  const toast = useToast()
+  const { confirm } = useConfirm()
 
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('details')
@@ -165,7 +169,7 @@ export default function PBLProjectDetailPage() {
       setProject(data)
     } catch (error) {
       console.error('加载项目失败:', error)
-      alert('加载项目失败')
+      toast.error('加载项目失败')
     }
   }
 
@@ -264,12 +268,12 @@ export default function PBLProjectDetailPage() {
 
       if (error) throw error
 
-      alert('保存成功！')
+      toast.success('保存成功！')
       setEditMode(false)
       await loadProject()
     } catch (error) {
       console.error('保存失败:', error)
-      alert('保存失败')
+      toast.error('保存失败')
     } finally {
       setSaving(false)
     }
@@ -291,25 +295,25 @@ export default function PBLProjectDetailPage() {
       if (enrollError) {
         console.error('添加学员错误详情:', enrollError)
         if (enrollError.code === '23505') {
-          alert('该学员已经选择了此项目')
+          toast.warning('该学员已经选择了此项目')
         } else {
-          alert(`添加学员失败: ${enrollError.message}`)
+          toast.error(`添加学员失败: ${enrollError.message}`)
         }
         return
       }
 
-      alert('添加学员成功！')
+      toast.success('添加学员成功！')
       setShowAddStudentModal(false)
       setStudentSearchTerm('')
       await loadStudents()
     } catch (error) {
       console.error('添加学员失败:', error)
-      alert('添加学员失败，请查看控制台了解详情')
+      toast.error('添加学员失败，请查看控制台了解详情')
     }
   }
 
   const handleRemoveStudent = async (studentId: string) => {
-    if (!confirm('确定要将该学员从项目中移除吗？')) return
+    if (!await confirm({ title: '确认操作', message: '确定要将该学员从项目中移除吗？', type: 'warning' })) return
 
     try {
       const supabase = createClient()
@@ -321,11 +325,11 @@ export default function PBLProjectDetailPage() {
 
       if (error) throw error
 
-      alert('移除成功！')
+      toast.success('移除成功！')
       await loadStudents()
     } catch (error) {
       console.error('移除学员失败:', error)
-      alert('移除失败')
+      toast.error('移除失败')
     }
   }
 
@@ -429,7 +433,7 @@ export default function PBLProjectDetailPage() {
 
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
-      alert('请输入分组名称')
+      toast.warning('请输入分组名称')
       return
     }
 
@@ -452,14 +456,14 @@ export default function PBLProjectDetailPage() {
 
       if (error) throw error
 
-      alert('✅ 创建项目分组成功！')
+      toast.success('创建项目分组成功！')
       setShowCreateGroupModal(false)
       setNewGroupName('')
       setNewGroupDescription('')
       await loadGroups()
     } catch (error) {
       console.error('创建项目分组失败:', error)
-      alert('❌ 创建失败，请重试')
+      toast.error('创建失败，请重试')
     }
   }
 

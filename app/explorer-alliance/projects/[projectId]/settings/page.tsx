@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, Trash2, Eye, EyeOff, UserPlus, UserX } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface ProjectMember {
   user_id: string
@@ -20,6 +22,8 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
   const { projectId } = use(params)
   const { project, loading: projectLoading } = useProject(projectId)
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [saving, setSaving] = useState(false)
   const [isManager, setIsManager] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
@@ -93,7 +97,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
 
   const handleSave = async () => {
     if (!name.trim()) {
-      alert('项目名称不能为空')
+      toast.warning('项目名称不能为空')
       return
     }
 
@@ -114,18 +118,22 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
 
       if (error) throw error
 
-      alert('设置已保存')
+      toast.success('设置已保存')
       router.push(`/explorer-alliance/projects/${projectId}`)
     } catch (error) {
       console.error('保存设置失败:', error)
-      alert('保存设置失败')
+      toast.error('保存设置失败')
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm('确定要删除此项目吗？此操作不可撤销，所有相关数据将被永久删除。')) {
+    if (!await confirm({
+      title: '确认删除',
+      message: '确定要删除此项目吗？此操作不可撤销，所有相关数据将被永久删除。',
+      type: 'warning'
+    })) {
       return
     }
 
@@ -164,11 +172,11 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
 
       if (projectError) throw projectError
 
-      alert('项目已删除')
+      toast.success('项目已删除')
       router.push('/explorer-alliance')
     } catch (error) {
       console.error('删除项目失败:', error)
-      alert('删除项目失败')
+      toast.error('删除项目失败')
     }
   }
 

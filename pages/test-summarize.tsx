@@ -420,7 +420,7 @@ export default function TestSummarizePage() {
       return
     }
 
-    if (!confirm('⚠️ 确认要清空该用户的意识树数据吗？\n\n清空后，树将重置为"种子"状态，下次评估会从零开始累积生长。')) {
+    if (!window.confirm('⚠️ 确认要清空该用户的意识树数据吗？\n\n清空后，树将重置为"种子"状态，下次评估会从零开始累积生长。')) {
       return
     }
 

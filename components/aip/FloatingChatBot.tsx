@@ -6,6 +6,8 @@ import ReactMarkdown from 'react-markdown'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project } from '@/lib/aip/types'
 import aipChatAPI from '@/lib/api/aip-chat'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 // 探索者联盟图标组件 - 炫彩旋转边框 + 机器人
 function ExplorerBotIcon({ size = 'normal' }: { size?: 'normal' | 'small' | 'tiny' }) {
@@ -41,6 +43,8 @@ export function FloatingChatBot({
   currentProject,
   showProjectSelector = true
 }: FloatingChatBotProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -350,7 +354,7 @@ export function FloatingChatBot({
   }
 
   const handleClearChat = async () => {
-    if (!confirm('确定要清空聊天记录吗？此操作不可恢复。')) return
+    if (!await confirm({ title: '确认清空', message: '确定要清空聊天记录吗？此操作不可恢复。', type: 'warning' })) return
 
     try {
       const result = await aipChatAPI.clearChatHistory()
@@ -359,17 +363,18 @@ export function FloatingChatBot({
         const welcomeMessage: ChatMessage = {
           id: 'welcome-new',
           role: 'assistant',
-          content: '✅ 聊天记录已清空。这是一个全新的对话会话。',
+          content: '聊天记录已清空。这是一个全新的对话会话。',
           timestamp: new Date()
         }
         setMessages([welcomeMessage])
+        toast.success('聊天记录已清空')
       } else {
         console.error('清空聊天记录失败:', result.error)
-        alert('清空聊天记录失败，请稍后重试')
+        toast.error('清空聊天记录失败，请稍后重试')
       }
     } catch (error) {
       console.error('清空聊天记录失败:', error)
-      alert('清空聊天记录失败，请稍后重试')
+      toast.error('清空聊天记录失败，请稍后重试')
     }
   }
 

@@ -13,11 +13,15 @@ import { ShowcasePanel } from '@/components/aip/ShowcasePanel'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Settings, UserPlus, Upload, ArrowLeft, Trash2 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params)
   const { project, loading: projectLoading } = useProject(projectId)
   const { tasks, loading: tasksLoading, reload: reloadTasks } = useProjectTasks(projectId)
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [showCreateTask, setShowCreateTask] = useState(false)
   const [showFileUpload, setShowFileUpload] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
@@ -98,7 +102,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     if (selectedDocuments.size === 0) return
 
     const deleteCount = selectedDocuments.size
-    if (!confirm(`确定要删除选中的 ${deleteCount} 份文档吗？此操作不可撤销。`)) {
+    if (!await confirm({
+      title: '确认删除',
+      message: `确定要删除选中的 ${deleteCount} 份文档吗？此操作不可撤销。`,
+      type: 'warning'
+    })) {
       return
     }
 
@@ -132,10 +140,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       setDocumentsCount(count || 0)
 
       // 最后显示成功提示
-      alert(`成功删除 ${deleteCount} 份文档`)
+      toast.success(`成功删除 ${deleteCount} 份文档`)
     } catch (error) {
       console.error('批量删除失败:', error)
-      alert('删除失败: ' + (error instanceof Error ? error.message : '未知错误'))
+      toast.error('删除失败: ' + (error instanceof Error ? error.message : '未知错误'))
     } finally {
       setIsDeleting(false)
     }

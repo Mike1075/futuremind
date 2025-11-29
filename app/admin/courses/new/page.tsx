@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Upload, FileText, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
 
 interface ParsedCourse {
   system_key: string
@@ -16,6 +17,7 @@ interface ParsedCourse {
 
 export default function NewCoursePage() {
   const router = useRouter()
+  const toast = useToast()
   const [step, setStep] = useState<'upload' | 'parsing' | 'preview' | 'saving' | 'success'>('upload')
 
   // 文档数据
@@ -41,14 +43,14 @@ export default function NewCoursePage() {
     if (file.name.endsWith('.md') || file.name.endsWith('.txt')) {
       reader.readAsText(file)
     } else {
-      alert('目前仅支持 .md 和 .txt 文件格式')
+      toast.warning('目前仅支持 .md 和 .txt 文件格式')
       e.target.value = ''
     }
   }
 
   const handleParse = async () => {
     if (!documentContent.trim()) {
-      alert('请上传课程文档')
+      toast.warning('请上传课程文档')
       return
     }
 

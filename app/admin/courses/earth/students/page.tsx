@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Users, UserPlus, Trash2, Search } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Student {
   id: string
@@ -14,6 +16,8 @@ interface Student {
 
 export default function EarthStudentsPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [students, setStudents] = useState<Student[]>([])
   const [allUsers, setAllUsers] = useState<any[]>([])
@@ -118,23 +122,23 @@ export default function EarthStudentsPage() {
 
       if (error) throw error
 
-      alert('添加成功！')
+      toast.success('添加成功！')
       setShowAddModal(false)
       setModalSearchTerm('')
       await loadData()
     } catch (error: any) {
       console.error('添加学员失败:', error)
       if (error.code === '23505') {
-        alert('该学员已经在课程中了')
+        toast.warning('该学员已经在课程中了')
       } else {
-        alert('添加失败，请重试')
+        toast.error('添加失败，请重试')
       }
     }
   }
 
   const handleRemoveStudent = async (studentId: string) => {
     if (!earthSystemId) return
-    if (!confirm('确定要移除该学员吗？')) return
+    if (!await confirm({ title: '确认操作', message: '确定要移除该学员吗？', type: 'warning' })) return
 
     try {
       const supabase = createClient()
@@ -146,11 +150,11 @@ export default function EarthStudentsPage() {
 
       if (error) throw error
 
-      alert('移除成功！')
+      toast.success('移除成功！')
       await loadData()
     } catch (error) {
       console.error('移除学员失败:', error)
-      alert('移除失败，请重试')
+      toast.error('移除失败，请重试')
     }
   }
 

@@ -10,9 +10,13 @@ import {
   UserCheck,
   Brain
 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 export default function AdminDashboardClient() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState<string>('')
   const [userRole, setUserRole] = useState<string>('')
@@ -46,14 +50,14 @@ export default function AdminDashboardClient() {
 
       if (profileError || !profile) {
         console.error('获取用户资料失败:', profileError)
-        alert('⚠️ 无法获取用户信息，请重新登录')
+        toast.error('无法获取用户信息，请重新登录')
         router.push('/')
         return
       }
 
       // 检查是否有管理权限
       if (!profile.role || !['principal', 'teacher'].includes(profile.role)) {
-        alert('⚠️ 您没有管理员权限\n\n只有校长和老师可以访问管理后台。')
+        toast.warning('您没有管理员权限，只有校长和老师可以访问管理后台。')
         router.push('/')
         return
       }
@@ -62,7 +66,7 @@ export default function AdminDashboardClient() {
       setUserRole(profile.role)
     } catch (error) {
       console.error('认证失败:', error)
-      alert('❌ 系统错误，请稍后重试')
+      toast.error('系统错误，请稍后重试')
       router.push('/')
     } finally {
       setLoading(false)

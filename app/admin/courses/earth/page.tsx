@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Plus, Save, Upload, FileVideo, Trash2, ChevronRight, BookOpen, Edit, Users, UsersRound } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface EarthStage {
   id: string
@@ -38,6 +40,8 @@ interface MediaResource {
 
 export default function EarthCoursePage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
   const [stages, setStages] = useState<EarthStage[]>([])
@@ -207,11 +211,11 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      alert('保存成功！')
+      toast.success('保存成功！')
       await loadStages()
     } catch (error) {
       console.error('保存失败:', error)
-      alert('保存失败，请重试')
+      toast.error('保存失败，请重试')
     } finally {
       setSaving(false)
     }
@@ -241,16 +245,16 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      alert('补充视频添加成功！')
+      toast.success('补充视频添加成功！')
       await loadMediaResources(selectedStage.id)
     } catch (error) {
       console.error('添加视频失败:', error)
-      alert('添加视频失败，请重试')
+      toast.error('添加视频失败，请重试')
     }
   }
 
   const handleDeleteMedia = async (mediaId: string) => {
-    if (!confirm('确定要删除这个资源吗？')) return
+    if (!await confirm({ title: '确认操作', message: '确定要删除这个资源吗？', type: 'warning' })) return
 
     try {
       const supabase = createClient()
@@ -261,13 +265,13 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      alert('删除成功！')
+      toast.success('删除成功！')
       if (selectedStage) {
         await loadMediaResources(selectedStage.id)
       }
     } catch (error) {
       console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 
@@ -305,23 +309,23 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      alert('新增成功！')
+      toast.success('新增成功！')
       await loadStages()
       setSelectedStage(data)
     } catch (error) {
       console.error('新增失败:', error)
-      alert('新增失败，请重试')
+      toast.error('新增失败，请重试')
     }
   }
 
   const handleDeleteStage = async (stageId: string, sequenceNumber: number) => {
     // 保护前6个阶段的固定内容
     if (sequenceNumber <= 6) {
-      alert('前6个阶段是固定内容，不能删除，只能修改。')
+      toast.warning('前6个阶段是固定内容，不能删除，只能修改。')
       return
     }
 
-    if (!confirm(`确定要删除第 ${sequenceNumber} 阶段吗？删除后将无法恢复。`)) return
+    if (!await confirm({ title: '确认操作', message: `确定要删除第 ${sequenceNumber} 阶段吗？删除后将无法恢复。`, type: 'warning' })) return
 
     try {
       const supabase = createClient()
@@ -342,7 +346,7 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      alert('删除成功！')
+      toast.success('删除成功！')
 
       // 如果删除的是当前选中的阶段，清空选中状态
       if (selectedStage?.id === stageId) {
@@ -352,7 +356,7 @@ export default function EarthCoursePage() {
       await loadStages()
     } catch (error) {
       console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 
@@ -376,13 +380,13 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      alert('修改成功！')
+      toast.success('修改成功！')
       if (selectedStage) {
         await loadMediaResources(selectedStage.id)
       }
     } catch (error) {
       console.error('修改失败:', error)
-      alert('修改失败，请重试')
+      toast.error('修改失败，请重试')
     }
   }
 
@@ -448,8 +452,8 @@ export default function EarthCoursePage() {
     setShowProjectEditor(false)
   }
 
-  const handleDeleteProject = (index: number) => {
-    if (!confirm('确定要删除这个项目吗？')) return
+  const handleDeleteProject = async (index: number) => {
+    if (!await confirm({ title: '确认操作', message: '确定要删除这个项目吗？', type: 'warning' })) return
 
     const newProjects = formData.explorer_projects.filter((_, i) => i !== index)
     setFormData({

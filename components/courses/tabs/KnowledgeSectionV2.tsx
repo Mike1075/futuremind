@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Lightbulb, MessageSquare, Loader2, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface KnowledgeSectionV2Props {
   knowledgePoints: string[]
@@ -13,6 +14,7 @@ export function KnowledgeSectionV2({
   knowledgePoints,
   contentId
 }: KnowledgeSectionV2Props) {
+  const { confirm } = useConfirm()
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
   const [questions, setQuestions] = useState<Record<number, string>>({})
@@ -79,9 +81,11 @@ export function KnowledgeSectionV2({
 
         if (data.discussed) {
           // 问题已讨论过，触发跳转到历史记录的事件
-          const shouldContinue = window.confirm(
-            '💡 这个话题我们之前聊过哦！\n\n要不要回顾一下之前的讨论，继续深入探讨呢？'
-          )
+          const shouldContinue = await confirm({
+            title: '提示',
+            message: '这个话题我们之前聊过哦！\n\n要不要回顾一下之前的讨论，继续深入探讨呢？',
+            type: 'warning'
+          })
 
           if (shouldContinue) {
             window.dispatchEvent(new CustomEvent('scrollToDiscussion', {

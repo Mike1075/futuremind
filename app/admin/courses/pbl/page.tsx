@@ -10,6 +10,8 @@ import {
   PawPrint, Microscope, Atom, Sprout, Bug, Droplet, MapPin,
   Palette, Eye, Dices, Waves, TreePine
 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface PBLProject {
   id: string
@@ -67,6 +69,8 @@ const getProjectIcon = (sequenceNumber: number) => {
 
 export default function IcarusAdminPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
   const [projects, setProjects] = useState<PBLProject[]>([])
@@ -248,22 +252,22 @@ export default function IcarusAdminPage() {
         if (error) throw error
       }
 
-      alert('新增模块成功！')
+      toast.success('新增模块成功！')
       await loadProjects()
     } catch (error) {
       console.error('新增模块失败:', error)
-      alert('新增模块失败，请重试')
+      toast.error('新增模块失败，请重试')
     }
   }
 
   const handleDeleteModule = async (moduleId: number, range: number[]) => {
     // 只能删除sequence_number >= 13的模块
     if (range[0] < 13) {
-      alert('系统默认的前3个模块不能删除')
+      toast.warning('系统默认的前3个模块不能删除')
       return
     }
 
-    if (!confirm(`确定要删除${getAllModules().find(m => m.id === moduleId)?.name}吗？删除后将无法恢复。`)) return
+    if (!await confirm({ title: '确认操作', message: `确定要删除${getAllModules().find(m => m.id === moduleId)?.name}吗？删除后将无法恢复。`, type: 'warning' })) return
 
     try {
       const supabase = createClient()
@@ -288,11 +292,11 @@ export default function IcarusAdminPage() {
         }
       }
 
-      alert('删除成功！')
+      toast.success('删除成功！')
       await loadProjects()
     } catch (error) {
       console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 
@@ -323,12 +327,12 @@ export default function IcarusAdminPage() {
 
       if (error) throw error
 
-      alert('保存成功！')
+      toast.success('保存成功！')
       setEditMode(false)
       await loadProjects()
     } catch (error) {
       console.error('保存失败:', error)
-      alert('保存失败，请重试')
+      toast.error('保存失败，请重试')
     } finally {
       setSaving(false)
     }

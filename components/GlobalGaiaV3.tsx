@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react'
 import { X, Send, Loader2, History, Edit3, Check, Trash2, MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AuthModal from '@/components/AuthModal'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 // 盖亚图标组件 - 炫彩旋转边框 + 对话气泡
 function GaiaIcon({ size = 'normal', isStatic = false }: { size?: 'normal' | 'small' | 'tiny', isStatic?: boolean }) {
@@ -39,6 +41,8 @@ interface Message {
 }
 
 export function GlobalGaiaV3() {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -296,7 +300,7 @@ export function GlobalGaiaV3() {
         setHasMore(false)
       }
     } catch (error) {
-      alert('加载更多消息失败')
+      toast.error('加载更多消息失败')
     } finally {
       setIsLoadingMore(false)
     }
@@ -317,11 +321,11 @@ export function GlobalGaiaV3() {
           setLoadedCount(data.messages.length)
         } else {
           // 没有历史记录
-          alert('暂无历史记录')
+          toast.info('暂无历史记录')
         }
       }
     } catch (error) {
-      alert('加载历史记录失败')
+      toast.error('加载历史记录失败')
     }
   }
 
@@ -659,7 +663,7 @@ export function GlobalGaiaV3() {
   const deleteSelectedMessages = async () => {
     if (selectedMessages.size === 0) return
 
-    if (!confirm(`确定要删除选中的 ${selectedMessages.size} 条消息吗？`)) return
+    if (!await confirm({ title: '确认删除', message: `确定要删除选中的 ${selectedMessages.size} 条消息吗？`, type: 'warning' })) return
 
     try {
       // 过滤掉选中的消息
@@ -699,7 +703,7 @@ export function GlobalGaiaV3() {
         }
       }
     } catch (error) {
-      alert('删除消息失败，请重试')
+      toast.error('删除消息失败，请重试')
     }
   }
 

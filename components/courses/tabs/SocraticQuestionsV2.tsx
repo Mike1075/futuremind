@@ -1,6 +1,7 @@
 'use client'
 
 import { MessageCircle } from 'lucide-react'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -17,6 +18,8 @@ export function SocraticQuestionsV2({
   socraticQuestions,
   contentId
 }: SocraticQuestionsV2Props) {
+  const { confirm } = useConfirm()
+
   // 点击问题，打开盖亚（先检查是否已讨论过）
   const handleClickQuestion = async (question: string, stage: string) => {
     if (typeof window === 'undefined') return
@@ -33,9 +36,11 @@ export function SocraticQuestionsV2({
         const data = await response.json()
 
         if (data.discussed) {
-          const shouldContinue = window.confirm(
-            '💡 这个问题我们之前探讨过哦！\n\n要不要回顾一下之前的思考，继续深入呢？'
-          )
+          const shouldContinue = await confirm({
+            title: '提示',
+            message: '这个问题我们之前探讨过哦！\n\n要不要回顾一下之前的思考，继续深入呢？',
+            type: 'warning'
+          })
 
           if (shouldContinue) {
             window.dispatchEvent(new CustomEvent('scrollToDiscussion', {

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, UsersRound, Plus, Trash2, Users } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Group {
   id: string
@@ -15,6 +17,8 @@ interface Group {
 
 export default function ListeningGroupsPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [groups, setGroups] = useState<Group[]>([])
   const [listeningSystemId, setListeningSystemId] = useState<string | null>(null)
@@ -78,7 +82,7 @@ export default function ListeningGroupsPage() {
   const handleCreateGroup = async () => {
     if (!listeningSystemId) return
     if (!groupName.trim()) {
-      alert('请输入分组名称')
+      toast.warning('请输入分组名称')
       return
     }
 
@@ -99,19 +103,19 @@ export default function ListeningGroupsPage() {
 
       if (error) throw error
 
-      alert('创建成功！')
+      toast.success('创建成功')
       setShowCreateModal(false)
       setGroupName('')
       setGroupDescription('')
       await loadData()
     } catch (error) {
       console.error('创建分组失败:', error)
-      alert('创建失败，请重试')
+      toast.error('创建失败，请重试')
     }
   }
 
   const handleDeleteGroup = async (groupId: string) => {
-    if (!confirm('确定要删除该分组吗？删除后无法恢复。')) return
+    if (!await confirm({ title: '确认操作', message: '确定要删除该分组吗？删除后无法恢复。', type: 'warning' })) return
 
     try {
       const supabase = createClient()
@@ -122,11 +126,11 @@ export default function ListeningGroupsPage() {
 
       if (error) throw error
 
-      alert('删除成功！')
+      toast.success('删除成功')
       await loadData()
     } catch (error) {
       console.error('删除分组失败:', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 

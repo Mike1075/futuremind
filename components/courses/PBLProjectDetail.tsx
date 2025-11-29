@@ -11,6 +11,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Toast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 // 伊卡洛斯项目模块名称映射（与主界面保持一致）
 const MODULE_NAMES: Record<number, string> = {
@@ -165,6 +166,7 @@ export function PBLProjectDetail({
 }: PBLProjectDetailProps) {
   const router = useRouter()
   const supabase = createClient()
+  const { confirm: confirmDelete } = useConfirm()
   const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set([1])) // 默认展开第1周
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
   const [submittingDay, setSubmittingDay] = useState<string | null>(null)
@@ -422,7 +424,12 @@ export function PBLProjectDetail({
 
   // 删除提交记录
   const handleDeleteSubmission = async (submissionId: string) => {
-    if (!confirm('确定要删除这条提交记录吗？')) return
+    const confirmed = await confirmDelete({
+      title: '确认删除',
+      message: '确定要删除这条提交记录吗？',
+      type: 'warning'
+    })
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/submissions?id=${submissionId}`, {
@@ -432,13 +439,25 @@ export function PBLProjectDetail({
       if (response.ok) {
         // 立即从本地状态中移除
         setSubmissionsHistory(prev => prev.filter(s => s.id !== submissionId))
-        alert('删除成功')
+        setToast({
+          show: true,
+          message: '删除成功',
+          type: 'success'
+        })
       } else {
         const error = await response.json()
-        alert(`删除失败: ${error.error || '请重试'}`)
+        setToast({
+          show: true,
+          message: `删除失败: ${error.error || '请重试'}`,
+          type: 'error'
+        })
       }
     } catch (error) {
-      alert('删除失败，请重试')
+      setToast({
+        show: true,
+        message: '删除失败，请重试',
+        type: 'error'
+      })
     }
   }
 
@@ -477,7 +496,11 @@ export function PBLProjectDetail({
       // 触发公开作业列表刷新
       setPublicSubmissionsRefreshKey(prev => prev + 1)
     } catch (err) {
-      alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
+      setToast({
+        show: true,
+        message: `操作失败：${err instanceof Error ? err.message : '请重试'}`,
+        type: 'error'
+      })
     } finally {
       setTogglingId(null)
     }
@@ -486,12 +509,20 @@ export function PBLProjectDetail({
   // 提交任务
   const handleSubmitTask = async () => {
     if (!currentDayKey || !submissionContent.trim()) {
-      alert('请填写提交内容')
+      setToast({
+        show: true,
+        message: '请填写提交内容',
+        type: 'warning'
+      })
       return
     }
 
     if (!userId) {
-      alert('请先登录')
+      setToast({
+        show: true,
+        message: '请先登录',
+        type: 'warning'
+      })
       return
     }
 
@@ -551,7 +582,11 @@ export function PBLProjectDetail({
       router.refresh()
 
     } catch (error) {
-      alert('提交失败，请重试')
+      setToast({
+        show: true,
+        message: '提交失败，请重试',
+        type: 'error'
+      })
     } finally {
       setSubmittingDay(null)
       setUploading(false)

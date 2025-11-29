@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send, Edit3, Trash2, Check, MessageCircle } from 'lucide-react'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 // 盖亚图标组件 - 炫彩旋转边框 + 对话气泡
 function GaiaIcon({ size = 'normal', isStatic = false }: { size?: 'normal' | 'small' | 'tiny', isStatic?: boolean }) {
@@ -32,6 +34,8 @@ interface GaiaDialogProps {
 }
 
 export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [userId, setUserId] = useState<string | 'guest'>('guest')
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID())
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
@@ -343,7 +347,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   const deleteSelectedMessages = async () => {
     if (selectedMessages.size === 0) return
 
-    if (!confirm(`确定要删除选中的 ${selectedMessages.size} 条消息吗？`)) return
+    if (!await confirm({ title: '确认删除', message: `确定要删除选中的 ${selectedMessages.size} 条消息吗？`, type: 'warning' })) return
 
     try {
       // 过滤掉选中的消息
@@ -359,8 +363,9 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
 
       // 触发同步事件，通知其他盖亚组件更新
       window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
+      toast.success('消息已删除')
     } catch (error) {
-      alert('删除消息失败，请重试')
+      toast.error('删除消息失败，请重试')
     }
   }
 
@@ -432,7 +437,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                     </button>
                     <button
                       onClick={async () => {
-                        if (!confirm('确定要清除所有聊天记录吗？这将删除所有对话。')) return
+                        if (!await confirm({ title: '确认清除', message: '确定要清除所有聊天记录吗？这将删除所有对话。', type: 'warning' })) return
 
                         try {
                           const result = await GaiaAPI.clearChatHistory()
@@ -449,11 +454,12 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                               isGaia: true,
                               timestamp: new Date()
                             }])
+                            toast.success('聊天记录已清除')
                           } else {
-                            alert('清除聊天记录失败: ' + result.error)
+                            toast.error('清除聊天记录失败: ' + result.error)
                           }
                         } catch (error) {
-                          alert('清除聊天记录时发生错误')
+                          toast.error('清除聊天记录时发生错误')
                         }
                       }}
                       className="px-3 py-2 text-small bg-life-pink/20 hover:bg-life-pink/30 text-life-pink rounded-lg border border-life-pink/30 flex items-center gap-2 transition-all duration-300"

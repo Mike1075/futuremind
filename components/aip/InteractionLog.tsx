@@ -5,6 +5,8 @@ import { X, Send, Inbox, Mail, Trash2, Eraser, Eye, MessageSquare, Check as Chec
 import { createClient } from '@/lib/supabase/client'
 import { InvitationCard } from './InvitationCard'
 import { reviewProjectJoinRequest } from '@/lib/aip/api'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface InteractionLogProps {
   onClose: () => void
@@ -57,6 +59,8 @@ interface UnifiedInteraction {
 }
 
 export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [activeTab, setActiveTab] = useState<TabType>('all')
   const [interactions, setInteractions] = useState<UnifiedInteraction[]>([])
   const [loading, setLoading] = useState(true)
@@ -197,11 +201,11 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
         throw new Error(result.error)
       }
 
-      alert(action === 'approve' ? '申请已批准' : '申请已拒绝')
+      toast.success(action === 'approve' ? '申请已批准' : '申请已拒绝')
       await loadInteractions()
     } catch (error: any) {
       console.error('处理申请失败:', error)
-      alert(`操作失败：${error.message || '请重试'}`)
+      toast.error(`操作失败：${error.message || '请重试'}`)
     } finally {
       setProcessing(null)
     }
@@ -306,8 +310,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
   const handleBulkDelete = async () => {
     if (selectedItems.size === 0) return
 
-    const confirmDelete = window.confirm(`确定要删除选中的 ${selectedItems.size} 条记录吗？`)
-    if (!confirmDelete) return
+    if (!await confirm({ title: '确认删除', message: `确定要删除选中的 ${selectedItems.size} 条记录吗？`, type: 'warning' })) return
 
     setIsDeleting(true)
     try {
@@ -351,7 +354,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
       onUnreadCountChange?.()
     } catch (error) {
       console.error('批量删除失败:', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     } finally {
       setIsDeleting(false)
     }

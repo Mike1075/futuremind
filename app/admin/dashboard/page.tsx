@@ -8,6 +8,8 @@ import {
   ArrowLeft, Users, Layers, BookOpen, MessageSquare,
   FileText, TrendingUp, Award, BarChart3, Clock, Calendar
 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Overview {
   total_students: number
@@ -61,6 +63,8 @@ const LEVEL_NAMES = {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState<string>('')
 
@@ -101,7 +105,7 @@ export default function DashboardPage() {
         .maybeSingle()
 
       if (!profile || !profile.role || !['principal', 'teacher'].includes(profile.role)) {
-        alert('⚠️ 您不是管理员\n\n只有校长和老师可以访问仪表板。')
+        toast.warning('您不是管理员，只有校长和老师可以访问仪表板。')
         router.push('/admin')
         return
       }

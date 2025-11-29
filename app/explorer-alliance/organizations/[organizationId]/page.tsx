@@ -15,11 +15,15 @@ import { PendingRequestsPanel } from '@/components/aip/PendingRequestsPanel'
 import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project, Task } from '@/lib/aip/types'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 export default function OrganizationDashboardPage() {
   const router = useRouter()
   const params = useParams()
   const organizationId = params?.organizationId as string
+  const toast = useToast()
+  const { confirm } = useConfirm()
 
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [loading, setLoading] = useState(true)
@@ -157,7 +161,11 @@ export default function OrganizationDashboardPage() {
   }
 
   const handleDeleteProject = async (projectId: string, projectName: string) => {
-    if (!confirm(`确定要删除项目"${projectName}"吗？此操作不可恢复。`)) return
+    if (!await confirm({
+      title: '确认删除',
+      message: `确定要删除项目"${projectName}"吗？此操作不可恢复。`,
+      type: 'warning'
+    })) return
 
     try {
       const supabase = createClient()
@@ -168,11 +176,11 @@ export default function OrganizationDashboardPage() {
 
       if (error) throw error
 
-      alert('项目已删除')
+      toast.success('项目已删除')
       reloadProjects()
     } catch (err) {
       console.error('删除项目失败:', err)
-      alert('删除项目失败')
+      toast.error('删除项目失败')
     }
   }
 
@@ -196,13 +204,13 @@ export default function OrganizationDashboardPage() {
 
       if (error) throw error
 
-      alert('项目信息已更新')
+      toast.success('项目信息已更新')
       setShowEditDescription(false)
       setEditingProject(null)
       reloadProjects()
     } catch (err) {
       console.error('更新项目信息失败:', err)
-      alert('更新项目信息失败')
+      toast.error('更新项目信息失败')
     }
   }
 
@@ -219,7 +227,7 @@ export default function OrganizationDashboardPage() {
       reloadProjects()
     } catch (err) {
       console.error('更新可见性失败:', err)
-      alert('更新可见性失败')
+      toast.error('更新可见性失败')
     }
   }
 
@@ -236,13 +244,13 @@ export default function OrganizationDashboardPage() {
       reloadProjects()
     } catch (err) {
       console.error('更新招募状态失败:', err)
-      alert('更新招募状态失败')
+      toast.error('更新招募状态失败')
     }
   }
 
   const handleApplyToJoin = async (projectId: string, projectName: string) => {
     if (!userId) {
-      alert('请先登录')
+      toast.warning('请先登录')
       return
     }
 
@@ -272,7 +280,7 @@ export default function OrganizationDashboardPage() {
       if (error) {
         // 处理重复申请错误
         if (error.code === '23505') {
-          alert('您已经申请过此项目，请等待审核结果')
+          toast.warning('您已经申请过此项目，请等待审核结果')
           return
         }
         throw error
@@ -307,10 +315,10 @@ export default function OrganizationDashboardPage() {
           .insert(notifications)
       }
 
-      alert('申请已提交，等待项目管理员审核')
+      toast.success('申请已提交，等待项目管理员审核')
     } catch (err) {
       console.error('提交申请失败:', err)
-      alert('提交申请失败，请重试')
+      toast.error('提交申请失败，请重试')
     }
   }
 

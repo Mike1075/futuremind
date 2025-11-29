@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Heart, Trash2, Image as ImageIcon, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Showcase {
   id: string
@@ -26,6 +28,8 @@ interface ShowcasePanelProps {
 }
 
 export function ShowcasePanel({ projectId }: ShowcasePanelProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [showcases, setShowcases] = useState<Showcase[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -131,7 +135,7 @@ export function ShowcasePanel({ projectId }: ShowcasePanelProps) {
   }
 
   const handleDelete = async (showcaseId: string) => {
-    if (!confirm('确定要删除这个成果吗？')) return
+    if (!await confirm({ title: '确认删除', message: '确定要删除这个成果吗？', type: 'warning' })) return
 
     const supabase = createClient()
 
@@ -144,9 +148,10 @@ export function ShowcasePanel({ projectId }: ShowcasePanelProps) {
       if (error) throw error
 
       setShowcases(prev => prev.filter(s => s.id !== showcaseId))
+      toast.success('成果已删除')
     } catch (err) {
       console.error('删除失败:', err)
-      alert('删除失败')
+      toast.error('删除失败')
     }
   }
 
@@ -310,6 +315,7 @@ function CreateShowcaseModal({
   onClose: () => void
   onSuccess: () => void
 }) {
+  const toast = useToast()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [images, setImages] = useState<File[]>([])
@@ -320,18 +326,18 @@ function CreateShowcaseModal({
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length + images.length > 9) {
-      alert('最多上传9张图片')
+      toast.error('最多上传9张图片')
       return
     }
 
     // 验证文件类型和大小
     const validFiles = files.filter(file => {
       if (!file.type.startsWith('image/')) {
-        alert(`${file.name} 不是图片文件`)
+        toast.error(`${file.name} 不是图片文件`)
         return false
       }
       if (file.size > 10 * 1024 * 1024) {
-        alert(`${file.name} 超过10MB限制`)
+        toast.error(`${file.name} 超过10MB限制`)
         return false
       }
       return true
@@ -356,7 +362,7 @@ function CreateShowcaseModal({
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      alert('请输入标题')
+      toast.error('请输入标题')
       return
     }
 
@@ -405,10 +411,11 @@ function CreateShowcaseModal({
       if (insertError) throw insertError
 
       setUploadProgress(100)
+      toast.success('成果发布成功')
       onSuccess()
     } catch (err) {
       console.error('发布失败:', err)
-      alert('发布失败: ' + (err instanceof Error ? err.message : '未知错误'))
+      toast.error('发布失败: ' + (err instanceof Error ? err.message : '未知错误'))
     } finally {
       setSubmitting(false)
     }

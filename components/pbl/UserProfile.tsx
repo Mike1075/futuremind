@@ -12,6 +12,7 @@ import {
   Edit3,
   BookOpen
 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
 
 interface UserProfileProps {
   user: any
@@ -19,6 +20,8 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ user, isGuest }: UserProfileProps) {
+  const toast = useToast()
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -38,7 +41,7 @@ export function UserProfile({ user, isGuest }: UserProfileProps) {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-white">个人资料</h1>
           <button
-            onClick={() => alert('编辑资料功能开发中...')}
+            onClick={() => toast.info('编辑资料功能开发中...')}
             className="btn-cosmic-outline flex items-center"
           >
             <Edit3 className="w-4 h-4 mr-2" />
@@ -92,21 +95,21 @@ export function UserProfile({ user, isGuest }: UserProfileProps) {
               <h3 className="text-lg font-semibold text-white mb-4">快速操作</h3>
               <div className="space-y-3">
                 <button
-                  onClick={() => alert('账户设置功能开发中...')}
+                  onClick={() => toast.info('账户设置功能开发中...')}
                   className="w-full flex items-center px-4 py-3 bg-cosmic-700/50 hover:bg-cosmic-700 rounded-lg text-left text-cosmic-300 hover:text-white transition-colors"
                 >
                   <Settings className="w-5 h-5 mr-3" />
                   账户设置
                 </button>
                 <button
-                  onClick={() => alert('我的收藏功能开发中...')}
+                  onClick={() => toast.info('我的收藏功能开发中...')}
                   className="w-full flex items-center px-4 py-3 bg-cosmic-700/50 hover:bg-cosmic-700 rounded-lg text-left text-cosmic-300 hover:text-white transition-colors"
                 >
                   <Star className="w-5 h-5 mr-3" />
                   我的收藏
                 </button>
                 <button
-                  onClick={() => alert('学习目标功能开发中...')}
+                  onClick={() => toast.info('学习目标功能开发中...')}
                   className="w-full flex items-center px-4 py-3 bg-cosmic-700/50 hover:bg-cosmic-700 rounded-lg text-left text-cosmic-300 hover:text-white transition-colors"
                 >
                   <Target className="w-5 h-5 mr-3" />
@@ -206,7 +209,7 @@ export function UserProfile({ user, isGuest }: UserProfileProps) {
                 <h4 className="text-lg font-medium text-white mb-2">还没有参与项目</h4>
                 <p className="text-cosmic-400 mb-4">开始探索有趣的项目，与志同道合的伙伴一起成长</p>
                 <button
-                  onClick={() => alert('探索项目功能已在探索页面')}
+                  onClick={() => toast.info('探索项目功能已在探索页面')}
                   className="btn-cosmic"
                 >
                   探索项目

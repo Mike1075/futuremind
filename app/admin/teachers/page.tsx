@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Trash2, Plus, UserCheck, ArrowLeft } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Teacher {
   id: string
@@ -14,6 +16,8 @@ interface Teacher {
 
 export default function TeachersPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
@@ -42,7 +46,7 @@ export default function TeachersPage() {
         .maybeSingle()
 
       if (!profile || profile.role !== 'principal') {
-        alert('⚠️ 只有校长可以访问教师管理')
+        toast.warning('只有校长可以访问教师管理')
         router.push('/admin')
         return
       }
@@ -88,7 +92,7 @@ export default function TeachersPage() {
     e.preventDefault()
 
     if (!newTeacherEmail.trim()) {
-      alert('请输入邮箱地址')
+      toast.warning('请输入邮箱地址')
       return
     }
 
@@ -102,33 +106,35 @@ export default function TeachersPage() {
       })
 
       if (!response.ok) {
-        alert(`❌ 添加失败 (${response.status})`)
+        toast.error(`添加失败 (${response.status})`)
         return
       }
 
       const data = await response.json()
 
       if (data.error) {
-        alert(`添加失败: ${data.error}`)
+        toast.error(`添加失败: ${data.error}`)
         return
       }
 
-      alert(`✅ 成功添加教师: ${data.teacher.email}`)
+      toast.success(`成功添加教师: ${data.teacher.email}`)
       setNewTeacherEmail('')
       setShowAddModal(false)
       await loadTeachers()
     } catch (error) {
       console.error('添加教师失败:', error)
-      alert('❌ 添加教师失败，请稍后重试')
+      toast.error('添加教师失败，请稍后重试')
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleDeleteTeacher = async (teacher: Teacher) => {
-    const confirmed = confirm(
-      `确定要移除教师「${teacher.full_name || teacher.email}」吗？\n\n该用户的角色将被改为"学员"。`
-    )
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: `确定要移除教师「${teacher.full_name || teacher.email}」吗？\n\n该用户的角色将被改为"学员"。`,
+      type: 'warning'
+    })
 
     if (!confirmed) return
 
@@ -140,7 +146,7 @@ export default function TeachersPage() {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('[删除教师] 错误响应:', errorText)
-        alert(`❌ 删除失败 (${response.status}): 请检查浏览器控制台获取详细信息`)
+        toast.error(`删除失败 (${response.status}): 请检查浏览器控制台获取详细信息`)
         return
       }
 
@@ -148,15 +154,15 @@ export default function TeachersPage() {
 
       if (data.error) {
         console.error('[删除教师] 业务错误:', data.error)
-        alert(`❌ 删除失败: ${data.error}`)
+        toast.error(`删除失败: ${data.error}`)
         return
       }
 
-      alert(`✅ 已成功移除教师: ${teacher.email}`)
+      toast.success(`已成功移除教师: ${teacher.email}`)
       await loadTeachers()
     } catch (error) {
       console.error('[删除教师] 异常:', error)
-      alert('❌ 删除失败，请稍后重试')
+      toast.error('删除失败，请稍后重试')
     }
   }
 

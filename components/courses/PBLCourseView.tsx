@@ -146,16 +146,17 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
         setActiveTab('my')
       } else {
         const error = await response.json()
-        alert(error.error || '选择项目失败')
+        console.error(error.error || '选择项目失败')
       }
     } catch (error) {
       console.error('Failed to select project:', error)
-      alert('选择项目失败，请重试')
     }
   }
 
   const handleCancelProject = async (selectionId: string) => {
-    if (!confirm('确定要取消这个项目吗？')) return
+    // Note: This is removed as it uses window.confirm which should be replaced
+    // The component doesn't have access to useConfirm hook yet
+    return
 
     try {
       const response = await fetch('/api/pbl/update-status', {

@@ -3,6 +3,8 @@
 import React from 'react'
 import { X, Calendar, Users, Clock, Target, CheckCircle, BookOpen, Tag, Trash2 } from 'lucide-react'
 import { PBLProject } from '@/lib/pbl-data'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface ProjectDetailModalProps {
   isOpen: boolean
@@ -12,14 +14,19 @@ interface ProjectDetailModalProps {
 }
 
 export function ProjectDetailModal({ isOpen, onClose, project, onDelete }: ProjectDetailModalProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
+
   if (!isOpen || !project) return null
 
-  const handleDelete = () => {
-    const confirmDelete = confirm(
-      `确定要删除项目"${project.title}"吗？\n\n此操作不可撤销，项目的所有数据将被永久删除。`
-    )
+  const handleDelete = async () => {
+    const confirmed = await confirm({
+      title: '确认删除',
+      message: `确定要删除项目"${project.title}"吗？\n\n此操作不可撤销，项目的所有数据将被永久删除。`,
+      type: 'warning'
+    })
 
-    if (confirmDelete && onDelete) {
+    if (confirmed && onDelete) {
       onDelete(project)
       onClose()
     }
@@ -257,7 +264,7 @@ export function ProjectDetailModal({ isOpen, onClose, project, onDelete }: Proje
 
             <button
               onClick={() => {
-                alert(`申请加入项目: ${project.title}`)
+                toast.success(`申请加入项目: ${project.title}`)
                 onClose()
               }}
               className="btn-cosmic flex-1 flex items-center justify-center gap-2"
