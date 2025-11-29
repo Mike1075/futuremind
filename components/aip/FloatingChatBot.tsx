@@ -242,17 +242,30 @@ export function FloatingChatBot({
       let buffer = ''
       let fullAnswer = ''
       let displayedAnswer = ''
+      let lastFullAnswerLength = 0
 
-      // 🔥 优化：直接显示，减少延迟
-      let lastUpdateTime = 0
-      const MIN_UPDATE_INTERVAL = 50 // 最小更新间隔50ms
+      // 🔥 视觉缓冲队列：用于控制显示速度（复刻Seth项目）
+      let pendingChunks: string[] = []
+      let displayInterval: ReturnType<typeof setInterval> | null = null
 
-      const updateDisplay = (content: string) => {
-        const now = Date.now()
-        // 节流：至少间隔50ms更新一次，或者内容变化较大时立即更新
-        if (now - lastUpdateTime >= MIN_UPDATE_INTERVAL || content.length - displayedAnswer.length > 20) {
-          lastUpdateTime = now
-          displayedAnswer = content
+      // 🔥 启动显示定时器（每50ms显示3个字符，实现打字机效果）
+      const startDisplayTimer = () => {
+        if (displayInterval) return
+
+        displayInterval = setInterval(() => {
+          if (pendingChunks.length === 0) {
+            if (displayedAnswer === fullAnswer && fullAnswer.length > 0) {
+              if (displayInterval) {
+                clearInterval(displayInterval)
+                displayInterval = null
+              }
+            }
+            return
+          }
+
+          // 从队列中取出内容进行显示（每次显示3个字符）
+          const chunkToDisplay = pendingChunks.shift() || ''
+          displayedAnswer += chunkToDisplay
 
           setMessages(prev => {
             const newMessages = [...prev]
@@ -265,7 +278,7 @@ export function FloatingChatBot({
             }
             return newMessages
           })
-        }
+        }, 50) // 每50ms更新一次显示
       }
 
       try {
@@ -288,11 +301,18 @@ export function FloatingChatBot({
 
               if (json.type === 'chunk') {
                 fullAnswer = json.content
-                // 🔥 直接更新显示，不再使用缓冲队列
-                updateDisplay(fullAnswer)
+
+                // 🔥 将新增内容按字符分割加入队列
+                const newContent = fullAnswer.slice(lastFullAnswerLength)
+                lastFullAnswerLength = fullAnswer.length
+
+                for (let i = 0; i < newContent.length; i += 3) {
+                  pendingChunks.push(newContent.slice(i, i + 3))
+                }
+
+                // 启动显示定时器
+                startDisplayTimer()
               } else if (json.type === 'done') {
-                // 流式传输完成，确保显示完整内容
-                updateDisplay(fullAnswer)
                 // 播放消息提示音
                 if (isNotificationSoundEnabled()) {
                   playNotificationSound('message')
@@ -304,7 +324,12 @@ export function FloatingChatBot({
           }
         }
 
-        // 最终更新消息
+        // 等待所有内容显示完成
+        while (displayedAnswer !== fullAnswer && pendingChunks.length > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+
+        // 最终更新消息（确保完整内容）
         setMessages(prev => prev.map(msg =>
           msg.id === assistantMessageId
             ? { ...msg, content: fullAnswer || '抱歉，我无法回答这个问题。' }
@@ -313,6 +338,10 @@ export function FloatingChatBot({
       } catch (error) {
         console.error('[FloatingChatBot] Stream error:', error)
         throw error
+      } finally {
+        if (displayInterval) {
+          clearInterval(displayInterval)
+        }
       }
     } catch (err) {
       console.error('发送消息失败:', err)
