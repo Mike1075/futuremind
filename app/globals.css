@@ -1399,10 +1399,11 @@ body {
 
 /* 外层容器 - 默认浅色边框，悬停时炫彩边框 */
 .portal-card-wrapper {
+  position: relative;
   padding: 2px; /* 边框宽度 */
   border-radius: 1rem;
   background: var(--course-border-color, rgba(156, 163, 175, 0.2));
-  transition: background 0.4s ease;
+  /* 不使用transition以避免背景渐变闪烁 */
 }
 
 /* 悬停时显示炫彩渐变边框 */
@@ -1452,6 +1453,8 @@ body {
   border-radius: calc(1rem - 2px);
   border: 1px solid var(--course-border-color, rgba(156, 163, 175, 0.2));
   transition: border-color 0.4s ease;
+  height: 100%; /* 确保完全填充wrapper */
+  overflow: hidden; /* 防止内容溢出 */
 }
 
 /* 悬停时只改变边框颜色为透明（让外层炫彩边框显示出来） */
