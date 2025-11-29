@@ -15,7 +15,6 @@ export default function AudioPlayer({ src, title }: AudioPlayerProps) {
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
 
   useEffect(() => {
     const audio = audioRef.current
@@ -78,12 +77,8 @@ export default function AudioPlayer({ src, title }: AudioPlayerProps) {
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
-    <div
-      className="audio-player-wrapper"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className={`audio-player-inner ${isHovered ? 'hovered' : ''}`}>
+    <div className="audio-player-wrapper">
+      <div className="audio-player-inner">
         <audio ref={audioRef} src={src} preload="metadata" />
 
         <div className="flex items-center gap-4">

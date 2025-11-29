@@ -1446,19 +1446,16 @@ body {
   animation: card-border-spin 4s linear infinite;
 }
 
-/* 内层 - 默认透明玻璃，悬停时不透明背景（遮住炫彩中间部分） */
+/* 内层 - 不透明深色背景（遮住炫彩中间部分，只露出边框） */
 .portal-card-inner {
-  background: rgba(10, 10, 31, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgb(10, 10, 31);
   border-radius: calc(1rem - 2px);
   border: 1px solid var(--course-border-color, rgba(156, 163, 175, 0.2));
-  transition: border-color 0.4s ease; /* 只有边框颜色有过渡，背景即时变化 */
+  transition: border-color 0.4s ease;
 }
 
-/* 悬停时内层变成不透明深色背景，完全遮住炫彩（背景即时变化，不闪烁） */
+/* 悬停时只改变边框颜色为透明（让外层炫彩边框显示出来） */
 .portal-card-wrapper:hover .portal-card-inner {
-  background: #0a0a1f;
   border-color: transparent;
 }
 
@@ -1632,6 +1629,4 @@ body {
   transition: all 0.3s ease;
 }
 
-.audio-player-inner.hovered {
-  background-color: rgb(15, 15, 40);
-}
+/* 悬停时背景保持不变，只有边框效果 */
