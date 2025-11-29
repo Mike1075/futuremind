@@ -56,6 +56,54 @@ types/                 # TypeScript 类型定义
 
 ## 最近完成的工作
 
+### AIP 智慧沉淀系统 V2 (2024-11-29)
+- [x] **事件驱动总结触发**：优化 `increment_message_counter` 触发器
+  - 当用户消息数达到阈值（20条）时自动触发 `summarize-user-activity`
+  - 使用 pg_net 异步调用，不阻塞主流程
+- [x] **智慧存储统一到 documents 表**（与 N8N 工作流兼容）：
+  - `title='项目智慧库'` - 项目级智慧（从聊天提取的 Q&A）
+  - `title='组织智慧库'` - 组织级智慧（聚合后的总结）
+  - N8N 聊天工作流可直接查询这些智慧
+- [x] **边缘函数部署**（事件驱动，非定时）：
+  - `project-wisdom-accumulation` - 项目聊天达30条消息时自动触发
+  - `organization-wisdom-accumulation` - 项目智慧达10条时自动触发聚合
+- [x] **数据库触发器**：
+  - `increment_project_message_counter()` - 跟踪项目聊天消息，达阈值触发智慧提取
+  - `trigger_organization_wisdom_aggregation()` - 项目智慧累积后触发组织智慧聚合
+- [x] **辅助表**：
+  - `project_message_counters` - 项目消息计数
+  - `system_config` - 存储 service_role_key（替代 vault）
+
+**关键设计**：
+- 所有智慧存储在 `documents` 表，通过 `title` 字段区分类型
+- 事件驱动而非定时任务，按实际用户活动触发
+- N8N 工作流无需修改，可直接查询智慧库
+
+### AIP 用户画像集成 (2024-11-29)
+- [x] **API 层**：修改 `app/api/aip/chat/route.ts`
+  - 并行查询 `student_summaries` 获取盖亚分析的用户画像
+  - 查询 `profiles` 获取用户名
+  - 传入 N8N：`student_profile`（画像文本）、`user_name`（用户名）
+- [x] **N8N 工作流**：修改 `1-Parse-Input-Parameters` 节点
+  - 解析新字段：`student_profile`、`user_name`、`chat_history_text`
+- [x] **N8N Prompt**：修改 `6-Final-AI-Answer` 节点
+  - 添加用户画像引用：`{{ $('1-Parse-Input-Parameters').item.json.student_profile }}`
+  - 添加用户名引用：个性化称呼
+- [x] **数据库触发器**：`trigger_aip_message_counter`
+  - AIP 聊天每 10 条消息触发 `summarize-user-activity`
+  - AIP 活动现在也能贡献到用户画像和意识树
+
+**架构闭环**：
+```
+AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activity
+    ↓                                                    ↓
+ N8N 读取 student_profile ← student_summaries 表 ← AI 更新用户画像
+```
+
+### UI 优化 (2024-11-29)
+- [x] 删除探索者联盟"欢迎回来"概览卡片（两个页面）
+- [x] 删除加载界面文字提示，只保留动画
+
 ### 系统清理与UI优化 (2024-11-29)
 - [x] 清理废弃边缘函数：删除 `proxy-gaia-dialogue`、`generate-gaia-variables`（本地代码已删除，线上需手动删除）
 - [x] 删除废弃数据库表：`gaia_context_variables`（已被 `student_summaries` 替代）

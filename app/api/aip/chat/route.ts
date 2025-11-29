@@ -64,15 +64,40 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       }
     }
 
-    // 查询最近的聊天历史作为上下文
-    logger.dbQuery('chat_history', 'SELECT')
-    const { data: chatHistory } = await supabase
-      .from('chat_history')
-      .select('content, ai_content, created_at')
-      .eq('user_id', user.id)
-      .eq('agent_type', 'member')
-      .order('created_at', { ascending: false })
-      .limit(10) // 获取最近10轮对话
+    // 并行查询：聊天历史 + 用户画像
+    logger.dbQuery('chat_history + student_summaries', 'SELECT')
+    const [chatHistoryResult, studentSummaryResult, profileResult] = await Promise.all([
+      supabase
+        .from('chat_history')
+        .select('content, ai_content, created_at')
+        .eq('user_id', user.id)
+        .eq('agent_type', 'member')
+        .order('created_at', { ascending: false })
+        .limit(10),
+      supabase
+        .from('student_summaries')
+        .select('personality_traits, learning_style, strengths, areas_for_growth')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .maybeSingle()
+    ])
+
+    const chatHistory = chatHistoryResult.data
+    const studentSummary = studentSummaryResult.data
+    const userProfile = profileResult.data
+
+    // 构建用户画像字符串（来自盖亚的分析）
+    const studentProfileText = studentSummary ? `
+用户画像（由盖亚分析生成）：
+- 性格特点：${studentSummary.personality_traits ? JSON.stringify(studentSummary.personality_traits) : '暂未分析'}
+- 学习风格：${studentSummary.learning_style || '暂未分析'}
+- 优势领域：${Array.isArray(studentSummary.strengths) ? studentSummary.strengths.join('、') : '暂未分析'}
+- 成长空间：${Array.isArray(studentSummary.areas_for_growth) ? studentSummary.areas_for_growth.join('、') : '暂未分析'}
+`.trim() : ''
 
     // 构建历史消息数组（从旧到新排序）
     const historyMessages = (chatHistory || [])
@@ -87,14 +112,19 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       messagesCount: historyMessages.length
     })
 
+    const userName = userProfile?.full_name || userProfile?.email?.split('@')[0] || '探索者'
+
     const n8nPayload = {
       chatInput,
       user_id: user.id,
+      user_name: userName,
       project_id: projectIdValue,
       project_ids: projectIdsArray,
       organization_id: organization_id || '',
       // 添加历史消息供N8N使用
-      chat_history: historyMessages
+      chat_history: historyMessages,
+      // 添加用户画像（来自盖亚的分析）
+      student_profile: studentProfileText
     }
 
     logger.debug('Calling N8N webhook', {
