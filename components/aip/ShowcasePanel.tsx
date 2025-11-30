@@ -342,6 +342,9 @@ function CreateShowcaseModal({
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
+    // 重置 input 值，允许再次选择相同的文件
+    e.target.value = ''
+
     if (files.length + images.length > 9) {
       alert('最多上传9张图片')
       return

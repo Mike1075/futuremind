@@ -216,6 +216,8 @@ export function EarthContentDetail({
     if (!e.target.files) return
 
     const filesArray = Array.from(e.target.files)
+    // 重置 input 值，允许再次选择相同的文件
+    e.target.value = ''
     const processedFiles: File[] = []
 
     // 允许的图片格式

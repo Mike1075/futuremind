@@ -328,6 +328,8 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
     if (e.target.files) {
       handleFiles(e.target.files)
     }
+    // 重置 input 值，允许再次选择相同的文件
+    e.target.value = ''
   }
 
   const allCompleted = uploadFiles.length > 0 && uploadFiles.every(f => f.status === 'success' || f.status === 'error')
