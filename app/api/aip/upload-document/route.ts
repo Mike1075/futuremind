@@ -79,11 +79,19 @@ export async function POST(request: NextRequest) {
       })
 
       const responseText = await n8nResponse.text()
+      logger.info('[AIP Upload] N8N响应', {
+        status: n8nResponse.status,
+        ok: n8nResponse.ok,
+        response: responseText.substring(0, 500) // 只记录前500字符
+      })
 
-      if (!n8nResponse.ok) {
-        logger.error('[AIP Upload] N8N返回错误', { response: responseText })
+      // 注意：N8N 使用 lastNode 模式时，即使工作流成功，
+      // 向量存储节点的响应可能不是标准 HTTP 格式
+      // 所以我们只在明确的错误状态码时才报错
+      if (n8nResponse.status >= 400 && n8nResponse.status < 500) {
+        logger.error('[AIP Upload] N8N返回客户端错误', { response: responseText })
         return NextResponse.json({
-          error: 'Processing failed'
+          error: 'Processing failed - invalid request'
         }, { status: 500 })
       }
     }
