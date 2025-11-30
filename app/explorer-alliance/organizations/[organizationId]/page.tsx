@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, Folder, Users } from 'lucide-react'
+import { ArrowLeft, Plus, Folder, Users, Briefcase } from 'lucide-react'
 import { useOrganizationProjects, useProjectTasks } from '@/lib/aip/hooks'
 import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
 import UserProfileModal from '@/components/UserProfileModal'
