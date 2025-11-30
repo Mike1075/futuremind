@@ -66,9 +66,10 @@ export async function POST(request: NextRequest) {
       n8nFormData.append('title', title)
 
       // SEC-03: N8N webhook URL必须通过环境变量配置
-      const webhookUrl = process.env.N8N_UPLOAD_WEBHOOK
+      // 探索者联盟使用专用的 AIP 上传 webhook
+      const webhookUrl = process.env.N8N_AIP_UPLOAD_WEBHOOK
       if (!webhookUrl) {
-        logger.error('[AIP Upload] N8N_UPLOAD_WEBHOOK环境变量未配置')
+        logger.error('[AIP Upload] N8N_AIP_UPLOAD_WEBHOOK环境变量未配置')
         return NextResponse.json({ error: 'Service configuration error' }, { status: 503 })
       }
 

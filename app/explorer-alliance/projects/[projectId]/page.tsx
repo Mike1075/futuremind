@@ -189,10 +189,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         throw new Error(data.error || '审核失败')
       }
 
-      alert(action === 'approve' ? '文档已通过审核' : '文档已拒绝')
       setShowRejectDialog(null)
       setRejectComment('')
-      refreshDocuments()
+      // 先刷新数据，确保用户看到更新后的状态
+      await refreshDocuments()
+      alert(action === 'approve' ? '文档已通过审核' : '文档已拒绝')
     } catch (error) {
       console.error('审核文档失败:', error)
       alert('审核失败: ' + (error instanceof Error ? error.message : '未知错误'))
