@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { MessageCircle, TreePine, Users, Shield } from 'lucide-react'
+import { MessageCircle, TreePine, Users, Shield, User, ChevronDown, LogOut, Key, Settings } from 'lucide-react'
 import GaiaDialog from '@/components/GaiaDialog'
 
 // 盖亚图标组件 - 炫彩旋转边框 + 对话气泡
@@ -32,6 +32,9 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [userName, setUserName] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -56,13 +59,17 @@ export default function Home() {
 
       if (user) {
         setIsLoggedIn(true)
+        setUserEmail(user.email || null)
+
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, name')
           .eq('id', user.id)
           .maybeSingle()
 
         const userRole = profile?.role
+        setUserName(profile?.name || null)
+
         if (userRole === 'principal' || userRole === 'teacher') {
           setIsAdmin(true)
         } else {
@@ -71,6 +78,8 @@ export default function Home() {
       } else {
         setIsLoggedIn(false)
         setIsAdmin(false)
+        setUserName(null)
+        setUserEmail(null)
       }
     } catch (error) {
       console.error('检查管理员状态失败:', error)
@@ -79,6 +88,12 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    window.location.reload()
   }
 
   const handleGaiaClick = () => {
@@ -145,24 +160,94 @@ export default function Home() {
         ))}
       </div>
 
-      {/* 登录/登出按钮 - 右上角 */}
+      {/* 左上角用户菜单 / 登录按钮 */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.5 }}
-        className="absolute top-8 right-8 z-20"
+        className="absolute top-8 left-8 z-20"
       >
         {isLoggedIn ? (
-          <button
-            onClick={async () => {
-              const supabase = createClient()
-              await supabase.auth.signOut()
-              window.location.reload()
-            }}
-            className="btn-stardust"
-          >
-            退出登录
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              onBlur={() => setTimeout(() => setIsUserMenuOpen(false), 200)}
+              className="flex items-center space-x-2 text-white hover:text-purple-200 transition-colors duration-300 group"
+            >
+              <div className="w-9 h-9 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-medium">{userName || userEmail?.split('@')[0] || '用户'}</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* 下拉菜单 */}
+            {isUserMenuOpen && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-zinc-900/95 backdrop-blur-xl border border-zinc-700 rounded-xl shadow-xl overflow-hidden z-50">
+                {/* 用户信息头部 */}
+                <div className="px-4 py-3 border-b border-zinc-700">
+                  <p className="text-sm font-medium text-white">{userName || userEmail?.split('@')[0] || '用户'}</p>
+                  <p className="text-xs text-zinc-400 truncate">{userEmail}</p>
+                </div>
+
+                {/* 菜单项 */}
+                <div className="py-2">
+                  {/* 个人资料 */}
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false)
+                      setShowProfileModal(true)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>个人资料</span>
+                  </button>
+
+                  {/* 修改密码 */}
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false)
+                      window.location.href = '/reset-password'
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+                  >
+                    <Key className="w-4 h-4" />
+                    <span>修改密码</span>
+                  </button>
+
+                  {/* 管理后台 - 仅管理员可见 */}
+                  {isAdmin && (
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false)
+                        window.location.href = '/admin'
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>管理后台</span>
+                    </button>
+                  )}
+
+                  {/* 分隔线 */}
+                  <div className="my-2 border-t border-zinc-700"></div>
+
+                  {/* 退出登录 */}
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false)
+                      handleLogout()
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>退出登录</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <button
             onClick={() => setShowAuthModal(true)}

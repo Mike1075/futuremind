@@ -346,12 +346,12 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             onClick={onClose}
           />
 
-          {/* Dialog */}
+          {/* Dialog - 透明玻璃效果 */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed inset-4 md:inset-8 lg:inset-16 bg-gradient-to-br from-purple-900/90 to-blue-900/90 backdrop-blur-md rounded-2xl border border-purple-500/30 z-50 flex flex-col"
+            className="fixed inset-4 md:inset-8 lg:inset-16 bg-cosmic-void/80 backdrop-blur-xl rounded-2xl border border-white/10 z-50 flex flex-col shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">

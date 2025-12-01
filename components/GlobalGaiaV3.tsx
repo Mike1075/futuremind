@@ -724,9 +724,9 @@ export function GlobalGaiaV3() {
 
   return (
     <>
-      {/* 浮动按钮 - 仅在对话框关闭时显示 */}
+      {/* 浮动按钮 - 炫彩旋转边框样式 */}
       {!isOpen && (
-        <button
+        <div
           onClick={() => {
             // 检查登录状态
             if (!isLoggedIn) {
@@ -735,14 +735,18 @@ export function GlobalGaiaV3() {
               setIsOpen(true)
             }
           }}
-          className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
+          className="fixed bottom-8 right-8 z-50 cursor-pointer hover:scale-110 transition-transform duration-300"
           aria-label="打开盖亚对话"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-xl opacity-60 group-hover:opacity-80 transition-opacity animate-pulse"></div>
-          <div className="relative z-10">
-            <History className="w-8 h-8 text-white" />
+          <div className="gaia-icon">
+            <div className="gaia-icon-glow" />
+            <div className="gaia-icon-border" />
+            <div className="gaia-icon-inner" />
+            <div className="gaia-icon-chat">
+              <MessageCircle strokeWidth={2.5} />
+            </div>
           </div>
-        </button>
+        </div>
       )}
 
       {/* 侧边栏对话界面 */}
