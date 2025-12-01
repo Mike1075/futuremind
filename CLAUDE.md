@@ -149,6 +149,7 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 - [x] 全局 Toast 通知系统（替代 alert）
 - [x] 全局确认对话框系统（替代 confirm）
 - [x] Portal 课程卡片炫彩边框修复（2024-12-01）
+### ✅ UI/UX 进一步优化 (2024-12-01 下午)#### 探索者联盟 AI 聊天（FloatingChatBot）- [x] 浮动按钮改为炫彩旋转边框样式（`gaia-icon`）- [x] 对话头部图标改为炫彩样式（`gaia-icon-small`）- [x] 消息图标改为炫彩样式（`gaia-icon-tiny`）- [x] 对话背景改为透明玻璃效果（`bg-cosmic-void/90 backdrop-blur-xl`）- [x] 垃圾桶按钮替换为编辑和历史记录按钮- [x] 发送按钮改为炫彩边框样式（`btn-stardust`）#### 课程内容页面资源展示- [x] 修复 `renderResources()` 语法错误（移除多余的 `</div>` 标签）- [x] 移除"📦 课程资源"标题和时长显示- [x] 资源卡片改为透明玻璃背景- [x] 统一资源图标样式（渐变背景 + 边框）#### 音频播放器样式- [x] 新增 `audio-player-glass` CSS 类- [x] 使用 `filter: invert(1) hue-rotate(180deg)` 实现深色主题
 
 ### ✅ UI 修复完成 (2024-12-01)
 以下问题在 feature 分支合并到 master 后丢失，已全部修复：
