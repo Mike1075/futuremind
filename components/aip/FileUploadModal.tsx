@@ -407,11 +407,11 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
                         'bg-zinc-800/50 hover:bg-zinc-800'
                       }`}
                     >
-                      <span className="text-lg">{fileIcon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-white truncate">{doc.title}</p>
-                          {getStatusBadge(doc.review_status)}
+                      <span className="text-lg flex-shrink-0">{fileIcon}</span>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="font-medium text-white truncate max-w-[200px]" title={doc.title}>{doc.title}</p>
+                          <span className="flex-shrink-0">{getStatusBadge(doc.review_status)}</span>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-zinc-500">
                           <span>{uploaderName}</span>
@@ -426,15 +426,15 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                         {/* 删除按钮 - 管理员或自己的文件可删除（必须已登录） */}
                         {userId && (isManager || isOwnFile) && (
                           <button
                             onClick={() => handleDeleteDocument(doc)}
-                            className="p-1 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300"
+                            className="p-2 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300"
                             title="删除"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-5 w-5" />
                           </button>
                         )}
                       </div>
