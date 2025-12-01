@@ -32,8 +32,8 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
 
   if (!courseData) {
     return (
-      <div className="min-h-screen bg-cosmic-void flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-cosmic-deep/50 to-mystic-purple/20" />
         <div className="text-center relative z-10">
           <h1 className="text-h2 text-starlight mb-4">课程不存在</h1>
           <Link
@@ -125,9 +125,9 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     : 0
 
   return (
-    <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-hidden">
-      {/* 宇宙背景渐变 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+    <div className="min-h-screen text-starlight relative overflow-hidden">
+      {/* 半透明渐变覆盖层 - 让星空背景透出 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-cosmic-deep/50 to-mystic-purple/20" />
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
         {/* 返回按钮 */}
@@ -321,8 +321,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-cosmic-void flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-cosmic-deep/50 to-mystic-purple/20" />
         <div className="loader-ethereal relative z-10"></div>
       </div>
     }>

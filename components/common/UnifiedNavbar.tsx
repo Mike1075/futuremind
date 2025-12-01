@@ -116,10 +116,12 @@ export function UnifiedNavbar({
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               onBlur={() => setTimeout(() => setIsUserMenuOpen(false), 200)}
-              className="flex items-center space-x-2 text-white hover:text-purple-200 transition-colors duration-300"
+              className="flex items-center space-x-2 text-white hover:text-purple-200 transition-colors duration-300 group"
             >
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
+              <div className="user-avatar-icon">
+                <div className="user-avatar-icon-inner">
+                  <User className="w-5 h-5 text-white" />
+                </div>
               </div>
               <span className="font-medium">{displayName}</span>
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />

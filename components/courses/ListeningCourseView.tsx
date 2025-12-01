@@ -88,9 +88,9 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
   const progressPercentage = Math.round((completedCount / contents.length) * 100)
 
   return (
-    <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-hidden">
-      {/* 宇宙背景渐变 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10 pointer-events-none" />
+    <div className="min-h-screen text-starlight relative overflow-hidden">
+      {/* 宇宙背景渐变 - 半透明以显示星空 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-cosmic-deep/60 to-mystic-purple/20 pointer-events-none" />
 
       {/* 统一导航栏 */}
       <UnifiedNavbar

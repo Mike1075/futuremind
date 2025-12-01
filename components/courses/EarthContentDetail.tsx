@@ -436,7 +436,10 @@ export function EarthContentDetail({
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen text-white relative">
+      {/* 半透明渐变覆盖层 - 让星空背景透出 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-cosmic-deep/50 to-mystic-purple/20 pointer-events-none" />
+
       {/* 统一导航栏 */}
       <UnifiedNavbar
         onOpenProfile={() => setShowProfileModal(true)}
@@ -446,7 +449,7 @@ export function EarthContentDetail({
         }}
       />
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8 relative z-10">
         {/* 内容头部 */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">

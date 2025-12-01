@@ -756,11 +756,13 @@ export function GlobalGaiaV3() {
           className="fixed inset-y-0 right-0 bg-cosmic-void/95 backdrop-blur-xl shadow-2xl z-50 flex flex-col border-l border-white/10"
           style={{ width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : `${sidebarWidth}px` }}
         >
-          {/* 拖动手柄 - 仅在桌面端显示 */}
+          {/* 拖动手柄 - 仅在桌面端显示，更明显的样式 */}
           <div
-            className="hidden md:block absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-purple-500/50 transition-colors z-10"
+            className="hidden md:flex absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:w-3 bg-white/10 hover:bg-purple-500/50 transition-all z-10 items-center justify-center group"
             onMouseDown={() => setIsResizing(true)}
-          />
+          >
+            <div className="w-0.5 h-16 bg-white/30 group-hover:bg-white/60 rounded-full transition-colors" />
+          </div>
           {/* 头部 */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-cosmic-void/50">
             <div className="flex items-center gap-3">

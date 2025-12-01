@@ -78,9 +78,9 @@ export default function ExplorerAlliancePage() {
   }, [isMounted])
 
   return (
-    <div className="min-h-screen text-starlight relative overflow-hidden bg-cosmic-void">
-      {/* Ethereal background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+    <div className="min-h-screen text-starlight relative overflow-hidden">
+      {/* 半透明渐变覆盖层 - 让星空背景透出 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-cosmic-deep/40 to-mystic-purple/20" />
 
       {/* Animated star particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">

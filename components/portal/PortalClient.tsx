@@ -15,7 +15,6 @@ import {
   Globe,
   Rocket,
   ChevronRight,
-  Sparkles,
   Atom,
   User,
   Home,
@@ -331,9 +330,8 @@ export function PortalClient({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
                 onClick={() => router.push('/portal/courses')}
-                className="w-full mt-6 btn-stardust py-4 flex items-center justify-center gap-2"
+                className="w-full mt-6 btn-stardust py-4 flex items-center justify-center"
               >
-                <Sparkles className="w-5 h-5" />
                 探索所有课程
               </motion.button>
             </motion.div>
@@ -368,13 +366,11 @@ export function PortalClient({
 
               <button
                 onClick={() => router.push('/consciousness-tree')}
-                className="w-full flex items-center justify-center p-3 bg-gradient-to-r from-red-600/20 to-orange-600/20 hover:from-red-600/30 hover:to-orange-600/30 rounded-lg border border-red-500/30 transition-all duration-300 group"
+                className="w-full btn-stardust py-3 flex items-center justify-center"
               >
-                <TreePine className="w-5 h-5 text-red-400 mr-2 group-hover:text-red-300 transition-colors" />
-                <span className="text-red-300 group-hover:text-red-200 transition-colors font-medium">
-                  查看完整意识树
-                </span>
-                <ChevronRight className="w-4 h-4 ml-2 text-red-400 group-hover:text-red-300 transition-colors" />
+                <TreePine className="w-5 h-5 mr-2" />
+                查看完整意识树
+                <ChevronRight className="w-4 h-4 ml-2" />
               </button>
             </motion.div>
           </div>
