@@ -241,67 +241,61 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 
 ---
 
-### 🚀 混合检索 + Rerank 优化 (2025-12-01) - 进行中
+### 🚀 N8N 工作流重构 - Postgres 原生节点方案 (2025-12-01) - 进行中
+
+#### 背景
+之前使用 Edge Function (`hybrid-search`) 方案遇到 **Supabase JS Client 无法正确传递 vector 类型参数** 的问题。
+现在 Postgres 凭证已配置成功，改用 N8N Postgres 节点直接执行 SQL，绕过这个限制。
 
 #### 目标
 - **响应速度**：从 7-15 秒优化到 3-5 秒
-- **检索精度**：实现真正的语义搜索 + 关键词搜索
-- **智能调用**：根据问题类型决定是否需要 Rerank
+- **检索精度**：实现向量搜索 + 全文搜索 + Rerank
+- **并行执行**：多个查询同时进行
 
-#### 技术架构
+#### 新架构
 ```
-用户问题
-    ↓
-[判断] 是否需要检索？
-    ├── 否（闲聊）→ 直接 AI 回答（2-3秒）
-    └── 是 ↓
-        混合检索（向量 + 全文）
-            ↓
-        [判断] Top1 相似度 > 0.85？
-            ├── 是 → RRF 融合结果（3-4秒）
-            └── 否 → Cohere Rerank 精排（4-5秒）
-            ↓
-        AI 生成回答
+                                    ┌─→ Postgres: 向量搜索 ───┐
+                                    │                        │
+用户消息 → OpenAI Embedding ────────┼─→ Postgres: 全文搜索 ───┼─→ Code: RRF融合
+                                    │                        │
+                                    ├─→ Postgres: 项目智慧库 ─┘
+                                    │
+                                    └─→ Postgres: 组织智慧库 ─────────┐
+                                                                      │
+                                    ┌─────────────────────────────────┘
+                                    ↓
+            RRF融合结果 → HTTP: Cohere Rerank → Code: 合并上下文 → LLM 生成回答
+                                    ↑
+                        Postgres: 用户画像 ──────────────────────────────┘
 ```
 
-#### 已完成
-- [x] **数据库准备**：
-  - 创建全文检索索引：`idx_document_chunks_content_fts`
-  - 创建向量匹配函数：`match_document_chunks()`
+#### 关键技术点
+1. **Postgres 节点**：直接执行 SQL，绕过 Supabase JS 的 vector 类型 bug
+2. **并行执行**：N8N 中从同一节点分出的多个节点自动并行
+3. **OpenAI Embeddings 节点**：N8N 内置，生成问题向量
+4. **RRF 融合**：Code 节点实现，合并向量+全文搜索结果
+5. **Cohere Rerank**：HTTP Request 调用 API 精排
 
-- [x] **Edge Function 部署**：
-  - `hybrid-search`：混合检索基础版（向量 + 全文 + RRF 融合）
-  - URL: `https://lvjezsnwesyblnlkkirz.supabase.co/functions/v1/hybrid-search`
+#### 数据表说明
+| 表名 | 内容 | 用途 |
+|------|------|------|
+| `document_chunks` | 上传文档的分块（已向量化） | 向量搜索 + 全文搜索 |
+| `documents` (title='项目智慧库') | 从聊天提取的 Q&A | 项目级知识 |
+| `documents` (title='组织智慧库') | 聚合后的组织知识 | 组织级知识 |
+| `student_summaries` | 用户画像 | 个性化回答 |
 
-- [x] **N8N 工作流配置**（探索者联盟）：
-  - HTTP Request org/pro 节点已改为调用新的搜索函数
-  - 已移除 AI Agent 的工具连接（Chain 模式）
+#### 修改步骤（分步执行）
+- [ ] **第1步**：添加 OpenAI Embeddings 节点（生成问题向量）
+- [ ] **第2步**：添加 Postgres 节点执行向量搜索
+- [ ] **第3步**：添加 Postgres 节点执行全文搜索
+- [ ] **第4步**：添加 Code 节点实现 RRF 融合
+- [ ] **第5步**：添加 Cohere Rerank（可选）
+- [ ] **第6步**：测试并验证速度
 
-#### 进行中
-- [ ] **添加 Cohere API Key 到 Supabase 环境变量**
-- [ ] **升级 Edge Function**：添加智能判断 + Cohere Rerank
-- [ ] **测试完整 RAG 流程**
-
-#### 待完成
-- [ ] **配置盖亚对话**：使用相同的混合检索方案
-
-#### 关键配置
-- **Cohere API Key**：Trial Key（免费1000次/月）
-- **OpenAI API Key**：已有 `Aixue pro` 凭证
-- **Supabase 凭证**：`Supabase futuremind`
-
-#### 技术说明
-
-**RRF vs Rerank 区别**：
-| 方法 | 原理 | 速度 | 精度 | 成本 |
-|------|------|------|------|------|
-| RRF 融合 | 数学公式合并两个排名列表 | 快 | 中 | 免费 |
-| Cohere Rerank | AI 模型逐个分析文档相关性 | 慢 0.5-1s | 高 | $2/1000次 |
-
-**智能判断策略**：
-- 闲聊/问候 → 跳过检索
-- Top1 相似度 > 0.85 → 跳过 Rerank（RRF 够用）
-- Top1 相似度 < 0.85 → 调用 Rerank 精排
+#### 参考资源
+- [N8N PGVector Vector Store 文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.vectorstorepgvector/)
+- [N8N 并行执行设计模式](https://community.n8n.io/t/how-to-excute-multiple-nodes-in-parallel-not-sequential/23565)
+- [pgvector 作为向量存储](https://tsmx.net/using-pgvector-as-vector-store-in-n8n/)
 
 ---
 

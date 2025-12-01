@@ -353,11 +353,7 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
                       e.stopPropagation()
                       toggleMessageSelection(message.id)
                     }}
-                    className={`w-5 h-5 rounded cursor-pointer transition-all ${
-                      selectedMessages.has(message.id)
-                        ? 'bg-purple-600 border-purple-600'
-                        : 'bg-transparent border-2 border-white/40'
-                    }`}
+                    className="gaia-checkbox"
                   />
                 </div>
               )}
@@ -404,11 +400,7 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
                       e.stopPropagation()
                       toggleMessageSelection(message.id)
                     }}
-                    className={`w-5 h-5 rounded cursor-pointer transition-all ${
-                      selectedMessages.has(message.id)
-                        ? 'bg-purple-600 border-purple-600'
-                        : 'bg-transparent border-2 border-white/40'
-                    }`}
+                    className="gaia-checkbox"
                   />
                 </div>
               )}

@@ -204,19 +204,28 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
         {resources.map((resource: Resource, index: number) => {
           if (resource.type === 'audio') {
             return (
-              <div key={index} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5">
-                <div className="flex items-center mb-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center mr-3 border border-purple-500/30">
-                    <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
-                    </svg>
+              <div key={index} className="audio-section-wrapper">
+                <div className="audio-section-inner p-5">
+                  <div className="flex items-center mb-4">
+                    <div className="section-icon mr-3">
+                      <div className="section-icon-glow"></div>
+                      <div className="section-icon-border"></div>
+                      <div className="section-icon-inner"></div>
+                      <div className="section-icon-content">
+                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-white">{resource.title}</h3>
                   </div>
-                  <h3 className="font-semibold text-white">{resource.title}</h3>
+                  <div className="progress-ethereal rounded-full overflow-hidden">
+                    <audio controls className="w-full audio-player-glass">
+                      <source src={resource.url} type="audio/mpeg" />
+                      您的浏览器不支持音频播放
+                    </audio>
+                  </div>
                 </div>
-                <audio controls className="w-full audio-player-glass">
-                  <source src={resource.url} type="audio/mpeg" />
-                  您的浏览器不支持音频播放
-                </audio>
               </div>
             )
           }

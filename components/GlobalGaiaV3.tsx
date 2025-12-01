@@ -889,7 +889,7 @@ export function GlobalGaiaV3() {
                               e.stopPropagation()
                               toggleMessageSelection(index)
                             }}
-                            className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-purple-600 checked:border-purple-600 border-white/40 bg-transparent"
+                            className="gaia-checkbox"
                           />
                         </div>
                       )}
@@ -932,7 +932,7 @@ export function GlobalGaiaV3() {
                               e.stopPropagation()
                               toggleMessageSelection(index)
                             }}
-                            className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-purple-600 checked:border-purple-600 border-white/40 bg-transparent"
+                            className="gaia-checkbox"
                           />
                         </div>
                       )}

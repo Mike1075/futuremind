@@ -157,15 +157,15 @@ export function EarthStageCircle({
     return icons[stageNumber - 1] || '✨'
   }
 
-  // 获取阶段颜色
+  // 获取阶段颜色 - 炫彩设计系统配色
   const getStageColor = (stageNumber: number) => {
     const colors = [
-      { from: '#10b981', to: '#059669' }, // green
-      { from: '#3b82f6', to: '#0ea5e9' }, // blue
-      { from: '#a855f7', to: '#ec4899' }, // purple
-      { from: '#f97316', to: '#ef4444' }, // orange
-      { from: '#6366f1', to: '#8b5cf6' }, // indigo
-      { from: '#eab308', to: '#f59e0b' }  // yellow
+      { from: '#FFD700', to: '#FFA500' }, // 金色 - 觉醒
+      { from: '#00FFFF', to: '#00CED1' }, // 青色 - 探索
+      { from: '#9D00FF', to: '#FF00FF' }, // 紫色 - 深层意识
+      { from: '#00FF88', to: '#10B981' }, // 绿色 - 成长
+      { from: '#FF69B4', to: '#FF1493' }, // 粉色 - 心轮能量
+      { from: '#6366F1', to: '#8B5CF6' }  // 靛蓝 - 智慧
     ]
     return colors[stageNumber - 1] || { from: '#6b7280', to: '#4b5563' }
   }
@@ -226,12 +226,13 @@ export function EarthStageCircle({
           {/* 渐变定义 */}
           <defs>
             <linearGradient id="gradient-active" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" />
-              <stop offset="100%" stopColor="#3b82f6" />
+              <stop offset="0%" stopColor="#FFD700" />
+              <stop offset="50%" stopColor="#9D00FF" />
+              <stop offset="100%" stopColor="#00FFFF" />
             </linearGradient>
             <linearGradient id="gradient-unlocked" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#6b7280" />
-              <stop offset="100%" stopColor="#4b5563" />
+              <stop offset="0%" stopColor="#4b5563" />
+              <stop offset="100%" stopColor="#374151" />
             </linearGradient>
           </defs>
 

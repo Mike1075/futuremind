@@ -1819,3 +1819,90 @@ body {
 .collapsible-section-wrapper:hover .section-icon-glow::before {
   animation-duration: 3s;
 }
+
+/* ========== 自定义Checkbox样式 - 绿色勾选 ========== */
+.gaia-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.gaia-checkbox:checked {
+  background: #22c55e;
+  border-color: #22c55e;
+}
+
+.gaia-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.gaia-checkbox:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* ========== 音频播放器炫彩边框容器 ========== */
+.audio-section-wrapper {
+  position: relative;
+  padding: 2px;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.4s ease;
+}
+
+.audio-section-wrapper:hover {
+  background: conic-gradient(
+    from var(--card-border-angle, 0deg),
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700
+  );
+  animation: card-border-spin 4s linear infinite;
+}
+
+.audio-section-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border-radius: 1rem;
+  background: conic-gradient(
+    from var(--card-border-angle, 0deg),
+    rgba(255, 215, 0, 0.4),
+    rgba(255, 107, 107, 0.4),
+    rgba(157, 0, 255, 0.4),
+    rgba(0, 255, 255, 0.4),
+    rgba(0, 255, 136, 0.4),
+    rgba(255, 215, 0, 0.4)
+  );
+  filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.audio-section-wrapper:hover::before {
+  opacity: 0.5;
+  animation: card-border-spin 4s linear infinite;
+}
+
+.audio-section-inner {
+  border-radius: calc(0.75rem - 2px);
+  background-color: rgb(10, 10, 31);
+}

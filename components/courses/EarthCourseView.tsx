@@ -210,18 +210,16 @@ export function EarthCourseView({
           </div>
 
           {/* 总体进度 */}
-          <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-gray-400">总体学习进度</span>
               <span className="text-white font-medium">{overallProgress}%</span>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-3 mb-2">
+            <div className="progress-ethereal h-3 mb-2">
               <div
-                className="bg-gradient-to-r from-green-400 via-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500 relative overflow-hidden"
+                className="progress-ethereal-bar"
                 style={{ width: `${overallProgress}%` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
-              </div>
+              />
             </div>
             <p className="text-sm text-gray-400">
               已完成 {completedContents} / {totalContents} 个单元 · {stages.filter(s => s.isUnlocked).length} / {stages.length} 个阶段已解锁
@@ -230,8 +228,7 @@ export function EarthCourseView({
         </div>
 
         {/* 圆形阶段导航 */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6 text-center">学习旅程</h2>
+        <div className="mt-4">
           <EarthStageCircle
             stages={stages}
             completionMap={completionMap}
