@@ -161,12 +161,18 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 - [x] **Portal 个性化推荐** - 移除暂未上线的"个性化推荐"区域
 - [x] **Portal 探索课程按钮** - 使用 `btn-stardust` 炫彩边框效果
 - [x] **Portal 进度条** - 使用 `progress-ethereal` 炫彩渐变样式
+- [x] **用户头像图标** - 使用 `user-avatar-icon` 炫彩旋转边框样式
+- [x] **用户资料弹窗** - 透明玻璃背景 + 炫彩保存按钮
+- [x] **GaiaDialog 图标** - 头部和消息中的盖亚图标使用炫彩样式
+- [x] **GlobalGaiaV3 侧边栏** - 透明玻璃背景 + 炫彩图标和按钮
 
 **设计系统关键样式类**：
 - `btn-stardust` - 炫彩边框按钮
 - `portal-card-wrapper` + `portal-card-inner` - 卡片炫彩边框
 - `card-glass` - 玻璃效果卡片
 - `collapsible-section-wrapper` - 折叠区域炫彩边框
+- `user-avatar-icon` + `user-avatar-icon-inner` - 用户头像炫彩边框
+- `gaia-icon` / `gaia-icon-small` / `gaia-icon-tiny` - 盖亚图标炫彩边框
 
 ### 向量知识库优化 - 父子分块实现 (2025-11-30)
 
