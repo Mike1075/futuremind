@@ -711,10 +711,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                               className="w-5 h-5 rounded border-zinc-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 bg-zinc-800 cursor-pointer"
                             />
                           )}
-                          <span className="text-3xl">{fileIcon}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-white truncate">{doc.title}</h3>
+                          <span className="text-3xl flex-shrink-0">{fileIcon}</span>
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <h3 className="font-semibold text-white truncate max-w-[180px] sm:max-w-[250px]" title={doc.title}>{doc.title}</h3>
                               {/* 审核状态标签 */}
                               {isPending && (
                                 <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-500/20 text-yellow-400 whitespace-nowrap">
@@ -737,7 +737,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                         </div>
                         {/* 重命名和删除按钮 - 管理员或自己的文件可操作 */}
                         {(isManager || isOwnFile) && !isManageMode && (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                             {/* 重命名按钮 */}
                             <button
                               onClick={() => {
