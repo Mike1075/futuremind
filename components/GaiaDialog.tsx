@@ -356,7 +356,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
               <div className="flex items-center">
-                <div className="gaia-icon-small mr-3">
+                <div className="gaia-icon gaia-icon-small mr-3">
                   <div className="gaia-icon-glow" />
                   <div className="gaia-icon-border" />
                   <div className="gaia-icon-inner" />
@@ -459,7 +459,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <div className={`max-w-[80%] ${message.isGaia ? 'order-2' : 'order-1'}`}>
                     {message.isGaia && (
                       <div className="flex items-center mb-2">
-                        <div className="gaia-icon-tiny mr-2">
+                        <div className="gaia-icon gaia-icon-tiny mr-2">
                           <div className="gaia-icon-glow" />
                           <div className="gaia-icon-border" />
                           <div className="gaia-icon-inner" />
@@ -532,7 +532,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 >
                   <div className="max-w-[80%]">
                     <div className="flex items-center mb-2">
-                      <div className="gaia-icon-tiny mr-2">
+                      <div className="gaia-icon gaia-icon-tiny mr-2">
                         <div className="gaia-icon-glow" />
                         <div className="gaia-icon-border" />
                         <div className="gaia-icon-inner" />

@@ -764,7 +764,7 @@ export function GlobalGaiaV3() {
           {/* 头部 */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-cosmic-void/50">
             <div className="flex items-center gap-3">
-              <div className="gaia-icon-small">
+              <div className="gaia-icon gaia-icon-small">
                 <div className="gaia-icon-glow" />
                 <div className="gaia-icon-border" />
                 <div className="gaia-icon-inner" />
