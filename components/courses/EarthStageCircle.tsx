@@ -151,24 +151,32 @@ export function EarthStageCircle({
   const centerX = containerSize.width / 2
   const centerY = containerSize.height / 2
 
-  // 获取阶段的图标
+  // 获取阶段的图标 - 地球课程6个感官探索阶段
   const getStageIcon = (stageNumber: number) => {
-    const icons = ['🎧', '🌊', '🧠', '👥', '🌌', '🚀']
+    const icons = ['👁️', '👂', '🧠', '🤝', '🌍', '✨']
+    // 第1阶段：视觉感知、第2阶段：听觉感知、第3阶段：思维认知
+    // 第4阶段：社交互动、第5阶段：全球视野、第6阶段：觉醒升华
     return icons[stageNumber - 1] || '✨'
   }
 
-  // 获取阶段颜色 - 炫彩设计系统配色
-  const getStageColor = (stageNumber: number) => {
-    const colors = [
-      { from: '#FFD700', to: '#FFA500' }, // 金色 - 觉醒
-      { from: '#00FFFF', to: '#00CED1' }, // 青色 - 探索
-      { from: '#9D00FF', to: '#FF00FF' }, // 紫色 - 深层意识
-      { from: '#00FF88', to: '#10B981' }, // 绿色 - 成长
-      { from: '#FF69B4', to: '#FF1493' }, // 粉色 - 心轮能量
-      { from: '#6366F1', to: '#8B5CF6' }  // 靛蓝 - 智慧
+  // 获取阶段颜色 - 脉轮七色（红橙黄绿青蓝紫）
+  const getChakraColor = (stageNumber: number) => {
+    const chakraColors = [
+      { from: '#DC2626', to: '#EF4444' }, // 第1脉轮：红色 - 根轮
+      { from: '#EA580C', to: '#F97316' }, // 第2脉轮：橙色 - 骶轮
+      { from: '#EAB308', to: '#FACC15' }, // 第3脉轮：黄色 - 太阳神经丛
+      { from: '#16A34A', to: '#22C55E' }, // 第4脉轮：绿色 - 心轮
+      { from: '#06B6D4', to: '#22D3EE' }, // 第5脉轮：青色 - 喉轮
+      { from: '#2563EB', to: '#3B82F6' }, // 第6脉轮：蓝色 - 眉心轮
+      { from: '#9333EA', to: '#A855F7' }  // 第7脉轮：紫色 - 顶轮
     ]
-    return colors[stageNumber - 1] || { from: '#6b7280', to: '#4b5563' }
+    return chakraColors[stageNumber - 1] || chakraColors[0]
   }
+  
+  // 炫彩闪烁色（用于正在学习的阶段）
+  const activeColors = [
+    '#FFD700', '#FF6B6B', '#9D00FF', '#00FFFF', '#00FF88', '#FFD700'
+  ]
 
   // 计算节点位置（从12点钟位置开始，顺时针排列）
   const getNodePosition = (index: number, total: number) => {
@@ -281,11 +289,12 @@ export function EarthStageCircle({
               stage={stage}
               position={position}
               icon={getStageIcon(stage.stageNumber)}
-              color={getStageColor(stage.stageNumber)}
+              color={getChakraColor(stage.stageNumber)}
               progress={stageProgress}
               delay={index * 0.1}
               firstContentId={firstContentId}
               systemKey={systemKey}
+              isCurrentlyLearning={stage.isUnlocked && stageProgress > 0 && stageProgress < 100}
             />
           )
         })}

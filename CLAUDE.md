@@ -241,61 +241,114 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 
 ---
 
-### 🚀 N8N 工作流重构 - Postgres 原生节点方案 (2025-12-01) - 进行中
+### 🚀 N8N 工作流重构 - Supabase Vector Store 方案 (2025-12-01) - 进行中
 
 #### 背景
-之前使用 Edge Function (`hybrid-search`) 方案遇到 **Supabase JS Client 无法正确传递 vector 类型参数** 的问题。
-现在 Postgres 凭证已配置成功，改用 N8N Postgres 节点直接执行 SQL，绕过这个限制。
+之前使用自定义 Edge Function (`hybrid-search`) 方案遇到 **Supabase JS Client 无法正确传递 vector 类型参数** 的问题。
+经过分析，发现 N8N 内置的 **Supabase Vector Store** 节点已经处理好了这个问题，不需要 Edge Function。
+
+#### 核心问题与解决
+| 问题 | 原因 | 解决方案 |
+|------|------|---------|
+| AI 不调用知识库 | Agent 模式让 AI 自己决定用不用工具 | 改用 "Get Many" 模式，强制执行搜索 |
+| 响应慢 (7-15秒) | Agent 决策 + 串行执行 | 并行执行 + 简化流程 |
+| Edge Function 报错 | Supabase JS Client bug | 使用 N8N 内置节点，不走 Edge Function |
 
 #### 目标
-- **响应速度**：从 7-15 秒优化到 3-5 秒
-- **检索精度**：实现向量搜索 + 全文搜索 + Rerank
+- **响应速度**：从 7-15 秒优化到 **3-5 秒**
+- **检索可靠性**：**保证每次都使用知识库**（不依赖 AI 决策）
 - **并行执行**：多个查询同时进行
 
-#### 新架构
+#### 新架构（混合模式：Agent + 强制检索）
 ```
-                                    ┌─→ Postgres: 向量搜索 ───┐
-                                    │                        │
-用户消息 → OpenAI Embedding ────────┼─→ Postgres: 全文搜索 ───┼─→ Code: RRF融合
-                                    │                        │
-                                    ├─→ Postgres: 项目智慧库 ─┘
-                                    │
-                                    └─→ Postgres: 组织智慧库 ─────────┐
-                                                                      │
-                                    ┌─────────────────────────────────┘
-                                    ↓
-            RRF融合结果 → HTTP: Cohere Rerank → Code: 合并上下文 → LLM 生成回答
-                                    ↑
-                        Postgres: 用户画像 ──────────────────────────────┘
+Webhook
+    ↓
+1-Parse-Input-Parameters
+    ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   并行执行（自动）                            │
+├──────────────────┬──────────────────┬───────────────────────┤
+│ Supabase Vector  │ Supabase Vector  │ Supabase 节点         │
+│ Store (项目知识) │ Store (组织知识) │ (获取用户画像)        │
+│ [Get Many 模式]  │ [Get Many 模式]  │                       │
+└──────────────────┴──────────────────┴───────────────────────┘
+         ↓                  ↓                    ↓
+                     Merge（合并）
+                          ↓
+               Code（整合为上下文文本）
+                          ↓
+                  6-Final-AI-Answer (Agent)
+                     ↓    └── Google Gemini Chat Model
+                  Code1 → If → Create a row → Respond
 ```
 
-#### 关键技术点
-1. **Postgres 节点**：直接执行 SQL，绕过 Supabase JS 的 vector 类型 bug
-2. **并行执行**：N8N 中从同一节点分出的多个节点自动并行
-3. **OpenAI Embeddings 节点**：N8N 内置，生成问题向量
-4. **RRF 融合**：Code 节点实现，合并向量+全文搜索结果
-5. **Cohere Rerank**：HTTP Request 调用 API 精排
+#### 关键设计决策
+1. **Supabase Vector Store 用 "Get Many" 模式**
+   - 不是作为 Agent 工具，而是**独立节点**
+   - 直接返回搜索结果，不依赖 AI 决策
+   - **保证每次都执行向量搜索**
+
+2. **并行执行**
+   - 从 `1-Parse-Input-Parameters` 分出多个节点
+   - N8N **自动并行**执行
+   - 总时间 = 最慢的那个，而不是累加
+
+3. **Agent 保留 Memory 功能**
+   - 但**移除**向量搜索工具
+   - 知识已经通过 "Get Many" 模式获取并放入 Prompt
+
+#### 节点说明：Supabase Vector Store
+N8N 只有一个节点叫 **"Supabase Vector Store"**，没有单独的 "Supabase Vector Search" 节点。
+工作流中看到的 "supabase vector search" 是同一个节点的重命名。
+
+**节点的 5 种模式**：
+| 模式 | 作用 | 用法 |
+|------|------|------|
+| **Get Many** | 搜索相似文档 | ✅ 独立节点，直接返回结果（本方案使用） |
+| Insert Documents | 插入文档 | 上传文档用 |
+| Retrieve (Chain/Tool) | 作为 Chain 的检索器 | 连接到 Chain |
+| Retrieve (AI Agent Tool) | 作为 Agent 的工具 | ❌ 之前的用法，AI 自己决定用不用 |
+| Update Documents | 更新文档 | 修改已有文档 |
+
+**关键改变**：从 "AI Agent Tool" 模式改为 "Get Many" 模式，保证每次都执行搜索。
+
+#### 为什么用 Supabase Vector Store 而不是 PGVector？
+| 对比项 | Supabase Vector Store | PGVector Vector Store |
+|-------|----------------------|----------------------|
+| 凭证 | Supabase API (已有) | Postgres 直连 |
+| 复杂度 | 简单 | 需要额外配置 |
+| 功能 | 完整，支持 Rerank | 完整 |
+| **结论** | ✅ **推荐使用** | 不需要 |
 
 #### 数据表说明
 | 表名 | 内容 | 用途 |
 |------|------|------|
-| `document_chunks` | 上传文档的分块（已向量化） | 向量搜索 + 全文搜索 |
+| `document_chunks` | 上传文档的分块（已向量化） | 向量搜索主表 |
 | `documents` (title='项目智慧库') | 从聊天提取的 Q&A | 项目级知识 |
 | `documents` (title='组织智慧库') | 聚合后的组织知识 | 组织级知识 |
 | `student_summaries` | 用户画像 | 个性化回答 |
 
 #### 修改步骤（分步执行）
-- [ ] **第1步**：添加 OpenAI Embeddings 节点（生成问题向量）
-- [ ] **第2步**：添加 Postgres 节点执行向量搜索
-- [ ] **第3步**：添加 Postgres 节点执行全文搜索
-- [ ] **第4步**：添加 Code 节点实现 RRF 融合
-- [ ] **第5步**：添加 Cohere Rerank（可选）
-- [ ] **第6步**：测试并验证速度
+- [ ] **第1步**：清理现有工作流，保留基础节点
+- [ ] **第2步**：添加 Supabase Vector Store 节点（项目知识）
+- [ ] **第3步**：添加 Supabase Vector Store 节点（组织知识）
+- [ ] **第4步**：添加 Supabase 节点获取用户画像
+- [ ] **第5步**：配置 Merge 和 Code 节点整合上下文
+- [ ] **第6步**：配置 Agent 节点（移除工具，优化 Prompt）
+- [ ] **第7步**：测试并验证速度
+
+#### 预估性能
+| 步骤 | 时间 |
+|------|------|
+| Embedding + 并行搜索 | ~800ms |
+| Merge + Code 整合 | ~50ms |
+| Agent 生成回答 | ~2000ms |
+| **总计** | **~3秒** |
 
 #### 参考资源
-- [N8N PGVector Vector Store 文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.vectorstorepgvector/)
-- [N8N 并行执行设计模式](https://community.n8n.io/t/how-to-excute-multiple-nodes-in-parallel-not-sequential/23565)
-- [pgvector 作为向量存储](https://tsmx.net/using-pgvector-as-vector-store-in-n8n/)
+- [N8N Supabase Vector Store 文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.vectorstoresupabase/)
+- [N8N RAG 最佳实践](https://docs.n8n.io/advanced-ai/rag-in-n8n/)
+- [N8N Agent vs Chain 对比](https://docs.n8n.io/advanced-ai/examples/agent-chain-comparison/)
 
 ---
 

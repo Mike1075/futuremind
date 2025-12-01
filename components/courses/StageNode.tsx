@@ -21,6 +21,7 @@ interface StageNodeProps {
   delay: number
   firstContentId: string | null
   systemKey: string
+  isCurrentlyLearning?: boolean  // 是否正在学习此阶段
 }
 
 export function StageNode({
@@ -37,6 +38,7 @@ export function StageNode({
 
   const isCompleted = progress === 100
   const isUnlocked = stage.isUnlocked
+  const isLearning = isUnlocked && !isCompleted && progress > 0  // 正在学习中
 
   // 节点尺寸
   const nodeSize = 60
@@ -113,21 +115,34 @@ export function StageNode({
       <motion.div
         className={`relative rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
           isUnlocked ? '' : 'opacity-40'
-        }`}
+        } ${isLearning ? 'stage-node-learning' : ''}`}
         style={{
           width: nodeSize,
           height: nodeSize,
           background: isUnlocked
             ? `linear-gradient(135deg, ${color.from}, ${color.to})`
             : 'linear-gradient(135deg, #4b5563, #374151)',
-          boxShadow: isCompleted
+          boxShadow: isLearning
+            ? `0 0 25px ${color.from}60, 0 0 50px ${color.from}30`
+            : isCompleted
             ? `0 0 20px ${color.from}40`
             : '0 4px 12px rgba(0,0,0,0.3)'
         }}
-        animate={{
-          width: nodeSize,
-          height: nodeSize
-        }}
+        animate={isLearning ? {
+          boxShadow: [
+            `0 0 20px #FFD70060, 0 0 40px #FFD70030`,
+            `0 0 25px #FF6B6B60, 0 0 50px #FF6B6B30`,
+            `0 0 25px #9D00FF60, 0 0 50px #9D00FF30`,
+            `0 0 25px #00FFFF60, 0 0 50px #00FFFF30`,
+            `0 0 25px #00FF8860, 0 0 50px #00FF8830`,
+            `0 0 20px #FFD70060, 0 0 40px #FFD70030`,
+          ],
+        } : {}}
+        transition={isLearning ? {
+          duration: 4,
+          repeat: Infinity,
+          ease: "linear"
+        } : {}}
       >
         {/* 图标 */}
         <span

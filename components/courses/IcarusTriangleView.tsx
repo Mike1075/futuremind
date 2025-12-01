@@ -32,12 +32,27 @@ interface IcarusTriangleViewProps {
   modules: Module[]
 }
 
-// 固定颜色方案 - 每个模块一种颜色
-const MODULE_COLORS = [
-  ['#10B981', '#14B8A6'],  // 模块1: emerald to teal
-  ['#3B82F6', '#06B6D4'],  // 模块2: blue to cyan
-  ['#8B5CF6', '#EC4899'],  // 模块3: purple to pink
+// 炫彩颜色方案池 - 随机选择
+const COLOR_POOL = [
+  ['#10B981', '#14B8A6'],  // emerald to teal
+  ['#3B82F6', '#06B6D4'],  // blue to cyan
+  ['#8B5CF6', '#EC4899'],  // purple to pink
+  ['#F59E0B', '#F97316'],  // amber to orange
+  ['#EF4444', '#F87171'],  // red to red-light
+  ['#6366F1', '#818CF8'],  // indigo to indigo-light
+  ['#14B8A6', '#22D3EE'],  // teal to cyan
+  ['#EC4899', '#F472B6'],  // pink to pink-light
+  ['#22C55E', '#4ADE80'],  // green to green-light
+  ['#A855F7', '#C084FC'],  // purple to purple-light
+  ['#FFD700', '#FFA500'],  // gold to orange
+  ['#00FFFF', '#00CED1'],  // cyan to dark cyan
 ]
+
+// 随机选择不重复的颜色
+const getRandomColors = (count: number) => {
+  const shuffled = [...COLOR_POOL].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, count)
+}
 
 // 计算圆周上的点位置
 const getCirclePosition = (angle: number, centerX: number, centerY: number, radius: number) => {
@@ -95,6 +110,9 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [hoveredModule, setHoveredModule] = useState<number | null>(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  
+  // 每次页面加载时随机选择颜色
+  const [moduleColors] = useState(() => getRandomColors(modules.length || 3))
 
   // 全局旋转控制 - 控制所有模块的公转和自转
   const shouldPause = activeModule !== null || selectedProject !== null
@@ -228,7 +246,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
             const isActive = activeModule === module.id
             const subRadiusVmin = 10  // 子节点距离父节点中心的半径（vmin单位，约100px）
             const angle = index * 120 // 三等分：0度、120度、240度
-            const currentColors = MODULE_COLORS[index] || MODULE_COLORS[0]
+            const currentColors = moduleColors[index] || moduleColors[0] || COLOR_POOL[0]
             const gradientString = `${currentColors[0]}, ${currentColors[1]}`
 
             // 计算节点在圆周上的精确位置（使用vmin单位，与SVG viewBox对应）
