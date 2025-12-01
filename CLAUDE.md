@@ -147,42 +147,151 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 - [x] 倾听课程地图节点优化
 - [x] 盖亚对话系统 V3.2（单对话模式）
 
-## 待办事项 - 向量知识库优化 (2024-11-30 计划)
+### 向量知识库优化 - 父子分块实现 (2025-11-30)
 
-### 当前状态分析
-- **文档数量**：4,108 条
-- **平均内容长度**：353 字符（较短）
-- **Reranker**：已启用 Cohere（topN: 6, topK: 15）
-- **问题**：缺乏上下文连贯性，检索质量有提升空间
+#### 已完成
+- [x] **父子分块架构实现**：
+  - `documents` 表存储父文档（完整文件内容）
+  - `document_chunks` 表存储子分块（向量化后的小块）
+  - 通过 `parent_document_id` 外键关联
 
-### 优化方案一：父子分块结构 (Parent-Child Chunking)
-- [ ] 创建 `document_chunks` 表（子分块）
-- [ ] 添加 `parent_document_id` 外键关联 `documents` 表
-- [ ] 修改 N8N 文档入库工作流：
-  - 存储完整文档到 `documents`（父文档）
-  - 将文档拆分为小块存储到 `document_chunks`（子分块）
-  - 子分块用于向量检索，命中后返回父文档全文
-- [ ] 修改 RAG 检索逻辑：检索子块 → 去重父ID → 返回父文档
+- [x] **N8N 文档上传工作流修复** (`aip上传文档-未来教育`)：
+  - 修复 JSON body 特殊字符问题：在 Code 节点使用 `JSON.stringify()` 预构建请求体
+  - HTTP Request 改为 "Using JSON" 模式，使用 `={{ $json.request_body }}`
+  - Default Data Loader 从 Binary 改为 JSON 模式
+  - Edit Fields 表达式从 `$json[0].id` 改为 `$json.id`
+  - 添加 metadata：`project_id`, `user_id`, `title`, `parent_document_id`, `organization_id`
 
-**优势**：保留完整上下文，检索更精准
+- [x] **数据库迁移** (`fix_document_chunks_constraints`)：
+  - 修改 `document_chunks` 表约束：`parent_document_id` 和 `chunk_index` 改为可空
+  - 创建触发器 `set_chunk_parent_document_id()`：自动从 metadata 填充独立列
 
-### 优化方案二：混合检索 (Hybrid Search)
-- [ ] 创建全文检索索引：`CREATE INDEX ON documents USING gin(to_tsvector('chinese', content))`
-- [ ] 实现 BM25 关键词匹配
-- [ ] 融合策略：向量相似度 (0.7) + BM25 (0.3) 加权合并
-- [ ] 修改 N8N RAG 节点使用混合检索
+- [x] **前端 API 修复** (`app/api/aip/upload-document/route.ts`)：
+  - 放宽 N8N 响应检查：从 `!n8nResponse.ok` 改为只检查 4xx 错误
+  - N8N 的 lastNode 模式返回格式不标准，不能简单检查 ok 属性
 
-**优势**：关键词精确匹配 + 语义理解结合
+- [x] **数据清理**：
+  - 删除 112 条 `parent_document_id` 为 null 的旧 chunks
+  - 删除重复的 documents 记录
 
-### 优化方案三：Rerank 参数调优
-- [ ] 测试不同 topK/topN 组合
-- [ ] 考虑替换为更强的 Reranker 模型
-- [ ] 添加相关性阈值过滤（score < 0.3 的结果丢弃）
+- [x] **AIP 聊天工作流修改** (`aip聊天助手-未来教育 探索者联盟`)：
+  - `supabase vector search` 节点：Table Name 从 `documents` 改为 `document_chunks`
 
-**实施顺序建议**：
-1. 先实施父子分块（影响最大）
-2. 再添加混合检索（锦上添花）
-3. 最后调优 Rerank 参数
+#### 待完成（用户需在 N8N 中手动修改）
+- [ ] **Execute a SQL query pro** 节点 SQL 修改：
+  ```sql
+  -- WHERE 条件改为同时支持独立列和 metadata
+  WHERE (project_id::text = $1 OR metadata->>'project_id' = $1)
+  ```
+- [ ] **Execute a SQL query org** 节点 SQL 修改：
+  ```sql
+  -- WHERE 条件改为同时支持独立列和 metadata
+  WHERE (organization_id::text = $1 OR metadata->>'organization_id' = $1)
+  ```
+
+**问题说明**：新上传的文档 `project_id`/`organization_id` 存储在独立列中，但 SQL 查询使用 `metadata->>'project_id'` 导致匹配不到。
+
+### AIP 聊天工作流修复 (2025-11-30)
+
+#### 已完成
+- [x] **N8N `1-Parse-Input-Parameters` 修复**：
+  - 数据获取从 `$input.first().json` 改为 `$input.first().json.body || $input.first().json`
+  - 确保正确解析 `organization_id`、`project_id` 等字段
+
+- [x] **N8N `Create a row` 节点修复**：
+  - `$('Webhook')` 改为 `$('1-Parse-Input-Parameters')`
+  - `$('6-Final-AI-Answer old')` 改为 `$('6-Final-AI-Answer')`
+
+- [x] **前端 `FloatingChatBot.tsx` 修复**：
+  - 修复 project_id 传递逻辑：只有选择项目时才传 project_id
+  - 不选项目时只传 organization_id（组织级别查询）
+
+#### 发现的问题
+- **AI Agent 没有调用工具**：N8N Logs 显示 "None of your tools were used in this run"
+- **响应慢**：7-10 秒，因为 Agent 模式有决策开销
+- **知识库未被使用**：Agent 自己决定不调用向量搜索
+
+---
+
+## 待办事项 - AI 对话优化计划 (优先级高)
+
+### 涉及的系统
+1. **探索者联盟 AIP 聊天** - N8N 工作流：`aip聊天助手-未来教育 探索者联盟`
+2. **盖亚对话** - N8N 工作流：通过 `N8N_CHAT_WEBHOOK_URL` 调用（需检查是否有同样问题）
+
+### 第一阶段：改成 Chain 模式（解决速度和知识库问题）
+
+**目标**：3-5 秒响应，保证每次都使用知识库
+
+- [ ] **重构 N8N 工作流架构**：
+  ```
+  当前（Agent 模式）：
+  用户问题 → AI Agent（自己决定调不调工具）→ 回答（7-15秒）
+
+  目标（Chain 模式）：
+  用户问题 → 并行查询（向量搜索 + 历史）→ LLM 直接生成 → 回答（3-5秒）
+  ```
+
+- [ ] **修改 N8N 节点**：
+  1. 删除或禁用 AI Agent 的工具连接
+  2. 在 AI Agent 之前添加向量搜索节点（直接执行，不是作为工具）
+  3. 把搜索结果合并到 Prompt 中
+  4. 使用 Basic LLM Chain 或简化的 Agent
+
+- [ ] **优化 Prompt 设计**：
+  ```
+  ## 回复规则
+  1. 优先参考下方知识库内容回答
+  2. 如果知识库内容不足，结合你的知识给出有帮助的回答
+  3. 保持友好、专业的探索者伙伴形象
+  4. 不需要说"知识库没有"，直接给出最佳回答即可
+
+  ## 知识库内容
+  {{ 向量搜索结果 }}
+
+  ## 用户问题
+  {{ chatInput }}
+  ```
+
+### 第二阶段：优化检索质量
+
+- [ ] **混合检索 (Hybrid Search)**：
+  - 创建全文检索索引：`CREATE INDEX ON documents USING gin(to_tsvector('chinese', content))`
+  - 实现 BM25 关键词匹配
+  - 融合策略：向量相似度 (0.7) + BM25 (0.3) 加权合并
+
+- [ ] **Rerank 参数调优**：
+  - 测试不同 topK/topN 组合（当前：topK=15, topN=6）
+  - 添加相关性阈值过滤（score < 0.3 的结果丢弃）
+
+### 第三阶段：监控和调试
+
+- [ ] **添加知识库命中率监控**：
+  - 记录每次查询的向量搜索结果数量
+  - 记录 Rerank 后的结果数量和分数
+  - 方便后续调优
+
+---
+
+## 技术说明
+
+### Agent 模式 vs Chain 模式
+
+| 对比项 | Agent 模式 | Chain 模式 |
+|-------|-----------|-----------|
+| 决策方式 | AI 自己决定调用哪些工具 | 预定义流程，每步必执行 |
+| 工具调用 | 可能 0-N 次，不确定 | 固定调用，可预测 |
+| 速度 | 慢（7-20秒） | 快（3-5秒） |
+| 可控性 | 低 | 高 |
+| 适用场景 | 复杂任务需要多轮推理 | 固定流程的问答 |
+
+### 向量搜索原理
+
+1. 用户问题转换为向量（embedding）
+2. 在数据库中找"最相似"的向量（余弦相似度）
+3. 返回 Top K 个结果（不管相不相关，总会返回）
+4. Reranker 重新排序，过滤不相关内容
+5. LLM 判断搜索结果是否有用，生成回答
 
 ---
 

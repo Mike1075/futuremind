@@ -99,6 +99,21 @@ export function PortalClient({
     }
   }
 
+  // 获取课程边框颜色（用于炫彩边框效果）
+  const getCourseBorderColor = (systemKey: string) => {
+    switch (systemKey) {
+      case 'listening':
+        return 'rgba(168, 85, 247, 0.4)' // 紫色
+      case 'earth':
+        return 'rgba(34, 197, 94, 0.4)' // 绿色
+      case 'icarus':
+      case 'pbl':
+        return 'rgba(249, 115, 22, 0.4)' // 橙色
+      default:
+        return 'rgba(156, 163, 175, 0.3)' // 灰色
+    }
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background particles - 减少数量提升性能 */}
@@ -255,42 +270,45 @@ export function PortalClient({
                 <div className="space-y-4">
                   {enrolledCourses.map((course, index) => {
                     const Icon = getCourseIcon(course.course_system_key)
-                    const gradient = getCourseGradient(course.course_system_key)
+                    const borderColor = getCourseBorderColor(course.course_system_key)
                     return (
                       <motion.div
                         key={course.course_id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className={`bg-gradient-to-br ${gradient} rounded-xl p-6 border hover:scale-[1.02] transition-transform cursor-pointer`}
+                        className="portal-card-wrapper cursor-pointer"
                         onClick={() => router.push(`/courses/${course.course_system_key}`)}
+                        style={{ '--course-border-color': borderColor } as React.CSSProperties}
                       >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center">
-                            <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4">
-                              <Icon className="w-6 h-6 text-white" />
+                        <div className="portal-card-inner p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center">
+                              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4 border border-white/20">
+                                <Icon className="w-6 h-6 text-white" />
+                              </div>
+                              <div>
+                                <h4 className="text-lg font-semibold text-white">{course.course_title}</h4>
+                                <p className="text-sm text-gray-400">
+                                  开始时间: {new Date(course.assigned_at).toLocaleDateString('zh-CN')}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="text-lg font-semibold text-white">{course.course_title}</h4>
-                              <p className="text-sm text-gray-300">
-                                开始时间: {new Date(course.assigned_at).toLocaleDateString('zh-CN')}
-                              </p>
-                            </div>
+                            <ChevronRight className="w-5 h-5 text-white/60" />
                           </div>
-                          <ChevronRight className="w-5 h-5 text-white/60" />
-                        </div>
 
-                        {/* 进度条 */}
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm text-gray-300">学习进度</span>
-                            <span className="text-sm text-white font-medium">{course.progress}%</span>
-                          </div>
-                          <div className="w-full bg-white/10 rounded-full h-2">
-                            <div
-                              className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${course.progress}%` }}
-                            ></div>
+                          {/* 进度条 */}
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-sm text-gray-400">学习进度</span>
+                              <span className="text-sm text-white font-medium">{course.progress}%</span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-2">
+                              <div
+                                className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${course.progress}%` }}
+                              ></div>
+                            </div>
                           </div>
                         </div>
                       </motion.div>

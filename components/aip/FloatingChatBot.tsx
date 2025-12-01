@@ -207,15 +207,22 @@ export function FloatingChatBot({
         organizationId = 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
       }
 
+      // 构建请求参数
+      const requestBody: Record<string, any> = {
+        chatInput: userMessage.content,
+        organization_id: organizationId
+      }
+
+      // 🔥 只有当选择了项目时才传 project_id（避免传空数组）
+      if (selectedProjects.length > 0) {
+        requestBody.project_id = projectIdValue
+      }
+
       // 调用流式API
       const response = await fetch('/api/aip/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chatInput: userMessage.content,
-          project_id: projectIdValue,
-          organization_id: organizationId
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
