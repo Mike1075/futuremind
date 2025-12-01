@@ -156,6 +156,9 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 - [x] **首页用户菜单样式** - 右上角登录/登出按钮，使用 `btn-stardust` 炫彩效果
 - [x] **首页按钮样式** - 所有按钮使用 `btn-stardust` 炫彩边框效果
 - [x] **盖亚对话框样式** - 使用 `useToast` 和 `useConfirm` 替代原生对话框
+- [x] **Portal 个性化推荐** - 移除暂未上线的"个性化推荐"区域
+- [x] **Portal 探索课程按钮** - 使用 `btn-stardust` 炫彩边框效果
+- [x] **Portal 进度条** - 使用 `progress-ethereal` 炫彩渐变样式
 
 **设计系统关键样式类**：
 - `btn-stardust` - 炫彩边框按钮
