@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, MessageCircle, Edit3, Trash2, Check } from 'lucide-react'
+import { X, Send, MessageCircle, Edit3, Trash2, Check, History } from 'lucide-react'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
@@ -407,11 +407,11 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                       <Edit3 className="w-4 h-4" /> 编辑
                     </button>
                     <button
-                      onClick={handleClearHistory}
-                      className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2"
-                      title="清除所有聊天记录"
+                      onClick={loadChatHistory}
+                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
+                      title="刷新历史记录"
                     >
-                      清除记录
+                      <History className="w-4 h-4" /> 历史记录
                     </button>
                   </>
                 )}
