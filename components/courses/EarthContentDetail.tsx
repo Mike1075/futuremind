@@ -454,7 +454,7 @@ export function EarthContentDetail({
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
             {isCompleted && (
-              <span className="px-3 py-1 bg-green-500/20 text-green-400 text-sm rounded-full font-medium">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border border-green-500/30 text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-400">
                 ✓ 已完成
               </span>
             )}
@@ -658,12 +658,12 @@ export function EarthContentDetail({
             </div>
 
             {/* 进度条 */}
-            <div className="relative h-3 bg-gray-800 rounded-full overflow-hidden mb-6">
+            <div className="progress-ethereal relative h-3 rounded-full overflow-hidden mb-6">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${stageProgress}%` }}
                 transition={{ duration: 1, ease: "easeOut" }}
-                className="h-full bg-gradient-to-r from-green-500 via-emerald-500 to-cyan-500 relative"
+                className="h-full progress-ethereal-bar relative"
               >
                 {/* 进度条光效 */}
                 <motion.div

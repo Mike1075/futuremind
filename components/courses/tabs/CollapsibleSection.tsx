@@ -26,30 +26,32 @@ export function CollapsibleSection({
 
   return (
     <div className="mb-8">
-      {/* 可点击的标题栏 */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between gap-3 p-4 bg-gray-900/50 border border-gray-800 rounded-xl hover:border-gray-700 transition-all group"
-      >
-        <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-xl ${iconBgClass} flex items-center justify-center text-2xl shadow-lg`}>
-            {icon}
-          </div>
-          <div className="text-left">
-            <h2 className="text-xl font-bold text-white">{title}</h2>
-            {subtitle && (
-              <p className="text-sm text-gray-400">{subtitle}</p>
-            )}
-          </div>
-        </div>
-        <motion.div
-          animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.3 }}
-          className="flex-shrink-0"
+      {/* 可点击的标题栏 - 炫彩边框效果 */}
+      <div className="collapsible-section-wrapper">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="collapsible-section-inner w-full flex items-center justify-between gap-3 p-4 bg-white/5 backdrop-blur-sm rounded-xl transition-all group"
         >
-          <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-white transition-colors" />
-        </motion.div>
-      </button>
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-xl ${iconBgClass} flex items-center justify-center text-2xl shadow-lg border border-white/20`}>
+              {icon}
+            </div>
+            <div className="text-left">
+              <h2 className="text-xl font-bold text-white">{title}</h2>
+              {subtitle && (
+                <p className="text-sm text-gray-400">{subtitle}</p>
+              )}
+            </div>
+          </div>
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+            className="flex-shrink-0"
+          >
+            <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-white transition-colors" />
+          </motion.div>
+        </button>
+      </div>
 
       {/* 可折叠内容区域 */}
       <AnimatePresence initial={false}>

@@ -210,7 +210,7 @@ export function KnowledgeSectionV2({
 
   if (knowledgePoints.length === 0) {
     return (
-      <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-12 text-center">
+      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-12 text-center">
         <Lightbulb className="w-12 h-12 text-gray-600 mx-auto mb-3" />
         <p className="text-gray-500">本阶段暂无知识点</p>
       </div>
@@ -228,7 +228,7 @@ export function KnowledgeSectionV2({
           return (
             <div
               key={index}
-              className="bg-gray-900/50 border border-gray-800 rounded-lg overflow-hidden hover:border-green-500/50 transition-all"
+              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-green-500/50 transition-all"
             >
               {/* 知识点 */}
               <div
@@ -238,7 +238,7 @@ export function KnowledgeSectionV2({
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20 text-green-400 text-sm font-bold">
+                      <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-green-500/30 to-emerald-500/30 text-green-400 border border-green-500/30 text-sm font-bold">
                         {index + 1}
                       </span>
                       <span className="text-xs text-gray-500 uppercase font-medium tracking-wider">
@@ -267,7 +267,7 @@ export function KnowledgeSectionV2({
 
               {/* 盖亚的问题 */}
               {isExpanded && questionData && (
-                <div className="border-t border-gray-800 bg-purple-900/10 p-5">
+                <div className="border-t border-white/10 bg-purple-500/10 backdrop-blur-sm p-5">
                   <div className="flex items-start gap-3 mb-3">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                       <Sparkles className="w-4 h-4 text-white" />
@@ -289,7 +289,7 @@ export function KnowledgeSectionV2({
 
                   <button
                     onClick={() => handleClickQuestion(questionData.question, index)}
-                    className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                    className="w-full mt-4 btn-stardust flex items-center justify-center gap-2 px-4 py-3"
                   >
                     <MessageSquare className="w-4 h-4" />
                     {questionData.hasResponded ? '继续探讨' : '与盖亚深入探讨'}
