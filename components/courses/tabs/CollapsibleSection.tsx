@@ -9,7 +9,7 @@ interface CollapsibleSectionProps {
   title: string
   subtitle?: string
   icon: ReactNode
-  iconBgClass: string
+  iconBgClass?: string // 保留接口兼容，但不再使用
   children: ReactNode
   defaultExpanded?: boolean
 }
@@ -33,8 +33,14 @@ export function CollapsibleSection({
           className="collapsible-section-inner w-full flex items-center justify-between gap-3 p-4 bg-white/5 backdrop-blur-sm rounded-xl transition-all group"
         >
           <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-xl ${iconBgClass} flex items-center justify-center text-2xl shadow-lg border border-white/20`}>
-              {icon}
+            {/* 炫彩图标 - 无底色，只有炫彩边框 */}
+            <div className="section-icon">
+              <div className="section-icon-glow"></div>
+              <div className="section-icon-border"></div>
+              <div className="section-icon-inner"></div>
+              <div className="section-icon-content">
+                {icon}
+              </div>
             </div>
             <div className="text-left">
               <h2 className="text-xl font-bold text-white">{title}</h2>

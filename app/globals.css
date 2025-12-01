@@ -1544,6 +1544,7 @@ body {
 /* ========== 折叠区域炫彩边框 ========== */
 /* 标题栏wrapper */
 .collapsible-section-wrapper {
+  border-radius: 0.75rem;
   position: relative;
   padding: 2px;
   background: rgba(255, 255, 255, 0.1);
@@ -1712,3 +1713,109 @@ body {
 }
 
 /* 悬停时背景保持不变，只有边框效果 */
+
+/* ========== Section炫彩图标 ========== */
+/* 圆形炫彩边框图标 - 类似盖亚图标 */
+.section-icon {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+/* 炫彩旋转边框 */
+.section-icon-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.75rem;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.section-icon-border::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700
+  );
+  animation: section-icon-rotate 6s linear infinite;
+}
+
+@keyframes section-icon-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 发光效果 */
+.section-icon-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 0.75rem;
+  z-index: 1;
+  overflow: hidden;
+  filter: blur(8px);
+  opacity: 0.4;
+}
+
+.section-icon-glow::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0.5),
+    rgba(255, 107, 107, 0.5),
+    rgba(157, 0, 255, 0.5),
+    rgba(0, 255, 255, 0.5),
+    rgba(0, 255, 136, 0.5),
+    rgba(255, 215, 0, 0.5)
+  );
+  animation: section-icon-rotate 6s linear infinite;
+}
+
+/* 内部黑色背景 */
+.section-icon-inner {
+  position: absolute;
+  inset: 2px;
+  border-radius: calc(0.75rem - 2px);
+  background: #000;
+  z-index: 3;
+}
+
+/* 图标内容 */
+.section-icon-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  font-size: 1.25rem;
+}
+
+.section-icon-content svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+/* 悬停效果 */
+.collapsible-section-wrapper:hover .section-icon-glow {
+  opacity: 0.7;
+  filter: blur(10px);
+}
+
+.collapsible-section-wrapper:hover .section-icon-border::before {
+  animation-duration: 3s;
+}
+
+.collapsible-section-wrapper:hover .section-icon-glow::before {
+  animation-duration: 3s;
+}
