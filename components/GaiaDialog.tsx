@@ -5,6 +5,8 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send, Sparkles, Edit3, Trash2, Check } from 'lucide-react'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 /**
  * GaiaDialog - 盖亚对话弹窗组件
@@ -17,6 +19,8 @@ interface GaiaDialogProps {
 }
 
 export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [userId, setUserId] = useState<string | 'guest'>('guest')
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID())
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -270,7 +274,15 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   const deleteSelectedMessages = async () => {
     if (selectedMessages.size === 0) return
 
-    if (!confirm(`确定要删除选中的 ${selectedMessages.size} 条消息吗？`)) return
+    const confirmed = await confirm({
+      title: '删除消息',
+      message: `确定要删除选中的 ${selectedMessages.size} 条消息吗？`,
+      type: 'warning',
+      confirmText: '删除',
+      cancelText: '取消'
+    })
+
+    if (!confirmed) return
 
     try {
       const newMessages = messages.filter(m => !selectedMessages.has(m.id))
@@ -279,14 +291,23 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       setSelectedMessages(new Set())
       setIsEditMode(false)
       window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
+      toast.success('消息已删除')
     } catch {
-      alert('删除消息失败，请重试')
+      toast.error('删除消息失败，请重试')
     }
   }
 
   // 清空所有聊天记录
   const handleClearHistory = async () => {
-    if (!confirm('确定要清除所有聊天记录吗？')) return
+    const confirmed = await confirm({
+      title: '清除聊天记录',
+      message: '确定要清除所有聊天记录吗？此操作不可撤销。',
+      type: 'warning',
+      confirmText: '清除',
+      cancelText: '取消'
+    })
+
+    if (!confirmed) return
 
     try {
       const result = await GaiaAPI.clearChatHistory()
@@ -303,11 +324,12 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         }])
         // 通知其他组件
         window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
+        toast.success('聊天记录已清除')
       } else {
-        alert('清除聊天记录失败: ' + result.error)
+        toast.error('清除聊天记录失败: ' + result.error)
       }
     } catch {
-      alert('清除聊天记录时发生错误')
+      toast.error('清除聊天记录时发生错误')
     }
   }
 
