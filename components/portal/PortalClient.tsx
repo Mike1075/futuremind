@@ -297,15 +297,15 @@ export function PortalClient({
                             <ChevronRight className="w-5 h-5 text-white/60" />
                           </div>
 
-                          {/* 进度条 */}
+                          {/* 进度条 - 使用炫彩进度条样式 */}
                           <div>
                             <div className="flex justify-between items-center mb-2">
                               <span className="text-sm text-gray-400">学习进度</span>
                               <span className="text-sm text-white font-medium">{course.progress}%</span>
                             </div>
-                            <div className="w-full bg-white/20 rounded-full h-2">
+                            <div className="progress-ethereal">
                               <div
-                                className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full transition-all duration-300"
+                                className="progress-ethereal-bar"
                                 style={{ width: `${course.progress}%` }}
                               ></div>
                             </div>
@@ -323,40 +323,17 @@ export function PortalClient({
                 </div>
               )}
 
-              {/* 探索所有课程按钮 */}
+              {/* 探索所有课程按钮 - 使用炫彩边框效果 */}
               <motion.button
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
                 onClick={() => router.push('/portal/courses')}
-                className="w-full mt-6 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-medium transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
+                className="w-full mt-6 btn-stardust py-4 flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-5 h-5" />
                 探索所有课程
               </motion.button>
-            </motion.div>
-
-            {/* 个性化推荐（预留位置） */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gradient-to-br from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl p-8 border border-purple-400/30"
-            >
-              <div className="flex items-center mb-4">
-                <Sparkles className="w-6 h-6 text-purple-400 mr-3" />
-                <h3 className="text-xl font-semibold text-white">个性化推荐</h3>
-              </div>
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-8 h-8 text-purple-400" />
-                </div>
-                <p className="text-gray-300 mb-2">AI 个性化推荐</p>
-                <p className="text-sm text-gray-400">基于您的学习轨迹，为您推荐最适合的探索路径</p>
-                <div className="mt-4 px-4 py-2 bg-purple-500/20 rounded-lg inline-block">
-                  <span className="text-sm text-purple-300">即将上线...</span>
-                </div>
-              </div>
             </motion.div>
           </div>
 
