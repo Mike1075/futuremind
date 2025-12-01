@@ -192,7 +192,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     )
   }
 
-  // 渲染资源（音频、视频等）
+  // 渲染资源（音频、视频等）- 简化样式，只保留标题
   const renderResources = () => {
     if (!content.resources) return null
 
@@ -200,77 +200,70 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     if (resources.length === 0) return null
 
     return (
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-green-400">📦 课程资源</h2>
-        <div className="space-y-4">
-          {resources.map((resource: Resource, index: number) => {
-            if (resource.type === 'audio') {
-              return (
-                <div key={index} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
-                  <div className="flex items-center mb-3">
-                    <svg className="w-6 h-6 text-green-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+      <section className="mb-8 space-y-4">
+        {resources.map((resource: Resource, index: number) => {
+          if (resource.type === 'audio') {
+            return (
+              <div key={index} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center mr-3 border border-purple-500/30">
+                    <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
                     </svg>
-                    <div>
-                      <h3 className="font-semibold text-white">{resource.title}</h3>
-                      {resource.duration && (
-                        <p className="text-sm text-gray-400">时长: {resource.duration}</p>
-                      )}
-                    </div>
                   </div>
-                  <audio controls className="w-full">
-                    <source src={resource.url} type="audio/mpeg" />
-                    您的浏览器不支持音频播放
-                  </audio>
+                  <h3 className="font-semibold text-white">{resource.title}</h3>
                 </div>
-              )
-            }
+                <audio controls className="w-full audio-player-glass">
+                  <source src={resource.url} type="audio/mpeg" />
+                  您的浏览器不支持音频播放
+                </audio>
+              </div>
+            )
+          }
 
-            if (resource.type === 'video') {
-              return (
-                <div key={index} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
-                  <div className="flex items-center mb-3">
-                    <svg className="w-6 h-6 text-purple-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+          if (resource.type === 'video') {
+            return (
+              <div key={index} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-lg flex items-center justify-center mr-3 border border-blue-500/30">
+                    <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                     </svg>
-                    <div>
-                      <h3 className="font-semibold text-white">{resource.title}</h3>
-                      {resource.duration && (
-                        <p className="text-sm text-gray-400">时长: {resource.duration}</p>
-                      )}
-                    </div>
                   </div>
-                  <video controls className="w-full rounded-lg">
-                    <source src={resource.url} type="video/mp4" />
-                    您的浏览器不支持视频播放
-                  </video>
+                  <h3 className="font-semibold text-white">{resource.title}</h3>
                 </div>
-              )
-            }
+                <video controls className="w-full rounded-lg">
+                  <source src={resource.url} type="video/mp4" />
+                  您的浏览器不支持视频播放
+                </video>
+              </div>
+            )
+          }
 
-            if (resource.type === 'pdf' || resource.type === 'document') {
-              return (
-                <div key={index} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center hover:bg-gray-800 transition-colors rounded-lg p-3"
-                  >
-                    <svg className="w-6 h-6 text-blue-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+          if (resource.type === 'pdf' || resource.type === 'document') {
+            return (
+              <div key={index} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5">
+                <a
+                  href={resource.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center hover:bg-white/5 transition-colors rounded-lg p-2"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-lg flex items-center justify-center mr-3 border border-orange-500/30">
+                    <svg className="w-5 h-5 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
                     </svg>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-white">{resource.title}</h3>
-                      <p className="text-sm text-gray-400">{resource.type === 'pdf' ? 'PDF文档' : '文档'}</p>
-                    </div>
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </a>
-                </div>
-              )
-            }
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-white">{resource.title}</h3>
+                  </div>
+                  <svg className="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            )
+          }
 
             // 通用链接资源
             return (
@@ -295,7 +288,6 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
               </div>
             )
           })}
-        </div>
       </section>
     )
   }

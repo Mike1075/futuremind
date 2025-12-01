@@ -51,6 +51,7 @@ export function FloatingChatBot({
   // 初始化时预选当前项目
   useEffect(() => {
     if (currentProject) {
+      console.log('[FloatingChatBot] 自动勾选项目:', currentProject.id, currentProject.name)
       setSelectedProjects([currentProject.id])
     }
   }, [currentProject])
@@ -180,7 +181,8 @@ export function FloatingChatBot({
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('未登录')
 
-      // 构建project_id参数
+      // 构建project_id参数（完全尊重用户的勾选选择）
+      console.log('[FloatingChatBot] 发送消息时 selectedProjects:', selectedProjects, 'currentProject:', currentProject?.id)
       const projectIdValue = selectedProjects.length === 1 ? selectedProjects[0] : selectedProjects
 
       // 获取organization_id：多层兜底逻辑
@@ -213,7 +215,7 @@ export function FloatingChatBot({
         organization_id: organizationId
       }
 
-      // 🔥 只有当选择了项目时才传 project_id（避免传空数组）
+      // 🔥 只有当用户勾选了项目时才传 project_id
       if (selectedProjects.length > 0) {
         requestBody.project_id = projectIdValue
       }
@@ -411,16 +413,15 @@ export function FloatingChatBot({
       <div className="fixed bottom-12 right-12 z-40">
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group border-0 outline-none"
+          className="gaia-icon group"
           title="AI智能助手"
-          style={{
-            width: '72px',
-            height: '72px',
-            minWidth: '72px',
-            minHeight: '72px'
-          }}
         >
-          <History className="w-8 h-8 flex-shrink-0 group-hover:scale-110 transition-transform" />
+          <div className="gaia-icon-glow" />
+          <div className="gaia-icon-border" />
+          <div className="gaia-icon-inner" />
+          <div className="gaia-icon-chat">
+            <Bot strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
+          </div>
         </button>
       </div>
     )
@@ -428,16 +429,21 @@ export function FloatingChatBot({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-4xl h-[600px] flex flex-col">
+      <div className="bg-cosmic-void/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl w-full max-w-4xl h-[600px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
-              <Bot className="h-5 w-5 text-blue-400" />
+            <div className="gaia-icon gaia-icon-small">
+              <div className="gaia-icon-glow" />
+              <div className="gaia-icon-border" />
+              <div className="gaia-icon-inner" />
+              <div className="gaia-icon-chat">
+                <Bot strokeWidth={2.5} />
+              </div>
             </div>
             <div>
               <h3 className="font-semibold text-white">AI智能助手</h3>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-zinc-400">
                 {selectedProjects.length > 0
                   ? `已选择 ${selectedProjects.length} 个项目`
                   : '选择项目以获得更精准的回答'}
@@ -448,22 +454,45 @@ export function FloatingChatBot({
             {showProjectSelector && (
               <button
                 onClick={() => setShowProjectPanel(!showProjectPanel)}
-                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white"
                 title="选择项目"
               >
                 <FolderOpen className="h-5 w-5" />
               </button>
             )}
             <button
-              onClick={handleClearChat}
-              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
-              title="清空聊天"
+              onClick={() => {
+                // 编辑模式 - 暂时使用清空功能
+                handleClearChat()
+              }}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white"
+              title="编辑"
             >
-              <Trash2 className="h-5 w-5" />
+              <Edit3 className="h-5 w-5" />
+            </button>
+            <button
+              onClick={async () => {
+                // 重新加载历史记录
+                setIsLoadingHistory(true)
+                try {
+                  const result = await aipChatAPI.loadChatHistory()
+                  if (result.success && result.data?.messages) {
+                    setMessages(result.data.messages)
+                  }
+                } catch (error) {
+                  console.error('加载历史记录失败:', error)
+                } finally {
+                  setIsLoadingHistory(false)
+                }
+              }}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white"
+              title="历史记录"
+            >
+              <History className="h-5 w-5" />
             </button>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white"
             >
               <X className="h-5 w-5" />
             </button>
@@ -474,9 +503,9 @@ export function FloatingChatBot({
         <div className="flex-1 flex overflow-hidden">
           {/* Project Selector Panel */}
           {showProjectPanel && showProjectSelector && (
-            <div className="w-72 border-r border-zinc-800 flex flex-col">
+            <div className="w-72 border-r border-white/10 flex flex-col bg-white/5">
               {/* Panel Header */}
-              <div className="p-4 border-b border-zinc-800">
+              <div className="p-4 border-b border-white/10">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold text-white">我的项目</h4>
                   <button
@@ -573,8 +602,13 @@ export function FloatingChatBot({
                   className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.role === 'assistant' && (
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-500/20 rounded-lg border border-blue-500/30 flex items-center justify-center">
-                      <Bot className="w-4 h-4 text-blue-400" />
+                    <div className="gaia-icon gaia-icon-tiny flex-shrink-0">
+                      <div className="gaia-icon-glow" />
+                      <div className="gaia-icon-border" />
+                      <div className="gaia-icon-inner" />
+                      <div className="gaia-icon-chat">
+                        <Bot strokeWidth={2.5} />
+                      </div>
                     </div>
                   )}
 
@@ -608,12 +642,17 @@ export function FloatingChatBot({
 
                 {isLoading && (
                 <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-500/20 rounded-lg border border-blue-500/30 flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-blue-400" />
+                  <div className="gaia-icon gaia-icon-tiny flex-shrink-0">
+                    <div className="gaia-icon-glow" />
+                    <div className="gaia-icon-border" />
+                    <div className="gaia-icon-inner" />
+                    <div className="gaia-icon-chat">
+                      <Bot strokeWidth={2.5} />
+                    </div>
                   </div>
-                  <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-3">
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-3">
                     <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                      <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
                       <span className="text-sm text-zinc-400">正在思考...</span>
                     </div>
                   </div>
@@ -640,12 +679,12 @@ export function FloatingChatBot({
                   }}
                   placeholder="输入您的问题..."
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-colors disabled:opacity-50"
                 />
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-stardust px-4 py-2 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="h-4 w-4" />
                 </button>

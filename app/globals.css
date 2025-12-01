@@ -434,6 +434,22 @@ body {
   color: var(--color-starlight);
 }
 
+/* ========== 音频播放器玻璃样式 ========== */
+.audio-player-glass {
+  filter: invert(1) hue-rotate(180deg);
+  border-radius: 8px;
+  opacity: 0.9;
+}
+
+.audio-player-glass::-webkit-media-controls-panel {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.audio-player-glass::-webkit-media-controls-current-time-display,
+.audio-player-glass::-webkit-media-controls-time-remaining-display {
+  color: white;
+}
+
 /* ========== 星空动画关键帧 (高性能CSS驱动) ========== */
 @keyframes move-twinkle {
   from { transform: translateY(0); }
