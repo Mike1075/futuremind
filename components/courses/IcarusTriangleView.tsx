@@ -32,26 +32,64 @@ interface IcarusTriangleViewProps {
   modules: Module[]
 }
 
-// 炫彩颜色方案池 - 随机选择
-const COLOR_POOL = [
-  ['#10B981', '#14B8A6'],  // emerald to teal
-  ['#3B82F6', '#06B6D4'],  // blue to cyan
-  ['#8B5CF6', '#EC4899'],  // purple to pink
-  ['#F59E0B', '#F97316'],  // amber to orange
-  ['#EF4444', '#F87171'],  // red to red-light
-  ['#6366F1', '#818CF8'],  // indigo to indigo-light
-  ['#14B8A6', '#22D3EE'],  // teal to cyan
-  ['#EC4899', '#F472B6'],  // pink to pink-light
-  ['#22C55E', '#4ADE80'],  // green to green-light
-  ['#A855F7', '#C084FC'],  // purple to purple-light
-  ['#FFD700', '#FFA500'],  // gold to orange
-  ['#00FFFF', '#00CED1'],  // cyan to dark cyan
-]
+// 按色相分组的颜色池 - 确保选择的颜色在视觉上完全不同
+const COLOR_GROUPS = {
+  red: [
+    ['#EF4444', '#F87171'],
+    ['#DC2626', '#EF4444'],
+    ['#F43F5E', '#FB7185'],
+  ],
+  orange: [
+    ['#F59E0B', '#FBBF24'],
+    ['#F97316', '#FB923C'],
+    ['#EA580C', '#F97316'],
+  ],
+  yellow: [
+    ['#EAB308', '#FACC15'],
+    ['#FFD700', '#FFA500'],
+    ['#CA8A04', '#EAB308'],
+  ],
+  green: [
+    ['#10B981', '#34D399'],
+    ['#22C55E', '#4ADE80'],
+    ['#16A34A', '#22C55E'],
+  ],
+  cyan: [
+    ['#06B6D4', '#22D3EE'],
+    ['#14B8A6', '#2DD4BF'],
+    ['#00D4FF', '#00B4D8'],
+  ],
+  blue: [
+    ['#3B82F6', '#60A5FA'],
+    ['#2563EB', '#3B82F6'],
+    ['#0EA5E9', '#38BDF8'],
+  ],
+  purple: [
+    ['#8B5CF6', '#A78BFA'],
+    ['#A855F7', '#C084FC'],
+    ['#9333EA', '#A855F7'],
+  ],
+  pink: [
+    ['#EC4899', '#F472B6'],
+    ['#D946EF', '#E879F9'],
+    ['#DB2777', '#EC4899'],
+  ],
+}
 
-// 随机选择不重复的颜色
+// 从不同色相组中随机选择颜色，确保颜色完全不同
 const getRandomColors = (count: number) => {
-  const shuffled = [...COLOR_POOL].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, count)
+  const groupNames = Object.keys(COLOR_GROUPS) as (keyof typeof COLOR_GROUPS)[]
+  const shuffledGroups = [...groupNames].sort(() => Math.random() - 0.5)
+  
+  const result: string[][] = []
+  for (let i = 0; i < count && i < shuffledGroups.length; i++) {
+    const groupName = shuffledGroups[i]
+    const group = COLOR_GROUPS[groupName]
+    const randomIndex = Math.floor(Math.random() * group.length)
+    result.push(group[randomIndex])
+  }
+  
+  return result
 }
 
 // 计算圆周上的点位置
@@ -246,7 +284,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
             const isActive = activeModule === module.id
             const subRadiusVmin = 10  // 子节点距离父节点中心的半径（vmin单位，约100px）
             const angle = index * 120 // 三等分：0度、120度、240度
-            const currentColors = moduleColors[index] || moduleColors[0] || COLOR_POOL[0]
+            const currentColors = moduleColors[index] || moduleColors[0] || COLOR_GROUPS.blue[0]
             const gradientString = `${currentColors[0]}, ${currentColors[1]}`
 
             // 计算节点在圆周上的精确位置（使用vmin单位，与SVG viewBox对应）

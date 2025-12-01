@@ -498,7 +498,20 @@ export function EarthContentDetail({
           contentId={content.id}
         />
 
-        {/* 3. 核心知识点 */}
+        {/* 3. 观看中思考 */}
+        <DuringWatchThinking
+          questions={socraticQuestions.during_watch || []}
+          contentId={content.id}
+        />
+
+        {/* 4. 观看后思考 */}
+        <PostWatchThinking
+          questions={socraticQuestions.post_watch || []}
+          reflections={postReflection}
+          contentId={content.id}
+        />
+
+        {/* 5. 核心知识点 */}
         {knowledgePoints.length > 0 && (
           <CollapsibleSection
             title="核心知识点 Knowledge Points"
@@ -512,19 +525,6 @@ export function EarthContentDetail({
             />
           </CollapsibleSection>
         )}
-
-        {/* 4. 观看中思考 */}
-        <DuringWatchThinking
-          questions={socraticQuestions.during_watch || []}
-          contentId={content.id}
-        />
-
-        {/* 5. 观看后思考 */}
-        <PostWatchThinking
-          questions={socraticQuestions.post_watch || []}
-          reflections={postReflection}
-          contentId={content.id}
-        />
 
         {/* 6. 小探险家项目 */}
         {explorerProjects.length > 0 && (

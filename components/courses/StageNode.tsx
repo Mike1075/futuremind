@@ -3,6 +3,21 @@
 
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
+import { Eye, Ear, Brain, Users, Globe, Sparkles } from 'lucide-react'
+
+// 获取阶段对应的矢量图标
+const getStageIconComponent = (stageNumber: number) => {
+  const iconProps = { className: "w-6 h-6", strokeWidth: 2 }
+  switch(stageNumber) {
+    case 1: return <Eye {...iconProps} />
+    case 2: return <Ear {...iconProps} />
+    case 3: return <Brain {...iconProps} />
+    case 4: return <Users {...iconProps} />
+    case 5: return <Globe {...iconProps} />
+    case 6: return <Sparkles {...iconProps} />
+    default: return <Sparkles {...iconProps} />
+  }
+}
 
 interface Stage {
   stageNumber: number
@@ -111,17 +126,17 @@ export function StageNode({
         </defs>
       </svg>
 
-      {/* 主节点 */}
+      {/* 主节点 - 透明背景 + 彩色边框 */}
       <motion.div
-        className={`relative rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
+        className={`relative rounded-full flex items-center justify-center font-bold ${
           isUnlocked ? '' : 'opacity-40'
         } ${isLearning ? 'stage-node-learning' : ''}`}
         style={{
           width: nodeSize,
           height: nodeSize,
-          background: isUnlocked
-            ? `linear-gradient(135deg, ${color.from}, ${color.to})`
-            : 'linear-gradient(135deg, #4b5563, #374151)',
+          background: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(8px)',
+          border: `3px solid ${isUnlocked ? color.from : '#4b5563'}`,
           boxShadow: isLearning
             ? `0 0 25px ${color.from}60, 0 0 50px ${color.from}30`
             : isCompleted
@@ -129,6 +144,7 @@ export function StageNode({
             : '0 4px 12px rgba(0,0,0,0.3)'
         }}
         animate={isLearning ? {
+          borderColor: ['#FFD700', '#FF6B6B', '#9D00FF', '#00FFFF', '#00FF88', '#FFD700'],
           boxShadow: [
             `0 0 20px #FFD70060, 0 0 40px #FFD70030`,
             `0 0 25px #FF6B6B60, 0 0 50px #FF6B6B30`,
@@ -144,13 +160,13 @@ export function StageNode({
           ease: "linear"
         } : {}}
       >
-        {/* 图标 */}
-        <span
+        {/* 矢量图标 */}
+        <div
           className="transition-all duration-300"
-          style={{ fontSize: iconSize }}
+          style={{ color: isUnlocked ? color.from : '#6b7280' }}
         >
-          {icon}
-        </span>
+          {getStageIconComponent(stage.stageNumber)}
+        </div>
 
         {/* 完成标识 */}
         {isCompleted && (
