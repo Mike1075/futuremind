@@ -241,114 +241,169 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 
 ---
 
-### 🚀 N8N 工作流重构 - Supabase Vector Store 方案 (2025-12-01) - 进行中
+### 🚀 N8N 工作流重构 - 向量搜索 + Hybrid Search (2025-12-01) - 进行中
 
-#### 背景
-之前使用自定义 Edge Function (`hybrid-search`) 方案遇到 **Supabase JS Client 无法正确传递 vector 类型参数** 的问题。
-经过分析，发现 N8N 内置的 **Supabase Vector Store** 节点已经处理好了这个问题，不需要 Edge Function。
+#### 第一阶段：基础向量搜索优化 ✅ 已完成
 
-#### 核心问题与解决
-| 问题 | 原因 | 解决方案 |
-|------|------|---------|
-| AI 不调用知识库 | Agent 模式让 AI 自己决定用不用工具 | 改用 "Get Many" 模式，强制执行搜索 |
-| 响应慢 (7-15秒) | Agent 决策 + 串行执行 | 并行执行 + 简化流程 |
-| Edge Function 报错 | Supabase JS Client bug | 使用 N8N 内置节点，不走 Edge Function |
+##### 已完成配置
+- [x] **Vector-项目知识** 节点配置：
+  - Operation Mode: Get Many
+  - Table Name: `document_chunks`
+  - Limit: 10
+  - Metadata Filter: `project_id` = `{{ $('1-Parse-Input-Parameters').item.json.project_id }}`
+  - Include Metadata: ✅ 开启
+  - Rerank Results: ✅ 开启（连接 Reranker Cohere1）
 
-#### 目标
-- **响应速度**：从 7-15 秒优化到 **3-5 秒**
-- **检索可靠性**：**保证每次都使用知识库**（不依赖 AI 决策）
-- **并行执行**：多个查询同时进行
+- [x] **Vector-组织知识** 节点配置：
+  - Operation Mode: Get Many
+  - Table Name: `document_chunks`
+  - Limit: 10
+  - Metadata Filter: `organization_id` = `{{ $('1-Parse-Input-Parameters').item.json.organization_id }}`
+  - Include Metadata: ✅ 开启
+  - Rerank Results: ✅ 开启（连接 Reranker Cohere）
 
-#### 新架构（混合模式：Agent + 强制检索）
+- [x] **Reranker Cohere** 节点配置（两个）：
+  - Model: `rerank-multilingual-v3.0`（支持中文）
+  - Top N: 6
+
+- [x] **获取用户画像** 节点：从 `student_summaries` 表获取
+
+- [x] **合并搜索结果** (Merge 节点)：3个输入
+
+- [x] **整合上下文** (Code 节点)：整合项目知识、组织知识、用户画像
+
+- [x] **6-Final-AI-Answer** (Agent 节点)：优化后的 Prompt
+
+##### 当前工作流架构
+```
+Webhook
+    ↓
+Code (调试) → 1-Parse-Input-Parameters
+    ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   并行执行                                   │
+├──────────────────────────┬──────────────────┬───────────────┤
+│ Embeddings OpenAI        │                  │               │
+│        ↓                 │                  │               │
+│ Vector-项目知识          │ Embeddings OpenAI│ 获取用户画像  │
+│ (Metadata Filter:        │        ↓         │               │
+│  project_id)             │ Vector-组织知识  │               │
+│        ↓                 │ (Metadata Filter:│               │
+│ Reranker Cohere1         │  organization_id)│               │
+│                          │        ↓         │               │
+│                          │ Reranker Cohere  │               │
+└──────────────────────────┴──────────────────┴───────────────┘
+                    ↓
+              合并搜索结果 (Merge)
+                    ↓
+              整合上下文 (Code)
+                    ↓
+              6-Final-AI-Answer (Agent + Gemini)
+                    ↓
+              Code1 → If → Create a row → Respond to Webhook
+```
+
+#### 第二阶段：Hybrid Search（混合检索）🚧 待实现
+
+##### 什么是 Hybrid Search？
+混合检索 = **向量搜索** + **全文搜索**，结合两种方法的优点：
+
+| 搜索方式 | 原理 | 优点 | 缺点 |
+|---------|------|------|------|
+| **向量搜索** | 语义相似度 | 搜"苹果手机"能找到"iPhone" | 对编号、代码不敏感 |
+| **全文搜索** | 关键词匹配 | 精确匹配"ISO-16220" | 不理解语义 |
+| **混合搜索** | 两者融合 | 取长补短，更精准 | 需要额外开发 |
+
+##### 为什么需要 Hybrid Search？
+- 用户问："ISO 16220 标准是什么？"
+- **纯向量搜索**：可能返回"国际标准"相关内容，但不一定是 ISO 16220
+- **混合搜索**：全文搜索精确匹配"ISO 16220"，排在第一位
+
+##### 实现方案
+
+**N8N 没有内置 Hybrid Search**，需要创建 Supabase RPC 函数：
+
+1. **数据库准备**：
+   ```sql
+   -- 在 document_chunks 表添加全文搜索列
+   ALTER TABLE document_chunks ADD COLUMN fts tsvector
+     GENERATED ALWAYS AS (to_tsvector('chinese', content)) STORED;
+
+   -- 创建全文搜索索引
+   CREATE INDEX document_chunks_fts_idx ON document_chunks USING gin(fts);
+   ```
+
+2. **创建 `hybrid_search` RPC 函数**：
+   ```sql
+   CREATE OR REPLACE FUNCTION hybrid_search(
+     query_embedding vector(1536),
+     query_text text,
+     filter_project_id uuid DEFAULT NULL,
+     filter_organization_id uuid DEFAULT NULL,
+     match_count int DEFAULT 10,
+     full_text_weight float DEFAULT 0.3,
+     semantic_weight float DEFAULT 0.7,
+     rrf_k int DEFAULT 60
+   )
+   RETURNS TABLE (
+     id uuid,
+     content text,
+     metadata jsonb,
+     similarity float
+   )
+   ```
+
+   函数逻辑：
+   - 执行向量搜索（余弦相似度）
+   - 执行全文搜索（tsvector）
+   - 使用 RRF (Reciprocal Rank Fusion) 融合两个结果
+   - 按 project_id 或 organization_id 过滤
+   - 返回融合后的 Top K 结果
+
+3. **修改 N8N 工作流**：
+   - 保留 Embeddings OpenAI 节点
+   - 用 **HTTP Request** 节点替换 Vector Store 节点
+   - 调用 Supabase RPC: `POST /rest/v1/rpc/hybrid_search`
+
+##### 新架构（Hybrid Search 版本）
 ```
 Webhook
     ↓
 1-Parse-Input-Parameters
     ↓
+Embeddings OpenAI (生成 query embedding)
+    ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                   并行执行（自动）                            │
-├──────────────────┬──────────────────┬───────────────────────┤
-│ Supabase Vector  │ Supabase Vector  │ Supabase 节点         │
-│ Store (项目知识) │ Store (组织知识) │ (获取用户画像)        │
-│ [Get Many 模式]  │ [Get Many 模式]  │                       │
-└──────────────────┴──────────────────┴───────────────────────┘
-         ↓                  ↓                    ↓
-                     Merge（合并）
-                          ↓
-               Code（整合为上下文文本）
-                          ↓
-                  6-Final-AI-Answer (Agent)
-                     ↓    └── Google Gemini Chat Model
-                  Code1 → If → Create a row → Respond
+│                   并行执行                                   │
+├────────────────────────┬────────────────────┬───────────────┤
+│ HTTP Request           │ HTTP Request       │ Supabase      │
+│ hybrid_search          │ hybrid_search      │ 获取用户画像  │
+│ (项目知识)             │ (组织知识)         │               │
+│ ↓                      │ ↓                  │               │
+│ Reranker Cohere1       │ Reranker Cohere    │               │
+└────────────────────────┴────────────────────┴───────────────┘
+                    ↓
+              Merge（合并）
+                    ↓
+            Code（整合上下文）
+                    ↓
+            6-Final-AI-Answer
+                    ↓
+            Create a row → Respond
 ```
 
-#### 关键设计决策
-1. **Supabase Vector Store 用 "Get Many" 模式**
-   - 不是作为 Agent 工具，而是**独立节点**
-   - 直接返回搜索结果，不依赖 AI 决策
-   - **保证每次都执行向量搜索**
-
-2. **并行执行**
-   - 从 `1-Parse-Input-Parameters` 分出多个节点
-   - N8N **自动并行**执行
-   - 总时间 = 最慢的那个，而不是累加
-
-3. **Agent 保留 Memory 功能**
-   - 但**移除**向量搜索工具
-   - 知识已经通过 "Get Many" 模式获取并放入 Prompt
-
-#### 节点说明：Supabase Vector Store
-N8N 只有一个节点叫 **"Supabase Vector Store"**，没有单独的 "Supabase Vector Search" 节点。
-工作流中看到的 "supabase vector search" 是同一个节点的重命名。
-
-**节点的 5 种模式**：
-| 模式 | 作用 | 用法 |
-|------|------|------|
-| **Get Many** | 搜索相似文档 | ✅ 独立节点，直接返回结果（本方案使用） |
-| Insert Documents | 插入文档 | 上传文档用 |
-| Retrieve (Chain/Tool) | 作为 Chain 的检索器 | 连接到 Chain |
-| Retrieve (AI Agent Tool) | 作为 Agent 的工具 | ❌ 之前的用法，AI 自己决定用不用 |
-| Update Documents | 更新文档 | 修改已有文档 |
-
-**关键改变**：从 "AI Agent Tool" 模式改为 "Get Many" 模式，保证每次都执行搜索。
-
-#### 为什么用 Supabase Vector Store 而不是 PGVector？
-| 对比项 | Supabase Vector Store | PGVector Vector Store |
-|-------|----------------------|----------------------|
-| 凭证 | Supabase API (已有) | Postgres 直连 |
-| 复杂度 | 简单 | 需要额外配置 |
-| 功能 | 完整，支持 Rerank | 完整 |
-| **结论** | ✅ **推荐使用** | 不需要 |
-
-#### 数据表说明
-| 表名 | 内容 | 用途 |
-|------|------|------|
-| `document_chunks` | 上传文档的分块（已向量化） | 向量搜索主表 |
-| `documents` (title='项目智慧库') | 从聊天提取的 Q&A | 项目级知识 |
-| `documents` (title='组织智慧库') | 聚合后的组织知识 | 组织级知识 |
-| `student_summaries` | 用户画像 | 个性化回答 |
-
-#### 修改步骤（分步执行）
-- [ ] **第1步**：清理现有工作流，保留基础节点
-- [ ] **第2步**：添加 Supabase Vector Store 节点（项目知识）
-- [ ] **第3步**：添加 Supabase Vector Store 节点（组织知识）
-- [ ] **第4步**：添加 Supabase 节点获取用户画像
-- [ ] **第5步**：配置 Merge 和 Code 节点整合上下文
-- [ ] **第6步**：配置 Agent 节点（移除工具，优化 Prompt）
-- [ ] **第7步**：测试并验证速度
-
-#### 预估性能
-| 步骤 | 时间 |
-|------|------|
-| Embedding + 并行搜索 | ~800ms |
-| Merge + Code 整合 | ~50ms |
-| Agent 生成回答 | ~2000ms |
-| **总计** | **~3秒** |
+##### 实现步骤
+- [ ] **步骤 1**：创建数据库迁移 - 添加 `fts` 列和索引
+- [ ] **步骤 2**：创建 `hybrid_search` RPC 函数
+- [ ] **步骤 3**：修改 N8N - 用 HTTP Request 替换 Vector Store 节点
+- [ ] **步骤 4**：测试 Hybrid Search 效果
+- [ ] **步骤 5**：对比纯向量搜索 vs 混合搜索的效果
 
 #### 参考资源
 - [N8N Supabase Vector Store 文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.vectorstoresupabase/)
+- [Hybrid RAG Trick for AI Agents](https://www.theaiautomators.com/hybrid-rag-trick-for-more-ai-agents-reliability/)
+- [Supabase Hybrid Search 讨论](https://github.com/orgs/supabase/discussions/29712)
 - [N8N RAG 最佳实践](https://docs.n8n.io/advanced-ai/rag-in-n8n/)
-- [N8N Agent vs Chain 对比](https://docs.n8n.io/advanced-ai/examples/agent-chain-comparison/)
 
 ---
 
@@ -358,52 +413,20 @@ N8N 只有一个节点叫 **"Supabase Vector Store"**，没有单独的 "Supabas
 1. **探索者联盟 AIP 聊天** - N8N 工作流：`aip聊天助手-未来教育 探索者联盟`
 2. **盖亚对话** - N8N 工作流：通过 `N8N_CHAT_WEBHOOK_URL` 调用（需检查是否有同样问题）
 
-### 第一阶段：改成 Chain 模式（解决速度和知识库问题）
+### ✅ 第一阶段：基础向量搜索优化（已完成）
 
-**目标**：3-5 秒响应，保证每次都使用知识库
+- [x] 配置 Vector Store Metadata Filter（按 project_id/organization_id 过滤）
+- [x] 配置 Cohere Reranker（rerank-multilingual-v3.0，Top N=6）
+- [x] 工作流架构：并行执行 + 强制检索（不依赖 AI 决策）
 
-- [ ] **重构 N8N 工作流架构**：
-  ```
-  当前（Agent 模式）：
-  用户问题 → AI Agent（自己决定调不调工具）→ 回答（7-15秒）
+### 🚧 第二阶段：Hybrid Search（混合检索）- 进行中
 
-  目标（Chain 模式）：
-  用户问题 → 并行查询（向量搜索 + 历史）→ LLM 直接生成 → 回答（3-5秒）
-  ```
+- [ ] 创建数据库迁移 - 添加全文搜索列和索引
+- [ ] 创建 `hybrid_search` RPC 函数
+- [ ] 修改 N8N 工作流 - 用 HTTP Request 调用 RPC
+- [ ] 测试并验证效果
 
-- [ ] **修改 N8N 节点**：
-  1. 删除或禁用 AI Agent 的工具连接
-  2. 在 AI Agent 之前添加向量搜索节点（直接执行，不是作为工具）
-  3. 把搜索结果合并到 Prompt 中
-  4. 使用 Basic LLM Chain 或简化的 Agent
-
-- [ ] **优化 Prompt 设计**：
-  ```
-  ## 回复规则
-  1. 优先参考下方知识库内容回答
-  2. 如果知识库内容不足，结合你的知识给出有帮助的回答
-  3. 保持友好、专业的探索者伙伴形象
-  4. 不需要说"知识库没有"，直接给出最佳回答即可
-
-  ## 知识库内容
-  {{ 向量搜索结果 }}
-
-  ## 用户问题
-  {{ chatInput }}
-  ```
-
-### 第二阶段：优化检索质量
-
-- [ ] **混合检索 (Hybrid Search)**：
-  - 创建全文检索索引：`CREATE INDEX ON documents USING gin(to_tsvector('chinese', content))`
-  - 实现 BM25 关键词匹配
-  - 融合策略：向量相似度 (0.7) + BM25 (0.3) 加权合并
-
-- [ ] **Rerank 参数调优**：
-  - 测试不同 topK/topN 组合（当前：topK=15, topN=6）
-  - 添加相关性阈值过滤（score < 0.3 的结果丢弃）
-
-### 第三阶段：监控和调试
+### ⏳ 第三阶段：监控和调试
 
 - [ ] **添加知识库命中率监控**：
   - 记录每次查询的向量搜索结果数量
