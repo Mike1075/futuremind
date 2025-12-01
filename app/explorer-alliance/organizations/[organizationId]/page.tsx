@@ -399,7 +399,7 @@ export default function OrganizationDashboardPage() {
             <div className="flex items-center justify-end gap-3 mb-6">
               <button
                 onClick={() => setShowCreateProject(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium"
+                className="flex items-center gap-2 px-5 py-2.5 text-white rounded-lg transition-all duration-300 text-sm font-medium bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40"
               >
                 <Plus className="w-4 h-4" />
                 创建项目

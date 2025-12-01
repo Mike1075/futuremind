@@ -151,6 +151,29 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 - [x] Portal 课程卡片炫彩边框修复（2024-12-01）
 ### ✅ UI/UX 进一步优化 (2024-12-01 下午)#### 探索者联盟 AI 聊天（FloatingChatBot）- [x] 浮动按钮改为炫彩旋转边框样式（`gaia-icon`）- [x] 对话头部图标改为炫彩样式（`gaia-icon-small`）- [x] 消息图标改为炫彩样式（`gaia-icon-tiny`）- [x] 对话背景改为透明玻璃效果（`bg-cosmic-void/90 backdrop-blur-xl`）- [x] 垃圾桶按钮替换为编辑和历史记录按钮- [x] 发送按钮改为炫彩边框样式（`btn-stardust`）#### 课程内容页面资源展示- [x] 修复 `renderResources()` 语法错误（移除多余的 `</div>` 标签）- [x] 移除"📦 课程资源"标题和时长显示- [x] 资源卡片改为透明玻璃背景- [x] 统一资源图标样式（渐变背景 + 边框）#### 音频播放器样式- [x] 新增 `audio-player-glass` CSS 类- [x] 使用 `filter: invert(1) hue-rotate(180deg)` 实现深色主题
 
+### ✅ UI 修复与文档管理优化 (2024-12-01 晚)
+
+#### Bug 修复
+- [x] **删除文档"显示失败但实际删除"问题**：
+  - 文件：`components/aip/FileUploadModal.tsx:241-315`
+  - 原因：RPC 返回 void 被错误当作失败
+  - 修复：检查 `chunksError.code !== 'PGRST116'`，使用更简单的删除查询
+
+#### UI 布局修复
+- [x] **文档标题过长挤掉按钮**：
+  - 文件：`app/explorer-alliance/projects/[projectId]/page.tsx:704-740`
+  - 修复：标题最大宽度改为 `max-w-[120px] sm:max-w-[150px] lg:max-w-[180px]`
+  - 添加 `flex-wrap` 和 `flex-shrink-0` 确保按钮不被挤掉
+
+#### 按钮样式优化
+- [x] **社区项目按钮**：
+  - 文件：`components/aip/ProjectGrid.tsx:257-283`
+  - "申请加入"：`bg-gradient-to-r from-blue-600 to-cyan-600` + 发光阴影
+  - "进入项目"：`bg-gradient-to-r from-emerald-600 to-green-600` + 发光阴影
+- [x] **创建项目按钮**：
+  - 文件：`app/explorer-alliance/organizations/[organizationId]/page.tsx:400-406`
+  - 渐变背景 + 发光阴影效果
+
 ### ✅ UI 修复完成 (2024-12-01)
 以下问题在 feature 分支合并到 master 后丢失，已全部修复：
 
@@ -305,80 +328,50 @@ Code (调试) → 1-Parse-Input-Parameters
 
 #### 第二阶段：Hybrid Search（混合检索）🚧 进行中
 
+##### ⚠️ N8N Metadata Filter Bug（2024-12 确认仍存在）
+
+**问题**：N8N Supabase Vector Store 节点的 Metadata Filter 在 "Get Many" 模式下**不生效**
+- [GitHub Issue #21271](https://github.com/n8n-io/n8n/issues/21271)：确认 filter 参数没有被发送到 Supabase
+- [社区报告](https://community.n8n.io/t/impossible-to-filter-a-supabase-vector-store-via-metadata/75895)：多人遇到同样问题
+- 状态：标记为 "in linear"，但尚未修复
+
+**影响**：配置的 `project_id` / `organization_id` 过滤器无效，向量搜索会返回所有文档
+
 ##### 什么是 Hybrid Search？
 混合检索 = **向量搜索** + **全文搜索**，结合两种方法的优点：
 
-| 搜索方式 | 原理 | 优点 | 缺点 |
-|---------|------|------|------|
-| **向量搜索** | 语义相似度 | 搜"苹果手机"能找到"iPhone" | 对编号、代码不敏感 |
-| **全文搜索** | 关键词匹配 | 精确匹配"ISO-16220" | 不理解语义 |
-| **混合搜索** | 两者融合 | 取长补短，更精准 | 需要额外开发 |
+| 搜索方式 | 原理 | 优点 | 缺点 | 速度 |
+|---------|------|------|------|------|
+| **向量搜索** | 语义相似度 | 搜"苹果手机"能找到"iPhone" | 对编号、代码不敏感 | ~3秒 |
+| **全文搜索** | 关键词匹配 | 精确匹配"ISO-16220" | 不理解语义 | ~0.3秒 |
+| **混合搜索** | RRF 融合 | 取长补短，更精准 | 需要额外开发 | ~3秒（并行） |
 
-##### 为什么需要 Hybrid Search？
-- 用户问："ISO 16220 标准是什么？"
-- **纯向量搜索**：可能返回"国际标准"相关内容，但不一定是 ISO 16220
-- **混合搜索**：全文搜索精确匹配"ISO 16220"，排在第一位
+##### 为什么需要 Hybrid Search？（同时解决 Metadata Filter Bug）
 
-##### 方案对比与选择
+1. **精准度提升**：
+   - 纯向量搜索可能把"苹果公司"和"苹果水果"混淆
+   - 混合搜索：全文精确匹配 + 向量语义理解 = 更精准
 
-**N8N 没有内置 Hybrid Search**，有两种实现方案：
+2. **绕过 N8N Bug**：
+   - 用 **Postgres 节点** 替代 Vector Store 节点
+   - Postgres 节点的 SQL 可以正常使用 WHERE 条件过滤
+   - 同时实现 Hybrid Search 和 Metadata 过滤
 
-| 对比项 | 方案 A（N8N 并行节点）✅ 已选择 | 方案 B（RPC 函数）备选 |
-|--------|-------------------------------|----------------------|
-| **改动量** | 小（只添加节点） | 大（替换现有节点） |
-| **风险** | ✅ 低 | ⚠️ 中等 |
-| **已配置的节点** | ✅ 全部保留 | ❌ 需要替换 |
-| **正确度** | 相同（底层算法一样） | 相同 |
-| **速度** | ~2.8-3.2秒 | ~3.0-3.4秒 |
-| **灵活性** | ✅ 高（可单独调试） | 中（逻辑在函数里） |
+##### 方案对比与推荐
 
-**选择方案 A 的原因**：
-1. 保留已配置好的 Vector Store + Reranker 节点
-2. 风险更低，出问题容易回滚
-3. 速度略快（并行执行）
-4. 更灵活，可以单独调试向量搜索或全文搜索
+| 对比项 | 方案 A（废弃）<br>N8N 并行节点 | 方案 B（推荐）✅<br>Postgres + RPC |
+|--------|-------------------------------|-----------------------------------|
+| **Metadata Filter** | ❌ 不生效（N8N Bug） | ✅ SQL WHERE 正常工作 |
+| **速度** | ~3秒 | ~3秒（并行执行） |
+| **精准度** | ❌ 返回所有文档 | ✅ 只返回目标项目/组织文档 |
+| **实现复杂度** | 低 | 中（需要创建 RPC 函数） |
+| **可维护性** | 低（依赖有 Bug 的节点） | ✅ 高（SQL 逻辑清晰） |
 
-##### 方案 A 架构（已选择）✅
-```
-1-Parse-Input-Parameters
-            ↓
-┌───────────────────────────────────────────────────────────────────┐
-│                     并行执行                                       │
-├───────────────────┬───────────────────┬───────────────┬───────────┤
-│ Embeddings OpenAI │ Embeddings OpenAI │ Postgres 节点 │           │
-│        ↓          │        ↓          │ (全文搜索SQL) │           │
-│ Vector-项目知识   │ Vector-组织知识   │      ↓        │ 获取用户  │
-│ (已配置好 ✅)     │ (已配置好 ✅)     │ 返回匹配结果  │ 画像      │
-│        ↓          │        ↓          │               │           │
-│ Reranker Cohere1  │ Reranker Cohere   │               │           │
-│ (已配置好 ✅)     │ (已配置好 ✅)     │               │           │
-└───────────────────┴───────────────────┴───────────────┴───────────┘
-                            ↓
-                    Merge（合并 4 个输入）
-                            ↓
-                  Code（RRF 融合 + 去重）
-                            ↓
-                      整合上下文
-                            ↓
-                  6-Final-AI-Answer
-```
+##### ✅ 推荐方案 B：Postgres 节点 + Supabase RPC
 
-##### 方案 A 实现步骤
-- [x] **步骤 1**：创建数据库迁移 - 添加 `fts` 全文搜索列和索引 ✅
-  - 启用 `pg_trgm` 扩展（支持中文三元组匹配）
-  - 创建 `document_chunks_content_trgm_idx` GIN 索引
-  - 创建 `document_chunks_content_fts_idx` 全文搜索索引
-- [x] **步骤 2**：在 N8N 添加 Postgres 节点执行全文搜索 SQL ✅
-  - 节点名称：`全文搜索`
-  - 使用 `similarity()` 函数和 `ILIKE` 进行模糊匹配
-- [x] **步骤 3**：修改 Merge 节点（从 3 输入改为 4 输入）✅
-- [x] **步骤 4**：修改 Code 节点实现 RRF 融合算法 ✅
-  - RRF_K = 60
-  - 合并向量搜索和全文搜索结果
-  - 去重并按 RRF 分数排序
-- [ ] **步骤 5**：测试并验证效果 🚧
+**核心思路**：用一个 Supabase RPC 函数同时实现向量搜索 + 全文搜索 + Metadata 过滤
 
-##### 方案 B 架构（备选，暂未使用）
+##### 方案 B 架构（推荐）✅
 ```
 Webhook
     ↓
@@ -389,25 +382,99 @@ Embeddings OpenAI (生成 query embedding)
 ┌─────────────────────────────────────────────────────────────┐
 │                   并行执行                                   │
 ├────────────────────────┬────────────────────┬───────────────┤
-│ HTTP Request           │ HTTP Request       │ Supabase      │
+│ Postgres 节点          │ Postgres 节点      │ Supabase      │
 │ hybrid_search RPC      │ hybrid_search RPC  │ 获取用户画像  │
-│ (项目知识)             │ (组织知识)         │               │
+│ (项目知识,带过滤)      │ (组织知识,带过滤)  │               │
 │ ↓                      │ ↓                  │               │
 │ Reranker Cohere1       │ Reranker Cohere    │               │
 └────────────────────────┴────────────────────┴───────────────┘
                     ↓
-              Merge（合并）
+              Merge（合并 3 个输入）
                     ↓
             Code（整合上下文）
                     ↓
             6-Final-AI-Answer
 ```
 
-**方案 B 说明**：
-- 需要创建 Supabase RPC 函数 `hybrid_search`
-- 用 HTTP Request 节点替换现有的 Vector Store 节点
-- Supabase 官方推荐的方式，但需要较大改动
-- 如果方案 A 效果不理想，可以考虑切换到方案 B
+##### 方案 B 实现步骤
+
+**步骤 1：创建 Supabase RPC 函数** 🚧 待完成
+```sql
+CREATE OR REPLACE FUNCTION hybrid_search(
+  query_text TEXT,
+  query_embedding vector(1536),
+  filter_project_id UUID DEFAULT NULL,
+  filter_organization_id UUID DEFAULT NULL,
+  match_count INT DEFAULT 10,
+  full_text_weight FLOAT DEFAULT 0.3,
+  semantic_weight FLOAT DEFAULT 0.7,
+  rrf_k INT DEFAULT 60
+)
+RETURNS TABLE (
+  id UUID,
+  content TEXT,
+  metadata JSONB,
+  similarity FLOAT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  WITH semantic_search AS (
+    SELECT dc.id, dc.content, dc.metadata,
+           ROW_NUMBER() OVER (ORDER BY dc.embedding <=> query_embedding) AS rank
+    FROM document_chunks dc
+    WHERE (filter_project_id IS NULL OR dc.project_id = filter_project_id)
+      AND (filter_organization_id IS NULL OR dc.organization_id = filter_organization_id)
+    ORDER BY dc.embedding <=> query_embedding
+    LIMIT match_count * 2
+  ),
+  keyword_search AS (
+    SELECT dc.id, dc.content, dc.metadata,
+           ROW_NUMBER() OVER (ORDER BY ts_rank(to_tsvector('simple', dc.content),
+                                               plainto_tsquery('simple', query_text)) DESC) AS rank
+    FROM document_chunks dc
+    WHERE (filter_project_id IS NULL OR dc.project_id = filter_project_id)
+      AND (filter_organization_id IS NULL OR dc.organization_id = filter_organization_id)
+      AND dc.content ILIKE '%' || query_text || '%'
+    LIMIT match_count * 2
+  )
+  SELECT
+    COALESCE(s.id, k.id) AS id,
+    COALESCE(s.content, k.content) AS content,
+    COALESCE(s.metadata, k.metadata) AS metadata,
+    -- RRF 融合分数
+    (COALESCE(semantic_weight / (rrf_k + s.rank), 0.0) +
+     COALESCE(full_text_weight / (rrf_k + k.rank), 0.0))::FLOAT AS similarity
+  FROM semantic_search s
+  FULL OUTER JOIN keyword_search k ON s.id = k.id
+  ORDER BY similarity DESC
+  LIMIT match_count;
+END;
+$$;
+```
+
+**步骤 2：在 N8N 替换 Vector Store 节点** 🚧 待完成
+- 删除 `Vector-项目知识` 和 `Vector-组织知识` 节点
+- 添加两个 **Postgres** 节点，调用 `hybrid_search` RPC
+- SQL 示例：
+```sql
+SELECT * FROM hybrid_search(
+  '{{ $json.query }}',                    -- 用户问题
+  '{{ $json.embedding }}'::vector,        -- 向量
+  '{{ $json.project_id }}'::uuid,         -- 项目过滤
+  NULL                                    -- 组织过滤
+);
+```
+
+**步骤 3：保留 Reranker 节点**
+- Reranker 接收 RPC 结果进行重排序
+
+##### 方案 B 优势
+1. **一石二鸟**：同时解决 Metadata Filter Bug 和实现 Hybrid Search
+2. **速度快**：并行执行，向量+全文搜索在同一个 SQL 中完成
+3. **精准**：RRF 算法融合两种搜索结果
+4. **可靠**：不依赖有 Bug 的 N8N 节点
 
 #### 参考资源
 - [N8N Supabase Vector Store 文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.vectorstoresupabase/)

@@ -272,30 +272,36 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
 
       // 2. 删除对应的 document_chunks（知识库分块）
       // 使用 RPC 调用来执行复杂的删除逻辑
+      // 注意：RPC 返回 void，即使成功也可能有 error 对象，需要检查具体错误
       const { error: chunksError } = await supabase.rpc('delete_document_chunks_by_title', {
         p_title: docTitle,
         p_project_id: projectId
       })
 
-      if (chunksError) {
-        console.error('删除 document_chunks 失败:', chunksError)
-        // 如果 RPC 不存在，尝试直接删除（兼容旧版本）
-        await supabase
+      // 只有当 chunksError 真的是错误时才处理
+      if (chunksError && chunksError.code && chunksError.code !== 'PGRST116') {
+        console.warn('RPC 删除 document_chunks 警告:', chunksError)
+        // 备用方案：直接删除
+        const { error: fallbackError } = await supabase
           .from('document_chunks')
           .delete()
-          .filter('metadata->>title', 'eq', docTitle)
-          .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
+          .eq('metadata->>title', docTitle)
+          .eq('project_id', projectId)
+
+        if (fallbackError) {
+          console.warn('备用删除 document_chunks 警告:', fallbackError)
+        }
       }
 
-      // 3. 删除对应的 documents（父文档）
+      // 3. 删除对应的 documents（父文档）- 使用更简单的查询
       const { error: docsError } = await supabase
         .from('documents')
         .delete()
         .eq('title', docTitle)
-        .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
+        .eq('project_id', projectId)
 
-      if (docsError) {
-        console.error('删除 documents 失败:', docsError)
+      if (docsError && docsError.code !== 'PGRST116') {
+        console.warn('删除 documents 警告:', docsError)
       }
 
       alert('文档删除成功')

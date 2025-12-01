@@ -261,10 +261,10 @@ export const ProjectGrid = memo(function ProjectGrid({
                     e.stopPropagation()
                     onApplyToJoin?.(project.id, project.name)
                   }}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg flex items-center gap-1.5 transition-colors"
+                  className="relative px-3 py-1.5 text-white text-xs rounded-lg flex items-center gap-1.5 transition-all duration-300 overflow-hidden group/btn bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40"
                 >
-                  <UserPlus className="h-3.5 w-3.5" />
-                  申请加入
+                  <UserPlus className="h-3.5 w-3.5 relative z-10" />
+                  <span className="relative z-10">申请加入</span>
                 </button>
               )}
 
@@ -275,10 +275,10 @@ export const ProjectGrid = memo(function ProjectGrid({
                     e.stopPropagation()
                     onProjectClick?.(project)
                   }}
-                  className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg flex items-center gap-1.5 transition-colors"
+                  className="relative px-3 py-1.5 text-white text-xs rounded-lg flex items-center gap-1.5 transition-all duration-300 overflow-hidden group/btn bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40"
                 >
-                  <Folder className="h-3.5 w-3.5" />
-                  进入项目
+                  <Folder className="h-3.5 w-3.5 relative z-10" />
+                  <span className="relative z-10">进入项目</span>
                 </button>
               )}
 
