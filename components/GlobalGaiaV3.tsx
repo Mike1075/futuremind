@@ -753,7 +753,7 @@ export function GlobalGaiaV3() {
       {isOpen && (
         <div
           ref={sidebarRef}
-          className="fixed inset-y-0 right-0 bg-gray-900 shadow-2xl z-50 flex flex-col border-l border-gray-800"
+          className="fixed inset-y-0 right-0 bg-cosmic-void/95 backdrop-blur-xl shadow-2xl z-50 flex flex-col border-l border-white/10"
           style={{ width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : `${sidebarWidth}px` }}
         >
           {/* 拖动手柄 - 仅在桌面端显示 */}
@@ -762,10 +762,15 @@ export function GlobalGaiaV3() {
             onMouseDown={() => setIsResizing(true)}
           />
           {/* 头部 */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-cosmic-void/50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xl">
-                🌌
+              <div className="gaia-icon-small">
+                <div className="gaia-icon-glow" />
+                <div className="gaia-icon-border" />
+                <div className="gaia-icon-inner" />
+                <div className="gaia-icon-chat">
+                  <MessageCircle strokeWidth={2.5} />
+                </div>
               </div>
               <div>
                 <h2 className="font-semibold text-white">盖亚 Gaia</h2>
@@ -829,7 +834,7 @@ export function GlobalGaiaV3() {
 
           {/* 消息列表 */}
             <>
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-black">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
                 {/* 加载更多按钮（在消息列表顶部） */}
                 {hasMore && (
                   <div className="flex justify-center py-2">
@@ -964,7 +969,7 @@ export function GlobalGaiaV3() {
               </div>
 
               {/* 输入框 */}
-              <div className="px-6 py-4 border-t border-gray-800 bg-gray-900">
+              <div className="px-6 py-4 border-t border-white/10 bg-cosmic-void/50">
                 <div className="flex gap-2">
                   <textarea
                     value={input}
@@ -973,12 +978,12 @@ export function GlobalGaiaV3() {
                     placeholder="输入你的问题..."
                     rows={3}
                     disabled={isLoading}
-                    className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none disabled:opacity-50"
+                    className="flex-1 px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none disabled:opacity-50"
                   />
                   <button
                     onClick={handleSend}
                     disabled={!input.trim() || isLoading}
-                    className="px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed self-end"
+                    className="btn-stardust px-4 py-3 disabled:opacity-50 disabled:cursor-not-allowed self-end"
                   >
                     <Send className="w-5 h-5 text-white" />
                   </button>

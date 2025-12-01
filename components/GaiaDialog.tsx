@@ -356,8 +356,13 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-3">
-                  <Sparkles className="w-6 h-6 text-white" />
+                <div className="gaia-icon-small mr-3">
+                  <div className="gaia-icon-glow" />
+                  <div className="gaia-icon-border" />
+                  <div className="gaia-icon-inner" />
+                  <div className="gaia-icon-chat">
+                    <Sparkles strokeWidth={2.5} />
+                  </div>
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-white">与盖亚对话</h2>
@@ -454,8 +459,13 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <div className={`max-w-[80%] ${message.isGaia ? 'order-2' : 'order-1'}`}>
                     {message.isGaia && (
                       <div className="flex items-center mb-2">
-                        <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-2">
-                          <Sparkles className="w-4 h-4 text-white" />
+                        <div className="gaia-icon-tiny mr-2">
+                          <div className="gaia-icon-glow" />
+                          <div className="gaia-icon-border" />
+                          <div className="gaia-icon-inner" />
+                          <div className="gaia-icon-chat">
+                            <Sparkles strokeWidth={2.5} />
+                          </div>
                         </div>
                         <span className="text-sm text-purple-300 font-medium">盖亚</span>
                       </div>
@@ -522,8 +532,13 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 >
                   <div className="max-w-[80%]">
                     <div className="flex items-center mb-2">
-                      <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-2">
-                        <Sparkles className="w-4 h-4 text-white" />
+                      <div className="gaia-icon-tiny mr-2">
+                        <div className="gaia-icon-glow" />
+                        <div className="gaia-icon-border" />
+                        <div className="gaia-icon-inner" />
+                        <div className="gaia-icon-chat">
+                          <Sparkles strokeWidth={2.5} />
+                        </div>
                       </div>
                       <span className="text-sm text-purple-300 font-medium">盖亚</span>
                     </div>
@@ -556,7 +571,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isTyping}
-                  className="px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="btn-stardust px-6 py-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 >
                   <Send className="w-5 h-5" />
                 </button>

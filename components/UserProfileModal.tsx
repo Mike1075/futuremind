@@ -135,21 +135,21 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+      <div className="bg-cosmic-void/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
         {/* 头部 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 className="text-xl font-semibold text-white">个人资料</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
             <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
         {/* 标签页 */}
-        <div className="flex border-b border-gray-700">
+        <div className="flex border-b border-white/10">
           <button
             onClick={() => setActiveTab('basic')}
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
@@ -369,11 +369,11 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         </div>
 
         {/* 底部保存按钮 */}
-        <div className="px-6 py-4 border-t border-gray-700">
+        <div className="px-6 py-4 border-t border-white/10">
           <button
             onClick={handleSaveProfile}
             disabled={isSaving}
-            className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full btn-stardust py-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? '保存中...' : '保存修改'}
           </button>

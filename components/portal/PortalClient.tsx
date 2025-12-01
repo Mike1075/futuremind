@@ -156,10 +156,12 @@ export function PortalClient({
                 onBlur={() => setTimeout(() => setIsUserMenuOpen(false), 200)}
                 className="flex items-center space-x-2 text-white hover:text-purple-200 transition-colors duration-300 group"
               >
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
+                <div className="user-avatar-icon">
+                  <div className="user-avatar-icon-inner">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
                 </div>
-                <span className="font-medium">{userName || userEmail?.split('@')[0] || '用户'}</span>
+                <span className="font-medium">{userName || '用户'}</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -168,7 +170,7 @@ export function PortalClient({
                 <div className="absolute top-full left-0 mt-2 w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden z-50">
                   {/* 用户信息头部 */}
                   <div className="px-4 py-3 border-b border-zinc-700">
-                    <p className="text-sm font-medium text-white">{userName || userEmail?.split('@')[0] || '用户'}</p>
+                    <p className="text-sm font-medium text-white">{userName || '用户'}</p>
                     <p className="text-xs text-zinc-400 truncate">{userEmail}</p>
                   </div>
 
