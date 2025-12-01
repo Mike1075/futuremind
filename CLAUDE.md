@@ -303,7 +303,7 @@ Code (调试) → 1-Parse-Input-Parameters
               Code1 → If → Create a row → Respond to Webhook
 ```
 
-#### 第二阶段：Hybrid Search（混合检索）🚧 待实现
+#### 第二阶段：Hybrid Search（混合检索）🚧 进行中
 
 ##### 什么是 Hybrid Search？
 混合检索 = **向量搜索** + **全文搜索**，结合两种方法的优点：
@@ -319,53 +319,66 @@ Code (调试) → 1-Parse-Input-Parameters
 - **纯向量搜索**：可能返回"国际标准"相关内容，但不一定是 ISO 16220
 - **混合搜索**：全文搜索精确匹配"ISO 16220"，排在第一位
 
-##### 实现方案
+##### 方案对比与选择
 
-**N8N 没有内置 Hybrid Search**，需要创建 Supabase RPC 函数：
+**N8N 没有内置 Hybrid Search**，有两种实现方案：
 
-1. **数据库准备**：
-   ```sql
-   -- 在 document_chunks 表添加全文搜索列
-   ALTER TABLE document_chunks ADD COLUMN fts tsvector
-     GENERATED ALWAYS AS (to_tsvector('chinese', content)) STORED;
+| 对比项 | 方案 A（N8N 并行节点）✅ 已选择 | 方案 B（RPC 函数）备选 |
+|--------|-------------------------------|----------------------|
+| **改动量** | 小（只添加节点） | 大（替换现有节点） |
+| **风险** | ✅ 低 | ⚠️ 中等 |
+| **已配置的节点** | ✅ 全部保留 | ❌ 需要替换 |
+| **正确度** | 相同（底层算法一样） | 相同 |
+| **速度** | ~2.8-3.2秒 | ~3.0-3.4秒 |
+| **灵活性** | ✅ 高（可单独调试） | 中（逻辑在函数里） |
 
-   -- 创建全文搜索索引
-   CREATE INDEX document_chunks_fts_idx ON document_chunks USING gin(fts);
-   ```
+**选择方案 A 的原因**：
+1. 保留已配置好的 Vector Store + Reranker 节点
+2. 风险更低，出问题容易回滚
+3. 速度略快（并行执行）
+4. 更灵活，可以单独调试向量搜索或全文搜索
 
-2. **创建 `hybrid_search` RPC 函数**：
-   ```sql
-   CREATE OR REPLACE FUNCTION hybrid_search(
-     query_embedding vector(1536),
-     query_text text,
-     filter_project_id uuid DEFAULT NULL,
-     filter_organization_id uuid DEFAULT NULL,
-     match_count int DEFAULT 10,
-     full_text_weight float DEFAULT 0.3,
-     semantic_weight float DEFAULT 0.7,
-     rrf_k int DEFAULT 60
-   )
-   RETURNS TABLE (
-     id uuid,
-     content text,
-     metadata jsonb,
-     similarity float
-   )
-   ```
+##### 方案 A 架构（已选择）✅
+```
+1-Parse-Input-Parameters
+            ↓
+┌───────────────────────────────────────────────────────────────────┐
+│                     并行执行                                       │
+├───────────────────┬───────────────────┬───────────────┬───────────┤
+│ Embeddings OpenAI │ Embeddings OpenAI │ Postgres 节点 │           │
+│        ↓          │        ↓          │ (全文搜索SQL) │           │
+│ Vector-项目知识   │ Vector-组织知识   │      ↓        │ 获取用户  │
+│ (已配置好 ✅)     │ (已配置好 ✅)     │ 返回匹配结果  │ 画像      │
+│        ↓          │        ↓          │               │           │
+│ Reranker Cohere1  │ Reranker Cohere   │               │           │
+│ (已配置好 ✅)     │ (已配置好 ✅)     │               │           │
+└───────────────────┴───────────────────┴───────────────┴───────────┘
+                            ↓
+                    Merge（合并 4 个输入）
+                            ↓
+                  Code（RRF 融合 + 去重）
+                            ↓
+                      整合上下文
+                            ↓
+                  6-Final-AI-Answer
+```
 
-   函数逻辑：
-   - 执行向量搜索（余弦相似度）
-   - 执行全文搜索（tsvector）
-   - 使用 RRF (Reciprocal Rank Fusion) 融合两个结果
-   - 按 project_id 或 organization_id 过滤
-   - 返回融合后的 Top K 结果
+##### 方案 A 实现步骤
+- [x] **步骤 1**：创建数据库迁移 - 添加 `fts` 全文搜索列和索引 ✅
+  - 启用 `pg_trgm` 扩展（支持中文三元组匹配）
+  - 创建 `document_chunks_content_trgm_idx` GIN 索引
+  - 创建 `document_chunks_content_fts_idx` 全文搜索索引
+- [x] **步骤 2**：在 N8N 添加 Postgres 节点执行全文搜索 SQL ✅
+  - 节点名称：`全文搜索`
+  - 使用 `similarity()` 函数和 `ILIKE` 进行模糊匹配
+- [x] **步骤 3**：修改 Merge 节点（从 3 输入改为 4 输入）✅
+- [x] **步骤 4**：修改 Code 节点实现 RRF 融合算法 ✅
+  - RRF_K = 60
+  - 合并向量搜索和全文搜索结果
+  - 去重并按 RRF 分数排序
+- [ ] **步骤 5**：测试并验证效果 🚧
 
-3. **修改 N8N 工作流**：
-   - 保留 Embeddings OpenAI 节点
-   - 用 **HTTP Request** 节点替换 Vector Store 节点
-   - 调用 Supabase RPC: `POST /rest/v1/rpc/hybrid_search`
-
-##### 新架构（Hybrid Search 版本）
+##### 方案 B 架构（备选，暂未使用）
 ```
 Webhook
     ↓
@@ -377,7 +390,7 @@ Embeddings OpenAI (生成 query embedding)
 │                   并行执行                                   │
 ├────────────────────────┬────────────────────┬───────────────┤
 │ HTTP Request           │ HTTP Request       │ Supabase      │
-│ hybrid_search          │ hybrid_search      │ 获取用户画像  │
+│ hybrid_search RPC      │ hybrid_search RPC  │ 获取用户画像  │
 │ (项目知识)             │ (组织知识)         │               │
 │ ↓                      │ ↓                  │               │
 │ Reranker Cohere1       │ Reranker Cohere    │               │
@@ -388,22 +401,20 @@ Embeddings OpenAI (生成 query embedding)
             Code（整合上下文）
                     ↓
             6-Final-AI-Answer
-                    ↓
-            Create a row → Respond
 ```
 
-##### 实现步骤
-- [ ] **步骤 1**：创建数据库迁移 - 添加 `fts` 列和索引
-- [ ] **步骤 2**：创建 `hybrid_search` RPC 函数
-- [ ] **步骤 3**：修改 N8N - 用 HTTP Request 替换 Vector Store 节点
-- [ ] **步骤 4**：测试 Hybrid Search 效果
-- [ ] **步骤 5**：对比纯向量搜索 vs 混合搜索的效果
+**方案 B 说明**：
+- 需要创建 Supabase RPC 函数 `hybrid_search`
+- 用 HTTP Request 节点替换现有的 Vector Store 节点
+- Supabase 官方推荐的方式，但需要较大改动
+- 如果方案 A 效果不理想，可以考虑切换到方案 B
 
 #### 参考资源
 - [N8N Supabase Vector Store 文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.vectorstoresupabase/)
 - [Hybrid RAG Trick for AI Agents](https://www.theaiautomators.com/hybrid-rag-trick-for-more-ai-agents-reliability/)
 - [Supabase Hybrid Search 讨论](https://github.com/orgs/supabase/discussions/29712)
-- [N8N RAG 最佳实践](https://docs.n8n.io/advanced-ai/rag-in-n8n/)
+- [Supabase pgvector 官方文档](https://supabase.com/docs/guides/database/extensions/pgvector)
+- [Azure AI Search - Hybrid 性能测试](https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/azure-ai-search-outperforming-vector-search-with-hybrid-retrieval-and-reranking/3929167)
 
 ---
 
@@ -419,11 +430,12 @@ Embeddings OpenAI (生成 query embedding)
 - [x] 配置 Cohere Reranker（rerank-multilingual-v3.0，Top N=6）
 - [x] 工作流架构：并行执行 + 强制检索（不依赖 AI 决策）
 
-### 🚧 第二阶段：Hybrid Search（混合检索）- 进行中
+### 🚧 第二阶段：Hybrid Search（混合检索）- 方案 A 进行中
 
-- [ ] 创建数据库迁移 - 添加全文搜索列和索引
-- [ ] 创建 `hybrid_search` RPC 函数
-- [ ] 修改 N8N 工作流 - 用 HTTP Request 调用 RPC
+- [ ] 创建数据库迁移 - 添加 `fts` 全文搜索列和索引
+- [ ] 在 N8N 添加 Postgres 节点执行全文搜索
+- [ ] 修改 Merge 节点（4 个输入）
+- [ ] 修改 Code 节点实现 RRF 融合
 - [ ] 测试并验证效果
 
 ### ⏳ 第三阶段：监控和调试
