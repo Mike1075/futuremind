@@ -456,27 +456,20 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     <ContentDetailWrapper systemKey={systemKey}>
       {/* 内容头部 */}
       <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-sm font-medium text-gray-500">
-              {courseSystem.structure_type === 'daily_sequential'
-                ? `第${content.sequence_number}天`
-                : `单元 ${content.sequence_number}`}
-            </span>
-            {isCompleted && (
-              <span className="flex items-center text-green-500 text-sm">
-                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          {/* 已完成状态徽章 - 炫彩样式 */}
+          {isCompleted && (
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border border-green-500/30 mb-3">
+              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-green-400 to-emerald-400 flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
-                已完成
-              </span>
-            )}
-          </div>
+              </div>
+              <span className="text-sm font-medium bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">已完成</span>
+            </div>
+          )}
           <h1 className="text-3xl font-bold mb-4">{content.title}</h1>
           {content.subtitle && (
             <p className="text-gray-400 mb-4">{content.subtitle}</p>
-          )}
-          {content.duration && (
-            <p className="text-gray-500 text-sm">{content.duration}</p>
           )}
         </div>
 

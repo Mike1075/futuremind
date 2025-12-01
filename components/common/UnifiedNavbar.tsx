@@ -97,7 +97,7 @@ export function UnifiedNavbar({
   if (loading) {
     return (
       <nav className={`relative z-20 ${transparent ? 'bg-white/5 backdrop-blur-md' : 'bg-zinc-900'} border-b border-white/10`}>
-        <div className="container mx-auto px-6 py-4">
+        <div className="px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="w-32 h-8 bg-zinc-700 rounded animate-pulse"></div>
             <div className="w-24 h-8 bg-zinc-700 rounded animate-pulse"></div>
@@ -109,7 +109,7 @@ export function UnifiedNavbar({
 
   return (
     <nav className={`relative z-20 ${transparent ? 'bg-white/5 backdrop-blur-md' : 'bg-zinc-900'} border-b border-white/10`}>
-      <div className="container mx-auto px-6 py-4">
+      <div className="px-8 py-4">
         <div className="flex items-center justify-between">
           {/* 左侧：用户名下拉菜单 */}
           <div className="relative">
