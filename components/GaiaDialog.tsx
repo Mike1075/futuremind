@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Sparkles, Edit3, Trash2, Check } from 'lucide-react'
+import { X, Send, MessageCircle, Edit3, Trash2, Check } from 'lucide-react'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
@@ -361,7 +361,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <div className="gaia-icon-border" />
                   <div className="gaia-icon-inner" />
                   <div className="gaia-icon-chat">
-                    <Sparkles strokeWidth={2.5} />
+                    <MessageCircle strokeWidth={2.5} />
                   </div>
                 </div>
                 <div>
@@ -464,7 +464,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                           <div className="gaia-icon-border" />
                           <div className="gaia-icon-inner" />
                           <div className="gaia-icon-chat">
-                            <Sparkles strokeWidth={2.5} />
+                            <MessageCircle strokeWidth={2.5} />
                           </div>
                         </div>
                         <span className="text-sm text-purple-300 font-medium">盖亚</span>
@@ -537,7 +537,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                         <div className="gaia-icon-border" />
                         <div className="gaia-icon-inner" />
                         <div className="gaia-icon-chat">
-                          <Sparkles strokeWidth={2.5} />
+                          <MessageCircle strokeWidth={2.5} />
                         </div>
                       </div>
                       <span className="text-sm text-purple-300 font-medium">盖亚</span>

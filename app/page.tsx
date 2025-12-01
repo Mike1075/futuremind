@@ -63,12 +63,12 @@ export default function Home() {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role, full_name, name')
+          .select('role, full_name')
           .eq('id', user.id)
           .maybeSingle()
 
         const userRole = profile?.role
-        setUserName(profile?.full_name || profile?.name || null)
+        setUserName(profile?.full_name || null)
 
         if (userRole === 'principal' || userRole === 'teacher') {
           setIsAdmin(true)

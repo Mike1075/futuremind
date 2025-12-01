@@ -140,16 +140,16 @@ export function PortalClient({
         ))}
       </div>
 
-      {/* 顶部导航栏 - 简洁版 */}
+      {/* 顶部导航栏 - 与首页位置一致 */}
       <motion.nav
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative z-20 bg-white/5 backdrop-blur-md border-b border-white/10"
+        className="fixed top-0 left-0 right-0 z-20"
       >
-        <div className="container mx-auto px-6 py-4">
+        <div className="px-8 py-4">
           <div className="flex items-center justify-between">
-            {/* 左侧：用户名下拉菜单 */}
+            {/* 左侧：用户名下拉菜单 - 与首页位置一致 */}
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}

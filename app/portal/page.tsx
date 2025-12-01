@@ -21,7 +21,7 @@ async function PortalContent() {
   const [profileResult, progressResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('role')
+      .select('role, full_name')
       .eq('id', user.id)
       .maybeSingle(),
     supabase
@@ -32,13 +32,14 @@ async function PortalContent() {
   ])
 
   const userRole = profileResult.data?.role || null
+  const userName = profileResult.data?.full_name || user.user_metadata?.full_name || null
   const consciousnessGrowth = progressResult.data?.consciousness_growth || 0
 
   return (
     <PortalClient
       userId={user.id}
       userEmail={user.email!}
-      userName={user.user_metadata?.full_name}
+      userName={userName}
       userRole={userRole}
       consciousnessGrowth={consciousnessGrowth}
     />
