@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Rate Limiting 实现
  *

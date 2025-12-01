@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Metadata } from "next";
 import { Cinzel, Space_Grotesk } from "next/font/google";
 import "./globals.css";

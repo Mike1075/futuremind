@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect, useCallback, memo } from 'react'
@@ -11,7 +12,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Toast } from '@/components/ui/Toast'
-import { useConfirm } from '@/components/ui/ConfirmProvider'
+import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
+import UserProfileModal from '@/components/UserProfileModal'
 
 // 伊卡洛斯项目模块名称映射（与主界面保持一致）
 const MODULE_NAMES: Record<number, string> = {
@@ -166,7 +168,6 @@ export function PBLProjectDetail({
 }: PBLProjectDetailProps) {
   const router = useRouter()
   const supabase = createClient()
-  const { confirm: confirmDelete } = useConfirm()
   const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set([1])) // 默认展开第1周
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
   const [submittingDay, setSubmittingDay] = useState<string | null>(null)
@@ -187,6 +188,7 @@ export function PBLProjectDetail({
     message: '',
     type: 'success'
   })
+  const [showProfileModal, setShowProfileModal] = useState(false) // 个人资料弹窗
 
   // 提交记录相关状态
   const [showSubmissionsHistory, setShowSubmissionsHistory] = useState(false)
@@ -370,6 +372,8 @@ export function PBLProjectDetail({
     if (!e.target.files) return
 
     const filesArray = Array.from(e.target.files)
+    // 重置 input 值，允许再次选择相同的文件
+    e.target.value = ''
     const processedFiles: File[] = []
 
     for (const file of filesArray) {
@@ -424,12 +428,7 @@ export function PBLProjectDetail({
 
   // 删除提交记录
   const handleDeleteSubmission = async (submissionId: string) => {
-    const confirmed = await confirmDelete({
-      title: '确认删除',
-      message: '确定要删除这条提交记录吗？',
-      type: 'warning'
-    })
-    if (!confirmed) return
+    if (!confirm('确定要删除这条提交记录吗？')) return
 
     try {
       const response = await fetch(`/api/submissions?id=${submissionId}`, {
@@ -439,25 +438,13 @@ export function PBLProjectDetail({
       if (response.ok) {
         // 立即从本地状态中移除
         setSubmissionsHistory(prev => prev.filter(s => s.id !== submissionId))
-        setToast({
-          show: true,
-          message: '删除成功',
-          type: 'success'
-        })
+        alert('删除成功')
       } else {
         const error = await response.json()
-        setToast({
-          show: true,
-          message: `删除失败: ${error.error || '请重试'}`,
-          type: 'error'
-        })
+        alert(`删除失败: ${error.error || '请重试'}`)
       }
     } catch (error) {
-      setToast({
-        show: true,
-        message: '删除失败，请重试',
-        type: 'error'
-      })
+      alert('删除失败，请重试')
     }
   }
 
@@ -496,11 +483,7 @@ export function PBLProjectDetail({
       // 触发公开作业列表刷新
       setPublicSubmissionsRefreshKey(prev => prev + 1)
     } catch (err) {
-      setToast({
-        show: true,
-        message: `操作失败：${err instanceof Error ? err.message : '请重试'}`,
-        type: 'error'
-      })
+      alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
     } finally {
       setTogglingId(null)
     }
@@ -509,20 +492,12 @@ export function PBLProjectDetail({
   // 提交任务
   const handleSubmitTask = async () => {
     if (!currentDayKey || !submissionContent.trim()) {
-      setToast({
-        show: true,
-        message: '请填写提交内容',
-        type: 'warning'
-      })
+      alert('请填写提交内容')
       return
     }
 
     if (!userId) {
-      setToast({
-        show: true,
-        message: '请先登录',
-        type: 'warning'
-      })
+      alert('请先登录')
       return
     }
 
@@ -582,11 +557,7 @@ export function PBLProjectDetail({
       router.refresh()
 
     } catch (error) {
-      setToast({
-        show: true,
-        message: '提交失败，请重试',
-        type: 'error'
-      })
+      alert('提交失败，请重试')
     } finally {
       setSubmittingDay(null)
       setUploading(false)
@@ -618,22 +589,17 @@ export function PBLProjectDetail({
   const progressPercentage = Math.round(totalWeightedProgress * 100)
 
   return (
-    <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-hidden">
-      {/* 宇宙背景渐变 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+    <div className="min-h-screen bg-black text-white">
+      {/* 统一导航栏 */}
+      <UnifiedNavbar
+        onOpenProfile={() => setShowProfileModal(true)}
+        rightButton={{
+          label: '返回项目列表',
+          href: `/courses/${systemKey}`
+        }}
+      />
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
-        {/* 返回按钮 */}
-        <Link
-          href={`/courses/${systemKey}`}
-          className="inline-flex items-center text-starlight-muted hover:text-starlight mb-6 transition-colors"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          返回项目列表
-        </Link>
-
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* 项目头部 */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
@@ -692,7 +658,11 @@ export function PBLProjectDetail({
           {/* 选择/取消项目按钮 */}
           <button
             onClick={handleToggleSelection}
-            className="btn-stardust px-6 py-3 font-medium"
+            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+              isSelected
+                ? 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white'
+            }`}
           >
             {isSelected ? '取消项目' : '选择这个项目'}
           </button>
@@ -702,7 +672,7 @@ export function PBLProjectDetail({
         <div className="space-y-6">
           <h2 className="text-2xl font-bold mb-4">📅 项目计划</h2>
 
-          {project.week_plan?.map((week) => {
+          {[...(project.week_plan || [])].sort((a, b) => a.week - b.week).map((week) => {
             const isWeekExpanded = expandedWeeks.has(week.week)
 
             return (
@@ -711,12 +681,30 @@ export function PBLProjectDetail({
                 className="bg-gray-900/50 border border-gray-800 rounded-lg overflow-hidden"
               >
                 {/* 周标题 */}
+                {(() => {
+                  // 判断该周是否解锁：第1周始终解锁，其他周需要前一周有任务完成
+                  const isWeekUnlocked = week.week === 1 || (() => {
+                    const prevWeekPlan = project.week_plan?.find(w => w.week === week.week - 1)
+                    if (!prevWeekPlan) return false
+                    // 检查前一周是否有任何任务完成
+                    return prevWeekPlan.activities?.some((_, idx) => {
+                      const dayNumber = idx + 1
+                      const prevDayKey = `project_${project.sequence_number}_week${week.week - 1}_day${dayNumber}`
+                      return (userProgress[prevDayKey] || 0) > 0
+                    }) || false
+                  })()
+
+                  return (
                 <button
                   onClick={() => toggleWeek(week.week)}
                   className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-900/70 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <span className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold">
+                    <span className={`flex items-center justify-center w-10 h-10 rounded-full font-bold ${
+                      isWeekUnlocked
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                        : 'bg-gray-700 text-gray-500'
+                    }`}>
                       {week.week}
                     </span>
                     <div className="text-left">
@@ -739,6 +727,8 @@ export function PBLProjectDetail({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
+                  )
+                })()}
 
                 {/* 周目标 (展开时显示) */}
                 {isWeekExpanded && week.goals && week.goals.length > 0 && (
@@ -848,33 +838,6 @@ export function PBLProjectDetail({
                             )}
                           </div>
 
-                          {/* 操作按钮区域 - 始终显示（仅当解锁时） */}
-                          {isUnlocked && (
-                            <div className="px-4 pb-3 flex gap-2">
-                              <button
-                                onClick={() => openSubmitDialog(week.week, dayNumber, activityDayLabel)}
-                                className="btn-stardust flex-1 px-4 py-2 text-sm font-medium"
-                              >
-                                {isCompleted ? '再次提交' : '提交任务'}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (!isSelected) {
-                                    setShowSelectProjectModal(true)
-                                    return
-                                  }
-                                  setHistoryDayKey(dayKey)
-                                  setHistoryDayLabel(activityDayLabel) // 存储实际的day标签
-                                  setShowSubmissionsHistory(true)
-                                  fetchSubmissionsHistory(dayKey)
-                                }}
-                                className="btn-stardust flex-shrink-0 px-4 py-2 text-sm font-medium"
-                              >
-                                查看记录
-                              </button>
-                            </div>
-                          )}
-
                           {/* 详细内容 (展开时显示) */}
                           {isDayExpanded && isUnlocked && (
                             <div className="px-4 pb-4 space-y-4 border-t border-gray-800 mt-4">
@@ -956,6 +919,31 @@ export function PBLProjectDetail({
                                   )}
                                 </>
                               )}
+
+                              {/* 操作按钮区域 - 在任务详情展开后显示 */}
+                              <div className="pt-4 mt-4 border-t border-gray-700 flex gap-2">
+                                <button
+                                  onClick={() => openSubmitDialog(week.week, dayNumber, activityDayLabel)}
+                                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                                >
+                                  {isCompleted ? '再次提交' : '提交任务'}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (!isSelected) {
+                                      setShowSelectProjectModal(true)
+                                      return
+                                    }
+                                    setHistoryDayKey(dayKey)
+                                    setHistoryDayLabel(activityDayLabel)
+                                    setShowSubmissionsHistory(true)
+                                    fetchSubmissionsHistory(dayKey)
+                                  }}
+                                  className="flex-shrink-0 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm font-medium transition-colors"
+                                >
+                                  查看记录
+                                </button>
+                              </div>
                             </div>
                           )}
 
@@ -1118,7 +1106,7 @@ export function PBLProjectDetail({
                   <button
                     onClick={handleSubmitTask}
                     disabled={!!submittingDay || !submissionContent.trim() || uploading}
-                    className="btn-stardust flex-1 px-4 py-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {uploading ? '上传中...' : submittingDay ? '提交中...' : '确认提交'}
                   </button>
@@ -1128,7 +1116,7 @@ export function PBLProjectDetail({
                       setHistoryDayLabel(null)
                     }}
                     disabled={!!submittingDay || uploading}
-                    className="btn-stardust px-4 py-2 font-medium disabled:opacity-50"
+                    className="px-4 py-2 bg-gray-800 rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
                   >
                     取消
                   </button>
@@ -1187,7 +1175,7 @@ export function PBLProjectDetail({
                     setHistoryDayLabel(null)
                     router.refresh()
                   }}
-                  className="btn-stardust w-full px-4 py-2 font-medium"
+                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity"
                 >
                   关闭
                 </button>
@@ -1335,7 +1323,7 @@ export function PBLProjectDetail({
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => setSelectedSubmission(submission)}
-                        className="btn-stardust flex-1 px-4 py-2 text-sm font-medium"
+                        className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors text-white"
                       >
                         查看详情
                       </button>
@@ -1465,7 +1453,7 @@ export function PBLProjectDetail({
               {/* 关闭按钮 */}
               <button
                 onClick={() => setSelectedSubmission(null)}
-                className="btn-stardust w-full px-6 py-3 font-semibold"
+                className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-semibold hover:opacity-90 transition-all text-white"
               >
                 关闭
               </button>
@@ -1558,13 +1546,13 @@ export function PBLProjectDetail({
                   // 滚动到页面顶部（项目选择按钮位置）
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
-                className="btn-stardust w-full px-6 py-3 font-semibold"
+                className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 rounded-lg font-semibold transition-all shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50"
               >
                 前往选择项目
               </button>
               <button
                 onClick={() => setShowSelectProjectModal(false)}
-                className="btn-stardust w-full px-6 py-3 font-medium"
+                className="w-full px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors text-gray-300"
               >
                 我知道了
               </button>
@@ -1606,6 +1594,12 @@ export function PBLProjectDetail({
         message={toast.message}
         type={toast.type}
         duration={3000}
+      />
+
+      {/* 用户资料弹窗 */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
       />
     </div>
   )

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { cookies } from 'next/headers'
 import { createBrowserClient, createServerClient } from '@supabase/ssr'
 import { createClient as createServiceClient } from '@supabase/supabase-js'

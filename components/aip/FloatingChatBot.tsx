@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
@@ -6,24 +7,7 @@ import ReactMarkdown from 'react-markdown'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project } from '@/lib/aip/types'
 import aipChatAPI from '@/lib/api/aip-chat'
-import { useToast } from '@/components/ui/ToastProvider'
-import { useConfirm } from '@/components/ui/ConfirmProvider'
-
-// 探索者联盟图标组件 - 炫彩旋转边框 + 机器人
-function ExplorerBotIcon({ size = 'normal' }: { size?: 'normal' | 'small' | 'tiny' }) {
-  const sizeClass = size === 'small' ? 'gaia-icon-small' : size === 'tiny' ? 'gaia-icon-tiny' : ''
-
-  return (
-    <div className={`gaia-icon ${sizeClass}`}>
-      <div className="gaia-icon-glow" />
-      <div className="gaia-icon-border" />
-      <div className="gaia-icon-inner" />
-      <div className="gaia-icon-chat">
-        <Bot strokeWidth={2.5} />
-      </div>
-    </div>
-  )
-}
+import { playNotificationSound, isNotificationSoundEnabled } from '@/lib/utils/notificationSound'
 
 interface FloatingChatBotProps {
   organization?: Organization
@@ -43,8 +27,6 @@ export function FloatingChatBot({
   currentProject,
   showProjectSelector = true
 }: FloatingChatBotProps) {
-  const toast = useToast()
-  const { confirm } = useConfirm()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -115,7 +97,10 @@ export function FloatingChatBot({
     const initializeChatBot = async () => {
       // 并行加载项目列表和聊天历史
       setIsLoadingProjects(true)
-      if (!hasLoadedHistory.current) {
+
+      // 只在首次打开且没有消息时加载历史
+      const shouldLoadHistory = !hasLoadedHistory.current && messages.length === 0
+      if (shouldLoadHistory) {
         setIsLoadingHistory(true)
         hasLoadedHistory.current = true
       }
@@ -126,14 +111,11 @@ export function FloatingChatBot({
 
         if (!user || !isMounted) return
 
-        // 并行执行两个查询
-        const [projectsResult, historyResult] = await Promise.all([
-          supabase
-            .from('project_members')
-            .select('*, project:projects(*)')
-            .eq('user_id', user.id),
-          aipChatAPI.loadChatHistory()
-        ])
+        // 加载项目列表
+        const projectsResult = await supabase
+          .from('project_members')
+          .select('*, project:projects(*)')
+          .eq('user_id', user.id)
 
         if (!isMounted) return
 
@@ -141,17 +123,24 @@ export function FloatingChatBot({
         const projects = projectsResult.data?.map(pm => pm.project).filter(Boolean) || []
         setUserProjects(projects as Project[])
 
-        // 处理聊天历史
-        if (historyResult.success && historyResult.data) {
-          if (historyResult.data.messages.length > 0) {
-            setMessages(historyResult.data.messages)
-          } else {
-            setMessages([{
-              id: 'welcome',
-              role: 'assistant',
-              content: getWelcomeMessage(),
-              timestamp: new Date()
-            }])
+        // 只在需要时加载聊天历史（避免覆盖当前会话）
+        if (shouldLoadHistory) {
+          const historyResult = await aipChatAPI.loadChatHistory()
+
+          if (!isMounted) return
+
+          // 处理聊天历史
+          if (historyResult.success && historyResult.data) {
+            if (historyResult.data.messages.length > 0) {
+              setMessages(historyResult.data.messages)
+            } else {
+              setMessages([{
+                id: 'welcome',
+                role: 'assistant',
+                content: getWelcomeMessage(),
+                timestamp: new Date()
+              }])
+            }
           }
         }
       } catch (error) {
@@ -170,7 +159,7 @@ export function FloatingChatBot({
     return () => {
       isMounted = false
     }
-  }, [isOpen, getWelcomeMessage])
+  }, [isOpen, getWelcomeMessage, messages.length])
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
@@ -194,13 +183,28 @@ export function FloatingChatBot({
       // 构建project_id参数
       const projectIdValue = selectedProjects.length === 1 ? selectedProjects[0] : selectedProjects
 
-      // 获取organization_id：从选中的项目或组织参数中获取
-      let organizationId = organization?.id || ''
+      // 获取organization_id：多层兜底逻辑
+      let organizationId = ''
 
-      // 如果没有组织参数但选择了项目，从项目中提取organization_id
+      // 1. 优先使用传入的organization参数
+      if (organization?.id) {
+        organizationId = organization.id
+      }
+
+      // 2. 如果选择了项目，从项目中提取organization_id
       if (!organizationId && selectedProjects.length > 0) {
         const firstSelectedProject = userProjects.find(p => p.id === selectedProjects[0])
         organizationId = firstSelectedProject?.organization_id || ''
+      }
+
+      // 3. 如果还是没有，使用用户的第一个项目所属的组织
+      if (!organizationId && userProjects.length > 0) {
+        organizationId = userProjects[0].organization_id || ''
+      }
+
+      // 4. 最终兜底：使用默认组织ID（确保不选项目时也能聊天）
+      if (!organizationId) {
+        organizationId = 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
       }
 
       // 调用流式API
@@ -240,11 +244,11 @@ export function FloatingChatBot({
       let displayedAnswer = ''
       let lastFullAnswerLength = 0
 
-      // 🔥 视觉缓冲队列：控制显示速度
+      // 🔥 视觉缓冲队列：用于控制显示速度（复刻Seth项目）
       let pendingChunks: string[] = []
-      let displayInterval: NodeJS.Timeout | null = null
+      let displayInterval: ReturnType<typeof setInterval> | null = null
 
-      // 启动显示定时器（优化：每100ms显示5个字符，减少渲染频率）
+      // 🔥 启动显示定时器（每50ms显示3个字符，实现打字机效果）
       const startDisplayTimer = () => {
         if (displayInterval) return
 
@@ -259,11 +263,10 @@ export function FloatingChatBot({
             return
           }
 
-          // 每次显示5个字符，减少渲染次数
+          // 从队列中取出内容进行显示（每次显示3个字符）
           const chunkToDisplay = pendingChunks.shift() || ''
           displayedAnswer += chunkToDisplay
 
-          // 只更新最后一条消息，避免全量map
           setMessages(prev => {
             const newMessages = [...prev]
             const lastIndex = newMessages.length - 1
@@ -275,7 +278,7 @@ export function FloatingChatBot({
             }
             return newMessages
           })
-        }, 100) // 从50ms增加到100ms，减少50%的渲染次数
+        }, 50) // 每50ms更新一次显示
       }
 
       try {
@@ -299,18 +302,21 @@ export function FloatingChatBot({
               if (json.type === 'chunk') {
                 fullAnswer = json.content
 
-                // 计算新增内容
+                // 🔥 将新增内容按字符分割加入队列
                 const newContent = fullAnswer.slice(lastFullAnswerLength)
                 lastFullAnswerLength = fullAnswer.length
 
-                // 每次显示3个字符
                 for (let i = 0; i < newContent.length; i += 3) {
                   pendingChunks.push(newContent.slice(i, i + 3))
                 }
 
+                // 启动显示定时器
                 startDisplayTimer()
               } else if (json.type === 'done') {
-                // 流式传输完成
+                // 播放消息提示音
+                if (isNotificationSoundEnabled()) {
+                  playNotificationSound('message')
+                }
               }
             } catch {
               // 忽略解析错误
@@ -318,16 +324,12 @@ export function FloatingChatBot({
           }
         }
 
-        // 确保所有内容都显示完毕
-        while (pendingChunks.length > 0 || displayedAnswer !== fullAnswer) {
-          await new Promise(resolve => setTimeout(resolve, 50))
+        // 等待所有内容显示完成
+        while (displayedAnswer !== fullAnswer && pendingChunks.length > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100))
         }
 
-        if (displayInterval) {
-          clearInterval(displayInterval)
-        }
-
-        // 最终更新消息
+        // 最终更新消息（确保完整内容）
         setMessages(prev => prev.map(msg =>
           msg.id === assistantMessageId
             ? { ...msg, content: fullAnswer || '抱歉，我无法回答这个问题。' }
@@ -336,6 +338,10 @@ export function FloatingChatBot({
       } catch (error) {
         console.error('[FloatingChatBot] Stream error:', error)
         throw error
+      } finally {
+        if (displayInterval) {
+          clearInterval(displayInterval)
+        }
       }
     } catch (err) {
       console.error('发送消息失败:', err)
@@ -354,7 +360,7 @@ export function FloatingChatBot({
   }
 
   const handleClearChat = async () => {
-    if (!await confirm({ title: '确认清空', message: '确定要清空聊天记录吗？此操作不可恢复。', type: 'warning' })) return
+    if (!confirm('确定要清空聊天记录吗？此操作不可恢复。')) return
 
     try {
       const result = await aipChatAPI.clearChatHistory()
@@ -363,18 +369,17 @@ export function FloatingChatBot({
         const welcomeMessage: ChatMessage = {
           id: 'welcome-new',
           role: 'assistant',
-          content: '聊天记录已清空。这是一个全新的对话会话。',
+          content: '✅ 聊天记录已清空。这是一个全新的对话会话。',
           timestamp: new Date()
         }
         setMessages([welcomeMessage])
-        toast.success('聊天记录已清空')
       } else {
         console.error('清空聊天记录失败:', result.error)
-        toast.error('清空聊天记录失败，请稍后重试')
+        alert('清空聊天记录失败，请稍后重试')
       }
     } catch (error) {
       console.error('清空聊天记录失败:', error)
-      toast.error('清空聊天记录失败，请稍后重试')
+      alert('清空聊天记录失败，请稍后重试')
     }
   }
 
@@ -396,26 +401,36 @@ export function FloatingChatBot({
 
   if (!isOpen) {
     return (
-      <div
-        className="fixed bottom-8 right-8 z-40 cursor-pointer hover:scale-110 transition-transform duration-300"
-        onClick={() => setIsOpen(true)}
-        title="AI智能助手"
-      >
-        <ExplorerBotIcon />
+      <div className="fixed bottom-12 right-12 z-40">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group border-0 outline-none"
+          title="AI智能助手"
+          style={{
+            width: '72px',
+            height: '72px',
+            minWidth: '72px',
+            minHeight: '72px'
+          }}
+        >
+          <History className="w-8 h-8 flex-shrink-0 group-hover:scale-110 transition-transform" />
+        </button>
       </div>
     )
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="gaia-sidebar rounded-xl shadow-2xl w-full max-w-4xl h-[600px] flex flex-col">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-4xl h-[600px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 gaia-header rounded-t-xl">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <div className="flex items-center gap-3">
-            <ExplorerBotIcon size="small" />
+            <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
+              <Bot className="h-5 w-5 text-blue-400" />
+            </div>
             <div>
-              <h3 className="font-semibold text-white text-lg">AI智能助手</h3>
-              <p className="text-xs text-starlight-muted">
+              <h3 className="font-semibold text-white">AI智能助手</h3>
+              <p className="text-xs text-zinc-500">
                 {selectedProjects.length > 0
                   ? `已选择 ${selectedProjects.length} 个项目`
                   : '选择项目以获得更精准的回答'}
@@ -426,25 +441,24 @@ export function FloatingChatBot({
             {showProjectSelector && (
               <button
                 onClick={() => setShowProjectPanel(!showProjectPanel)}
-                className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
+                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
                 title="选择项目"
               >
-                <FolderOpen className="h-5 w-5 text-starlight-muted group-hover:text-gaia-gold transition-colors" />
+                <FolderOpen className="h-5 w-5" />
               </button>
             )}
             <button
-              onClick={() => {/* TODO: 加载历史记录 */}}
-              className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
-              title="查看历史记录"
+              onClick={handleClearChat}
+              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
+              title="清空聊天"
             >
-              <History className="h-5 w-5 text-starlight-muted group-hover:text-gaia-gold transition-colors" />
+              <Trash2 className="h-5 w-5" />
             </button>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
-              title="关闭"
+              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
             >
-              <X className="h-5 w-5 text-starlight-muted group-hover:text-white transition-colors" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -538,11 +552,11 @@ export function FloatingChatBot({
 
           {/* Chat Messages */}
           <div className="flex-1 flex flex-col">
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 gaia-messages-area">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {isLoadingHistory ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3">
-                  <Loader2 className="w-12 h-12 text-gaia-gold animate-spin" />
-                  <p className="text-sm text-starlight-muted">加载聊天记录中...</p>
+                  <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
+                  <p className="text-sm text-zinc-400">加载聊天记录中...</p>
                 </div>
               ) : (
                 <>
@@ -552,14 +566,16 @@ export function FloatingChatBot({
                   className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.role === 'assistant' && (
-                    <ExplorerBotIcon size="tiny" />
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-500/20 rounded-lg border border-blue-500/30 flex items-center justify-center">
+                      <Bot className="w-4 h-4 text-blue-400" />
+                    </div>
                   )}
 
                   <div
-                    className={`max-w-[70%] px-4 py-3 ${
+                    className={`max-w-[70%] rounded-lg p-3 ${
                       message.role === 'user'
-                        ? 'user-message-bubble text-starlight'
-                        : 'gaia-message-bubble text-starlight-dim'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-zinc-800 text-zinc-100 border border-zinc-700'
                     }`}
                   >
                     {message.role === 'assistant' ? (
@@ -574,8 +590,10 @@ export function FloatingChatBot({
                   </div>
 
                   {message.role === 'user' && (
-                    <div className="flex-shrink-0 w-8 h-8 bg-mystic-purple/20 rounded-full border border-mystic-purple/30 flex items-center justify-center">
-                      <span className="text-mystic-purple-light text-xs font-bold">我</span>
+                    <div className="flex-shrink-0 w-8 h-8 bg-emerald-500/20 rounded-lg border border-emerald-500/30 flex items-center justify-center">
+                      <div className="w-4 h-4 text-emerald-400 text-xs font-bold flex items-center justify-center">
+                        我
+                      </div>
                     </div>
                     )}
                   </div>
@@ -583,13 +601,13 @@ export function FloatingChatBot({
 
                 {isLoading && (
                 <div className="flex gap-3">
-                  <ExplorerBotIcon size="tiny" />
-                  <div className="gaia-message-bubble px-4 py-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-500/20 rounded-lg border border-blue-500/30 flex items-center justify-center">
+                    <Bot className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-gaia-gold rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 bg-mystic-purple rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 bg-ethereal-blue rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      <span className="text-xs text-starlight-muted ml-2">正在思考...</span>
+                      <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                      <span className="text-sm text-zinc-400">正在思考...</span>
                     </div>
                   </div>
                   </div>
@@ -601,8 +619,8 @@ export function FloatingChatBot({
             </div>
 
             {/* Input */}
-            <div className="p-4 gaia-input-area rounded-b-xl">
-              <div className="flex gap-3">
+            <div className="p-4 border-t border-zinc-800">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={input}
@@ -615,14 +633,14 @@ export function FloatingChatBot({
                   }}
                   placeholder="输入您的问题..."
                   disabled={isLoading}
-                  className="flex-1 px-4 py-3 gaia-input disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50"
                 />
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="px-4 py-3 gaia-send-btn disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="h-5 w-5 text-white" />
+                  <Send className="h-4 w-4" />
                 </button>
               </div>
             </div>

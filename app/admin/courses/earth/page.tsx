@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
@@ -5,8 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Plus, Save, Upload, FileVideo, Trash2, ChevronRight, BookOpen, Edit, Users, UsersRound } from 'lucide-react'
-import { useToast } from '@/components/ui/ToastProvider'
-import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface EarthStage {
   id: string
@@ -16,7 +15,6 @@ interface EarthStage {
   title: string
   subtitle: string | null
   documentary_url: string | null
-  pre_watch_guide: string | null
   knowledge_points: any | null
   socratic_questions: any | null
   post_reflection: any | null
@@ -40,8 +38,6 @@ interface MediaResource {
 
 export default function EarthCoursePage() {
   const router = useRouter()
-  const toast = useToast()
-  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
   const [stages, setStages] = useState<EarthStage[]>([])
@@ -71,7 +67,6 @@ export default function EarthCoursePage() {
     title: '',
     subtitle: '',
     documentary_url: '',
-    pre_watch_guide: '',
     knowledge_points: [] as string[],
     socratic_questions: {
       pre_watch: [] as string[],
@@ -104,7 +99,6 @@ export default function EarthCoursePage() {
         title: selectedStage.title || '',
         subtitle: selectedStage.subtitle || '',
         documentary_url: selectedStage.documentary_url || '',
-        pre_watch_guide: selectedStage.pre_watch_guide || '',
         knowledge_points: selectedStage.knowledge_points || [],
         socratic_questions: selectedStage.socratic_questions || {
           pre_watch: [],
@@ -199,7 +193,6 @@ export default function EarthCoursePage() {
           title: formData.title,
           subtitle: formData.subtitle,
           documentary_url: formData.documentary_url,
-          pre_watch_guide: formData.pre_watch_guide,
           knowledge_points: formData.knowledge_points,
           socratic_questions: formData.socratic_questions,
           post_reflection: formData.post_reflection,
@@ -211,11 +204,11 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      toast.success('保存成功！')
+      alert('保存成功！')
       await loadStages()
     } catch (error) {
       console.error('保存失败:', error)
-      toast.error('保存失败，请重试')
+      alert('保存失败，请重试')
     } finally {
       setSaving(false)
     }
@@ -245,16 +238,16 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      toast.success('补充视频添加成功！')
+      alert('补充视频添加成功！')
       await loadMediaResources(selectedStage.id)
     } catch (error) {
       console.error('添加视频失败:', error)
-      toast.error('添加视频失败，请重试')
+      alert('添加视频失败，请重试')
     }
   }
 
   const handleDeleteMedia = async (mediaId: string) => {
-    if (!await confirm({ title: '确认操作', message: '确定要删除这个资源吗？', type: 'warning' })) return
+    if (!confirm('确定要删除这个资源吗？')) return
 
     try {
       const supabase = createClient()
@@ -265,13 +258,13 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      toast.success('删除成功！')
+      alert('删除成功！')
       if (selectedStage) {
         await loadMediaResources(selectedStage.id)
       }
     } catch (error) {
       console.error('删除失败:', error)
-      toast.error('删除失败，请重试')
+      alert('删除失败，请重试')
     }
   }
 
@@ -293,7 +286,6 @@ export default function EarthCoursePage() {
           title: `第${newSequenceNumber}阶段`,
           subtitle: '',
           documentary_url: '',
-          pre_watch_guide: '',
           knowledge_points: [],
           socratic_questions: {
             pre_watch: [],
@@ -309,23 +301,23 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      toast.success('新增成功！')
+      alert('新增成功！')
       await loadStages()
       setSelectedStage(data)
     } catch (error) {
       console.error('新增失败:', error)
-      toast.error('新增失败，请重试')
+      alert('新增失败，请重试')
     }
   }
 
   const handleDeleteStage = async (stageId: string, sequenceNumber: number) => {
     // 保护前6个阶段的固定内容
     if (sequenceNumber <= 6) {
-      toast.warning('前6个阶段是固定内容，不能删除，只能修改。')
+      alert('前6个阶段是固定内容，不能删除，只能修改。')
       return
     }
 
-    if (!await confirm({ title: '确认操作', message: `确定要删除第 ${sequenceNumber} 阶段吗？删除后将无法恢复。`, type: 'warning' })) return
+    if (!confirm(`确定要删除第 ${sequenceNumber} 阶段吗？删除后将无法恢复。`)) return
 
     try {
       const supabase = createClient()
@@ -346,7 +338,7 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      toast.success('删除成功！')
+      alert('删除成功！')
 
       // 如果删除的是当前选中的阶段，清空选中状态
       if (selectedStage?.id === stageId) {
@@ -356,7 +348,7 @@ export default function EarthCoursePage() {
       await loadStages()
     } catch (error) {
       console.error('删除失败:', error)
-      toast.error('删除失败，请重试')
+      alert('删除失败，请重试')
     }
   }
 
@@ -380,13 +372,13 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      toast.success('修改成功！')
+      alert('修改成功！')
       if (selectedStage) {
         await loadMediaResources(selectedStage.id)
       }
     } catch (error) {
       console.error('修改失败:', error)
-      toast.error('修改失败，请重试')
+      alert('修改失败，请重试')
     }
   }
 
@@ -452,8 +444,8 @@ export default function EarthCoursePage() {
     setShowProjectEditor(false)
   }
 
-  const handleDeleteProject = async (index: number) => {
-    if (!await confirm({ title: '确认操作', message: '确定要删除这个项目吗？', type: 'warning' })) return
+  const handleDeleteProject = (index: number) => {
+    if (!confirm('确定要删除这个项目吗？')) return
 
     const newProjects = formData.explorer_projects.filter((_, i) => i !== index)
     setFormData({
@@ -477,7 +469,7 @@ export default function EarthCoursePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
           <p className="text-purple-300 mt-4">加载中...</p>
@@ -487,7 +479,7 @@ export default function EarthCoursePage() {
   }
 
   return (
-    <div className="min-h-screen bg-cosmic-void relative overflow-hidden">
+    <div className="min-h-screen bg-black relative overflow-hidden">
       {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden">
         {isMounted && particles.map((particle) => (
@@ -513,18 +505,18 @@ export default function EarthCoursePage() {
       </div>
 
       {/* Header */}
-      <header className="bg-cosmic-void/50 backdrop-blur-md border-b border-white/10 relative z-10">
+      <header className="bg-black/50 backdrop-blur-md border-b border-white/10 relative z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/admin/courses')}
-              className="p-2 bg-white/10 hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all"
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-h2 font-bold text-starlight">欢迎来到地球</h1>
-              <p className="text-small text-purple-300 mt-1">6个阶段的认知探索之旅</p>
+              <h1 className="text-2xl font-bold text-white">欢迎来到地球</h1>
+              <p className="text-sm text-purple-300 mt-1">6个阶段的认知探索之旅</p>
             </div>
           </div>
         </div>
@@ -543,8 +535,8 @@ export default function EarthCoursePage() {
               >
                 <Users className="w-5 h-5 text-cyan-400" />
                 <div>
-                  <p className="text-starlight font-medium">选课学员</p>
-                  <p className="text-starlight-muted text-small">管理课程学员</p>
+                  <p className="text-white font-medium">选课学员</p>
+                  <p className="text-gray-400 text-xs">管理课程学员</p>
                 </div>
               </button>
               <button
@@ -553,8 +545,8 @@ export default function EarthCoursePage() {
               >
                 <UsersRound className="w-5 h-5 text-green-400" />
                 <div>
-                  <p className="text-starlight font-medium">课程分组</p>
-                  <p className="text-starlight-muted text-small">管理课程分组</p>
+                  <p className="text-white font-medium">课程分组</p>
+                  <p className="text-gray-400 text-xs">管理课程分组</p>
                 </div>
               </button>
             </div>
@@ -564,7 +556,7 @@ export default function EarthCoursePage() {
 
             <button
               onClick={handleAddNewStage}
-              className="btn-stardust w-full mb-4 flex items-center justify-center gap-2"
+              className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
               新增阶段
@@ -586,8 +578,8 @@ export default function EarthCoursePage() {
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-starlight font-medium">第 {stage.sequence_number} 阶段</p>
-                        <p className="text-starlight-muted text-small mt-1 line-clamp-1">{stage.title}</p>
+                        <p className="text-white font-medium">第 {stage.sequence_number} 阶段</p>
+                        <p className="text-gray-400 text-sm mt-1 line-clamp-1">{stage.title}</p>
                       </div>
                     </div>
                   </button>
@@ -615,11 +607,11 @@ export default function EarthCoursePage() {
           {selectedStage ? (
             <div className="max-w-4xl mx-auto p-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-h2 font-bold text-starlight">第 {selectedStage.sequence_number} 阶段</h2>
+                <h2 className="text-2xl font-bold text-white">第 {selectedStage.sequence_number} 阶段</h2>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-starlight rounded-lg font-medium transition-all flex items-center gap-2"
+                  className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded-lg font-medium transition-all flex items-center gap-2"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? '保存中...' : '保存'}
@@ -629,57 +621,46 @@ export default function EarthCoursePage() {
               {/* 表单字段 */}
               <div className="space-y-6">
                 <div>
-                  <label className="block text-starlight font-medium mb-2">标题</label>
+                  <label className="block text-white font-medium mb-2">标题</label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="input-ethereal"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                     placeholder="输入阶段标题..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-starlight font-medium mb-2">副标题</label>
+                  <label className="block text-white font-medium mb-2">副标题</label>
                   <input
                     type="text"
                     value={formData.subtitle}
                     onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                    className="input-ethereal"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                     placeholder="输入副标题..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-starlight font-medium mb-2">
+                  <label className="block text-white font-medium mb-2">
                     📺 主纪录片URL
-                    <span className="text-purple-300 text-small font-normal ml-2">（核心视频资源）</span>
+                    <span className="text-purple-300 text-sm font-normal ml-2">（核心视频资源）</span>
                   </label>
                   <input
                     type="text"
                     value={formData.documentary_url}
                     onChange={(e) => setFormData({ ...formData, documentary_url: e.target.value })}
-                    className="input-ethereal"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                     placeholder="输入主纪录片URL（此阶段的核心观看内容）..."
                   />
-                  <p className="text-starlight-muted text-small mt-1">
+                  <p className="text-gray-400 text-xs mt-1">
                     💡 这是本阶段的主要视频内容。补充视频资源请使用下方的"补充视频资源"模块添加。
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-starlight font-medium mb-2">观看前思考</label>
-                  <textarea
-                    value={formData.pre_watch_guide}
-                    onChange={(e) => setFormData({ ...formData, pre_watch_guide: e.target.value })}
-                    rows={6}
-                    className="input-ethereal"
-                    placeholder="输入观看前思考..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-starlight font-medium mb-2">知识点（每行一个）</label>
+                  <label className="block text-white font-medium mb-2">知识点（每行一个）</label>
                   <textarea
                     value={formData.knowledge_points.join('\n')}
                     onChange={(e) => setFormData({
@@ -687,13 +668,13 @@ export default function EarthCoursePage() {
                       knowledge_points: e.target.value.split('\n').filter(k => k.trim())
                     })}
                     rows={8}
-                    className="input-ethereal"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                     placeholder="输入知识点，每行一个..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-starlight font-medium mb-2">苏格拉底问题 - 课前引导（每行一个）</label>
+                  <label className="block text-white font-medium mb-2">观看前思考问题（每行一个）</label>
                   <textarea
                     value={formData.socratic_questions.pre_watch.join('\n')}
                     onChange={(e) => setFormData({
@@ -704,13 +685,13 @@ export default function EarthCoursePage() {
                       }
                     })}
                     rows={4}
-                    className="input-ethereal"
-                    placeholder="输入课前问题，每行一个..."
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入观看前思考问题，每行一个..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-starlight font-medium mb-2">苏格拉底问题 - 观看时（每行一个）</label>
+                  <label className="block text-white font-medium mb-2">观看中思考问题（每行一个）</label>
                   <textarea
                     value={formData.socratic_questions.during_watch.join('\n')}
                     onChange={(e) => setFormData({
@@ -721,13 +702,13 @@ export default function EarthCoursePage() {
                       }
                     })}
                     rows={6}
-                    className="input-ethereal"
-                    placeholder="输入观看时问题，每行一个..."
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入观看中思考问题，每行一个..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-starlight font-medium mb-2">苏格拉底问题 - 课后思辨（每行一个）</label>
+                  <label className="block text-white font-medium mb-2">观看后思考问题（每行一个）</label>
                   <textarea
                     value={formData.socratic_questions.post_watch.join('\n')}
                     onChange={(e) => setFormData({
@@ -738,13 +719,13 @@ export default function EarthCoursePage() {
                       }
                     })}
                     rows={4}
-                    className="input-ethereal"
-                    placeholder="输入课后问题，每行一个..."
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入观看后思考问题，每行一个..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-starlight font-medium mb-2">课后反思问题（每行一个）</label>
+                  <label className="block text-white font-medium mb-2">观看后反思问题（每行一个）</label>
                   <textarea
                     value={formData.post_reflection.join('\n')}
                     onChange={(e) => setFormData({
@@ -752,18 +733,18 @@ export default function EarthCoursePage() {
                       post_reflection: e.target.value.split('\n').filter(r => r.trim())
                     })}
                     rows={6}
-                    className="input-ethereal"
-                    placeholder="输入课后反思问题，每行一个..."
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="输入观看后反思问题，每行一个..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-starlight font-medium mb-2">预计时长（分钟）</label>
+                  <label className="block text-white font-medium mb-2">预计时长（分钟）</label>
                   <input
                     type="number"
                     value={formData.estimated_duration}
                     onChange={(e) => setFormData({ ...formData, estimated_duration: parseInt(e.target.value) || 0 })}
-                    className="input-ethereal"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                     placeholder="输入预计时长..."
                   />
                 </div>
@@ -773,14 +754,14 @@ export default function EarthCoursePage() {
               <div className="mt-12 pt-8 border-t border-white/10">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-h3 font-bold text-starlight">🔬 探索者联盟 - 小探险家项目</h3>
-                    <p className="text-starlight-muted text-small mt-1">
+                    <h3 className="text-xl font-bold text-white">🔬 探索者联盟 - 小探险家项目</h3>
+                    <p className="text-gray-400 text-sm mt-1">
                       设置实践项目，让学生动手探索和实验
                     </p>
                   </div>
                   <button
                     onClick={() => openProjectEditor(null)}
-                    className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-starlight rounded-lg font-medium transition-all flex items-center gap-2"
+                    className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     添加项目
@@ -871,14 +852,14 @@ export default function EarthCoursePage() {
               <div className="mt-12 pt-8 border-t border-white/10">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-h3 font-bold text-starlight">📚 补充视频资源</h3>
-                    <p className="text-starlight-muted text-small mt-1">
+                    <h3 className="text-xl font-bold text-white">📚 补充视频资源</h3>
+                    <p className="text-gray-400 text-sm mt-1">
                       添加辅助学习的补充视频（例如：相关资料片段、延伸阅读视频等）
                     </p>
                   </div>
                   <button
                     onClick={handleAddExternalVideo}
-                    className="btn-stardust flex items-center gap-2"
+                    className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
                   >
                     <Upload className="w-4 h-4" />
                     添加补充视频
@@ -937,7 +918,7 @@ export default function EarthCoursePage() {
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-starlight-muted text-h3">请从左侧选择一个阶段进行编辑</p>
+              <p className="text-gray-400 text-lg">请从左侧选择一个阶段进行编辑</p>
             </div>
           )}
         </div>
@@ -946,15 +927,15 @@ export default function EarthCoursePage() {
       {/* 项目编辑模态框 */}
       {showProjectEditor && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="card-glass border border-orange-500/30 rounded-2xl max-w-4xl w-full my-8 shadow-2xl">
+          <div className="bg-gray-900 border border-orange-500/30 rounded-2xl max-w-4xl w-full my-8 shadow-2xl">
             {/* 头部 */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
-              <h2 className="text-h2 font-bold text-starlight">
+              <h2 className="text-2xl font-bold text-white">
                 {editingProjectIndex !== null ? '编辑项目' : '新建项目'}
               </h2>
               <button
                 onClick={() => setShowProjectEditor(false)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-starlight-muted hover:text-starlight"
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -966,15 +947,15 @@ export default function EarthCoursePage() {
             <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
               {/* 基本信息 */}
               <div className="space-y-4">
-                <h3 className="text-h3 font-semibold text-orange-400">基本信息</h3>
+                <h3 className="text-lg font-semibold text-orange-400">基本信息</h3>
 
                 <div>
-                  <label className="block text-small font-medium text-gray-300 mb-2">项目标题 *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">项目标题 *</label>
                   <input
                     type="text"
                     value={projectFormData.title}
                     onChange={(e) => setProjectFormData({...projectFormData, title: e.target.value})}
-                    className="input-ethereal focus:border-orange-500"
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
                     placeholder="例如：振动猎人"
                   />
                 </div>

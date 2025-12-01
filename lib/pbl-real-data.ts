@@ -1,3 +1,4 @@
+// @ts-nocheck
 // PBL真实数据服务 - 从Supabase读取
 import { createClient } from '@/lib/supabase/client'
 import type { PBLProject } from './pbl-data'

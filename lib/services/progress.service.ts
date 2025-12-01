@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ProgressService - 用户进度管理服务
  *

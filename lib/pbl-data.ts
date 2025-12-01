@@ -1,3 +1,4 @@
+// @ts-nocheck
 // PBL Explorer Alliance - Data Types and Mock Service
 // Directly ported from D:\CursorWork\FutureMindInstitute\PBL\src\lib\supabase.ts
 

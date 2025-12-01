@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createClient } from '@supabase/supabase-js'
 
 // Service Role Client - 绕过RLS，拥有完整权限

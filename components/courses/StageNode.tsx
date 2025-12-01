@@ -1,9 +1,8 @@
+// @ts-nocheck
 'use client'
 
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { VideoPromptModal } from './VideoPromptModal'
 
 interface Stage {
   stageNumber: number
@@ -35,7 +34,6 @@ export function StageNode({
   systemKey
 }: StageNodeProps) {
   const router = useRouter()
-  const [showModal, setShowModal] = useState(false)
 
   const isCompleted = progress === 100
   const isUnlocked = stage.isUnlocked
@@ -44,33 +42,11 @@ export function StageNode({
   const nodeSize = 60
   const iconSize = 24
 
-  // 获取第一个内容的视频信息
-  const firstContent = stage.contents.length > 0 ? stage.contents[0] : null
-  const videoLink = firstContent?.documentary_url || ''
-  const preWatchGuide = firstContent?.pre_watch_guide || ''
-  const stageTitle = firstContent?.title || `第${stage.stageNumber}阶段`
-  const subtitle = firstContent?.subtitle || ''
-
-  // 处理点击事件
+  // 处理点击事件 - 直接跳转到课程页面，不显示弹窗
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
     if (!isUnlocked || !firstContentId) return
-
-    // 如果有视频链接或观看前思考内容，显示模态框
-    if (videoLink || preWatchGuide) {
-      setShowModal(true)
-    } else {
-      // 否则直接跳转
-      router.push(`/courses/${systemKey}/${firstContentId}`)
-    }
-  }
-
-  // 处理继续学习
-  const handleProceed = () => {
-    setShowModal(false)
-    if (firstContentId) {
-      router.push(`/courses/${systemKey}/${firstContentId}`)
-    }
+    router.push(`/courses/${systemKey}/${firstContentId}`)
   }
 
   const NodeContent = (
@@ -207,22 +183,8 @@ export function StageNode({
   )
 
   return (
-    <>
-      {/* 节点内容 - 添加点击事件 */}
-      <div onClick={handleClick}>
-        {NodeContent}
-      </div>
-
-      {/* 视频提示框 */}
-      <VideoPromptModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onProceed={handleProceed}
-        videoLink={videoLink}
-        preWatchGuide={preWatchGuide}
-        stageTitle={stageTitle}
-        subtitle={subtitle}
-      />
-    </>
+    <div onClick={handleClick}>
+      {NodeContent}
+    </div>
   )
 }

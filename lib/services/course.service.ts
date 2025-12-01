@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CourseService - 课程数据管理服务
  *

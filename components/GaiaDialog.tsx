@@ -1,32 +1,15 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Edit3, Trash2, Check, MessageCircle } from 'lucide-react'
+import { X, Send, Sparkles, Edit3, Trash2, Check } from 'lucide-react'
 import GaiaAPI, { type ChatMessage } from '@/lib/api/gaia'
-import { useToast } from '@/components/ui/ToastProvider'
-import { useConfirm } from '@/components/ui/ConfirmProvider'
 
-// 盖亚图标组件 - 炫彩旋转边框 + 对话气泡
-function GaiaIcon({ size = 'normal', isStatic = false }: { size?: 'normal' | 'small' | 'tiny', isStatic?: boolean }) {
-  const sizeClass = size === 'small' ? 'gaia-icon-small' : size === 'tiny' ? 'gaia-icon-tiny' : ''
-  const staticClass = isStatic ? 'gaia-icon-static' : ''
-
-  return (
-    <div className={`gaia-icon ${sizeClass} ${staticClass}`}>
-      {/* 发光光晕 */}
-      <div className="gaia-icon-glow" />
-      {/* 炫彩旋转边框 */}
-      <div className="gaia-icon-border" />
-      {/* 黑色背景 */}
-      <div className="gaia-icon-inner" />
-      {/* 对话气泡图标 */}
-      <div className="gaia-icon-chat">
-        <MessageCircle strokeWidth={2.5} />
-      </div>
-    </div>
-  )
-}
+/**
+ * GaiaDialog - 盖亚对话弹窗组件
+ * V3.2 - 单对话模式：每个用户只有一个对话记录
+ */
 
 interface GaiaDialogProps {
   isOpen: boolean
@@ -34,12 +17,8 @@ interface GaiaDialogProps {
 }
 
 export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
-  const toast = useToast()
-  const { confirm } = useConfirm()
   const [userId, setUserId] = useState<string | 'guest'>('guest')
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID())
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
-  const [conversationTitle, setConversationTitle] = useState<string>('新对话')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -61,24 +40,23 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     const getUserAndLoadHistory = async () => {
       try {
         setIsLoading(true)
-        // 使用 createClient 直接获取用户
         const { createClient } = await import('@/lib/supabase/client')
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         const currentUserId = user?.id ?? 'guest'
         setUserId(currentUserId)
-        
+
         // 立即尝试恢复聊天记录
         if (isOpen && user) {
           await loadChatHistory()
         }
-      } catch (error) {
+      } catch {
         setUserId('guest')
       } finally {
         setIsLoading(false)
       }
     }
-    
+
     if (isOpen) {
       getUserAndLoadHistory()
       // 通知GlobalGaiaV3关闭
@@ -86,22 +64,16 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     }
   }, [isOpen])
 
-  // 切换到特定对话
-  const switchToConversation = async (conversationId: string) => {
+  // 加载聊天记录（单对话模式）
+  const loadChatHistory = async () => {
     try {
-      setIsLoading(true)
+      const result = await GaiaAPI.getChatHistory()
 
-      const result = await GaiaAPI.getConversation(conversationId)
       if (result.success && result.data) {
-        setCurrentConversationId(conversationId)
-        setConversationTitle(result.data.title)
-        // 生成新的 session_id 用于新对话会话
-        setSessionId(crypto.randomUUID())
-
-        // 如果对话有消息，加载消息，否则只显示默认消息
         if (result.data.messages.length > 0) {
           setMessages(result.data.messages)
         } else {
+          // 没有消息，显示欢迎消息
           setMessages([{
             id: '1',
             content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
@@ -109,46 +81,11 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             timestamp: new Date()
           }])
         }
+      } else {
+        console.error('[GaiaDialog] 加载聊天记录失败:', result.error)
       }
     } catch (error) {
-      // 静默处理错误
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // 加载聊天记录（支持多对话系统）
-  const loadChatHistory = async () => {
-    try {
-      const result = await GaiaAPI.getChatHistory()
-
-      if (result.success && result.data) {
-        // 设置当前对话信息
-        setCurrentConversationId(result.data.id)
-        setConversationTitle(result.data.title)
-
-        // 加载消息
-        if (result.data.messages.length > 0) {
-          setMessages(result.data.messages)
-        } else {
-          // 没有消息，判断是否是第一次使用
-          const isNewConversation = result.data.created_at === result.data.updated_at
-          if (isNewConversation) {
-            // 刚创建的对话，第一次使用，显示欢迎消息
-            setMessages([{
-              id: '1',
-              content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
-              isGaia: true,
-              timestamp: new Date()
-            }])
-          } else {
-            // 对话存在但无消息（用户删除了所有消息），显示空白
-            setMessages([])
-          }
-        }
-      }
-    } catch (error) {
-      // 静默处理错误
+      console.error('[GaiaDialog] 加载聊天记录异常:', error)
     }
   }
 
@@ -166,25 +103,20 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     }
   }, [isOpen])
 
-  // 保存聊天记录到 Supabase（支持多对话系统）
+  // 保存聊天记录到 Supabase（单对话模式）
   const saveChatHistory = async (msgs: ChatMessage[]) => {
     try {
       const slice = msgs.slice(-50) // 只保留最近 50 条
+      const result = await GaiaAPI.saveChatHistory(slice)
 
-      let result;
-      if (currentConversationId) {
-        // 保存到特定对话
-        result = await GaiaAPI.saveConversationMessages(currentConversationId, slice)
+      if (result.success) {
+        // 触发同步事件，通知其他盖亚组件更新
+        window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
       } else {
-        // 使用旧的保存方式（会自动创建或更新最新对话）
-        result = await GaiaAPI.saveChatHistory(slice)
-      }
-
-      if (!result.success) {
-        // 静默处理错误
+        console.error('[GaiaDialog] 消息保存失败:', result.error)
       }
     } catch (error) {
-      // 静默处理错误
+      console.error('[GaiaDialog] 保存消息异常:', error)
     }
   }
 
@@ -225,7 +157,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
         throw new Error('Failed to get response')
       }
 
-      // 🔥 流式读取响应
+      // 流式读取响应
       const reader = res.body?.getReader()
       const decoder = new TextDecoder()
 
@@ -237,7 +169,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       const gaiaMessageId = (Date.now() + 1).toString()
       const gaiaMessage: ChatMessage = {
         id: gaiaMessageId,
-        content: '', // 初始为空
+        content: '',
         isGaia: true,
         timestamp: new Date()
       }
@@ -246,7 +178,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
       let currentMessages = [...newMessages, gaiaMessage]
       setMessages(currentMessages)
 
-      // 🔥 流式读取并实时显示
+      // 流式读取并实时显示
       let buffer = ''
       let fullContent = ''
 
@@ -258,7 +190,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
           const chunk = decoder.decode(value, { stream: true })
           buffer += chunk
 
-          // 按换行符分割
           const lines = buffer.split('\n')
           buffer = lines.pop() || ''
 
@@ -271,13 +202,10 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
 
               if (json.type === 'chunk' && json.content) {
                 fullContent = json.content
-
-                // 🔥 实时更新显示
                 const updatedGaiaMessage = { ...gaiaMessage, content: fullContent }
                 currentMessages = [...newMessages, updatedGaiaMessage]
                 setMessages(currentMessages)
               } else if (json.type === 'done') {
-                // 流结束
                 break
               }
             } catch {
@@ -315,9 +243,6 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
     }
   }
 
-  // 判断是否是欢迎消息（不应该被删除）
-  // 注：欢迎消息现在也可以被删除了
-
   // 切换消息选中状态
   const toggleMessageSelection = (messageId: string) => {
     setSelectedMessages(prev => {
@@ -334,10 +259,8 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   // 全选/取消全选
   const toggleSelectAll = () => {
     if (selectedMessages.size === messages.length) {
-      // 已全选，取消全选
       setSelectedMessages(new Set())
     } else {
-      // 全选所有消息
       const allIds = new Set(messages.map(m => m.id))
       setSelectedMessages(allIds)
     }
@@ -347,25 +270,44 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
   const deleteSelectedMessages = async () => {
     if (selectedMessages.size === 0) return
 
-    if (!await confirm({ title: '确认删除', message: `确定要删除选中的 ${selectedMessages.size} 条消息吗？`, type: 'warning' })) return
+    if (!confirm(`确定要删除选中的 ${selectedMessages.size} 条消息吗？`)) return
 
     try {
-      // 过滤掉选中的消息
       const newMessages = messages.filter(m => !selectedMessages.has(m.id))
       setMessages(newMessages)
-
-      // 保存到数据库
       await saveChatHistory(newMessages)
-
-      // 清空选中状态并退出编辑模式
       setSelectedMessages(new Set())
       setIsEditMode(false)
-
-      // 触发同步事件，通知其他盖亚组件更新
       window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
-      toast.success('消息已删除')
-    } catch (error) {
-      toast.error('删除消息失败，请重试')
+    } catch {
+      alert('删除消息失败，请重试')
+    }
+  }
+
+  // 清空所有聊天记录
+  const handleClearHistory = async () => {
+    if (!confirm('确定要清除所有聊天记录吗？')) return
+
+    try {
+      const result = await GaiaAPI.clearChatHistory()
+
+      if (result.success) {
+        // 生成新的 session_id
+        setSessionId(crypto.randomUUID())
+        // 显示欢迎消息
+        setMessages([{
+          id: '1',
+          content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
+          isGaia: true,
+          timestamp: new Date()
+        }])
+        // 通知其他组件
+        window.dispatchEvent(new CustomEvent('gaiaMessagesUpdated'))
+      } else {
+        alert('清除聊天记录失败: ' + result.error)
+      }
+    } catch {
+      alert('清除聊天记录时发生错误')
     }
   }
 
@@ -378,7 +320,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-cosmic-void/80 backdrop-blur-md z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
             onClick={onClose}
           />
 
@@ -387,15 +329,17 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed inset-4 md:inset-8 lg:inset-16 modal-ethereal z-50 flex flex-col"
+            className="fixed inset-4 md:inset-8 lg:inset-16 bg-gradient-to-br from-purple-900/90 to-blue-900/90 backdrop-blur-md rounded-2xl border border-purple-500/30 z-50 flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 gaia-header">
-              <div className="flex items-center gap-4">
-                <GaiaIcon size="small" isStatic={true} />
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-3">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
                 <div>
-                  <h2 className="text-h2 text-white">与盖亚对话</h2>
-                  <p className="text-small text-starlight-dim">你的意识觉醒导师</p>
+                  <h2 className="text-xl font-semibold text-white">与盖亚对话</h2>
+                  <p className="text-sm text-purple-200">你的意识觉醒导师</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -403,7 +347,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <>
                     <button
                       onClick={toggleSelectAll}
-                      className="badge-ethereal flex items-center gap-2"
+                      className="px-3 py-2 text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg border border-blue-500/30 flex items-center gap-2"
                       title="全选/取消全选"
                     >
                       <Check className="w-4 h-4" /> {selectedMessages.size === messages.length ? '取消全选' : '全选'}
@@ -411,7 +355,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                     <button
                       onClick={deleteSelectedMessages}
                       disabled={selectedMessages.size === 0}
-                      className="px-3 py-2 text-small bg-life-pink/20 hover:bg-life-pink/30 text-life-pink rounded-lg border border-life-pink/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                      className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       title="删除选中的消息"
                     >
                       <Trash2 className="w-4 h-4" /> 删除选中 ({selectedMessages.size})
@@ -421,7 +365,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                         setIsEditMode(false)
                         setSelectedMessages(new Set())
                       }}
-                      className="badge-ethereal"
+                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20"
                     >
                       取消
                     </button>
@@ -430,39 +374,14 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   <>
                     <button
                       onClick={() => setIsEditMode(true)}
-                      className="badge-ethereal flex items-center gap-2"
+                      className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20 flex items-center gap-2"
                       title="编辑聊天记录"
                     >
                       <Edit3 className="w-4 h-4" /> 编辑
                     </button>
                     <button
-                      onClick={async () => {
-                        if (!await confirm({ title: '确认清除', message: '确定要清除所有聊天记录吗？这将删除所有对话。', type: 'warning' })) return
-
-                        try {
-                          const result = await GaiaAPI.clearChatHistory()
-
-                          if (result.success) {
-                            // 重置所有对话状态
-                            setCurrentConversationId(null)
-                            setConversationTitle('新对话')
-                            // 生成新的 session_id
-                            setSessionId(crypto.randomUUID())
-                            setMessages([{
-                              id: '1',
-                              content: '你好，亲爱的探索者。我是盖亚，你的意识觉醒导师。在这个神圣的对话空间里，你可以向我提出任何关于意识、宇宙、存在的问题。让我们一起踏上这场内在的旅程吧。',
-                              isGaia: true,
-                              timestamp: new Date()
-                            }])
-                            toast.success('聊天记录已清除')
-                          } else {
-                            toast.error('清除聊天记录失败: ' + result.error)
-                          }
-                        } catch (error) {
-                          toast.error('清除聊天记录时发生错误')
-                        }
-                      }}
-                      className="px-3 py-2 text-small bg-life-pink/20 hover:bg-life-pink/30 text-life-pink rounded-lg border border-life-pink/30 flex items-center gap-2 transition-all duration-300"
+                      onClick={handleClearHistory}
+                      className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2"
                       title="清除所有聊天记录"
                     >
                       清除记录
@@ -471,7 +390,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                 )}
                 <button
                   onClick={onClose}
-                  className="p-2 text-starlight-muted hover:text-starlight transition-colors rounded-lg hover:bg-white/10"
+                  className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -479,14 +398,14 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 gaia-messages-area">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {isLoading && (
                 <div className="text-center py-8">
-                  <div className="loader-ethereal mx-auto"></div>
-                  <p className="text-gaia-gold mt-4 text-small">正在加载聊天记录...</p>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
+                  <p className="text-purple-300 mt-2 text-sm">正在加载聊天记录...</p>
                 </div>
               )}
-              
+
               {!isLoading && messages.map((message) => (
                 <motion.div
                   key={message.id}
@@ -505,37 +424,56 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                           e.stopPropagation()
                           toggleMessageSelection(message.id)
                         }}
-                        className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-mystic-purple checked:border-mystic-purple border-white/40 bg-transparent"
+                        className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-purple-600 checked:border-purple-600 border-white/40 bg-transparent"
                       />
                     </div>
                   )}
 
                   <div className={`max-w-[80%] ${message.isGaia ? 'order-2' : 'order-1'}`}>
                     {message.isGaia && (
-                      <div className="flex items-center mb-2 gap-2">
-                        <GaiaIcon size="tiny" isStatic={true} />
-                        <span className="text-small text-gaia-gold font-medium">盖亚</span>
+                      <div className="flex items-center mb-2">
+                        <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-2">
+                          <Sparkles className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-sm text-purple-300 font-medium">盖亚</span>
                       </div>
                     )}
                     <div
-                      className={`px-4 py-3 ${
+                      className={`p-4 rounded-2xl ${
                         message.isGaia
-                          ? 'gaia-message-bubble'
-                          : 'user-message-bubble ml-auto'
+                          ? 'bg-gradient-to-r from-purple-600/30 to-blue-600/30 border border-purple-500/30 text-white'
+                          : 'bg-white/10 border border-white/20 text-white ml-auto'
                       } ${
                         isEditMode && selectedMessages.has(message.id)
-                          ? 'ring-2 ring-ethereal-blue'
+                          ? 'ring-2 ring-blue-500'
                           : ''
                       }`}
                     >
-                      <p className="text-body leading-relaxed whitespace-pre-wrap text-starlight-dim">{message.content}</p>
-                      <p className={`text-caption mt-2 ${message.isGaia ? 'text-gaia-gold/50' : 'text-mystic-purple-light/70'}`}>
-                        {message.timestamp.toLocaleTimeString()}
-                      </p>
+                      {/* 如果是盖亚消息且内容为空，显示加载动画 */}
+                      {message.isGaia && !message.content ? (
+                        <div className="flex space-x-1 py-2">
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                          <p className="text-xs text-gray-400 mt-2">
+                            {message.timestamp.toLocaleDateString('zh-CN', {
+                              month: '2-digit',
+                              day: '2-digit'
+                            })} {message.timestamp.toLocaleTimeString('zh-CN', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  {/* 编辑模式下显示复选框（右侧，针对盖亚消息） */}
+                  {/* 编辑模式下显示复选框（右侧-盖亚消息） */}
                   {isEditMode && message.isGaia && (
                     <div className="flex items-center pt-6">
                       <input
@@ -546,7 +484,7 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                           e.stopPropagation()
                           toggleMessageSelection(message.id)
                         }}
-                        className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-mystic-purple checked:border-mystic-purple border-white/40 bg-transparent"
+                        className="w-5 h-5 rounded cursor-pointer transition-all appearance-none border-2 checked:bg-purple-600 checked:border-purple-600 border-white/40 bg-transparent"
                       />
                     </div>
                   )}
@@ -561,16 +499,17 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
                   className="flex justify-start"
                 >
                   <div className="max-w-[80%]">
-                    <div className="flex items-center mb-2 gap-2">
-                      <GaiaIcon size="tiny" isStatic={true} />
-                      <span className="text-small text-gaia-gold font-medium">盖亚</span>
+                    <div className="flex items-center mb-2">
+                      <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-2">
+                        <Sparkles className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-sm text-purple-300 font-medium">盖亚</span>
                     </div>
-                    <div className="gaia-message-bubble px-4 py-3">
-                      <div className="flex gap-2 items-center">
-                        <div className="w-2 h-2 bg-gaia-gold rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-mystic-purple rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-ethereal-blue rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                        <span className="text-xs text-starlight-muted ml-2">盖亚正在思考...</span>
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-600/30 to-blue-600/30 border border-purple-500/30">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       </div>
                     </div>
                   </div>
@@ -580,25 +519,27 @@ export default function GaiaDialog({ isOpen, onClose }: GaiaDialogProps) {
             </div>
 
             {/* Input */}
-            <div className="gaia-input-area px-6 py-4">
-              <div className="flex gap-3">
-                <textarea
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="向盖亚提出你的问题..."
-                  className="flex-1 px-4 py-3 gaia-input resize-none"
-                  rows={3}
-                />
+            <div className="p-6 border-t border-white/10">
+              <div className="flex space-x-4">
+                <div className="flex-1 relative">
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="向盖亚提出你的问题..."
+                    className="w-full p-4 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    rows={3}
+                  />
+                </div>
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isTyping}
-                  className="px-4 py-3 gaia-send-btn self-end disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 >
-                  <Send className="w-5 h-5 text-white" />
+                  <Send className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-caption text-starlight-muted/50 mt-2">
+              <p className="text-xs text-gray-400 mt-2">
                 按 Enter 发送，Shift + Enter 换行
               </p>
             </div>

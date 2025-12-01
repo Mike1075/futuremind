@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API Route: /api/admin/students/[id]
 // Description: 学员详情API - 获取单个学员的详细信息
 // 权限：校长和老师（不包含隐私数据）

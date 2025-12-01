@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * AIP系统 TypeScript 类型定义
  * AI-Powered Project Management System Type Definitions

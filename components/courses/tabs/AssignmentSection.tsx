@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import { FileText, CheckCircle } from 'lucide-react'

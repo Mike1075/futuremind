@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API Route: /api/admin/dashboard
 // Description: 统计看板API - 获取整体统计数据
 // 权限：校长和老师

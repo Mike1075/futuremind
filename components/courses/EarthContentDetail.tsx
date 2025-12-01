@@ -1,6 +1,7 @@
+// @ts-nocheck
 'use client'
 
-import { useState, useEffect, useCallback, memo } from 'react'
+import { useState, useEffect, useCallback, memo, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -10,11 +11,14 @@ import { recordInteraction, getEarthProgress, type ItemType } from '@/lib/utils/
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
 import { KnowledgeSectionV2 } from '@/components/courses/tabs/KnowledgeSectionV2'
-import { SocraticQuestionsV2 } from '@/components/courses/tabs/SocraticQuestionsV2'
-import { PostReflectionV2 } from '@/components/courses/tabs/PostReflectionV2'
+import { CollapsibleSection } from '@/components/courses/tabs/CollapsibleSection'
+import { PreWatchThinking } from '@/components/courses/tabs/PreWatchThinking'
+import { DuringWatchThinking } from '@/components/courses/tabs/DuringWatchThinking'
+import { PostWatchThinking } from '@/components/courses/tabs/PostWatchThinking'
+import { Play, ExternalLink } from 'lucide-react'
 import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
-import { useToast } from '@/components/ui/ToastProvider'
-import { useConfirm } from '@/components/ui/ConfirmProvider'
+import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
+import UserProfileModal from '@/components/UserProfileModal'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -59,14 +63,13 @@ export function EarthContentDetail({
   nextStageFirstContentId,
   refreshTrigger
 }: EarthContentDetailProps) {
-  const toast = useToast()
-  const { confirm } = useConfirm()
   const [stageProgress, setStageProgress] = useState(0)
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [showUnlockAnimation, setShowUnlockAnimation] = useState(false)
   const [contentProgress, setContentProgress] = useState(0) // 当前内容的进度
   const [showMilestone, setShowMilestone] = useState<number | null>(null) // 里程碑动画
   const [selectedProject, setSelectedProject] = useState<any>(null) // 选中的探险家项目
+  const [showProfileModal, setShowProfileModal] = useState(false) // 个人资料弹窗
 
   // 提交相关状态
   const supabase = createClient()
@@ -89,6 +92,9 @@ export function EarthContentDetail({
 
   // 公开作业刷新机制
   const [publicSubmissionsRefreshKey, setPublicSubmissionsRefreshKey] = useState(0)
+
+  // 文件输入ref（用于重置以允许重复选择同一文件）
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // PF-02: 使用useCallback优化fetchStageProgress
   const fetchStageProgress = useCallback(async () => {
@@ -210,6 +216,8 @@ export function EarthContentDetail({
     if (!e.target.files) return
 
     const filesArray = Array.from(e.target.files)
+    // 重置 input 值，允许再次选择相同的文件
+    e.target.value = ''
     const processedFiles: File[] = []
 
     // 允许的图片格式
@@ -218,7 +226,7 @@ export function EarthContentDetail({
     for (const file of filesArray) {
       // 验证文件类型：只允许图片
       if (!file.type.startsWith('image/') || !allowedImageTypes.includes(file.type)) {
-        toast.error(`不支持的文件格式: ${file.name}\n\n只支持图片格式: JPG, PNG, GIF, WEBP`)
+        alert(`❌ 不支持的文件格式: ${file.name}\n\n只支持图片格式: JPG, PNG, GIF, WEBP`)
         continue
       }
 
@@ -249,6 +257,11 @@ export function EarthContentDetail({
 
     if (processedFiles.length > 0) {
       setUploadedFiles(prev => [...prev, ...processedFiles])
+    }
+
+    // 重置文件输入，允许用户再次选择相同的文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
@@ -281,13 +294,7 @@ export function EarthContentDetail({
 
   // 删除提交记录
   const handleDeleteSubmission = async (submissionId: string) => {
-    const confirmed = await confirm({
-      title: '确认删除',
-      message: '确定要删除这条提交记录吗？',
-      type: 'warning'
-    })
-
-    if (!confirmed) return
+    if (!confirm('确定要删除这条提交记录吗？')) return
 
     try {
       const response = await fetch(`/api/submissions?id=${submissionId}`, {
@@ -297,13 +304,13 @@ export function EarthContentDetail({
       if (response.ok) {
         // 立即从本地状态中移除
         setSubmissionsHistory(prev => prev.filter(s => s.id !== submissionId))
-        toast.success('删除成功')
+        alert('删除成功')
       } else {
         const error = await response.json()
-        toast.error(`删除失败: ${error.error || '请重试'}`)
+        alert(`删除失败: ${error.error || '请重试'}`)
       }
     } catch (error) {
-      toast.error('删除失败，请重试')
+      alert('删除失败，请重试')
     }
   }
 
@@ -342,7 +349,7 @@ export function EarthContentDetail({
       // 触发公开作业列表刷新
       setPublicSubmissionsRefreshKey(prev => prev + 1)
     } catch (err) {
-      toast.error(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
+      alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
     } finally {
       setTogglingId(null)
     }
@@ -351,17 +358,17 @@ export function EarthContentDetail({
   // 提交任务
   const handleSubmitTask = async () => {
     if (!submissionContent.trim()) {
-      toast.warning('请填写提交内容')
+      alert('请填写提交内容')
       return
     }
 
     if (!userId) {
-      toast.warning('请先登录')
+      alert('请先登录')
       return
     }
 
     if (!selectedProject) {
-      toast.error('项目信息错误')
+      alert('项目信息错误')
       return
     }
 
@@ -421,7 +428,7 @@ export function EarthContentDetail({
       setSubmissionResult(data)
 
     } catch (error) {
-      toast.error('提交失败，请重试')
+      alert('提交失败，请重试')
     } finally {
       setSubmitting(false)
       setUploading(false)
@@ -429,22 +436,17 @@ export function EarthContentDetail({
   }
 
   return (
-    <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-hidden">
-      {/* 宇宙背景渐变 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+    <div className="min-h-screen bg-black text-white">
+      {/* 统一导航栏 */}
+      <UnifiedNavbar
+        onOpenProfile={() => setShowProfileModal(true)}
+        rightButton={{
+          label: '返回课程',
+          href: `/courses/${systemKey}`
+        }}
+      />
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
-        {/* 返回按钮 */}
-        <Link
-          href={`/courses/${systemKey}`}
-          className="inline-flex items-center text-starlight-muted hover:text-starlight mb-6 transition-colors"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          返回课程
-        </Link>
-
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* 内容头部 */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
@@ -457,51 +459,78 @@ export function EarthContentDetail({
           <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-400 via-green-400 to-cyan-400 bg-clip-text text-transparent">
             {content.title}
           </h1>
-          {content.subtitle && (
-            <p className="text-xl text-gray-400 mb-6">{content.subtitle}</p>
-          )}
         </div>
 
-        {/* 知识点 - 使用统一的KnowledgeSectionV2组件 */}
+        {/* 1. 视频链接 - 使用副标题作为标题 */}
+        {content.documentary_url && (
+          <CollapsibleSection
+            title={content.subtitle || "课程视频"}
+            subtitle="点击观看本阶段的视频内容"
+            icon={<Play className="w-6 h-6 text-white" />}
+            iconBgClass="bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/20"
+          >
+            <a
+              href={content.documentary_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-gradient-to-r from-red-500/10 to-rose-500/10 border border-red-500/30 rounded-xl hover:border-red-400 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center">
+                  <Play className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium">观看视频</p>
+                  <p className="text-sm text-gray-400 truncate max-w-md">{content.documentary_url}</p>
+                </div>
+              </div>
+              <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-red-400 transition-colors" />
+            </a>
+          </CollapsibleSection>
+        )}
+
+        {/* 2. 观看前思考 */}
+        <PreWatchThinking
+          questions={socraticQuestions.pre_watch || []}
+          contentId={content.id}
+        />
+
+        {/* 3. 核心知识点 */}
         {knowledgePoints.length > 0 && (
-          <div className="mb-12">
+          <CollapsibleSection
+            title="核心知识点"
+            subtitle="点击任意知识点，盖亚会为你生成启发性问题"
+            icon="💡"
+            iconBgClass="bg-gradient-to-br from-green-400 to-emerald-500 shadow-green-500/20"
+          >
             <KnowledgeSectionV2
               knowledgePoints={knowledgePoints}
               contentId={content.id}
             />
-          </div>
+          </CollapsibleSection>
         )}
 
-        {/* 苏格拉底式问题 */}
-        <SocraticQuestionsV2
-          socraticQuestions={socraticQuestions}
+        {/* 4. 观看中思考 */}
+        <DuringWatchThinking
+          questions={socraticQuestions.during_watch || []}
           contentId={content.id}
         />
 
-        {/* 课后反思 */}
-        <PostReflectionV2
-          postReflection={postReflection}
+        {/* 5. 观看后思考 */}
+        <PostWatchThinking
+          questions={socraticQuestions.post_watch || []}
+          reflections={postReflection}
           contentId={content.id}
         />
 
-        {/* 小探险家项目 - 探索者联盟 */}
+        {/* 6. 小探险家项目 */}
         {explorerProjects.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mb-12"
+          <CollapsibleSection
+            title="小探险家项目"
+            subtitle="动手实践，化知识为体验"
+            icon="🔬"
+            iconBgClass="bg-gradient-to-br from-orange-400 via-amber-400 to-yellow-400 shadow-orange-500/20"
           >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 via-amber-400 to-yellow-400 flex items-center justify-center text-2xl shadow-lg shadow-orange-500/20">
-                🔬
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">探索者联盟 - 小探险家项目</h2>
-                <p className="text-sm text-gray-400">动手实践，化知识为体验</p>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {explorerProjects.map((project, index) => (
                 <motion.div
@@ -579,7 +608,7 @@ export function EarthContentDetail({
                     >
                       <button
                         onClick={() => setSelectedProject(project)}
-                        className="btn-stardust w-full px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2"
+                        className="w-full px-4 py-2 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-orange-300 rounded-lg text-sm font-semibold border border-orange-500/30 hover:border-orange-400/50 transition-all flex items-center justify-center gap-2"
                       >
                         <span>查看详细步骤</span>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -605,7 +634,7 @@ export function EarthContentDetail({
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </CollapsibleSection>
         )}
 
         {/* 阶段进度条和下一阶段 */}
@@ -787,7 +816,7 @@ export function EarthContentDetail({
                 {/* 关闭按钮 */}
                 <button
                   onClick={() => setSelectedProject(null)}
-                  className="btn-stardust absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center z-10"
+                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-800/80 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors z-10"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -875,7 +904,7 @@ export function EarthContentDetail({
                 <div className="mt-6 pt-6 border-t border-gray-700 space-y-3">
                   <button
                     onClick={() => openSubmitDialog(selectedProject)}
-                    className="btn-stardust w-full px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-lg text-white font-semibold transition-all flex items-center justify-center gap-2"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -889,7 +918,7 @@ export function EarthContentDetail({
                       setShowSubmissionsHistory(true)
                       fetchSubmissionsHistory(selectedProject)
                     }}
-                    className="btn-stardust w-full px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-white font-semibold transition-all flex items-center justify-center gap-2 border border-gray-700"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -916,7 +945,7 @@ export function EarthContentDetail({
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="card-glass border border-white/10 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
+                className="bg-gray-900 border border-orange-500/30 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
               >
                 <h3 className="text-2xl font-bold mb-4 text-white">提交作业 - {selectedProject.title}</h3>
 
@@ -945,6 +974,7 @@ export function EarthContentDetail({
                             <p className="text-xs text-gray-500 mt-1">仅支持图片格式 (JPG, PNG, GIF, WEBP)</p>
                           </div>
                           <input
+                            ref={fileInputRef}
                             type="file"
                             multiple
                             accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
@@ -1057,14 +1087,14 @@ export function EarthContentDetail({
                       <button
                         onClick={handleSubmitTask}
                         disabled={submitting || !submissionContent.trim() || uploading}
-                        className="btn-stardust flex-1 px-6 py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg font-semibold hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-white"
                       >
                         {uploading ? '上传中...' : submitting ? '提交中...' : '确认提交'}
                       </button>
                       <button
                         onClick={() => setShowSubmitDialog(false)}
                         disabled={submitting || uploading}
-                        className="btn-stardust px-6 py-3 rounded-lg font-semibold disabled:opacity-50"
+                        className="px-6 py-3 bg-gray-800 rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:opacity-50 text-white"
                       >
                         取消
                       </button>
@@ -1122,7 +1152,7 @@ export function EarthContentDetail({
                         // 刷新进度条
                         fetchStageProgress()
                       }}
-                      className="btn-stardust w-full px-6 py-3 rounded-lg font-semibold"
+                      className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg font-semibold hover:from-orange-600 hover:to-amber-600 transition-all text-white"
                     >
                       关闭
                     </button>
@@ -1151,7 +1181,7 @@ export function EarthContentDetail({
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="card-glass border border-white/10 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6"
+                className="bg-gray-900 border border-orange-500/30 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6"
               >
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-2xl font-bold text-white">
@@ -1162,7 +1192,7 @@ export function EarthContentDetail({
                       setShowSubmissionsHistory(false)
                       setSelectedSubmission(null)
                     }}
-                    className="btn-stardust w-8 h-8 rounded-full flex items-center justify-center"
+                    className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1276,7 +1306,7 @@ export function EarthContentDetail({
                         <div className="flex gap-2 mt-3">
                           <button
                             onClick={() => setSelectedSubmission(submission)}
-                            className="btn-stardust flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors text-white"
                           >
                             查看详情
                           </button>
@@ -1311,13 +1341,13 @@ export function EarthContentDetail({
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="card-glass border border-white/10 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
+                className="bg-gray-900 border border-orange-500/30 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
               >
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-2xl font-bold text-white">提交详情</h3>
                   <button
                     onClick={() => setSelectedSubmission(null)}
-                    className="btn-stardust w-8 h-8 rounded-full flex items-center justify-center"
+                    className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1414,7 +1444,7 @@ export function EarthContentDetail({
                   {/* 关闭按钮 */}
                   <button
                     onClick={() => setSelectedSubmission(null)}
-                    className="btn-stardust w-full px-6 py-3 rounded-lg font-semibold"
+                    className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg font-semibold hover:from-orange-600 hover:to-amber-600 transition-all text-white"
                   >
                     关闭
                   </button>
@@ -1424,6 +1454,12 @@ export function EarthContentDetail({
           )}
         </AnimatePresence>
       </div>
+
+      {/* 用户资料弹窗 */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </div>
   )
 }

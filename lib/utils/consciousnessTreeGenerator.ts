@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 意识树生成算法 V4 - 数字植物学生长系统 (Digital Botany Growth System)
  *

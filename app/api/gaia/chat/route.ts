@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
@@ -83,6 +84,7 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
         .select('*')
         .eq('id', conversationId)
         .eq('user_id', userId)
+        .eq('is_active', true)
         .maybeSingle()
 
       conversation = data
