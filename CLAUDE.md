@@ -153,9 +153,11 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 ### ✅ UI 修复完成 (2024-12-01)
 以下问题在 feature 分支合并到 master 后丢失，已全部修复：
 
-- [x] **首页用户菜单样式** - 右上角登录/登出按钮，使用 `btn-stardust` 炫彩效果
+- [x] **首页用户菜单** - 左上角用户菜单（包含个人资料、修改密码、管理后台、退出登录）
 - [x] **首页按钮样式** - 所有按钮使用 `btn-stardust` 炫彩边框效果
-- [x] **盖亚对话框样式** - 使用 `useToast` 和 `useConfirm` 替代原生对话框
+- [x] **盖亚对话框背景** - 使用透明玻璃效果 `bg-cosmic-void/80 backdrop-blur-xl`
+- [x] **盖亚对话框交互** - 使用 `useToast` 和 `useConfirm` 替代原生对话框
+- [x] **GlobalGaiaV3 浮动按钮** - 使用炫彩旋转边框 `gaia-icon` 样式
 - [x] **Portal 个性化推荐** - 移除暂未上线的"个性化推荐"区域
 - [x] **Portal 探索课程按钮** - 使用 `btn-stardust` 炫彩边框效果
 - [x] **Portal 进度条** - 使用 `progress-ethereal` 炫彩渐变样式
