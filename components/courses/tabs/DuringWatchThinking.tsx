@@ -56,7 +56,7 @@ export function DuringWatchThinking({ questions, contentId }: DuringWatchThinkin
 
   return (
     <CollapsibleSection
-      title="观看中思考"
+      title="观看中思考 During-Watch"
       subtitle="观看视频时，带着这些问题去思考"
       icon="💭"
       iconBgClass=""
@@ -67,20 +67,21 @@ export function DuringWatchThinking({ questions, contentId }: DuringWatchThinkin
             key={index}
             className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 hover:border-purple-500/50 transition-all"
           >
-            <div className="flex items-center gap-2 mb-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r from-purple-500/30 to-violet-500/30 text-purple-400 border border-purple-500/30 text-xs font-bold">
+            <div className="flex items-start gap-3">
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-r from-purple-500/30 to-violet-500/30 text-purple-400 border border-purple-500/30 text-sm font-bold flex-shrink-0 mt-0.5">
                 {index + 1}
               </span>
-              <span className="text-xs text-purple-400 uppercase font-semibold">During-Watch</span>
+              <div className="flex-1">
+                <p className="text-gray-200 leading-relaxed mb-4">{question}</p>
+                <button
+                  onClick={() => handleClickQuestion(question)}
+                  className="btn-stardust flex items-center gap-2 px-4 py-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  与盖亚深入探讨
+                </button>
+              </div>
             </div>
-            <p className="text-gray-200 leading-relaxed mb-4">{question}</p>
-            <button
-              onClick={() => handleClickQuestion(question)}
-              className="btn-stardust flex items-center gap-2 px-4 py-2"
-            >
-              <MessageCircle className="w-4 h-4" />
-              与盖亚深入探讨
-            </button>
           </div>
         ))}
       </div>

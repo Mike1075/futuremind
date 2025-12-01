@@ -241,6 +241,70 @@ AIP 聊天 → chat_history 表 → 触发器(每10条) → summarize-user-activ
 
 ---
 
+### 🚀 混合检索 + Rerank 优化 (2025-12-01) - 进行中
+
+#### 目标
+- **响应速度**：从 7-15 秒优化到 3-5 秒
+- **检索精度**：实现真正的语义搜索 + 关键词搜索
+- **智能调用**：根据问题类型决定是否需要 Rerank
+
+#### 技术架构
+```
+用户问题
+    ↓
+[判断] 是否需要检索？
+    ├── 否（闲聊）→ 直接 AI 回答（2-3秒）
+    └── 是 ↓
+        混合检索（向量 + 全文）
+            ↓
+        [判断] Top1 相似度 > 0.85？
+            ├── 是 → RRF 融合结果（3-4秒）
+            └── 否 → Cohere Rerank 精排（4-5秒）
+            ↓
+        AI 生成回答
+```
+
+#### 已完成
+- [x] **数据库准备**：
+  - 创建全文检索索引：`idx_document_chunks_content_fts`
+  - 创建向量匹配函数：`match_document_chunks()`
+
+- [x] **Edge Function 部署**：
+  - `hybrid-search`：混合检索基础版（向量 + 全文 + RRF 融合）
+  - URL: `https://lvjezsnwesyblnlkkirz.supabase.co/functions/v1/hybrid-search`
+
+- [x] **N8N 工作流配置**（探索者联盟）：
+  - HTTP Request org/pro 节点已改为调用新的搜索函数
+  - 已移除 AI Agent 的工具连接（Chain 模式）
+
+#### 进行中
+- [ ] **添加 Cohere API Key 到 Supabase 环境变量**
+- [ ] **升级 Edge Function**：添加智能判断 + Cohere Rerank
+- [ ] **测试完整 RAG 流程**
+
+#### 待完成
+- [ ] **配置盖亚对话**：使用相同的混合检索方案
+
+#### 关键配置
+- **Cohere API Key**：Trial Key（免费1000次/月）
+- **OpenAI API Key**：已有 `Aixue pro` 凭证
+- **Supabase 凭证**：`Supabase futuremind`
+
+#### 技术说明
+
+**RRF vs Rerank 区别**：
+| 方法 | 原理 | 速度 | 精度 | 成本 |
+|------|------|------|------|------|
+| RRF 融合 | 数学公式合并两个排名列表 | 快 | 中 | 免费 |
+| Cohere Rerank | AI 模型逐个分析文档相关性 | 慢 0.5-1s | 高 | $2/1000次 |
+
+**智能判断策略**：
+- 闲聊/问候 → 跳过检索
+- Top1 相似度 > 0.85 → 跳过 Rerank（RRF 够用）
+- Top1 相似度 < 0.85 → 调用 Rerank 精排
+
+---
+
 ## 待办事项 - AI 对话优化计划 (优先级高)
 
 ### 涉及的系统

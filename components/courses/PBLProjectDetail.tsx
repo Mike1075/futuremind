@@ -633,9 +633,9 @@ export function PBLProjectDetail({
                 <span className="text-gray-400">项目进度</span>
                 <span className="text-white font-medium">{progressPercentage}%</span>
               </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
+              <div className="w-full progress-ethereal rounded-full h-3">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                  className="progress-ethereal-bar h-3 rounded-full transition-all duration-500"
                   style={{ width: `${progressPercentage}%` }}
                 />
               </div>
@@ -647,7 +647,7 @@ export function PBLProjectDetail({
 
           {/* 项目简介 */}
           {project.project_intro && (
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 mb-6">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-6">
               <h2 className="text-lg font-semibold mb-3 text-blue-400">📋 项目简介</h2>
               <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
                 {project.project_intro}
@@ -658,7 +658,7 @@ export function PBLProjectDetail({
           {/* 选择/取消项目按钮 */}
           <button
             onClick={handleToggleSelection}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            className={`btn-stardust px-6 py-3 font-medium ${
               isSelected
                 ? 'bg-gray-800 hover:bg-gray-700 text-gray-300'
                 : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white'
@@ -678,7 +678,7 @@ export function PBLProjectDetail({
             return (
               <div
                 key={week.week}
-                className="bg-gray-900/50 border border-gray-800 rounded-lg overflow-hidden"
+                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden"
               >
                 {/* 周标题 */}
                 {(() => {
@@ -924,7 +924,7 @@ export function PBLProjectDetail({
                               <div className="pt-4 mt-4 border-t border-gray-700 flex gap-2">
                                 <button
                                   onClick={() => openSubmitDialog(week.week, dayNumber, activityDayLabel)}
-                                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                                  className="btn-stardust flex-1 px-4 py-2 text-sm font-medium"
                                 >
                                   {isCompleted ? '再次提交' : '提交任务'}
                                 </button>

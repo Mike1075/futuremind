@@ -501,7 +501,7 @@ export function EarthContentDetail({
         {/* 3. 核心知识点 */}
         {knowledgePoints.length > 0 && (
           <CollapsibleSection
-            title="核心知识点"
+            title="核心知识点 Knowledge Points"
             subtitle="点击任意知识点，盖亚会为你生成启发性问题"
             icon="💡"
             iconBgClass="bg-gradient-to-br from-green-400 to-emerald-500 shadow-green-500/20"
@@ -611,7 +611,7 @@ export function EarthContentDetail({
                     >
                       <button
                         onClick={() => setSelectedProject(project)}
-                        className="w-full px-4 py-2 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-orange-300 rounded-lg text-sm font-semibold border border-orange-500/30 hover:border-orange-400/50 transition-all flex items-center justify-center gap-2"
+                        className="btn-stardust w-full px-4 py-3 flex items-center justify-center gap-2"
                       >
                         <span>查看详细步骤</span>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
