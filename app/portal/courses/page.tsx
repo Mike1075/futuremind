@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, BookOpen, CheckCircle, Plus, Loader2, Ear, Globe, Rocket } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
 
 interface Course {
   id: string
@@ -25,6 +26,7 @@ interface EnrolledCourse {
 export default function CoursesPage() {
   const router = useRouter()
   const supabase = createClient()
+  const toast = useToast()
 
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
@@ -89,7 +91,7 @@ export default function CoursesPage() {
 
     // Check if already enrolled
     if (enrolledCourses.some(c => c.course_id === courseId)) {
-      alert('您已经选修了这门课程')
+      toast.info('您已经选修了这门课程')
       return
     }
 
@@ -106,10 +108,10 @@ export default function CoursesPage() {
 
       if (error) throw error
 
-      alert('✅ 选课成功！')
+      toast.success('选课成功！')
       await loadData()
     } catch {
-      alert('❌ 选课失败，请重试')
+      toast.error('选课失败，请重试')
     } finally {
       setEnrolling(false)
     }
@@ -129,24 +131,25 @@ export default function CoursesPage() {
     }
   }
 
-  const getCourseGradient = (systemKey: string) => {
+  // 获取课程边框颜色（用于炫彩效果）
+  const getCourseBorderColor = (systemKey: string) => {
     switch (systemKey) {
       case 'listening':
-        return 'from-purple-500/20 to-indigo-500/20'
+        return 'rgba(168, 85, 247, 0.25)' // 紫色
       case 'earth':
-        return 'from-cyan-500/20 to-teal-500/20'
+        return 'rgba(34, 211, 238, 0.25)' // 青色
       case 'icarus':
       case 'pbl':
-        return 'from-orange-500/20 to-red-500/20'
+        return 'rgba(251, 146, 60, 0.25)' // 橙色
       default:
-        return 'from-gray-500/20 to-gray-600/20'
+        return 'rgba(156, 163, 175, 0.25)' // 灰色
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-purple-400 animate-spin" />
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
+        <div className="loader-ethereal"></div>
       </div>
     )
   }
@@ -164,20 +167,20 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-cosmic-void">
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-md border-b border-white/10 sticky top-0 z-10">
+      <header className="nav-ethereal sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/portal')}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-white" />
+              <ArrowLeft className="w-5 h-5 text-starlight" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-white">我的课程</h1>
-              <p className="text-sm text-gray-400">管理您的课程选择</p>
+              <h1 className="text-h2 text-starlight">我的课程</h1>
+              <p className="text-small text-starlight-muted">管理您的课程选择</p>
             </div>
           </div>
         </div>
@@ -186,104 +189,116 @@ export default function CoursesPage() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Enrolled Courses */}
         <section className="mb-12">
-          <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
-            <CheckCircle className="w-6 h-6 text-green-400 mr-2" />
+          <h2 className="text-h3 text-starlight mb-6 flex items-center">
+            <CheckCircle className="w-6 h-6 text-wisdom-green mr-2" />
             已选课程 ({validEnrolledCourses.length})
           </h2>
 
           {validEnrolledCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {validEnrolledCourses.map((course) => {
+              {validEnrolledCourses.map((course, index) => {
                 const fullCourse = allCourses.find(c => c.id === course.course_id)
                 if (!fullCourse) return null
 
                 const Icon = getCourseIcon(fullCourse.system_key)
-                const gradient = getCourseGradient(fullCourse.system_key)
+                const borderColor = getCourseBorderColor(fullCourse.system_key)
 
                 return (
                   <motion.div
                     key={course.course_id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
                     onClick={() => handleCourseClick(fullCourse.system_key)}
-                    className={`relative bg-gradient-to-br ${gradient} backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-green-400/50 transition-all cursor-pointer hover:scale-105`}
+                    className="portal-card-wrapper cursor-pointer"
+                    style={{ '--course-border-color': borderColor } as React.CSSProperties}
                   >
-                    <div className="absolute top-4 right-4">
-                      <CheckCircle className="w-6 h-6 text-green-400" />
-                    </div>
+                    <div className="portal-card-inner relative p-6">
+                      <div className="absolute top-4 right-4">
+                        <CheckCircle className="w-6 h-6 text-wisdom-green" />
+                      </div>
 
-                    <Icon className="w-12 h-12 text-white mb-4" />
-                    <h3 className="text-xl font-semibold text-white mb-2">{course.course_title}</h3>
-                    {fullCourse.description && (
-                      <p className="text-sm text-gray-300 mb-4">{fullCourse.description}</p>
-                    )}
-                    <p className="text-xs text-gray-400">
-                      选课时间：{new Date(course.assigned_at).toLocaleDateString('zh-CN')}
-                    </p>
+                      <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-4 border border-white/20">
+                        <Icon className="w-6 h-6 text-starlight" />
+                      </div>
+                      <h3 className="text-h3 text-starlight mb-2">{course.course_title}</h3>
+                      {fullCourse.description && (
+                        <p className="text-small text-starlight-dim mb-4">{fullCourse.description}</p>
+                      )}
+                      <p className="text-xs text-starlight-muted">
+                        选课时间：{new Date(course.assigned_at).toLocaleDateString('zh-CN')}
+                      </p>
+                    </div>
                   </motion.div>
                 )
               })}
             </div>
           ) : (
-            <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-              <BookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">您还没有选修任何课程</p>
-              <p className="text-sm text-gray-500 mt-2">从下方可选课程中开始您的学习之旅</p>
+            <div className="text-center py-12 card-glass">
+              <BookOpen className="w-16 h-16 text-starlight-muted mx-auto mb-4" />
+              <p className="text-body text-starlight-muted">您还没有选修任何课程</p>
+              <p className="text-small text-starlight-dim mt-2">从下方可选课程中开始您的学习之旅</p>
             </div>
           )}
         </section>
 
         {/* Available Courses */}
         <section>
-          <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
-            <Plus className="w-6 h-6 text-purple-400 mr-2" />
+          <h2 className="text-h3 text-starlight mb-6 flex items-center">
+            <Plus className="w-6 h-6 text-mystic-purple mr-2" />
             可选课程 ({availableCourses.length})
           </h2>
 
           {availableCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {availableCourses.map((course) => {
+              {availableCourses.map((course, index) => {
                 const Icon = getCourseIcon(course.system_key)
-                const gradient = getCourseGradient(course.system_key)
+                const borderColor = getCourseBorderColor(course.system_key)
 
                 return (
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`relative bg-gradient-to-br ${gradient} backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-purple-400/50 transition-all group`}
+                    transition={{ delay: index * 0.1 }}
+                    className="portal-card-wrapper group"
+                    style={{ '--course-border-color': borderColor } as React.CSSProperties}
                   >
-                    <Icon className="w-12 h-12 text-white mb-4 group-hover:scale-110 transition-transform" />
-                    <h3 className="text-xl font-semibold text-white mb-2">{course.title}</h3>
-                    {course.description && (
-                      <p className="text-sm text-gray-300 mb-6">{course.description}</p>
-                    )}
-
-                    <button
-                      onClick={() => handleEnroll(course.id)}
-                      disabled={enrolling}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {enrolling ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          选课中...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4" />
-                          选修此课程
-                        </>
+                    <div className="portal-card-inner p-6">
+                      <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-4 border border-white/20 group-hover:scale-110 transition-transform">
+                        <Icon className="w-6 h-6 text-starlight" />
+                      </div>
+                      <h3 className="text-h3 text-starlight mb-2">{course.title}</h3>
+                      {course.description && (
+                        <p className="text-small text-starlight-dim mb-6">{course.description}</p>
                       )}
-                    </button>
+
+                      <button
+                        onClick={() => handleEnroll(course.id)}
+                        disabled={enrolling}
+                        className="btn-stardust w-full py-3 flex items-center justify-center gap-2"
+                      >
+                        {enrolling ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            选课中...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4" />
+                            选修此课程
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </motion.div>
                 )
               })}
             </div>
           ) : (
-            <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <p className="text-green-400">太棒了！您已经选修了所有可用的课程</p>
+            <div className="text-center py-12 card-glass">
+              <CheckCircle className="w-16 h-16 text-wisdom-green mx-auto mb-4" />
+              <p className="text-body text-wisdom-green">太棒了！您已经选修了所有可用的课程</p>
             </div>
           )}
         </section>

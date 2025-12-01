@@ -2,6 +2,7 @@
 'use client'
 
 import { MessageCircle } from 'lucide-react'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -18,6 +19,8 @@ export function SocraticQuestionsV2({
   socraticQuestions,
   contentId
 }: SocraticQuestionsV2Props) {
+  const { confirm } = useConfirm()
+
   // 点击问题，打开盖亚（先检查是否已讨论过）
   const handleClickQuestion = async (question: string, stage: string) => {
     if (typeof window === 'undefined') return
@@ -34,9 +37,11 @@ export function SocraticQuestionsV2({
         const data = await response.json()
 
         if (data.discussed) {
-          const shouldContinue = window.confirm(
-            '💡 这个问题我们之前探讨过哦！\n\n要不要回顾一下之前的思考，继续深入呢？'
-          )
+          const shouldContinue = await confirm({
+            title: '提示',
+            message: '这个问题我们之前探讨过哦！\n\n要不要回顾一下之前的思考，继续深入呢？',
+            type: 'warning'
+          })
 
           if (shouldContinue) {
             window.dispatchEvent(new CustomEvent('scrollToDiscussion', {
@@ -102,7 +107,7 @@ export function SocraticQuestionsV2({
                 <p className="text-gray-200 leading-relaxed mb-4">{question}</p>
                 <button
                   onClick={() => handleClickQuestion(question, 'pre_watch')}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all"
+                  className="btn-stardust flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
                 >
                   <MessageCircle className="w-4 h-4" />
                   与盖亚深入探讨
@@ -124,7 +129,7 @@ export function SocraticQuestionsV2({
                 <p className="text-gray-200 leading-relaxed mb-4">{question}</p>
                 <button
                   onClick={() => handleClickQuestion(question, 'during_watch')}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all"
+                  className="btn-stardust flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
                 >
                   <MessageCircle className="w-4 h-4" />
                   与盖亚深入探讨
@@ -146,7 +151,7 @@ export function SocraticQuestionsV2({
                 <p className="text-gray-200 leading-relaxed mb-4">{question}</p>
                 <button
                   onClick={() => handleClickQuestion(question, 'post_watch')}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all"
+                  className="btn-stardust flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
                 >
                   <MessageCircle className="w-4 h-4" />
                   与盖亚深入探讨

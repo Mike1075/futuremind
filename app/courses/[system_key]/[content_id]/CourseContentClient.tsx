@@ -36,7 +36,7 @@ export function CourseContentClient({
       </div>
 
       {/* 优秀作业展示区域 */}
-      <div className="mb-12 pt-12 border-t border-gray-800">
+      <div className="mb-12 pt-12 border-t border-white/10">
         <PublicSubmissions
           contentId={contentId}
           limit={12}

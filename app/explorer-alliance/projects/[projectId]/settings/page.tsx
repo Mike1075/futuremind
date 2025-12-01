@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, Trash2, Eye, EyeOff, UserPlus, UserX } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface ProjectMember {
   user_id: string
@@ -21,6 +23,8 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
   const { projectId } = use(params)
   const { project, loading: projectLoading } = useProject(projectId)
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [saving, setSaving] = useState(false)
   const [isManager, setIsManager] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
@@ -94,7 +98,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
 
   const handleSave = async () => {
     if (!name.trim()) {
-      alert('项目名称不能为空')
+      toast.warning('项目名称不能为空')
       return
     }
 
@@ -115,18 +119,22 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
 
       if (error) throw error
 
-      alert('设置已保存')
+      toast.success('设置已保存')
       router.push(`/explorer-alliance/projects/${projectId}`)
     } catch (error) {
       console.error('保存设置失败:', error)
-      alert('保存设置失败')
+      toast.error('保存设置失败')
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm('确定要删除此项目吗？此操作不可撤销，所有相关数据将被永久删除。')) {
+    if (!await confirm({
+      title: '确认删除',
+      message: '确定要删除此项目吗？此操作不可撤销，所有相关数据将被永久删除。',
+      type: 'warning'
+    })) {
       return
     }
 
@@ -165,11 +173,11 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
 
       if (projectError) throw projectError
 
-      alert('项目已删除')
+      toast.success('项目已删除')
       router.push('/explorer-alliance')
     } catch (error) {
       console.error('删除项目失败:', error)
-      alert('删除项目失败')
+      toast.error('删除项目失败')
     }
   }
 
@@ -197,8 +205,8 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
 
   if (projectLoading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-cosmic-void text-starlight flex items-center justify-center">
+        <div className="loader-ethereal"></div>
       </div>
     )
   }
@@ -208,27 +216,27 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-cosmic-void text-starlight">
       {/* Header */}
-      <div className="border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="nav-ethereal sticky top-0 z-10">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
                 href={`/explorer-alliance/projects/${projectId}`}
-                className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                className="badge-ethereal"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
               <div>
-                <h1 className="text-2xl font-bold">项目设置</h1>
-                <p className="text-sm text-gray-400 mt-1">{project.name}</p>
+                <h1 className="text-h2">项目设置</h1>
+                <p className="text-small text-starlight-muted mt-1">{project.name}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="px-4 py-2 btn-stardust flex items-center gap-2"
               >
                 <Trash2 className="h-4 w-4" />
                 删除项目
@@ -236,7 +244,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-6 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+                className="btn-stardust flex items-center gap-2 disabled:opacity-50"
               >
                 <Save className="h-4 w-4" />
                 {saving ? '保存中...' : '保存设置'}
@@ -250,43 +258,43 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
       <div className="container mx-auto px-6 py-8 max-w-4xl">
         <div className="space-y-8">
           {/* Basic Information */}
-          <div className="bg-black/30 border border-white/10 rounded-xl p-6">
-            <h2 className="text-xl font-semibold mb-6">基本信息</h2>
+          <div className="card-glass border border-white/10">
+            <h2 className="text-h3 mb-6">基本信息</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-small font-medium text-starlight-muted mb-2">
                   项目名称 <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white focus:border-purple-500 focus:outline-none"
+                  className="input-ethereal"
                   placeholder="输入项目名称"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-small font-medium text-starlight-muted mb-2">
                   项目描述
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white focus:border-purple-500 focus:outline-none resize-none"
+                  className="input-ethereal resize-none"
                   placeholder="输入项目描述"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-small font-medium text-starlight-muted mb-2">
                   项目状态
                 </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as 'active' | 'completed' | 'archived')}
-                  className="w-full px-4 py-2 bg-black/50 border border-white/10 rounded-lg text-white focus:border-purple-500 focus:outline-none"
+                  className="input-ethereal"
                 >
                   <option value="active">进行中</option>
                   <option value="completed">已完成</option>
@@ -297,8 +305,8 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
           </div>
 
           {/* Visibility & Permissions */}
-          <div className="bg-black/30 border border-white/10 rounded-xl p-6">
-            <h2 className="text-xl font-semibold mb-6">可见性与权限</h2>
+          <div className="card-glass border border-white/10">
+            <h2 className="text-h3 mb-6">可见性与权限</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-black/30 rounded-lg">
                 <div className="flex items-center gap-3">
@@ -309,7 +317,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
                   )}
                   <div>
                     <div className="font-medium">项目可见性</div>
-                    <div className="text-sm text-gray-400">
+                    <div className="text-small text-starlight-muted">
                       {isPublic ? '公开项目，所有人可见' : '私密项目，仅成员可见'}
                     </div>
                   </div>
@@ -337,7 +345,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
                   )}
                   <div>
                     <div className="font-medium">招募状态</div>
-                    <div className="text-sm text-gray-400">
+                    <div className="text-small text-starlight-muted">
                       {isRecruiting ? '正在招募新成员' : '暂不招募新成员'}
                     </div>
                   </div>
@@ -359,9 +367,9 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
           </div>
 
           {/* Project Members */}
-          <div className="bg-black/30 border border-white/10 rounded-xl p-6">
+          <div className="card-glass border border-white/10">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">项目成员 ({members.length})</h2>
+              <h2 className="text-h3">项目成员 ({members.length})</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {members.map((member) => (
@@ -376,7 +384,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
                     <div className="font-medium truncate">
                       {member.user?.full_name || member.user?.email}
                     </div>
-                    <div className="text-sm text-gray-400 truncate">
+                    <div className="text-small text-starlight-muted truncate">
                       {member.user?.email}
                     </div>
                   </div>

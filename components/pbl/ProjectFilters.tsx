@@ -20,12 +20,12 @@ export function ProjectFilters({
   onClose
 }: ProjectFiltersProps) {
   return (
-    <div className="bg-cosmic-800/50 backdrop-blur-sm border-b border-cosmic-700 p-6">
+    <div className="card-glass border-b border-cosmic-700">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">筛选条件</h3>
+        <h3 className="text-h3 font-semibold text-starlight">筛选条件</h3>
         <button
           onClick={onClose}
-          className="text-cosmic-400 hover:text-white transition-colors"
+          className="text-starlight-muted hover:text-starlight transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -34,7 +34,7 @@ export function ProjectFilters({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 难度筛选 */}
         <div>
-          <label className="block text-sm font-medium text-cosmic-300 mb-3">
+          <label className="block text-small font-medium text-starlight-muted mb-3">
             难度等级
           </label>
           <div className="space-y-2">
@@ -54,7 +54,7 @@ export function ProjectFilters({
                   onChange={(e) => onDifficultyChange(e.target.value)}
                   className="w-4 h-4 text-primary-600 bg-cosmic-800 border-cosmic-600 focus:ring-primary-500 focus:ring-2"
                 />
-                <span className="ml-2 text-sm text-cosmic-300">{option.label}</span>
+                <span className="ml-2 text-small text-starlight-muted">{option.label}</span>
               </label>
             ))}
           </div>
@@ -62,7 +62,7 @@ export function ProjectFilters({
 
         {/* 状态筛选 */}
         <div>
-          <label className="block text-sm font-medium text-cosmic-300 mb-3">
+          <label className="block text-small font-medium text-starlight-muted mb-3">
             项目状态
           </label>
           <div className="space-y-2">
@@ -82,7 +82,7 @@ export function ProjectFilters({
                   onChange={(e) => onStatusChange(e.target.value)}
                   className="w-4 h-4 text-primary-600 bg-cosmic-800 border-cosmic-600 focus:ring-primary-500 focus:ring-2"
                 />
-                <span className="ml-2 text-sm text-cosmic-300">{option.label}</span>
+                <span className="ml-2 text-small text-starlight-muted">{option.label}</span>
               </label>
             ))}
           </div>
@@ -95,13 +95,13 @@ export function ProjectFilters({
             onDifficultyChange('all')
             onStatusChange('all')
           }}
-          className="px-4 py-2 text-cosmic-400 hover:text-white transition-colors"
+          className="px-4 py-2 text-starlight-muted hover:text-starlight transition-colors"
         >
           重置筛选
         </button>
         <button
           onClick={onClose}
-          className="btn-cosmic"
+          className="btn-stardust"
         >
           应用筛选
         </button>

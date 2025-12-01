@@ -285,7 +285,7 @@ export function ExplorerAlliance() {
             </div>
             <Link
               href="/portal"
-              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors"
+              className="px-6 py-3 btn-stardust rounded-lg font-medium"
             >
               返回学习中心
             </Link>
@@ -293,23 +293,23 @@ export function ExplorerAlliance() {
 
           {/* 统计卡片 */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+            <div className="card-glass border border-white/10 rounded-lg p-4">
               <div className="text-2xl font-bold text-blue-400">{stats.total}</div>
               <div className="text-sm text-gray-400">全部项目</div>
             </div>
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+            <div className="card-glass border border-white/10 rounded-lg p-4">
               <div className="text-2xl font-bold text-purple-400">{stats.icarus}</div>
               <div className="text-sm text-gray-400">伊卡洛斯</div>
             </div>
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+            <div className="card-glass border border-white/10 rounded-lg p-4">
               <div className="text-2xl font-bold text-amber-400">{stats.earth}</div>
               <div className="text-sm text-gray-400">小探险家</div>
             </div>
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+            <div className="card-glass border border-white/10 rounded-lg p-4">
               <div className="text-2xl font-bold text-orange-400">{stats.community}</div>
               <div className="text-sm text-gray-400">社区项目</div>
             </div>
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+            <div className="card-glass border border-white/10 rounded-lg p-4">
               <div className="text-2xl font-bold text-green-400">{stats.myProjects}</div>
               <div className="text-sm text-gray-400">我的项目</div>
             </div>
@@ -319,40 +319,40 @@ export function ExplorerAlliance() {
           <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
             <button
               onClick={() => setSelectedType('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
                 selectedType === 'all'
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  : 'btn-stardust'
               }`}
             >
               全部项目 ({stats.total})
             </button>
             <button
               onClick={() => setSelectedType('icarus')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
                 selectedType === 'icarus'
                   ? 'bg-purple-500 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  : 'btn-stardust'
               }`}
             >
               🚀 伊卡洛斯项目 ({stats.icarus})
             </button>
             <button
               onClick={() => setSelectedType('earth')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
                 selectedType === 'earth'
                   ? 'bg-amber-500 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  : 'btn-stardust'
               }`}
             >
               🌍 小探险家项目 ({stats.earth})
             </button>
             <button
               onClick={() => setSelectedType('community')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
                 selectedType === 'community'
                   ? 'bg-orange-500 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  : 'btn-stardust'
               }`}
             >
               👥 社区项目 ({stats.community})
@@ -360,7 +360,7 @@ export function ExplorerAlliance() {
           </div>
 
           {/* 搜索框 */}
-          <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 mb-6">
+          <div className="card-glass border border-white/10 rounded-lg p-6 mb-6">
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <div className="relative">
@@ -383,7 +383,7 @@ export function ExplorerAlliance() {
                     setSearchQuery('')
                     setSelectedType('all')
                   }}
-                  className="px-4 py-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm text-gray-400 hover:text-white transition-colors"
+                  className="px-4 py-3 btn-stardust border border-gray-700 rounded-lg text-sm"
                 >
                   清除筛选
                 </button>
@@ -410,7 +410,7 @@ export function ExplorerAlliance() {
                 <Link
                   key={content.id}
                   href={`/courses/earth/${content.id}`}
-                  className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-all group"
+                  className="card-glass border border-white/10 rounded-lg p-6 hover:border-gray-700 transition-all group"
                 >
                   {/* 序号标识 */}
                   <div className="flex items-center gap-3 mb-3">
@@ -504,7 +504,7 @@ export function ExplorerAlliance() {
                 return (
                   <div
                     key={project.id}
-                    className={`bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-all ${
+                    className={`card-glass border border-white/10 rounded-lg p-6 hover:border-gray-700 transition-all ${
                       isSelected ? 'ring-2 ring-blue-500/30' : ''
                     }`}
                   >
@@ -563,14 +563,14 @@ export function ExplorerAlliance() {
                     <div className="flex gap-2">
                       <Link
                         href={`/courses/icarus/${project.id}`}
-                        className="flex-1 px-4 py-2 bg-gray-800 rounded-lg text-sm font-medium text-center hover:bg-gray-700 transition-colors"
+                        className="flex-1 px-4 py-2 btn-stardust rounded-lg text-sm font-medium text-center"
                       >
                         查看详情
                       </Link>
                       {!isSelected && (
                         <button
                           onClick={() => handleSelectProject(project.id)}
-                          className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                          className="px-4 py-2 btn-stardust rounded-lg text-sm font-medium whitespace-nowrap"
                         >
                           选择
                         </button>

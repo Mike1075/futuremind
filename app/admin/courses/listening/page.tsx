@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, ChevronRight, Users, UsersRound } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface CourseContent {
   id: string
@@ -35,6 +37,8 @@ interface MediaResource {
 
 export default function ListeningCoursePage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
   const [courseContents, setCourseContents] = useState<CourseContent[]>([])
@@ -159,11 +163,11 @@ export default function ListeningCoursePage() {
 
       if (error) throw error
 
-      alert('保存成功！')
+      toast.success('保存成功')
       await loadCourseContents()
     } catch (error) {
       console.error('保存失败:', error)
-      alert('保存失败，请重试')
+      toast.error('保存失败，请重试')
     } finally {
       setSaving(false)
     }
@@ -208,18 +212,18 @@ export default function ListeningCoursePage() {
 
       if (dbError) throw dbError
 
-      alert('文件上传成功！')
+      toast.success('文件上传成功')
       await loadMediaResources(selectedContent.id)
     } catch (error) {
       console.error('文件上传失败:', error)
-      alert('文件上传失败，请重试')
+      toast.error('文件上传失败，请重试')
     } finally {
       setUploading(false)
     }
   }
 
   const handleDeleteMedia = async (mediaId: string) => {
-    if (!confirm('确定要删除这个文件吗？')) return
+    if (!await confirm({ title: '确认操作', message: '确定要删除这个文件吗？', type: 'warning' })) return
 
     try {
       const supabase = createClient()
@@ -230,13 +234,13 @@ export default function ListeningCoursePage() {
 
       if (error) throw error
 
-      alert('删除成功！')
+      toast.success('删除成功')
       if (selectedContent) {
         await loadMediaResources(selectedContent.id)
       }
     } catch (error) {
       console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 
@@ -267,23 +271,27 @@ export default function ListeningCoursePage() {
 
       if (error) throw error
 
-      alert('新增成功！')
+      toast.success('新增成功')
       await loadCourseContents()
       setSelectedContent(data)
     } catch (error) {
       console.error('新增失败:', error)
-      alert('新增失败，请重试')
+      toast.error('新增失败，请重试')
     }
   }
 
   const handleDeleteCourse = async (contentId: string, sequenceNumber: number) => {
     // 保护前14天的固定课程
     if (sequenceNumber <= 14) {
-      alert('前14天的课程是固定内容，不能删除，只能修改。')
+      toast.warning('前14天的课程是固定内容，不能删除，只能修改。')
       return
     }
 
-    if (!confirm(`确定要删除第 ${sequenceNumber} 天的课程吗？删除后将无法恢复。`)) return
+    if (!await confirm({
+      title: '确认操作',
+      message: `确定要删除第 ${sequenceNumber} 天的课程吗？删除后将无法恢复。`,
+      type: 'warning'
+    })) return
 
     try {
       const supabase = createClient()
@@ -304,7 +312,7 @@ export default function ListeningCoursePage() {
 
       if (error) throw error
 
-      alert('删除成功！')
+      toast.success('删除成功')
 
       // 如果删除的是当前选中的课程，清空选中状态
       if (selectedContent?.id === contentId) {
@@ -314,7 +322,7 @@ export default function ListeningCoursePage() {
       await loadCourseContents()
     } catch (error) {
       console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 
@@ -333,7 +341,7 @@ export default function ListeningCoursePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
           <p className="text-purple-300 mt-4">加载中...</p>
@@ -343,7 +351,7 @@ export default function ListeningCoursePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-cosmic-void relative overflow-hidden">
       {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden">
         {isMounted && particles.map((particle) => (
@@ -374,13 +382,13 @@ export default function ListeningCoursePage() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/admin/courses')}
-              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all"
+              className="p-2 bg-white/10 hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-white">自在聆听·观音之旅</h1>
-              <p className="text-sm text-purple-300 mt-1">14天的聆听练习</p>
+              <h1 className="text-h2 font-bold text-starlight">自在聆听·观音之旅</h1>
+              <p className="text-small text-purple-300 mt-1">14天的聆听练习</p>
             </div>
           </div>
         </div>
@@ -399,8 +407,8 @@ export default function ListeningCoursePage() {
               >
                 <Users className="w-5 h-5 text-purple-400" />
                 <div>
-                  <p className="text-white font-medium">选课学员</p>
-                  <p className="text-gray-400 text-xs">管理课程学员</p>
+                  <p className="text-starlight font-medium">选课学员</p>
+                  <p className="text-starlight-muted text-xs">管理课程学员</p>
                 </div>
               </button>
               <button
@@ -409,8 +417,8 @@ export default function ListeningCoursePage() {
               >
                 <UsersRound className="w-5 h-5 text-cyan-400" />
                 <div>
-                  <p className="text-white font-medium">课程分组</p>
-                  <p className="text-gray-400 text-xs">管理课程分组</p>
+                  <p className="text-starlight font-medium">课程分组</p>
+                  <p className="text-starlight-muted text-xs">管理课程分组</p>
                 </div>
               </button>
             </div>
@@ -420,7 +428,7 @@ export default function ListeningCoursePage() {
 
             <button
               onClick={handleAddNewDay}
-              className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+              className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-starlight rounded-lg font-medium transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
               新增一天
@@ -442,8 +450,8 @@ export default function ListeningCoursePage() {
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-white font-medium">第 {content.sequence_number} 天</p>
-                        <p className="text-gray-400 text-sm mt-1 line-clamp-1">{content.title}</p>
+                        <p className="text-starlight font-medium">第 {content.sequence_number} 天</p>
+                        <p className="text-starlight-muted text-small mt-1 line-clamp-1">{content.title}</p>
                       </div>
                     </div>
                   </button>
@@ -471,11 +479,11 @@ export default function ListeningCoursePage() {
           {selectedContent ? (
             <div className="max-w-4xl mx-auto p-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">第 {selectedContent.sequence_number} 天</h2>
+                <h2 className="text-h2 font-bold text-starlight">第 {selectedContent.sequence_number} 天</h2>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                  className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-starlight rounded-lg font-medium transition-all flex items-center gap-2"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? '保存中...' : '保存'}
@@ -485,56 +493,56 @@ export default function ListeningCoursePage() {
               {/* 表单字段 */}
               <div className="space-y-6">
                 <div>
-                  <label className="block text-white font-medium mb-2">标题</label>
+                  <label className="block text-starlight font-medium mb-2">标题</label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    className="input-ethereal"
                     placeholder="输入标题..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">原文摘录</label>
+                  <label className="block text-starlight font-medium mb-2">原文摘录</label>
                   <textarea
                     value={formData.original_text}
                     onChange={(e) => setFormData({ ...formData, original_text: e.target.value })}
                     rows={6}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    className="input-ethereal"
                     placeholder="输入克里希那穆提的原文摘录..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">深度解读</label>
+                  <label className="block text-starlight font-medium mb-2">深度解读</label>
                   <textarea
                     value={formData.deep_interpretation}
                     onChange={(e) => setFormData({ ...formData, deep_interpretation: e.target.value })}
                     rows={10}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    className="input-ethereal"
                     placeholder="输入深度解读内容..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">冥想练习与引导</label>
+                  <label className="block text-starlight font-medium mb-2">冥想练习与引导</label>
                   <textarea
                     value={formData.meditation_guide}
                     onChange={(e) => setFormData({ ...formData, meditation_guide: e.target.value })}
                     rows={10}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    className="input-ethereal"
                     placeholder="输入冥想练习与引导..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">生活中的小练习</label>
+                  <label className="block text-starlight font-medium mb-2">生活中的小练习</label>
                   <textarea
                     value={formData.life_practice}
                     onChange={(e) => setFormData({ ...formData, life_practice: e.target.value })}
                     rows={8}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    className="input-ethereal"
                     placeholder="输入生活中的小练习..."
                   />
                 </div>
@@ -543,8 +551,8 @@ export default function ListeningCoursePage() {
               {/* 资料管理模块 */}
               <div className="mt-12 pt-8 border-t border-white/10">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-white">资料管理</h3>
-                  <label className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 cursor-pointer">
+                  <h3 className="text-h3 font-bold text-starlight">资料管理</h3>
+                  <label className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-starlight rounded-lg font-medium transition-all flex items-center gap-2 cursor-pointer">
                     <Upload className="w-4 h-4" />
                     {uploading ? '上传中...' : '上传资料'}
                     <input
@@ -560,8 +568,8 @@ export default function ListeningCoursePage() {
                 <div className="space-y-3">
                   {mediaResources.length === 0 ? (
                     <div className="text-center py-12 bg-white/5 rounded-lg border border-white/10">
-                      <FileAudio className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-400">暂无资料，点击上传按钮添加</p>
+                      <FileAudio className="w-12 h-12 text-starlight-muted mx-auto mb-3" />
+                      <p className="text-starlight-muted">暂无资料，点击上传按钮添加</p>
                     </div>
                   ) : (
                     mediaResources.map((media) => (
@@ -572,8 +580,8 @@ export default function ListeningCoursePage() {
                         <div className="flex items-center gap-3">
                           <FileAudio className="w-6 h-6 text-purple-400" />
                           <div>
-                            <p className="text-white font-medium">{media.file_name || '未命名文件'}</p>
-                            <p className="text-gray-400 text-sm">
+                            <p className="text-starlight font-medium">{media.file_name || '未命名文件'}</p>
+                            <p className="text-starlight-muted text-small">
                               {media.file_size ? (media.file_size / 1024 / 1024).toFixed(2) : '0.00'} MB
                             </p>
                           </div>
@@ -583,7 +591,7 @@ export default function ListeningCoursePage() {
                             href={media.file_url || '#'}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-sm transition-all"
+                            className="px-3 py-1 bg-white/10 hover:bg-white/20 text-starlight rounded text-small transition-all"
                           >
                             查看
                           </a>
@@ -602,7 +610,7 @@ export default function ListeningCoursePage() {
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-gray-400 text-lg">请从左侧选择一天课程进行编辑</p>
+              <p className="text-starlight-muted text-lg">请从左侧选择一天课程进行编辑</p>
             </div>
           )}
         </div>

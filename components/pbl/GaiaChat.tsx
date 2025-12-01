@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { X, Send, Sparkles, User, Trash2, Brain, Zap, Heart, Edit3, Check } from 'lucide-react'
 import { PBLProject } from '@/lib/pbl-data'
 import { MarkdownRenderer } from './MarkdownRenderer'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface GaiaChatProps {
   onClose: () => void
@@ -22,6 +23,7 @@ interface ChatMessage {
 }
 
 export function GaiaChat({ onClose, currentProject, showProjectSelector = true, userName = '探索者' }: GaiaChatProps) {
+  const { confirm } = useConfirm()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -197,8 +199,14 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
     }
   }
 
-  const handleClearChat = () => {
-    if (confirm('确定要清空对话记录吗？')) {
+  const handleClearChat = async () => {
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: '确定要清空对话记录吗？',
+      type: 'warning'
+    })
+
+    if (confirmed) {
       const welcomeMessage: ChatMessage = {
         id: 'welcome-new',
         role: 'assistant',
@@ -238,10 +246,16 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
   }
 
   // 删除选中的消息
-  const deleteSelectedMessages = () => {
+  const deleteSelectedMessages = async () => {
     if (selectedMessages.size === 0) return
 
-    if (!confirm(`确定要删除选中的 ${selectedMessages.size} 条消息吗？`)) return
+    const confirmed = await confirm({
+      title: '确认删除',
+      message: `确定要删除选中的 ${selectedMessages.size} 条消息吗？`,
+      type: 'warning'
+    })
+
+    if (!confirmed) return
 
     const newMessages = messages.filter(m => !selectedMessages.has(m.id))
     setMessages(newMessages)

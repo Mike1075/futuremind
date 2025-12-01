@@ -284,7 +284,7 @@ export function MainDashboard() {
       {/* 塞娅AI助手 - 浮动按钮 */}
       <button
         onClick={() => setModals(prev => ({ ...prev, gaiaDialog: true }))}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-purple-500/50 transition-all duration-300 flex items-center justify-center z-50 hover:scale-110"
+        className="fixed bottom-8 right-8 w-16 h-16 btn-stardust rounded-full shadow-lg hover:shadow-purple-500/50 transition-all duration-300 flex items-center justify-center z-50 hover:scale-110"
         aria-label="打开塞娅对话"
       >
         <MessageCircle className="w-8 h-8 text-white" />

@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Users, ArrowLeft, Search, Crown, GraduationCap, User, UserPlus } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface UserProfile {
   id: string
@@ -57,6 +59,8 @@ const LEVEL_NAMES: Record<number, string> = {
 
 export default function UsersManagementPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState<string>('')
   const [allUsers, setAllUsers] = useState<UserProfile[]>([])
@@ -91,13 +95,13 @@ export default function UsersManagementPage() {
         .maybeSingle()
 
       if (profileError) {
-        alert('❌ 系统错误\n\n无法验证您的权限，请稍后重试。')
+        toast.error('无法验证您的权限，请稍后重试。')
         router.push('/admin')
         return
       }
 
       if (!profile || profile.role !== 'principal') {
-        alert('⚠️ 您不是校长\n\n只有校长可以访问人员管理页面。')
+        toast.warning('只有校长可以访问人员管理页面。')
         router.push('/admin')
         return
       }
@@ -105,7 +109,7 @@ export default function UsersManagementPage() {
       setUserEmail(user.email || '')
       await fetchAllUsers()
     } catch (error) {
-      alert('❌ 系统错误\n\n无法验证您的身份，请稍后重试。')
+      toast.error('无法验证您的身份，请稍后重试。')
       router.push('/login')
     } finally {
       setLoading(false)
@@ -170,9 +174,11 @@ export default function UsersManagementPage() {
   }, [allUsers, searchTerm, selectedTab])
 
   const handleChangeRole = async (userId: string, userName: string, currentRole: string, newRole: string) => {
-    const confirmed = confirm(
-      `确定要将「${userName}」的角色从「${ROLE_CONFIG[currentRole as keyof typeof ROLE_CONFIG]?.label || currentRole}」改为「${ROLE_CONFIG[newRole as keyof typeof ROLE_CONFIG]?.label}」吗？`
-    )
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: `确定要将「${userName}」的角色从「${ROLE_CONFIG[currentRole as keyof typeof ROLE_CONFIG]?.label || currentRole}」改为「${ROLE_CONFIG[newRole as keyof typeof ROLE_CONFIG]?.label}」吗？`,
+      type: 'warning'
+    })
 
     if (!confirmed) {
       return
@@ -199,19 +205,19 @@ export default function UsersManagementPage() {
         return updatedUsers
       })
 
-      alert('✅ 角色修改成功')
+      toast.success('角色修改成功')
 
       // 后台重新获取数据以确保同步
       await fetchAllUsers()
     } catch (error) {
-      alert('❌ 修改失败，请稍后重试')
+      toast.error('修改失败，请稍后重试')
     }
   }
 
   const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newUserEmail.trim()) {
-      alert('请输入邮箱地址')
+      toast.warning('请输入邮箱地址')
       return
     }
 
@@ -228,13 +234,15 @@ export default function UsersManagementPage() {
       if (existingUser) {
         // 用户已存在，询问是否修改角色
         if (existingUser.role === newUserRole) {
-          alert(`该用户已经是${ROLE_CONFIG[newUserRole].label}了`)
+          toast.info(`该用户已经是${ROLE_CONFIG[newUserRole].label}了`)
           return
         }
 
-        const confirmed = confirm(
-          `该用户已注册（当前角色：${ROLE_CONFIG[existingUser.role as keyof typeof ROLE_CONFIG]?.label || existingUser.role}）\n\n是否将其角色改为「${ROLE_CONFIG[newUserRole].label}」？`
-        )
+        const confirmed = await confirm({
+          title: '确认操作',
+          message: `该用户已注册（当前角色：${ROLE_CONFIG[existingUser.role as keyof typeof ROLE_CONFIG]?.label || existingUser.role}）\n\n是否将其角色改为「${ROLE_CONFIG[newUserRole].label}」？`,
+          type: 'warning'
+        })
 
         if (confirmed) {
           const { error } = await supabase
@@ -244,16 +252,16 @@ export default function UsersManagementPage() {
 
           if (error) throw error
 
-          alert(`✅ 已将 ${newUserEmail} 的角色更新为${ROLE_CONFIG[newUserRole].label}`)
+          toast.success(`已将 ${newUserEmail} 的角色更新为${ROLE_CONFIG[newUserRole].label}`)
           setNewUserEmail('')
           setShowAddModal(false)
           await fetchAllUsers()
         }
       } else {
-        alert('❌ 该用户尚未注册\n\n请让用户先注册账号，然后再在此处修改其角色。')
+        toast.error('该用户尚未注册，请让用户先注册账号，然后再在此处修改其角色。')
       }
     } catch (error) {
-      alert('❌ 操作失败，请稍后重试')
+      toast.error('操作失败，请稍后重试')
     } finally {
       setSubmitting(false)
     }

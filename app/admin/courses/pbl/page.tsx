@@ -11,6 +11,8 @@ import {
   PawPrint, Microscope, Atom, Sprout, Bug, Droplet, MapPin,
   Palette, Eye, Dices, Waves, TreePine
 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface PBLProject {
   id: string
@@ -68,6 +70,8 @@ const getProjectIcon = (sequenceNumber: number) => {
 
 export default function IcarusAdminPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
   const [projects, setProjects] = useState<PBLProject[]>([])
@@ -249,22 +253,22 @@ export default function IcarusAdminPage() {
         if (error) throw error
       }
 
-      alert('新增模块成功！')
+      toast.success('新增模块成功！')
       await loadProjects()
     } catch (error) {
       console.error('新增模块失败:', error)
-      alert('新增模块失败，请重试')
+      toast.error('新增模块失败，请重试')
     }
   }
 
   const handleDeleteModule = async (moduleId: number, range: number[]) => {
     // 只能删除sequence_number >= 13的模块
     if (range[0] < 13) {
-      alert('系统默认的前3个模块不能删除')
+      toast.warning('系统默认的前3个模块不能删除')
       return
     }
 
-    if (!confirm(`确定要删除${getAllModules().find(m => m.id === moduleId)?.name}吗？删除后将无法恢复。`)) return
+    if (!await confirm({ title: '确认操作', message: `确定要删除${getAllModules().find(m => m.id === moduleId)?.name}吗？删除后将无法恢复。`, type: 'warning' })) return
 
     try {
       const supabase = createClient()
@@ -289,11 +293,11 @@ export default function IcarusAdminPage() {
         }
       }
 
-      alert('删除成功！')
+      toast.success('删除成功！')
       await loadProjects()
     } catch (error) {
       console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 
@@ -324,12 +328,12 @@ export default function IcarusAdminPage() {
 
       if (error) throw error
 
-      alert('保存成功！')
+      toast.success('保存成功！')
       setEditMode(false)
       await loadProjects()
     } catch (error) {
       console.error('保存失败:', error)
-      alert('保存失败，请重试')
+      toast.error('保存失败，请重试')
     } finally {
       setSaving(false)
     }
@@ -430,14 +434,14 @@ export default function IcarusAdminPage() {
 
   if (!isMounted || loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-cosmic-void relative overflow-hidden">
       {/* 星空背景 */}
       {Array.from({ length: 50 }).map((_, i) => (
         <motion.div
@@ -467,11 +471,11 @@ export default function IcarusAdminPage() {
               onClick={() => router.push('/admin/courses')}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-white" />
+              <ArrowLeft className="w-5 h-5 text-starlight" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-white">伊卡洛斯计划</h1>
-              <p className="text-gray-400 text-sm">探索现实的边缘 - PBL项目体系</p>
+              <h1 className="text-h2 font-bold text-starlight">伊卡洛斯计划</h1>
+              <p className="text-starlight-muted text-small">探索现实的边缘 - PBL项目体系</p>
             </div>
           </div>
 
@@ -479,17 +483,17 @@ export default function IcarusAdminPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/admin/courses/pbl/students')}
-              className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-orange-500/50 rounded-lg transition-all flex items-center gap-2"
+              className="px-4 py-2 card-glass border border-white/10 hover:border-orange-500/50 rounded-lg transition-all flex items-center gap-2"
             >
               <Users className="w-4 h-4 text-orange-400" />
-              <span className="text-white text-sm">选课学员</span>
+              <span className="text-starlight text-small">选课学员</span>
             </button>
             <button
               onClick={() => router.push('/admin/courses/pbl/groups')}
-              className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-pink-500/50 rounded-lg transition-all flex items-center gap-2"
+              className="px-4 py-2 card-glass border border-white/10 hover:border-pink-500/50 rounded-lg transition-all flex items-center gap-2"
             >
               <UsersRound className="w-4 h-4 text-pink-400" />
-              <span className="text-white text-sm">课程分组</span>
+              <span className="text-starlight text-small">课程分组</span>
             </button>
           </div>
         </div>
@@ -505,10 +509,10 @@ export default function IcarusAdminPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: module.id * 0.1 }}
-                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 relative"
+                className="card-glass border border-white/10 rounded-xl p-6 relative"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-white">{module.name}</h2>
+                  <h2 className="text-h3 font-bold text-starlight">{module.name}</h2>
                   {module.range[0] >= 13 && (
                     <button
                       onClick={() => handleDeleteModule(module.id, module.range)}
@@ -570,15 +574,15 @@ export default function IcarusAdminPage() {
             <motion.button
               onClick={handleAddModule}
               whileHover={{ scale: 1.02 }}
-              className="w-full p-6 bg-white/5 hover:bg-white/10 backdrop-blur-sm border-2 border-dashed border-white/20 hover:border-purple-500/50 rounded-xl transition-all flex items-center justify-center gap-3"
+              className="w-full p-6 card-glass border-2 border-dashed border-white/20 hover:border-purple-500/50 rounded-xl transition-all flex items-center justify-center gap-3"
             >
               <Plus className="w-6 h-6 text-purple-400" />
-              <span className="text-lg font-medium text-white">新增模块</span>
+              <span className="text-h3 font-medium text-starlight">新增模块</span>
             </motion.button>
           </div>
         ) : (
           /* 详细编辑视图 */
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
+          <div className="card-glass border border-white/10 rounded-xl p-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <button
@@ -588,16 +592,16 @@ export default function IcarusAdminPage() {
                   }}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5 text-white" />
+                  <X className="w-5 h-5 text-starlight" />
                 </button>
-                <h2 className="text-xl font-bold text-white">
+                <h2 className="text-h3 font-bold text-starlight">
                   第{selectedProject.sequence_number}阶段：{selectedProject.title}
                 </h2>
               </div>
               <button
                 onClick={() => editMode ? handleSave() : setEditMode(true)}
                 disabled={saving}
-                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                className="px-6 py-2 btn-stardust rounded-lg font-medium transition-all flex items-center gap-2"
               >
                 {saving ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -618,28 +622,28 @@ export default function IcarusAdminPage() {
             <div className="space-y-6">
               {/* 标题 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">项目标题</label>
+                <label className="block text-small font-medium text-starlight-muted mb-2">项目标题</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   disabled={!editMode}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                  className="w-full input-ethereal disabled:opacity-50"
                 />
               </div>
 
               {/* 项目简介 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">项目简介</label>
+                <label className="block text-small font-medium text-starlight-muted mb-2">项目简介</label>
                 <textarea
                   value={formData.project_intro}
                   onChange={(e) => setFormData({ ...formData, project_intro: e.target.value })}
                   disabled={!editMode}
                   rows={4}
                   placeholder="输入项目简介，用于在项目列表页显示..."
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                  className="w-full input-ethereal disabled:opacity-50"
                 />
-                <p className="text-xs text-gray-500 mt-1">建议150-200字，简明扼要地介绍项目的核心价值和学习目标</p>
+                <p className="text-xs text-starlight-dim mt-1">建议150-200字，简明扼要地介绍项目的核心价值和学习目标</p>
               </div>
 
               {/* 模块和难度 */}

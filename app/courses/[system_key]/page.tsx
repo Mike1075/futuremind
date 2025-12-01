@@ -32,12 +32,13 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
 
   if (!courseData) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">课程不存在</h1>
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+        <div className="text-center relative z-10">
+          <h1 className="text-h2 text-starlight mb-4">课程不存在</h1>
           <Link
             href="/portal"
-            className="text-blue-400 hover:text-blue-300 underline"
+            className="text-mystic-purple hover:text-mystic-purple-light underline transition-colors text-body"
           >
             返回学习中心
           </Link>
@@ -124,12 +125,15 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     : 0
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-hidden">
+      {/* 宇宙背景渐变 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+
+      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
         {/* 返回按钮 */}
         <Link
           href="/portal"
-          className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition-colors"
+          className="inline-flex items-center text-starlight-muted hover:text-starlight mb-6 transition-colors text-small"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -139,22 +143,22 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
 
         {/* 课程头部 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">{courseSystem.title}</h1>
-          <p className="text-gray-400 mb-6">{courseSystem.description}</p>
+          <h1 className="text-h1 mb-4">{courseSystem.title}</h1>
+          <p className="text-body text-starlight-muted mb-6">{courseSystem.description}</p>
 
           {/* 进度条 */}
           <div className="mb-4">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-400">学习进度</span>
-              <span className="text-white font-medium">{progressPercentage}%</span>
+            <div className="flex justify-between text-small mb-2">
+              <span className="text-starlight-dim">学习进度</span>
+              <span className="text-starlight font-medium">{progressPercentage}%</span>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-2">
+            <div className="progress-ethereal">
               <div
-                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                className="progress-ethereal-bar"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
-            <p className="text-sm text-gray-400 mt-2">
+            <p className="text-small text-starlight-muted mt-2">
               已完成 {completedCount} / {totalContents} 个单元
             </p>
           </div>
@@ -162,7 +166,7 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
 
         {/* 课程内容列表 */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold mb-4">课程内容</h2>
+          <h2 className="text-h3 mb-4">课程内容</h2>
 
           {contents.length > 0 ? (
             <div className="grid gap-4">
@@ -192,24 +196,24 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
                 if (index === 0) isUnlocked = true
 
                 const cardClassName = `
-                  block rounded-lg p-6 transition-all relative overflow-hidden
+                  block card-glass p-6 transition-all relative overflow-hidden
                   ${isUnlocked
-                    ? 'bg-gray-900/50 border border-gray-800 hover:border-gray-700 hover:bg-gray-900/70 cursor-pointer'
-                    : 'bg-gray-900/20 border border-gray-800/50 cursor-not-allowed'
+                    ? 'hover:border-mystic-purple/30 hover:shadow-lg hover:shadow-mystic-purple/10 cursor-pointer'
+                    : 'opacity-60 cursor-not-allowed'
                   }
-                  ${isCompleted && isUnlocked ? 'ring-2 ring-green-500/20' : ''}
+                  ${isCompleted && isUnlocked ? 'ring-2 ring-wisdom-green/30' : ''}
                 `
 
                 const cardContent = (
                   <>
                     {/* 未解锁遮罩 */}
                     {!isUnlocked && (
-                      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm z-10 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-cosmic-void/60 backdrop-blur-sm z-10 flex items-center justify-center">
                         <div className="text-center">
-                          <svg className="w-12 h-12 text-gray-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-12 h-12 text-starlight-muted mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                           </svg>
-                          <p className="text-gray-400 text-sm">
+                          <p className="text-starlight-muted text-small">
                             完成「{prerequisiteTitle}」后解锁
                           </p>
                         </div>
@@ -221,12 +225,12 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
                         <div className="flex items-center gap-3 mb-2">
                           {/* 序号或状态标识 */}
                           <div className={`
-                            flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold
+                            flex items-center justify-center w-8 h-8 rounded-full text-small font-bold
                             ${isCompleted
-                              ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white'
+                              ? 'bg-gradient-to-br from-wisdom-green to-wisdom-emerald text-starlight'
                               : isUnlocked
-                                ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
-                                : 'bg-gray-700 text-gray-500'
+                                ? 'bg-gradient-to-br from-ethereal-blue to-mystic-purple text-starlight'
+                                : 'bg-white/10 text-starlight-muted'
                             }
                           `}>
                             {isCompleted ? (
@@ -238,44 +242,44 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
                             )}
                           </div>
 
-                          <span className={`text-sm font-medium ${isUnlocked ? 'text-gray-400' : 'text-gray-600'}`}>
+                          <span className={`text-small font-medium ${isUnlocked ? 'text-starlight-muted' : 'text-starlight-dim'}`}>
                             {courseSystem.structure_type === 'daily_sequential'
                               ? `第${content.sequence_number}天`
                               : `单元 ${content.sequence_number}`}
                           </span>
 
                           {isCompleted && (
-                            <span className="px-2 py-1 bg-green-500/10 text-green-400 text-xs rounded-full font-medium">
+                            <span className="px-2 py-1 bg-wisdom-green/10 text-wisdom-green text-xs rounded-full font-medium">
                               已完成
                             </span>
                           )}
 
                           {!isUnlocked && (
-                            <span className="px-2 py-1 bg-gray-700/50 text-gray-500 text-xs rounded-full font-medium">
+                            <span className="px-2 py-1 bg-white/5 text-starlight-dim text-xs rounded-full font-medium">
                               🔒 锁定
                             </span>
                           )}
                         </div>
 
-                        <h3 className={`text-lg font-semibold mb-2 ${isUnlocked ? 'text-white' : 'text-gray-600'}`}>
+                        <h3 className={`text-h3 mb-2 ${isUnlocked ? 'text-starlight' : 'text-starlight-dim'}`}>
                           {content.title}
                         </h3>
 
                         {content.subtitle && (
-                          <p className={`text-sm mb-2 ${isUnlocked ? 'text-gray-400' : 'text-gray-600'}`}>
+                          <p className={`text-small mb-2 ${isUnlocked ? 'text-starlight-muted' : 'text-starlight-dim'}`}>
                             {content.subtitle}
                           </p>
                         )}
 
                         {content.duration && (
-                          <p className={`text-sm ${isUnlocked ? 'text-gray-500' : 'text-gray-600'}`}>
+                          <p className={`text-small ${isUnlocked ? 'text-starlight-dim' : 'text-starlight-dim'}`}>
                             ⏱️ {content.duration}
                           </p>
                         )}
                       </div>
 
                       {isUnlocked && (
-                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6 text-starlight-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       )}
@@ -302,8 +306,8 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
               })}
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
-              暂无课程内容
+            <div className="text-center py-12 card-glass">
+              <p className="text-body text-starlight-dim">暂无课程内容</p>
             </div>
           )}
         </div>
@@ -317,8 +321,9 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10" />
+        <div className="loader-ethereal relative z-10"></div>
       </div>
     }>
       <CourseContent systemKey={system_key} />

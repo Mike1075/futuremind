@@ -4,9 +4,13 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 export default function DebugPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [userInfo, setUserInfo] = useState<any>(null)
   const [adminInfo, setAdminInfo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -66,7 +70,7 @@ export default function DebugPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    alert('已复制到剪贴板！')
+    toast.success('已复制到剪贴板！')
   }
 
   if (loading) {

@@ -79,7 +79,7 @@ export function ConfirmDialog({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              className="card-glass border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl"
             >
               {/* 关闭按钮 */}
               {!loading && (
@@ -111,14 +111,14 @@ export function ConfirmDialog({
                 <button
                   onClick={onClose}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                  className="flex-1 px-4 py-3 btn-stardust disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium"
                 >
                   {cancelText}
                 </button>
                 <button
                   onClick={onConfirm}
                   disabled={loading}
-                  className={`flex-1 px-4 py-3 ${getButtonColors()} disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2`}
+                  className="flex-1 px-4 py-3 btn-stardust disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>

@@ -35,7 +35,7 @@ function ResetPasswordForm() {
     }
 
     // 监听认证状态变化（处理从邮件链接跳转过来的情况）
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsValidSession(true)
       }
@@ -90,10 +90,10 @@ function ResetPasswordForm() {
   // 加载中状态
   if (isValidSession === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">验证重置链接中...</p>
+          <div className="loader-ethereal mx-auto mb-4"></div>
+          <p className="text-starlight-muted text-body">验证重置链接中...</p>
         </div>
       </div>
     )
@@ -102,21 +102,21 @@ function ResetPasswordForm() {
   // 无效链接状态
   if (isValidSession === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black px-4">
+      <div className="min-h-screen flex items-center justify-center bg-cosmic-void px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
           className="max-w-md w-full"
         >
-          <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl border border-white/20">
+          <div className="card-glass p-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Key className="w-8 h-8 text-red-400" />
+              <div className="w-16 h-16 bg-life-pink/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Key className="w-8 h-8 text-life-pink" />
               </div>
-              <h1 className="text-2xl font-bold text-white mb-2">链接已失效</h1>
-              <p className="text-gray-400 mb-6">{message}</p>
-              <p className="text-gray-500 text-sm">正在跳转到登录页面...</p>
+              <h1 className="text-h2 text-starlight mb-2">链接已失效</h1>
+              <p className="text-body text-starlight-muted mb-6">{message}</p>
+              <p className="text-small text-starlight-dim">正在跳转到登录页面...</p>
             </div>
           </div>
         </motion.div>
@@ -127,20 +127,20 @@ function ResetPasswordForm() {
   // 成功状态
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black px-4">
+      <div className="min-h-screen flex items-center justify-center bg-cosmic-void px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
           className="max-w-md w-full"
         >
-          <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl border border-white/20">
+          <div className="card-glass p-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-400" />
+              <div className="w-16 h-16 bg-wisdom-green/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-wisdom-green" />
               </div>
-              <h1 className="text-2xl font-bold text-white mb-2">密码重置成功</h1>
-              <p className="text-gray-400">{message}</p>
+              <h1 className="text-h2 text-starlight mb-2">密码重置成功</h1>
+              <p className="text-body text-starlight-muted">{message}</p>
             </div>
           </div>
         </motion.div>
@@ -149,31 +149,31 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black px-4">
+    <div className="min-h-screen flex items-center justify-center bg-cosmic-void px-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
         className="max-w-md w-full"
       >
-        <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl border border-white/20">
+        <div className="card-glass p-8">
           <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Key className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 bg-gradient-to-br from-mystic-purple/30 to-ethereal-blue/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-mystic-purple/40">
+              <Key className="w-8 h-8 text-starlight" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">重置密码</h1>
-            <p className="text-gray-400">请输入您的新密码</p>
+            <h1 className="text-h2 text-starlight mb-2">重置密码</h1>
+            <p className="text-body text-starlight-muted">请输入您的新密码</p>
           </div>
 
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">新密码</label>
+              <label className="block text-small font-medium text-starlight-dim mb-2">新密码</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="input-ethereal w-full pr-12"
                   placeholder="请输入新密码（至少6位字符）"
                   required
                   minLength={6}
@@ -181,7 +181,7 @@ function ResetPasswordForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-starlight-muted hover:text-starlight transition-colors"
                 >
                   {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                 </button>
@@ -189,13 +189,13 @@ function ResetPasswordForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">确认新密码</label>
+              <label className="block text-small font-medium text-starlight-dim mb-2">确认新密码</label>
               <div className="relative">
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="input-ethereal w-full pr-12"
                   placeholder="请再次输入新密码"
                   required
                   minLength={6}
@@ -203,7 +203,7 @@ function ResetPasswordForm() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-starlight-muted hover:text-starlight transition-colors"
                 >
                   {showConfirmPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                 </button>
@@ -211,10 +211,10 @@ function ResetPasswordForm() {
             </div>
 
             {message && (
-              <div className={`text-sm p-3 rounded-lg ${
+              <div className={`text-small p-3 rounded-lg ${
                 message.includes('成功')
-                  ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                  ? 'bg-wisdom-green/20 text-wisdom-green border border-wisdom-green/30'
+                  : 'bg-life-pink/20 text-life-pink border border-life-pink/30'
               }`}>
                 {message}
               </div>
@@ -223,7 +223,7 @@ function ResetPasswordForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="btn-stardust w-full py-3"
             >
               {loading ? '重置中...' : '重置密码'}
             </button>
@@ -232,7 +232,7 @@ function ResetPasswordForm() {
           <div className="mt-6 text-center">
             <button
               onClick={() => router.push('/login')}
-              className="text-purple-300 hover:text-purple-200 transition-colors flex items-center justify-center mx-auto"
+              className="text-mystic-purple hover:text-mystic-purple-light transition-colors flex items-center justify-center mx-auto text-small"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               返回登录
@@ -247,8 +247,8 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
+        <div className="loader-ethereal"></div>
       </div>
     }>
       <ResetPasswordForm />

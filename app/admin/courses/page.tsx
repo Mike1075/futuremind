@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2, Brain } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface CourseSystem {
   id: string
@@ -20,6 +22,8 @@ export default function CoursesPage() {
   const [userEmail, setUserEmail] = useState<string>('')
   const [isMounted, setIsMounted] = useState(false)
   const [courseSystems, setCourseSystems] = useState<CourseSystem[]>([])
+  const toast = useToast()
+  const { confirm } = useConfirm()
 
   useEffect(() => {
     setIsMounted(true)
@@ -66,28 +70,32 @@ export default function CoursesPage() {
     // 检查是否是原始课程
     const protectedCourses = ['listening', 'earth', 'pbl', 'icarus']
     if (protectedCourses.includes(systemKey)) {
-      alert('⚠️ 原始课程不可删除\n\n「' + courseTitle + '」是系统预设课程，不能删除。\n只有新增的课程可以删除。')
+      toast.warning('原始课程不可删除\n\n「' + courseTitle + '」是系统预设课程，不能删除。\n只有新增的课程可以删除。')
       return
     }
 
     // 第一次确认
-    const confirmed = confirm(
-      `⚠️ 警告：确定要**永久删除**课程「${courseTitle}」吗？\n\n` +
-      `这将：\n` +
-      `1. 永久删除课程系统记录\n` +
-      `2. 永久删除该课程下的所有内容（视频、问题、项目等）\n` +
-      `3. 删除所有学生的学习记录和进度\n` +
-      `4. 已选择该课程的学生将无法再看到此课程\n\n` +
-      `此操作**不可恢复**！`
-    )
+    const confirmed = await confirm({
+      title: '警告',
+      message: `确定要**永久删除**课程「${courseTitle}」吗？\n\n` +
+        `这将：\n` +
+        `1. 永久删除课程系统记录\n` +
+        `2. 永久删除该课程下的所有内容（视频、问题、项目等）\n` +
+        `3. 删除所有学生的学习记录和进度\n` +
+        `4. 已选择该课程的学生将无法再看到此课程\n\n` +
+        `此操作**不可恢复**！`,
+      type: 'warning'
+    })
     if (!confirmed) return
 
     // 第二次确认
-    const finalConfirm = confirm(
-      `请再次确认删除「${courseTitle}」\n\n` +
-      `这是最后一次确认机会。\n` +
-      `点击"确定"将立即永久删除该课程。`
-    )
+    const finalConfirm = await confirm({
+      title: '最后确认',
+      message: `请再次确认删除「${courseTitle}」\n\n` +
+        `这是最后一次确认机会。\n` +
+        `点击"确定"将立即永久删除该课程。`,
+      type: 'warning'
+    })
     if (!finalConfirm) return
 
     try {
@@ -101,18 +109,18 @@ export default function CoursesPage() {
       if (!response.ok) {
         // 显示详细错误信息
         if (data.message) {
-          alert(`❌ ${data.error}\n\n${data.message}`)
+          toast.error(`${data.error}\n\n${data.message}`)
         } else {
-          alert(`❌ 删除失败：${data.error}\n\n${data.details || ''}`)
+          toast.error(`删除失败：${data.error}\n\n${data.details || ''}`)
         }
         return
       }
 
-      alert(`✅ 删除成功\n\n${data.message}\n\n删除统计：\n- 阶段：${data.deletedCounts.stages}个\n- 内容：${data.deletedCounts.contents}个`)
+      toast.success(`删除成功\n\n${data.message}\n\n删除统计：\n- 阶段：${data.deletedCounts.stages}个\n- 内容：${data.deletedCounts.contents}个`)
       await loadCourses() // 重新加载列表
     } catch (error) {
       console.error('删除课程失败:', error)
-      alert('❌ 删除失败，请检查网络连接后重试')
+      toast.error('删除失败，请检查网络连接后重试')
     }
   }
 
@@ -158,14 +166,14 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-cosmic-void relative overflow-hidden">
       {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden">
         {isMounted && particles.map((particle) => (
@@ -191,19 +199,19 @@ export default function CoursesPage() {
       </div>
 
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-md border-b border-white/10 relative z-10">
+      <header className="card-glass border-b border-white/10 relative z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/admin')}
-                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all"
+                className="p-2 card-glass hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-white">课程管理</h1>
-                <p className="text-sm text-purple-300 mt-1">管理员：{userEmail}</p>
+                <h1 className="text-h2 font-bold text-starlight">课程管理</h1>
+                <p className="text-small text-starlight-muted mt-1">管理员：{userEmail}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -212,7 +220,7 @@ export default function CoursesPage() {
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg border border-purple-500/30 transition-all group"
               >
                 <Brain className="w-5 h-5" />
-                <span className="text-sm font-medium">盖亚知识库</span>
+                <span className="text-small font-medium">盖亚知识库</span>
               </button>
               <BookOpen className="w-6 h-6 text-purple-400" />
             </div>
@@ -239,7 +247,7 @@ export default function CoursesPage() {
             const isDeletable = !protectedCourses.includes(course.system_key)
 
             return (
-              <div key={course.id} className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center">
+              <div key={course.id} className="group relative card-glass rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center">
                 {/* Gradient Background Effect */}
                 <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none`} />
 
@@ -271,21 +279,21 @@ export default function CoursesPage() {
                 >
                   {/* Icon */}
                   <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="w-10 h-10 text-white" />
+                    <Icon className="w-10 h-10 text-starlight" />
                   </div>
 
                   {/* Title */}
-                  <h2 className="relative text-2xl font-bold text-white mb-3 group-hover:scale-105 transition-transform duration-300">
+                  <h2 className="relative text-h2 font-bold text-starlight mb-3 group-hover:scale-105 transition-transform duration-300">
                     {course.title}
                   </h2>
 
                   {/* Description */}
-                  <p className="relative text-sm text-gray-300 group-hover:text-white transition-colors duration-300">
+                  <p className="relative text-small text-starlight-muted group-hover:text-starlight transition-colors duration-300">
                     {course.description}
                   </p>
 
                   {/* Arrow Indicator */}
-                  <div className="mt-6 flex items-center text-purple-300 group-hover:text-white transition-colors duration-300">
+                  <div className="mt-6 flex items-center text-starlight-muted group-hover:text-starlight transition-colors duration-300">
                     <span className="text-xs mr-1">进入管理</span>
                     <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -299,20 +307,20 @@ export default function CoursesPage() {
           {/* 新增课程体系卡片 */}
           <button
             onClick={() => router.push('/admin/courses/new')}
-            className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-8 border-2 border-dashed border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center"
+            className="group relative card-glass rounded-2xl p-8 border-2 border-dashed border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center"
           >
             {/* Icon */}
             <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-              <Plus className="w-10 h-10 text-white" />
+              <Plus className="w-10 h-10 text-starlight" />
             </div>
 
             {/* Title */}
-            <h2 className="relative text-2xl font-bold text-white mb-3 group-hover:scale-105 transition-transform duration-300">
+            <h2 className="relative text-h2 font-bold text-starlight mb-3 group-hover:scale-105 transition-transform duration-300">
               新增课程体系
             </h2>
 
             {/* Description */}
-            <p className="relative text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+            <p className="relative text-small text-starlight-muted group-hover:text-starlight-dim transition-colors duration-300">
               点击创建新的课程体系
             </p>
           </button>

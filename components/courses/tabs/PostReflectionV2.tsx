@@ -2,6 +2,7 @@
 'use client'
 
 import { MessageCircle } from 'lucide-react'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface PostReflectionV2Props {
   postReflection: string[]
@@ -12,6 +13,8 @@ export function PostReflectionV2({
   postReflection,
   contentId
 }: PostReflectionV2Props) {
+  const { confirm } = useConfirm()
+
   // 点击反思问题，打开盖亚（先检查是否已讨论过）
   const handleClickReflection = async (reflection: string) => {
     if (typeof window === 'undefined') return
@@ -28,9 +31,11 @@ export function PostReflectionV2({
         const data = await response.json()
 
         if (data.discussed) {
-          const shouldContinue = window.confirm(
-            '💡 这个反思我们之前聊过哦！\n\n要不要回顾一下之前的思考，继续深化认识呢？'
-          )
+          const shouldContinue = await confirm({
+            title: '提示',
+            message: '这个反思我们之前聊过哦！\n\n要不要回顾一下之前的思考，继续深化认识呢？',
+            type: 'warning'
+          })
 
           if (shouldContinue) {
             window.dispatchEvent(new CustomEvent('scrollToDiscussion', {
@@ -102,7 +107,7 @@ export function PostReflectionV2({
               {/* 探讨按钮 */}
               <button
                 onClick={() => handleClickReflection(reflection)}
-                className="w-full px-4 py-2.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 rounded-lg text-sm font-medium border border-purple-500/30 transition-all flex items-center justify-center gap-2"
+                className="btn-stardust w-full px-4 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
               >
                 <MessageCircle className="w-4 h-4" />
                 与盖亚深入探讨

@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, User, TrendingUp, BookOpen, History, AlertCircle, UsersRound } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface StudentDetail {
   student: {
@@ -77,6 +79,8 @@ const LEVEL_NAMES = {
 
 export default function StudentDetailPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const params = useParams()
   const studentId = params?.id as string
 
@@ -106,7 +110,7 @@ export default function StudentDetailPage() {
         .single()
 
       if (!profile || !profile.role || !['principal', 'teacher'].includes(profile.role)) {
-        alert('⚠️ 您不是管理员\n\n只有校长和老师可以访问学员详情。')
+        toast.warning('只有校长和老师可以访问学员详情。')
         router.push('/admin')
         return
       }
@@ -161,7 +165,7 @@ export default function StudentDetailPage() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/admin/students')}
-                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all"
+                className="p-2 btn-stardust text-white rounded-lg"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>

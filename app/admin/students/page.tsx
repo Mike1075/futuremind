@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Users, ArrowLeft, Search, Filter, ChevronDown, ChevronUp, Plus, FolderOpen, Trash2, Edit2, UserPlus, X } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Student {
   id: string
@@ -63,6 +65,8 @@ const LEVEL_NAMES = {
 
 export default function StudentsPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState<string>('')
   const [students, setStudents] = useState<Student[]>([])
@@ -118,13 +122,13 @@ export default function StudentsPage() {
 
       if (profileError) {
         console.error('无法验证用户权限:', profileError)
-        alert('❌ 系统错误\n\n无法验证您的权限，请稍后重试。')
+        toast.error('无法验证您的权限，请稍后重试。')
         router.push('/admin')
         return
       }
 
       if (!profile || !profile.role || !['principal', 'teacher'].includes(profile.role)) {
-        alert('⚠️ 您不是管理员\n\n只有校长和老师可以访问学员管理页面。')
+        toast.warning('只有校长和老师可以访问学员管理页面。')
         router.push('/admin')
         return
       }
@@ -132,7 +136,7 @@ export default function StudentsPage() {
       setUserEmail(user.email || '')
     } catch (error) {
       console.error('认证失败:', error)
-      alert('❌ 系统错误\n\n无法验证您的身份，请稍后重试。')
+      toast.error('无法验证您的身份，请稍后重试。')
       router.push('/login')
     } finally {
       setLoading(false)
@@ -213,7 +217,7 @@ export default function StudentsPage() {
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newGroupName.trim()) {
-      alert('请输入分组名称')
+      toast.warning('请输入分组名称')
       return
     }
 
@@ -230,32 +234,36 @@ export default function StudentsPage() {
       })
 
       if (!response.ok) {
-        alert(`❌ 创建失败 (${response.status})`)
+        toast.error(`创建失败 (${response.status})`)
         return
       }
 
       const data = await response.json()
 
       if (data.error) {
-        alert(`创建失败: ${data.error}`)
+        toast.error(`创建失败: ${data.error}`)
         return
       }
 
-      alert('✅ 分组创建成功')
+      toast.success('分组创建成功')
       setNewGroupName('')
       setNewGroupDescription('')
       setShowCreateGroupModal(false)
       await loadGroups()
     } catch (error) {
       console.error('创建分组失败:', error)
-      alert('❌ 创建失败，请稍后重试')
+      toast.error('创建失败，请稍后重试')
     } finally {
       setSubmittingGroup(false)
     }
   }
 
   const handleDeleteGroup = async (groupId: string, groupName: string) => {
-    const confirmed = confirm(`确定要删除分组「${groupName}」吗？`)
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: `确定要删除分组「${groupName}」吗？`,
+      type: 'warning'
+    })
     if (!confirmed) return
 
     try {
@@ -264,22 +272,22 @@ export default function StudentsPage() {
       })
 
       if (!response.ok) {
-        alert(`❌ 删除失败 (${response.status})`)
+        toast.error(`删除失败 (${response.status})`)
         return
       }
 
       const data = await response.json()
 
       if (data.error) {
-        alert(`删除失败: ${data.error}`)
+        toast.error(`删除失败: ${data.error}`)
         return
       }
 
-      alert('✅ 删除成功')
+      toast.success('删除成功')
       await loadGroups()
     } catch (error) {
       console.error('删除分组失败:', error)
-      alert('❌ 删除失败，请稍后重试')
+      toast.error('删除失败，请稍后重试')
     }
   }
 

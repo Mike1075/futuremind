@@ -4,6 +4,8 @@
 import { useState, useEffect } from 'react'
 import { UserPlus, Check, X, Loader2, Mail, Calendar } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface PendingRequest {
   id: string
@@ -24,6 +26,8 @@ interface PendingRequestsPanelProps {
 }
 
 export function PendingRequestsPanel({ organizationId, projectId, type }: PendingRequestsPanelProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [requests, setRequests] = useState<PendingRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [processingId, setProcessingId] = useState<string | null>(null)
@@ -95,7 +99,7 @@ export function PendingRequestsPanel({ organizationId, projectId, type }: Pendin
 
   const handleApprove = async (requestId: string, userId: string | null) => {
     if (!userId) {
-      alert('申请用户信息缺失')
+      toast.error('申请用户信息缺失')
       return
     }
 
@@ -150,7 +154,7 @@ export function PendingRequestsPanel({ organizationId, projectId, type }: Pendin
           }
         })
 
-        alert('申请已批准，用户已加入组织')
+        toast.success('申请已批准，用户已加入组织')
       } else if (type === 'project' && projectId) {
         // 1. 更新申请状态为已批准
         const { error: updateError } = await supabase
@@ -196,23 +200,23 @@ export function PendingRequestsPanel({ organizationId, projectId, type }: Pendin
           }
         })
 
-        alert('申请已批准，用户已加入项目')
+        toast.success('申请已批准，用户已加入项目')
       }
 
       // 重新加载申请列表
       await loadRequests()
     } catch (err) {
       console.error('批准申请失败:', err)
-      alert('批准申请失败，请重试')
+      toast.error('批准申请失败，请重试')
     } finally {
       setProcessingId(null)
     }
   }
 
   const handleReject = async (requestId: string, userId: string | null) => {
-    if (!confirm('确定要拒绝这个申请吗？')) return
+    if (!await confirm({ title: '确认拒绝', message: '确定要拒绝这个申请吗？', type: 'warning' })) return
     if (!userId) {
-      alert('申请用户信息缺失')
+      toast.error('申请用户信息缺失')
       return
     }
 
@@ -278,13 +282,13 @@ export function PendingRequestsPanel({ organizationId, projectId, type }: Pendin
         })
       }
 
-      alert('申请已拒绝')
+      toast.success('申请已拒绝')
 
       // 重新加载申请列表
       await loadRequests()
     } catch (err) {
       console.error('拒绝申请失败:', err)
-      alert('拒绝申请失败，请重试')
+      toast.error('拒绝申请失败，请重试')
     } finally {
       setProcessingId(null)
     }

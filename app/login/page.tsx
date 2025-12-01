@@ -124,65 +124,75 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background particles */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Ethereal background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/20" />
+
+      {/* Animated particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {isMounted && particles.map((particle) => (
           <motion.div
             key={particle.id}
-            className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-20"
+            className="absolute w-1 h-1 rounded-full"
+            style={{
+              left: `${particle.left}%`,
+              top: `${particle.top}%`,
+              background: `radial-gradient(circle, ${['#FFD700', '#9D00FF', '#00FFFF'][particle.id % 3]} 0%, transparent 70%)`,
+              boxShadow: `0 0 8px ${['#FFD700', '#9D00FF', '#00FFFF'][particle.id % 3]}40`,
+            }}
             animate={{
-              x: [0, particle.x],
-              y: [0, particle.y],
-              opacity: [0.2, 0.6, 0.2],
+              x: [0, particle.x, 0],
+              y: [0, particle.y, 0],
+              opacity: [0.3, 0.8, 0.3],
+              scale: [1, 1.3, 1],
             }}
             transition={{
               duration: particle.duration,
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            style={{
-              left: `${particle.left}%`,
-              top: `${particle.top}%`,
-            }}
           />
         ))}
       </div>
 
+      {/* Login card with aurora border */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="bg-white/10 backdrop-blur-md rounded-2xl p-8 w-full max-w-md mx-4 border border-white/20 shadow-2xl relative z-10"
+        className="card-aurora w-full max-w-md mx-4 relative z-10"
       >
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <TreePine className="w-10 h-10 text-purple-400 mr-2" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+        <div className="card-aurora-inner p-8">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gaia-gold/20 via-mystic-purple/20 to-ethereal-blue/20 flex items-center justify-center border border-gaia-gold/30 shadow-glow-gold">
+                <TreePine className="w-7 h-7 text-gaia-gold" />
+              </div>
+            </div>
+            <h1 className="text-h1 text-gradient-gold-purple text-glow-gold tracking-wide">
               未来心灵学院
             </h1>
+            <p className="text-body text-starlight-dim mt-2">
+              {isForgotPassword
+                ? '输入邮箱地址，我们将发送重置链接'
+                : (isLogin ? '欢迎回到觉醒之旅' : '开启你的意识探索')}
+            </p>
           </div>
-          <p className="text-gray-300 text-sm">
-            {isForgotPassword
-              ? '输入邮箱地址，我们将发送重置链接'
-              : (isLogin ? '欢迎回到觉醒之旅' : '开启你的意识探索')}
-          </p>
-        </div>
 
         {/* Forgot Password Form */}
         {isForgotPassword ? (
           <form onSubmit={handleForgotPassword} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-small font-medium text-starlight-dim mb-2">
                 邮箱
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-starlight-muted" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="input-ethereal pl-10"
                   placeholder="请输入注册时使用的邮箱"
                   required
                 />
@@ -190,10 +200,10 @@ function LoginForm() {
             </div>
 
             {message && (
-              <div className={`text-sm p-3 rounded-lg ${
+              <div className={`text-small p-3 rounded-lg ${
                 message.includes('失败') || message.includes('Error') || message.includes('请输入')
-                  ? 'bg-red-500/20 text-red-300 border border-red-500/30'
-                  : 'bg-green-500/20 text-green-300 border border-green-500/30'
+                  ? 'bg-life-pink/20 text-life-pink border border-life-pink/30'
+                  : 'bg-nature-green/20 text-nature-green border border-nature-green/30'
               }`}>
                 {message}
               </div>
@@ -202,7 +212,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="btn-stardust w-full py-3"
             >
               {loading ? '发送中...' : '发送重置邮件'}
             </button>
@@ -214,7 +224,7 @@ function LoginForm() {
                   setIsForgotPassword(false)
                   setMessage('')
                 }}
-                className="text-purple-300 hover:text-purple-200 text-sm transition-colors flex items-center justify-center mx-auto"
+                className="text-mystic-purple hover:text-mystic-purple/80 text-small transition-colors flex items-center justify-center mx-auto"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 返回登录
@@ -226,7 +236,7 @@ function LoginForm() {
         <form onSubmit={handleAuth} className="space-y-6">
           {!isLogin && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-small font-medium text-starlight-dim mb-2">
                 姓名
               </label>
               <div className="relative">
@@ -234,7 +244,7 @@ function LoginForm() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="input-ethereal"
                   placeholder="请输入您的姓名"
                   required={!isLogin}
                 />
@@ -243,16 +253,16 @@ function LoginForm() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-small font-medium text-starlight-dim mb-2">
               邮箱
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-starlight-muted" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="input-ethereal pl-10"
                 placeholder="请输入您的邮箱"
                 required
               />
@@ -260,25 +270,24 @@ function LoginForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-small font-medium text-starlight-dim mb-2">
               密码
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-starlight-muted" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="input-ethereal pl-10 pr-12"
                 placeholder="请输入您的密码"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-starlight-muted hover:text-starlight transition-colors"
               >
-                {/* 修复：睁眼=可见，闭眼=隐藏 */}
                 {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
               </button>
             </div>
@@ -291,7 +300,7 @@ function LoginForm() {
                     setIsForgotPassword(true)
                     setMessage('')
                   }}
-                  className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                  className="text-small text-gaia-gold hover:text-gaia-gold/80 transition-colors"
                 >
                   忘记密码？
                 </button>
@@ -300,10 +309,10 @@ function LoginForm() {
           </div>
 
           {message && (
-            <div className={`text-sm p-3 rounded-lg ${
+            <div className={`text-small p-3 rounded-lg ${
               message.includes('错误') || message.includes('Error')
-                ? 'bg-red-500/20 text-red-300 border border-red-500/30'
-                : 'bg-green-500/20 text-green-300 border border-green-500/30'
+                ? 'bg-life-pink/20 text-life-pink border border-life-pink/30'
+                : 'bg-nature-green/20 text-nature-green border border-nature-green/30'
             }`}>
               {message}
             </div>
@@ -312,7 +321,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="btn-stardust w-full py-3"
           >
             {loading ? '处理中...' : (isLogin ? '登录' : '注册')}
           </button>
@@ -325,7 +334,7 @@ function LoginForm() {
                 setIsLogin(!isLogin)
                 setMessage('')
               }}
-              className="text-purple-300 hover:text-purple-200 text-sm transition-colors"
+              className="text-mystic-purple hover:text-mystic-purple/80 text-small transition-colors"
             >
               {isLogin ? '还没有账户？点击注册' : '已有账户？点击登录'}
             </button>
@@ -334,13 +343,14 @@ function LoginForm() {
         )}
 
         {/* Back to home */}
-        <div className="mt-4 text-center">
+        <div className="mt-6 text-center">
           <button
             onClick={() => router.push('/')}
-            className="text-gray-400 hover:text-gray-300 text-sm transition-colors"
+            className="text-starlight-muted hover:text-starlight text-small transition-colors"
           >
             返回首页
           </button>
+        </div>
         </div>
       </motion.div>
     </div>
@@ -350,8 +360,8 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
+        <div className="loader-ethereal"></div>
       </div>
     }>
       <LoginForm />

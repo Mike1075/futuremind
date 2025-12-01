@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Users, ArrowLeft, Plus, Trash2, UserPlus, Globe, BookOpen } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Group {
   id: string
@@ -30,6 +32,8 @@ const GROUP_TYPE_NAMES = {
 
 export default function GroupsPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [groups, setGroups] = useState<Group[]>([])
 
@@ -63,7 +67,7 @@ export default function GroupsPage() {
       const userRole = (profile as unknown as { role?: string })?.role
 
       if (!userRole || !['principal', 'teacher'].includes(userRole)) {
-        alert('⚠️ 您没有权限访问此页面')
+        toast.warning('您没有权限访问此页面')
         router.push('/admin')
         return
       }
@@ -126,7 +130,7 @@ export default function GroupsPage() {
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newGroupName.trim()) {
-      alert('请输入分组名称')
+      toast.warning('请输入分组名称')
       return
     }
 
@@ -147,21 +151,25 @@ export default function GroupsPage() {
 
       if (error) throw error
 
-      alert('✅ 创建成功')
+      toast.success('创建成功')
       setNewGroupName('')
       setNewGroupDescription('')
       setShowCreateModal(false)
       await loadGroups()
     } catch (error) {
       console.error('创建分组失败:', error)
-      alert('❌ 创建失败，请重试')
+      toast.error('创建失败，请重试')
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleDeleteGroup = async (group: Group) => {
-    const confirmed = confirm(`确定要删除「${group.name}」分组吗？\n\n此操作不可撤销。`)
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: `确定要删除「${group.name}」分组吗？\n\n此操作不可撤销。`,
+      type: 'warning'
+    })
     if (!confirmed) return
 
     try {
@@ -173,11 +181,11 @@ export default function GroupsPage() {
 
       if (error) throw error
 
-      alert('✅ 已删除分组')
+      toast.success('已删除分组')
       await loadGroups()
     } catch (error) {
       console.error('删除分组失败:', error)
-      alert('❌ 删除失败，请重试')
+      toast.error('删除失败，请重试')
     }
   }
 

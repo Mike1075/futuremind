@@ -277,7 +277,7 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
   }
 
   return (
-    <div className="h-full overflow-auto p-6 bg-black">
+    <div className="h-full overflow-auto p-6 bg-cosmic-void">
       <div className="max-w-7xl mx-auto">
         {/* 游客模式提示 */}
         {isGuest && (
@@ -285,16 +285,16 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-gradient-cosmic rounded-full flex items-center justify-center mr-3">
-                  <Users className="w-5 h-5 text-white" />
+                  <Users className="w-5 h-5 text-starlight" />
                 </div>
                 <div>
-                  <h3 className="text-white font-medium">探索者社区</h3>
-                  <p className="text-cosmic-300 text-sm">加入我们，与全球探索者一起探索意识边界</p>
+                  <h3 className="text-starlight font-medium">探索者社区</h3>
+                  <p className="text-starlight-muted text-small">加入我们，与全球探索者一起探索意识边界</p>
                 </div>
               </div>
               <button
                 onClick={() => alert('注册功能开发中...')}
-                className="bg-gradient-cosmic text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all text-sm"
+                className="btn-stardust text-small"
               >
                 立即加入
               </button>
@@ -304,57 +304,57 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
 
         {/* 页面标题 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center">
+          <h1 className="text-h1 font-bold text-starlight mb-2 flex items-center">
             <Users className="w-8 h-8 mr-3 text-primary-400" />
             探索者社区
           </h1>
-          <p className="text-cosmic-300">连接全球探索者，分享洞察，共同探索意识边界</p>
+          <p className="text-starlight-muted">连接全球探索者，分享洞察，共同探索意识边界</p>
         </div>
 
         {/* 社区统计 */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-cosmic-800/50 backdrop-blur-sm rounded-lg p-6 border border-cosmic-700">
+          <div className="card-glass">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-cosmic-400">PBL探索者</p>
-                <p className="text-2xl font-bold text-white">342</p>
+                <p className="text-small font-medium text-starlight-muted">PBL探索者</p>
+                <p className="text-h2 font-bold text-starlight">342</p>
               </div>
               <Users className="w-8 h-8 text-primary-400" />
             </div>
-            <p className="text-xs text-green-400 mt-2">↗ 本周 +18</p>
+            <p className="text-small text-green-400 mt-2">↗ 本周 +18</p>
           </div>
 
-          <div className="bg-cosmic-800/50 backdrop-blur-sm rounded-lg p-6 border border-cosmic-700">
+          <div className="card-glass">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-cosmic-400">实验分享</p>
-                <p className="text-2xl font-bold text-white">89</p>
+                <p className="text-small font-medium text-starlight-muted">实验分享</p>
+                <p className="text-h2 font-bold text-starlight">89</p>
               </div>
               <MessageCircle className="w-8 h-8 text-blue-400" />
             </div>
-            <p className="text-xs text-cosmic-500 mt-2">本周新增</p>
+            <p className="text-small text-starlight-dim mt-2">本周新增</p>
           </div>
 
-          <div className="bg-cosmic-800/50 backdrop-blur-sm rounded-lg p-6 border border-cosmic-700">
+          <div className="card-glass">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-cosmic-400">科学洞察</p>
-                <p className="text-2xl font-bold text-white">67</p>
+                <p className="text-small font-medium text-starlight-muted">科学洞察</p>
+                <p className="text-h2 font-bold text-starlight">67</p>
               </div>
               <Lightbulb className="w-8 h-8 text-yellow-400" />
             </div>
-            <p className="text-xs text-cosmic-500 mt-2">深度思考</p>
+            <p className="text-small text-starlight-dim mt-2">深度思考</p>
           </div>
 
-          <div className="bg-cosmic-800/50 backdrop-blur-sm rounded-lg p-6 border border-cosmic-700">
+          <div className="card-glass">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-cosmic-400">活跃项目</p>
-                <p className="text-2xl font-bold text-white">12</p>
+                <p className="text-small font-medium text-starlight-muted">活跃项目</p>
+                <p className="text-h2 font-bold text-starlight">12</p>
               </div>
               <Target className="w-8 h-8 text-green-400" />
             </div>
-            <p className="text-xs text-cosmic-500 mt-2">伊卡洛斯计划</p>
+            <p className="text-small text-starlight-dim mt-2">伊卡洛斯计划</p>
           </div>
         </div>
 
@@ -385,7 +385,7 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
             {!isGuest && (
               <button
                 onClick={() => alert('发布动态功能开发中...')}
-                className="bg-gradient-cosmic text-white px-4 py-2 rounded-lg hover:opacity-90 flex items-center"
+                className="btn-stardust flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 发布动态
@@ -398,26 +398,26 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* 左侧：筛选和搜索 */}
               <div className="lg:col-span-1">
-                <div className="bg-cosmic-800/50 backdrop-blur-sm rounded-lg p-6 border border-cosmic-700 sticky top-6">
-                  <h3 className="text-white font-semibold mb-4">筛选动态</h3>
+                <div className="card-glass sticky top-6">
+                  <h3 className="text-starlight font-semibold mb-4">筛选动态</h3>
 
                   {/* 搜索 */}
                   <div className="mb-4">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-cosmic-400 w-4 h-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-starlight-muted w-4 h-4" />
                       <input
                         type="text"
                         placeholder="搜索话题..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-cosmic-700/50 border border-cosmic-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-white placeholder-cosmic-400 text-sm"
+                        className="input-ethereal"
                       />
                     </div>
                   </div>
 
                   {/* 分类筛选 */}
                   <div className="space-y-2">
-                    <h4 className="text-cosmic-300 text-sm font-medium">分类</h4>
+                    <h4 className="text-starlight-muted text-small font-medium">分类</h4>
                     {[
                       { key: 'all', label: '全部', count: posts.length },
                       { key: 'discussion', label: '讨论', count: posts.filter(p => p.category === 'discussion').length },
@@ -427,26 +427,26 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
                       <button
                         key={category.key}
                         onClick={() => setFilterCategory(category.key)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-small transition-colors ${
                           filterCategory === category.key
                             ? 'bg-primary-600/20 text-primary-300'
-                            : 'text-cosmic-300 hover:bg-cosmic-700/50 hover:text-white'
+                            : 'text-starlight-muted hover:bg-cosmic-700/50 hover:text-starlight'
                         }`}
                       >
                         <span>{category.label}</span>
-                        <span className="text-xs bg-cosmic-700 px-2 py-1 rounded-full">{category.count}</span>
+                        <span className="text-small bg-cosmic-700 px-2 py-1 rounded-full">{category.count}</span>
                       </button>
                     ))}
                   </div>
 
                   {/* 热门标签 */}
                   <div className="mt-6">
-                    <h4 className="text-cosmic-300 text-sm font-medium mb-3">热门标签</h4>
+                    <h4 className="text-starlight-muted text-small font-medium mb-3">热门标签</h4>
                     <div className="flex flex-wrap gap-2">
                       {['伊卡洛斯计划', '薛定谔的猫砂盆', '量子纠缠', '宠物感应', '实验设计', '儿童科学'].map(tag => (
                         <button
                           key={tag}
-                          className="px-2 py-1 bg-cosmic-700/50 text-cosmic-300 rounded-full text-xs hover:bg-primary-600/20 hover:text-primary-300 transition-colors"
+                          className="px-2 py-1 bg-cosmic-700/50 text-starlight-muted rounded-full text-small hover:bg-primary-600/20 hover:text-primary-300 transition-colors"
                         >
                           #{tag}
                         </button>
@@ -460,25 +460,25 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
               <div className="lg:col-span-3">
                 <div className="space-y-6">
                   {filteredPosts.map(post => (
-                    <div key={post.id} className="bg-cosmic-800/50 backdrop-blur-sm rounded-lg border border-cosmic-700 hover:border-primary-500/50 transition-all duration-300">
+                    <div key={post.id} className="card-glass hover:border-primary-500/50 transition-all duration-300">
                       <div className="p-6">
                         {/* 帖子头部 */}
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center">
                             <div className="w-10 h-10 bg-gradient-cosmic rounded-full flex items-center justify-center mr-3">
-                              <span className="text-lg">{post.author.avatar}</span>
+                              <span className="text-h3">{post.author.avatar}</span>
                             </div>
                             <div>
                               <div className="flex items-center">
-                                <h4 className="text-white font-medium">{post.author.name}</h4>
-                                <span className="ml-2 px-2 py-1 bg-primary-600/20 text-primary-300 rounded-full text-xs">
+                                <h4 className="text-starlight font-medium">{post.author.name}</h4>
+                                <span className="ml-2 px-2 py-1 bg-primary-600/20 text-primary-300 rounded-full text-small">
                                   Lv.{post.author.level}
                                 </span>
-                                <span className="ml-2 px-2 py-1 bg-resonance-600/20 text-resonance-300 rounded-full text-xs">
+                                <span className="ml-2 px-2 py-1 bg-resonance-600/20 text-resonance-300 rounded-full text-small">
                                   {post.author.badge}
                                 </span>
                               </div>
-                              <div className="flex items-center text-xs text-cosmic-400 mt-1">
+                              <div className="flex items-center text-small text-starlight-muted mt-1">
                                 <Clock className="w-3 h-3 mr-1" />
                                 {new Date(post.createdAt).toLocaleDateString()}
                                 {post.projectName && (
@@ -491,7 +491,7 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
                               </div>
                             </div>
                           </div>
-                          <div className={`flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(post.category)}`}>
+                          <div className={`flex items-center px-2 py-1 rounded-full text-small font-medium ${getCategoryColor(post.category)}`}>
                             {getCategoryIcon(post.category)}
                             <span className="ml-1">{getCategoryText(post.category)}</span>
                           </div>
@@ -499,14 +499,14 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
 
                         {/* 帖子内容 */}
                         <div className="mb-4">
-                          <h3 className="text-lg font-semibold text-white mb-2">{post.title}</h3>
-                          <p className="text-cosmic-300 text-sm leading-relaxed">{post.content}</p>
+                          <h3 className="text-h3 font-semibold text-starlight mb-2">{post.title}</h3>
+                          <p className="text-starlight-muted text-small leading-relaxed">{post.content}</p>
                         </div>
 
                         {/* 标签 */}
                         <div className="flex flex-wrap gap-2 mb-4">
                           {post.tags.map(tag => (
-                            <span key={tag} className="px-2 py-1 bg-cosmic-700/50 text-cosmic-300 rounded-full text-xs">
+                            <span key={tag} className="px-2 py-1 bg-cosmic-700/50 text-starlight-muted rounded-full text-small">
                               #{tag}
                             </span>
                           ))}
@@ -515,22 +515,22 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
                         {/* 互动按钮 */}
                         <div className="flex items-center justify-between pt-4 border-t border-cosmic-700">
                           <div className="flex items-center space-x-4">
-                            <button className={`flex items-center space-x-1 text-sm transition-colors ${
-                              post.isLiked ? 'text-red-400' : 'text-cosmic-400 hover:text-red-400'
+                            <button className={`flex items-center space-x-1 text-small transition-colors ${
+                              post.isLiked ? 'text-red-400' : 'text-starlight-muted hover:text-red-400'
                             }`}>
                               <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-current' : ''}`} />
                               <span>{post.likes}</span>
                             </button>
-                            <button className="flex items-center space-x-1 text-sm text-cosmic-400 hover:text-blue-400 transition-colors">
+                            <button className="flex items-center space-x-1 text-small text-starlight-muted hover:text-blue-400 transition-colors">
                               <MessageCircle className="w-4 h-4" />
                               <span>{post.comments}</span>
                             </button>
-                            <button className="flex items-center space-x-1 text-sm text-cosmic-400 hover:text-green-400 transition-colors">
+                            <button className="flex items-center space-x-1 text-small text-starlight-muted hover:text-green-400 transition-colors">
                               <Share2 className="w-4 h-4" />
                               <span>分享</span>
                             </button>
                           </div>
-                          <div className="flex items-center text-xs text-cosmic-500">
+                          <div className="flex items-center text-small text-starlight-dim">
                             <Eye className="w-3 h-3 mr-1" />
                             {post.views} 次浏览
                           </div>
@@ -547,46 +547,46 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
           {activeTab === 'members' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {members.map(member => (
-                <div key={member.id} className="bg-cosmic-800/50 backdrop-blur-sm rounded-lg border border-cosmic-700 hover:border-primary-500/50 transition-all duration-300">
+                <div key={member.id} className="card-glass hover:border-primary-500/50 transition-all duration-300">
                   <div className="p-6">
                     <div className="flex items-center mb-4">
                       <div className="relative">
                         <div className="w-12 h-12 bg-gradient-cosmic rounded-full flex items-center justify-center mr-4">
-                          <span className="text-xl">{member.avatar}</span>
+                          <span className="text-h2">{member.avatar}</span>
                         </div>
                         <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-cosmic-800 ${
                           member.isOnline ? 'bg-green-500' : 'bg-gray-500'
                         }`}></div>
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-white font-semibold">{member.name}</h3>
-                        <p className="text-cosmic-300 text-sm">{member.speciality}</p>
+                        <h3 className="text-starlight font-semibold">{member.name}</h3>
+                        <p className="text-starlight-muted text-small">{member.speciality}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between mb-4">
-                      <span className="px-2 py-1 bg-primary-600/20 text-primary-300 rounded-full text-xs">
+                      <span className="px-2 py-1 bg-primary-600/20 text-primary-300 rounded-full text-small">
                         Lv.{member.level}
                       </span>
-                      <span className="px-2 py-1 bg-resonance-600/20 text-resonance-300 rounded-full text-xs">
+                      <span className="px-2 py-1 bg-resonance-600/20 text-resonance-300 rounded-full text-small">
                         {member.badge}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div className="text-center">
-                        <div className="text-lg font-semibold text-white">{member.projects}</div>
-                        <div className="text-xs text-cosmic-400">项目</div>
+                        <div className="text-h3 font-semibold text-starlight">{member.projects}</div>
+                        <div className="text-small text-starlight-muted">项目</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-lg font-semibold text-primary-400">{member.contributions}</div>
-                        <div className="text-xs text-cosmic-400">贡献</div>
+                        <div className="text-h3 font-semibold text-primary-400">{member.contributions}</div>
+                        <div className="text-small text-starlight-muted">贡献</div>
                       </div>
                     </div>
 
                     <button
                       onClick={() => alert(isGuest ? '请先注册登录' : '发起对话功能开发中...')}
-                      className="w-full bg-cosmic-700/50 hover:bg-primary-600/20 text-cosmic-300 hover:text-primary-300 py-2 rounded-lg transition-colors text-sm"
+                      className="w-full bg-cosmic-700/50 hover:bg-primary-600/20 text-starlight-muted hover:text-primary-300 py-2 rounded-lg transition-colors text-small"
                     >
                       {isGuest ? '注册后联系' : '发起对话'}
                     </button>
@@ -599,12 +599,12 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
           {/* 活动页面 */}
           {activeTab === 'events' && (
             <div className="text-center py-12">
-              <Coffee className="w-16 h-16 mx-auto text-cosmic-400 mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">社区活动筹备中</h3>
-              <p className="text-cosmic-400 mb-6">精彩的工作坊、研讨会和协作活动即将上线</p>
+              <Coffee className="w-16 h-16 mx-auto text-starlight-muted mb-4" />
+              <h3 className="text-h3 font-medium text-starlight mb-2">社区活动筹备中</h3>
+              <p className="text-starlight-muted mb-6">精彩的工作坊、研讨会和协作活动即将上线</p>
               <button
                 onClick={() => alert('活动功能开发中...')}
-                className="bg-gradient-cosmic text-white px-6 py-3 rounded-lg hover:opacity-90 font-medium"
+                className="btn-stardust"
               >
                 {isGuest ? '注册参与活动' : '创建活动'}
               </button>

@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Users, Trash2, UserPlus, X } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Group {
   id: string
@@ -52,6 +54,8 @@ const LEVEL_NAMES = {
 
 export default function GroupDetailPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const params = useParams()
   const groupId = params?.id as string
 
@@ -184,7 +188,7 @@ export default function GroupDetailPage() {
     if (!selectedStudentId || !group) return
 
     if (group.member_ids?.includes(selectedStudentId)) {
-      alert('该学员已在分组中')
+      toast.info('该学员已在分组中')
       return
     }
 
@@ -200,13 +204,13 @@ export default function GroupDetailPage() {
 
       if (error) throw error
 
-      alert('✅ 成功添加成员')
+      toast.success('成功添加成员')
       setSelectedStudentId('')
       setShowAddModal(false)
       await loadGroup()
     } catch (error) {
       console.error('添加成员失败:', error)
-      alert('❌ 添加失败，请重试')
+      toast.error('添加失败，请重试')
     } finally {
       setSubmitting(false)
     }
@@ -216,7 +220,11 @@ export default function GroupDetailPage() {
     if (!group) return
 
     const student = members.find(m => m.id === studentId)
-    const confirmed = confirm(`确定要将「${student?.full_name || student?.email}」移出分组吗？`)
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: `确定要将「${student?.full_name || student?.email}」移出分组吗？`,
+      type: 'warning'
+    })
     if (!confirmed) return
 
     try {
@@ -230,11 +238,11 @@ export default function GroupDetailPage() {
 
       if (error) throw error
 
-      alert('✅ 已移除成员')
+      toast.success('已移除成员')
       await loadGroup()
     } catch (error) {
       console.error('移除成员失败:', error)
-      alert('❌ 移除失败，请重试')
+      toast.error('移除失败，请重试')
     }
   }
 

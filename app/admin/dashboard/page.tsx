@@ -9,6 +9,8 @@ import {
   ArrowLeft, Users, Layers, BookOpen, MessageSquare,
   FileText, TrendingUp, Award, BarChart3, Clock, Calendar
 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Overview {
   total_students: number
@@ -62,6 +64,8 @@ const LEVEL_NAMES = {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState<string>('')
 
@@ -102,7 +106,7 @@ export default function DashboardPage() {
         .maybeSingle()
 
       if (!profile || !profile.role || !['principal', 'teacher'].includes(profile.role)) {
-        alert('⚠️ 您不是管理员\n\n只有校长和老师可以访问仪表板。')
+        toast.warning('您不是管理员，只有校长和老师可以访问仪表板。')
         router.push('/admin')
         return
       }
@@ -154,10 +158,10 @@ export default function DashboardPage() {
 
   if (loading || !overview) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
-          <p className="text-purple-300 mt-4">加载中...</p>
+          <p className="text-starlight-muted mt-4">加载中...</p>
         </div>
       </div>
     )
@@ -166,7 +170,7 @@ export default function DashboardPage() {
   const maxLevelCount = Math.max(...Object.values(levelDistribution))
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-cosmic-void relative overflow-hidden">
       {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden">
         {isMounted && particles.map((particle) => (
@@ -192,19 +196,19 @@ export default function DashboardPage() {
       </div>
 
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-md border-b border-white/10 relative z-10">
+      <header className="card-glass border-b border-white/10 relative z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/admin')}
-                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all"
+                className="p-2 card-glass hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-white">统计看板</h1>
-                <p className="text-sm text-purple-300 mt-1">管理员：{userEmail}</p>
+                <h1 className="text-h2 font-bold text-starlight">统计看板</h1>
+                <p className="text-small text-starlight-muted mt-1">管理员：{userEmail}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -221,16 +225,16 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10"
+            className="card-glass rounded-xl p-6 border border-white/10"
           >
             <div className="flex items-center gap-3 mb-2">
               <Users className="w-8 h-8 text-cyan-400" />
-              <span className="text-gray-400 text-sm">总学员数</span>
+              <span className="text-starlight-muted text-small">总学员数</span>
             </div>
-            <p className="text-3xl font-bold text-white">{overview.total_students}</p>
+            <p className="text-h1 font-bold text-starlight">{overview.total_students}</p>
             <div className="mt-2 flex items-center gap-2">
               <Award className="w-4 h-4 text-purple-400" />
-              <span className="text-sm text-gray-400">
+              <span className="text-small text-starlight-muted">
                 平均等级: <span className="text-purple-400 font-semibold">{overview.avg_level}</span>
               </span>
             </div>
@@ -240,16 +244,16 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10"
+            className="card-glass rounded-xl p-6 border border-white/10"
           >
             <div className="flex items-center gap-3 mb-2">
               <Layers className="w-8 h-8 text-purple-400" />
-              <span className="text-gray-400 text-sm">分组数量</span>
+              <span className="text-starlight-muted text-small">分组数量</span>
             </div>
-            <p className="text-3xl font-bold text-white">{overview.total_groups}</p>
+            <p className="text-h1 font-bold text-starlight">{overview.total_groups}</p>
             <div className="mt-2 flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-green-400" />
-              <span className="text-sm text-gray-400">
+              <span className="text-small text-starlight-muted">
                 课程分配: <span className="text-green-400 font-semibold">{overview.total_assignments}</span>
               </span>
             </div>
@@ -259,14 +263,14 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10"
+            className="card-glass rounded-xl p-6 border border-white/10"
           >
             <div className="flex items-center gap-3 mb-2">
               <MessageSquare className="w-8 h-8 text-yellow-400" />
-              <span className="text-gray-400 text-sm">对话总数</span>
+              <span className="text-starlight-muted text-small">对话总数</span>
             </div>
-            <p className="text-3xl font-bold text-white">{overview.total_conversations}</p>
-            <div className="mt-2 text-sm text-gray-400">
+            <p className="text-h1 font-bold text-starlight">{overview.total_conversations}</p>
+            <div className="mt-2 text-small text-starlight-muted">
               Gaia AI 对话记录
             </div>
           </motion.div>
@@ -275,16 +279,16 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10"
+            className="card-glass rounded-xl p-6 border border-white/10"
           >
             <div className="flex items-center gap-3 mb-2">
               <FileText className="w-8 h-8 text-green-400" />
-              <span className="text-gray-400 text-sm">作业总数</span>
+              <span className="text-starlight-muted text-small">作业总数</span>
             </div>
-            <p className="text-3xl font-bold text-white">{overview.total_submissions}</p>
+            <p className="text-h1 font-bold text-starlight">{overview.total_submissions}</p>
             <div className="mt-2 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-cyan-400" />
-              <span className="text-sm text-gray-400">
+              <span className="text-small text-starlight-muted">
                 平均分: <span className="text-cyan-400 font-semibold">{overview.avg_score}</span>
               </span>
             </div>
@@ -296,9 +300,9 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10"
+            className="card-glass rounded-xl p-6 border border-white/10"
           >
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <h2 className="text-h3 font-bold text-starlight mb-4 flex items-center gap-2">
               <BarChart3 className="w-6 h-6 text-purple-400" />
               意识等级分布
             </h2>
@@ -308,11 +312,11 @@ export default function DashboardPage() {
                 const percentage = maxLevelCount > 0 ? (count / maxLevelCount) * 100 : 0
                 return (
                   <div key={level} className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-300">
+                    <div className="flex items-center justify-between text-small">
+                      <span className="text-starlight-muted">
                         Level {level} - {LEVEL_NAMES[level as keyof typeof LEVEL_NAMES]}
                       </span>
-                      <span className="text-white font-semibold">{count} 人</span>
+                      <span className="text-starlight font-semibold">{count} 人</span>
                     </div>
                     <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
                       <motion.div
@@ -333,15 +337,15 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10"
+            className="card-glass rounded-xl p-6 border border-white/10"
           >
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <h2 className="text-h3 font-bold text-starlight mb-4 flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-green-400" />
               最近等级变化
             </h2>
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {recentLevelChanges.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">暂无等级变化记录</p>
+                <p className="text-starlight-muted text-center py-8">暂无等级变化记录</p>
               ) : (
                 recentLevelChanges.map((change, index) => (
                   <motion.div
@@ -349,23 +353,23 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-white/5 rounded-lg p-3"
+                    className="card-glass rounded-lg p-3"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-white font-semibold">
+                      <span className="text-starlight font-semibold">
                         {change.profiles.full_name || change.profiles.email}
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded text-white text-xs font-semibold ${LEVEL_COLORS[change.old_level as keyof typeof LEVEL_COLORS]}`}>
+                        <span className={`px-2 py-1 rounded text-starlight text-xs font-semibold ${LEVEL_COLORS[change.old_level as keyof typeof LEVEL_COLORS]}`}>
                           L{change.old_level}
                         </span>
-                        <span className="text-gray-400">→</span>
-                        <span className={`px-2 py-1 rounded text-white text-xs font-semibold ${LEVEL_COLORS[change.new_level as keyof typeof LEVEL_COLORS]}`}>
+                        <span className="text-starlight-muted">→</span>
+                        <span className={`px-2 py-1 rounded text-starlight text-xs font-semibold ${LEVEL_COLORS[change.new_level as keyof typeof LEVEL_COLORS]}`}>
                           L{change.new_level}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                    <div className="flex items-center gap-1 text-xs text-starlight-muted">
                       <Clock className="w-3 h-3" />
                       <span>{new Date(change.recorded_at).toLocaleString()}</span>
                     </div>
@@ -381,24 +385,24 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10 mb-8"
+            className="card-glass rounded-xl p-6 border border-white/10 mb-8"
           >
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <h2 className="text-h3 font-bold text-starlight mb-4 flex items-center gap-2">
               <Calendar className="w-6 h-6 text-cyan-400" />
               最近7天活跃度
             </h2>
             <div className="grid grid-cols-7 gap-2">
               {activityTrend.map((day, index) => (
                 <div key={index} className="text-center">
-                  <div className="bg-white/5 rounded-lg p-3 mb-2">
-                    <p className="text-xs text-gray-400 mb-1">
+                  <div className="card-glass rounded-lg p-3 mb-2">
+                    <p className="text-xs text-starlight-muted mb-1">
                       {new Date(day.date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
                     </p>
-                    <p className="text-lg font-bold text-cyan-400">{day.avg_online_minutes}</p>
-                    <p className="text-xs text-gray-400">分钟</p>
+                    <p className="text-body font-bold text-cyan-400">{day.avg_online_minutes}</p>
+                    <p className="text-xs text-starlight-muted">分钟</p>
                     <div className="mt-2 pt-2 border-t border-white/10">
-                      <p className="text-sm font-semibold text-purple-400">{day.total_lessons}</p>
-                      <p className="text-xs text-gray-400">课程</p>
+                      <p className="text-small font-semibold text-purple-400">{day.total_lessons}</p>
+                      <p className="text-xs text-starlight-muted">课程</p>
                     </div>
                   </div>
                 </div>
@@ -411,9 +415,9 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10"
+          className="card-glass rounded-xl p-6 border border-white/10"
         >
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+          <h2 className="text-h3 font-bold text-starlight mb-4 flex items-center gap-2">
             <BookOpen className="w-6 h-6 text-purple-400" />
             课程统计
           </h2>
@@ -424,17 +428,17 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white/5 rounded-lg p-4"
+                className="card-glass rounded-lg p-4"
               >
-                <h3 className="text-white font-semibold mb-1">{course.title}</h3>
-                <p className="text-xs text-gray-400 mb-3">{course.system_key}</p>
+                <h3 className="text-starlight font-semibold mb-1">{course.title}</h3>
+                <p className="text-xs text-starlight-muted mb-3">{course.system_key}</p>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">个人分配</span>
+                  <div className="flex items-center justify-between text-small">
+                    <span className="text-starlight-muted">个人分配</span>
                     <span className="text-cyan-400 font-semibold">{course.assigned_students}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">分组分配</span>
+                  <div className="flex items-center justify-between text-small">
+                    <span className="text-starlight-muted">分组分配</span>
                     <span className="text-purple-400 font-semibold">{course.assigned_groups}</span>
                   </div>
                 </div>

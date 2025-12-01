@@ -114,7 +114,9 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
   const radius = 38 // 扩大半径到38%，让圆圈更大
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-y-auto">
+    <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-y-auto">
+      {/* 宇宙背景渐变 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10 pointer-events-none" />
       {/* 星空背景 - 优化性能，减少星星数量 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(50)].map((_, i) => {
@@ -617,7 +619,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
               exit={{ opacity: 0, y: 50 }}
               className="fixed bottom-0 left-0 right-0 z-50 p-4"
             >
-              <div className="max-w-3xl mx-auto bg-gray-900/95 backdrop-blur-lg border-2 border-purple-500/50 rounded-2xl shadow-2xl overflow-hidden">
+              <div className="max-w-3xl mx-auto card-glass border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
                 <div className="p-6">
                   {/* 关闭按钮 */}
                   <button
@@ -652,7 +654,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
                   {/* 查看详情按钮 */}
                   <Link
                     href={`/courses/icarus/${selectedProject.id}`}
-                    className="block w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium text-center hover:opacity-90 transition-opacity text-white"
+                    className="btn-stardust block px-6 py-3 rounded-lg font-medium text-center"
                   >
                     查看详情 →
                   </Link>

@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { pblDataService, PBLProject } from '@/lib/pbl-data'
 import { ProjectDetailModal } from './ProjectDetailModal'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface MyProjectsPageProps {
   user: any
@@ -16,6 +18,8 @@ interface MyProjectsPageProps {
 }
 
 export function MyProjectsPage({ user, isGuest, onProjectSelect }: MyProjectsPageProps) {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [projects, setProjects] = useState<PBLProject[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedProject, setSelectedProject] = useState<PBLProject | null>(null)
@@ -45,11 +49,16 @@ export function MyProjectsPage({ user, isGuest, onProjectSelect }: MyProjectsPag
   }
 
   const handleDeleteProject = async (project: PBLProject) => {
-    const confirmDelete = confirm(`确定要删除项目"${project.title}"吗？`)
-    if (confirmDelete) {
+    const confirmed = await confirm({
+      title: '确认删除',
+      message: `确定要删除项目"${project.title}"吗？`,
+      type: 'warning'
+    })
+
+    if (confirmed) {
       setProjects(prev => prev.filter(p => p.id !== project.id))
       setShowProjectDetail(false)
-      alert(`项目"${project.title}"已删除`)
+      toast.success(`项目"${project.title}"已删除`)
     }
   }
 
@@ -118,7 +127,7 @@ export function MyProjectsPage({ user, isGuest, onProjectSelect }: MyProjectsPag
                 </div>
               </div>
               <button
-                onClick={() => alert('注册功能开发中...')}
+                onClick={() => toast.info('注册功能开发中...')}
                 className="bg-gradient-cosmic text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all text-sm"
               >
                 立即注册
@@ -143,7 +152,7 @@ export function MyProjectsPage({ user, isGuest, onProjectSelect }: MyProjectsPag
             {/* 操作按钮 */}
             <div className="flex items-center gap-3">
               <button
-                onClick={() => alert('发送邀请功能开发中...')}
+                onClick={() => toast.info('发送邀请功能开发中...')}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-600/30 transition-all"
               >
                 <Mail className="w-5 h-5" />
@@ -151,7 +160,7 @@ export function MyProjectsPage({ user, isGuest, onProjectSelect }: MyProjectsPag
               </button>
 
               <button
-                onClick={() => alert('创建项目功能开发中...')}
+                onClick={() => toast.info('创建项目功能开发中...')}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-cosmic text-white rounded-lg hover:opacity-90 transition-all"
               >
                 <Plus className="w-5 h-5" />

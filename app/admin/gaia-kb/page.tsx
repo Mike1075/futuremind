@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Upload, Trash2, FileText, ArrowLeft, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface Document {
   id: string
@@ -38,6 +40,8 @@ const DEFAULT_COURSES: Course[] = [
 ]
 
 export default function GaiaKnowledgeBasePage() {
+  const toast = useToast()
+  const { confirm } = useConfirm()
   const [documents, setDocuments] = useState<Document[]>([])
   const [courses, setCourses] = useState<Course[]>(DEFAULT_COURSES) // CQ-10: 动态课程列表
   const [loading, setLoading] = useState(true)
@@ -143,14 +147,17 @@ export default function GaiaKnowledgeBasePage() {
     e.preventDefault()
 
     if (!selectedFile || !title.trim()) {
-      alert('⚠️ 请选择文件并输入标题')
+      toast.warning('请选择文件并输入标题')
       return
     }
 
     // 确认上传
-    if (!confirm(`确认上传文档「${title.trim()}」到盖亚知识库吗？\n\n文件：${selectedFile.name}\n大小：${formatFileSize(selectedFile.size)}\n\n上传后将自动进行向量化处理。`)) {
-      return
-    }
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: `确认上传文档「${title.trim()}」到盖亚知识库吗？\n\n文件：${selectedFile.name}\n大小：${formatFileSize(selectedFile.size)}\n\n上传后将自动进行向量化处理。`,
+      type: 'warning'
+    })
+    if (!confirmed) return
 
     setUploading(true)
     try {
@@ -167,7 +174,7 @@ export default function GaiaKnowledgeBasePage() {
       const data = await response.json()
 
       if (response.ok) {
-        alert(`✅ 上传成功！\n\n项目ID: ${data.project_id}\n标题: ${title.trim()}\n\n${data.message || '文档正在后台处理向量化，请稍后刷新查看。'}`)
+        toast.success(`上传成功！项目ID: ${data.project_id}，标题: ${title.trim()}。${data.message || '文档正在后台处理向量化，请稍后刷新查看。'}`)
         setSelectedFile(null)
         setTitle('')
         // 重置文件输入
@@ -177,11 +184,11 @@ export default function GaiaKnowledgeBasePage() {
         // 重新加载列表
         await loadDocuments()
       } else {
-        alert(`❌ 上传失败\n\n${data.error || '未知错误'}\n\n请检查文件格式和网络连接后重试。`)
+        toast.error(`上传失败：${data.error || '未知错误'}。请检查文件格式和网络连接后重试。`)
       }
     } catch (error: any) {
       console.error('上传失败:', error)
-      alert(`❌ 上传失败\n\n${error.message || '网络错误'}\n\n请检查网络连接后重试。`)
+      toast.error(`上传失败：${error.message || '网络错误'}。请检查网络连接后重试。`)
     } finally {
       setUploading(false)
     }
@@ -239,9 +246,12 @@ export default function GaiaKnowledgeBasePage() {
   }
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`⚠️ 确定要删除文档「${title}」吗？\n\n此操作不可撤销，删除后盖亚将无法再使用这份知识。`)) {
-      return
-    }
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: `确定要删除文档「${title}」吗？\n\n此操作不可撤销，删除后盖亚将无法再使用这份知识。`,
+      type: 'warning'
+    })
+    if (!confirmed) return
 
     try {
       const url = `/api/admin/gaia-kb?id=${id}`
@@ -252,27 +262,30 @@ export default function GaiaKnowledgeBasePage() {
       const data = await response.json()
 
       if (response.ok) {
-        alert(`✅ 删除成功\n\n文档「${title}」已从盖亚知识库中移除。${data.deletedVectorChunks ? '\n已同时删除所有相关向量块。' : ''}`)
+        toast.success(`删除成功！文档「${title}」已从盖亚知识库中移除。${data.deletedVectorChunks ? '已同时删除所有相关向量块。' : ''}`)
         await loadDocuments()
       } else {
-        alert(`❌ 删除失败\n\n${data.error || '未知错误'}`)
+        toast.error(`删除失败：${data.error || '未知错误'}`)
       }
     } catch {
-      alert('❌ 删除失败\n\n网络错误，请稍后重试。')
+      toast.error('删除失败：网络错误，请稍后重试。')
     }
   }
 
   // 批量删除
   const handleBatchDelete = async () => {
     if (selectedDocs.size === 0) {
-      alert('⚠️ 请先选择要删除的文档')
+      toast.warning('请先选择要删除的文档')
       return
     }
 
     const selectedDocsArray = Array.from(selectedDocs)
-    if (!confirm(`⚠️ 确定要删除选中的 ${selectedDocs.size} 个文档吗？\n\n此操作不可撤销，删除后盖亚将无法再使用这些知识。`)) {
-      return
-    }
+    const confirmed = await confirm({
+      title: '确认操作',
+      message: `确定要删除选中的 ${selectedDocs.size} 个文档吗？\n\n此操作不可撤销，删除后盖亚将无法再使用这些知识。`,
+      type: 'warning'
+    })
+    if (!confirmed) return
 
     setDeleting(true)
     let successCount = 0
@@ -298,9 +311,9 @@ export default function GaiaKnowledgeBasePage() {
     setSelectedDocs(new Set())
 
     if (failCount === 0) {
-      alert(`✅ 批量删除成功\n\n已删除 ${successCount} 个文档`)
+      toast.success(`批量删除成功！已删除 ${successCount} 个文档`)
     } else {
-      alert(`⚠️ 批量删除完成\n\n成功: ${successCount} 个\n失败: ${failCount} 个`)
+      toast.warning(`批量删除完成。成功: ${successCount} 个，失败: ${failCount} 个`)
     }
 
     await loadDocuments()

@@ -33,10 +33,8 @@ export default function SubmissionButton({
         <button
           onClick={() => setIsDialogOpen(true)}
           className="
-            flex-1 py-4 px-6 rounded-lg font-semibold text-lg
-            bg-gradient-to-r from-purple-600 to-pink-600
-            hover:from-purple-700 hover:to-pink-700
-            text-white transition-all duration-200 transform hover:scale-[1.02]
+            btn-stardust
+            flex-1 py-4 px-6 font-semibold text-h3
             flex items-center justify-center gap-2
           "
         >
@@ -46,15 +44,12 @@ export default function SubmissionButton({
           提交作业/感悟
         </button>
 
-        {/* 次级按钮：查看提交记录 */}
+        {/* 次级按钮：查看提交记录 - 使用炫彩边框效果 */}
         <button
           onClick={() => setIsHistoryOpen(true)}
           className="
-            px-6 py-4 rounded-lg font-medium text-lg
-            bg-gray-800 hover:bg-gray-700
-            text-gray-300 hover:text-white
-            border border-gray-700 hover:border-gray-600
-            transition-all duration-200
+            btn-stardust
+            px-6 py-4 font-medium text-h3
             flex items-center justify-center gap-2
           "
         >
