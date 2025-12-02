@@ -59,10 +59,10 @@ export function Toast({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0, y: -20, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.9 }}
-          className="fixed top-4 right-4 z-[100]"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]"
         >
           <div className={`${getBgColor()} border rounded-lg px-4 py-3 shadow-xl backdrop-blur-sm flex items-center gap-3 min-w-[300px]`}>
             {getIcon()}

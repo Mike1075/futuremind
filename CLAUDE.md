@@ -745,6 +745,44 @@ Hybrid- Hybrid-    ↓
   - **原因**：Code1 代码不支持 Basic LLM Chain 的 `{ text: "..." }` 格式
   - **解决**：添加对 `data.text` 的处理
 
+- [x] **修复6（2024-12-02）**：多项目选择报错 - UUID 解析失败
+  - **现象**：同时选择 3 个项目时报错 `invalid input syntax for type uuid: "uuid1,uuid2,uuid3"`
+  - **原因**：`hybrid_search` 函数只接受单个 UUID，但前端传递逗号分隔的多个 UUID
+  - **解决**：修改 `hybrid_search` 函数支持多项目 ID
+    - 使用 `string_to_array()` 拆分逗号分隔的字符串
+    - 使用 `= ANY(project_ids)` 替代 `= actual_project_id`
+  - **迁移文件**：`hybrid_search_multi_project_support`
+  - **核心改动**：
+    ```sql
+    -- 原来：单个 UUID
+    actual_project_id := NULLIF(filter_project_id, '')::uuid;
+    WHERE dc.project_id = actual_project_id
+
+    -- 现在：UUID 数组
+    project_ids := ARRAY(SELECT ... FROM unnest(string_to_array(filter_project_id, ',')));
+    WHERE dc.project_id = ANY(project_ids)
+    ```
+
+### 💡 如何切换 AI 模型（Gemini → GPT-4o-mini）
+
+1. **删除 Gemini 节点**：
+   - 找到 `Basic LLM Chain` 节点
+   - 点击下方连接的 `Google Gemini Chat Model` 子节点
+   - 删除该节点
+
+2. **添加 OpenAI Chat Model**：
+   - 点击 `Basic LLM Chain` 节点
+   - 点击底部 `+ Model`
+   - 搜索 `OpenAI Chat Model` 并添加
+   - 配置：Model = `gpt-4o-mini`
+
+3. **速度对比**：
+   | 模型 | 响应速度 | 质量 | 成本 |
+   |------|---------|------|------|
+   | gemini-2.5-flash | ~2-3s | 好 | 低 |
+   | gpt-4o-mini | ~1-2s | 好 | 低 |
+   | gpt-4o | ~3-5s | 最好 | 高 |
+
 ### 🚧 第四阶段：性能优化 + 真流式输出（待完成）
 
 #### 当前问题

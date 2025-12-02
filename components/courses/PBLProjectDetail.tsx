@@ -702,9 +702,6 @@ export function PBLProjectDetail({
                   className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-900/70 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    {!isWeekUnlocked && (
-                        <span className="text-gray-500 text-xl">🔒</span>
-                      )}
                     <div className="text-left">
                       <h3 className="text-lg font-semibold text-white">
                         第 {week.week} 周：{week.theme}
@@ -714,16 +711,22 @@ export function PBLProjectDetail({
                       </p>
                     </div>
                   </div>
-                  <svg
-                    className={`w-6 h-6 text-gray-400 transition-transform ${
-                      isWeekExpanded ? 'rotate-180' : ''
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  {isWeekUnlocked ? (
+                    <svg
+                      className={`w-6 h-6 text-gray-400 transition-transform ${
+                        isWeekExpanded ? 'rotate-180' : ''
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
                 </button>
                   )
                 })()}
