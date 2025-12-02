@@ -174,9 +174,12 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     // 🔥 读取完整响应
     const responseText = await n8nResponse.text()
 
-    logger.debug('N8N raw response', {
+    // 🔥 详细日志：显示完整的原始响应
+    logger.info('N8N raw response FULL', {
       length: responseText.length,
-      preview: responseText.substring(0, 500)
+      content: responseText.substring(0, 1000),
+      firstChar: responseText.charCodeAt(0),
+      lastChar: responseText.charCodeAt(responseText.length - 1)
     })
 
     let fullContent = ''
@@ -184,7 +187,11 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     // 🔥 方法1：尝试解析为单个 JSON 对象（streaming 关闭时）
     try {
       const json = JSON.parse(responseText)
-      logger.debug('Parsed as single JSON', { keys: Object.keys(json) })
+      logger.info('Parsed as single JSON SUCCESS', {
+        keys: Object.keys(json),
+        hasAiContent: !!json.ai_content,
+        aiContentPreview: json.ai_content?.substring(0, 100)
+      })
 
       if (json.ai_content) {
         fullContent = json.ai_content
@@ -195,12 +202,12 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       } else if (json.content) {
         fullContent = json.content
       }
-    } catch {
+    } catch (parseError) {
       // 🔥 方法2：尝试 NDJSON 格式（streaming 开启时）
-      // {"type":"begin","metadata":{...}}
-      // {"type":"item","content":"..."}  <- 我们需要这个
-      // {"type":"done",...}
-      logger.debug('Trying NDJSON format')
+      logger.info('Single JSON parse FAILED, trying NDJSON', {
+        error: parseError instanceof Error ? parseError.message : String(parseError),
+        responsePreview: responseText.substring(0, 200)
+      })
       const lines = responseText.split('\n').filter(line => line.trim())
 
       for (const line of lines) {
@@ -289,7 +296,14 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
           }
         }).then(({ error: dbError }) => {
           if (dbError) {
-            logger.error('Failed to save chat history', dbError)
+            logger.error('Failed to save chat history', {
+              code: dbError.code,
+              message: dbError.message,
+              details: dbError.details,
+              hint: dbError.hint
+            })
+          } else {
+            logger.info('Chat history saved successfully')
           }
         })
       }
