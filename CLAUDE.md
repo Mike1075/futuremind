@@ -725,37 +725,25 @@ Hybrid- Hybrid-    ↓
   - **解决**：检测数组格式，自动提取第一个元素
   - **提交**：`c8c518f`
 
-- [ ] **问题5（2024-12-02 待修复）**：N8N `Code1` 节点输出为空导致响应长度为 0
-  - **现象**：前端显示 "N8N响应长度: 0"，但 N8N 执行记录显示有数据
-  - **根因分析**：
-    | 节点 | 输入 | 输出 | 问题 |
-    |------|------|------|------|
-    | Basic LLM Chain | prompt | `{ text: "AI回答..." }` | ✅ 正常 |
-    | **Code1** | `{ text: "..." }` | `{ context: "" }` | ❌ **空！** |
-    | Create a row | 多个来源 | 数据库记录 | ✅ 绕过 Code1 |
-    | Respond to Webhook | Create a row | 返回数据 | ⚠️ 可能受影响 |
+- [x] **修复5（2024-12-02）**：N8N 响应为空 - Webhook 触发器配置问题
+  - **现象**：N8N 执行成功，Respond to Webhook 有输出，但 API 收到空响应
+  - **根因**：**Webhook 触发器节点的 Respond 设置不正确**
+  - **关键发现**（来自 [N8N 官方文档](https://automategeniushub.com/mastering-the-n8n-webhook-node-part-a/)）：
+    > ⚠️ `Respond to Webhook` 节点**只有在 Webhook 触发器配置为 "Using Respond to Webhook Node" 时才生效**！
+  - **解决方案**：
+    1. 点击 N8N 工作流的 **Webhook 触发器节点**（最左边）
+    2. 找到 **Respond** 设置
+    3. 改为 **"Using 'Respond to Webhook' Node"**
+  - **配置对比**：
+    | Respond 设置 | 行为 |
+    |-------------|------|
+    | Immediately | 立即返回空 200，忽略 Respond to Webhook ❌ |
+    | When Last Node Finishes | 返回最后节点输出，格式可能不对 ⚠️ |
+    | **Using 'Respond to Webhook' Node** | 使用 Respond to Webhook 节点 ✅ |
 
-  - **Code1 代码问题**：
-    ```javascript
-    // Code1 的代码是为处理搜索结果数组设计的
-    if (arr) { ... }  // Basic LLM Chain 输出不是数组，跳过
-    if (typeof data === "string") { ... }  // 不是字符串，是对象，跳过
-    // 结果：parts 为空，context: ""
-    ```
-
-  - **解决方案**：在 N8N 的 Code1 节点添加对 LLM 输出格式的处理：
-    ```javascript
-    // 添加到 Code1 代码中
-    if (data.text && typeof data.text === "string") {
-      parts.push(data.text);
-      continue;
-    }
-    // 支持新版本格式
-    if (data.response?.text) {
-      parts.push(data.response.text);
-      continue;
-    }
-    ```
+- [x] **修复5.1（2024-12-02）**：Code1 节点输出为空
+  - **原因**：Code1 代码不支持 Basic LLM Chain 的 `{ text: "..." }` 格式
+  - **解决**：添加对 `data.text` 的处理
 
 ### 🚧 第四阶段：性能优化 + 真流式输出（待完成）
 
