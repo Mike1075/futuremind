@@ -924,8 +924,15 @@ AND (NOT is_org_only_search OR dc.project_id IS NULL)
 **设计哲学：宁缺毋滥**
 - 不是所有聊天都有价值
 - AI 评估每个问答的质量（quality_score）
-- **只有分数 >= 60 才会被保存**
+- **只有分数 >= 80 才会被保存**（2024-12-02 从 60 提高到 80）
 - 有就有，没有就空，确保智慧库的质量
+
+**智慧库的真正用途**：
+- ❌ 不是"缓存快速回答"（不会跳过 AI 直接返回）
+- ✅ 是"补充知识来源"（作为参考知识传给 AI）
+- 补充知识库没有的内容（聊天中讨论过但文档没有）
+- 提供更好的回答范例（AI 可以参考之前高质量的回答）
+- 积累隐性知识（不在文档里但在讨论中被提到的知识）
 
 #### 系统架构概览
 
@@ -933,7 +940,7 @@ AND (NOT is_org_only_search OR dc.project_id IS NULL)
 用户聊天 (chat_history)
     ↓ 累积到一定数量
 project-wisdom-accumulation 边缘函数
-    ↓ AI 提取高质量 Q&A（质量分数 >= 60）
+    ↓ AI 提取高质量 Q&A（质量分数 >= 80）
 项目智慧库 (documents 表, title='项目智慧库')
     ↓ 多个项目智慧累积
 organization-wisdom-accumulation 边缘函数
@@ -964,7 +971,7 @@ AI 返回 JSON：
   "tags": ["项目管理", "任务分配"]
 }]
     ↓
-过滤：只保留 quality_score >= 60 的
+过滤：只保留 quality_score >= 80 的
     ↓
 生成向量嵌入（text-embedding-3-small）
     ↓
@@ -1089,20 +1096,177 @@ WHERE organization_id = $1 AND title = '组织智慧库';
 - [x] 边缘函数已部署（`project-wisdom-accumulation`、`organization-wisdom-accumulation`）
 - [x] `hybrid_search` 函数已修复（区分项目文档和组织文档）
 - [x] 四种知识来源的架构设计已明确
+- [x] **智慧提取测试成功**（2024-12-02）：
+  - 修复了边缘函数的数据结构问题（chat_history 的 content+ai_content 在同一行）
+  - 质量阈值从 60 提高到 80
+  - 测试结果：19 条聊天 → 5 个问答对 → 3 条高质量智慧（80-85分）
 
-**阶段一：让智慧库能产生内容（优先级高）**
-- [ ] 手动触发测试：调用边缘函数验证智慧提取是否正常
-- [ ] 检查 documents 表：确认智慧是否被正确存储
-- [ ] 添加数据库触发器：聊天消息达到阈值时自动调用
+**阶段一：让智慧库能产生内容** ✅ 基本完成
+- [x] 手动触发测试：调用边缘函数验证智慧提取正常
+- [x] 检查 documents 表：智慧已正确存储
+- [ ] 添加数据库触发器：聊天消息达到阈值时自动调用（可选）
 
-**阶段二：让 N8N 工作流使用智慧库**
-- [ ] 添加项目智慧查询节点：查询 `documents` 表 `title='项目智慧库'`
-- [ ] 添加组织智慧查询节点：查询 `documents` 表 `title='组织智慧库'`
+**阶段二：让 N8N 工作流使用智慧库**（详细步骤见下方）
+- [ ] 添加项目智慧查询节点：Postgres 节点查询 `title='项目智慧库'`
+- [ ] 添加组织智慧查询节点：Postgres 节点查询 `title='组织智慧库'`
 - [ ] 修改 Merge 节点：从 3 输入改为 5 输入
 - [ ] 修改整合上下文代码：把智慧库内容合并进 context
 
 **阶段三：组织知识库（暂缓，等有需求再做）**
 - [ ] 组织知识库上传功能：管理员上传通用文档
+
+#### N8N 工作流修改步骤（阶段二详细说明）
+
+**目标架构**：
+```
+1-Parse-Input-Parameters
+         ↓
+    ┌────┴────────────────────────┐
+    ↓                             ↓
+生成向量                      获取用户画像
+    ↓                             ↓
+┌───┴───┐    ┌─────────┐          ↓
+↓       ↓    ↓         ↓          ↓
+项目   组织  项目智慧  组织智慧     ↓
+知识库 知识库  库       库          ↓
+    └───┬───┴────┬────┴───────────┘
+        ↓
+  合并搜索结果 (Merge 5个输入)
+        ↓
+    整合上下文 (Code)
+        ↓
+  6-Final-AI-Answer
+```
+
+**步骤1：添加 项目智慧库 查询节点**
+- 节点类型：`Postgres`
+- 节点名称：`项目智慧库`
+- 配置：
+  - Operation: `Execute Query`
+  - Query:
+    ```sql
+    SELECT content, metadata->>'summary' as summary
+    FROM documents
+    WHERE project_id = $1 AND title = '项目智慧库'
+    ORDER BY created_at DESC
+    LIMIT 5
+    ```
+  - Query Parameters: `{{ $('1-Parse-Input-Parameters').item.json.project_id }}`
+- 连接：从 `1-Parse-Input-Parameters` 连接到此节点
+
+**步骤2：添加 组织智慧库 查询节点**
+- 节点类型：`Postgres`
+- 节点名称：`组织智慧库`
+- 配置：
+  - Operation: `Execute Query`
+  - Query:
+    ```sql
+    SELECT content, metadata->>'topic' as topic
+    FROM documents
+    WHERE organization_id = $1 AND title = '组织智慧库'
+    ORDER BY created_at DESC
+    LIMIT 3
+    ```
+  - Query Parameters: `{{ $('1-Parse-Input-Parameters').item.json.organization_id }}`
+- 连接：从 `1-Parse-Input-Parameters` 连接到此节点
+
+**步骤3：修改 合并搜索结果 (Merge) 节点**
+- 点击 Merge 节点
+- 添加更多输入（从 3 个变成 5 个）：
+  - Input 0: `Hybrid-项目知识`（上传文档）
+  - Input 1: `Hybrid-组织知识`（管理员上传的通用文档）
+  - Input 2: `获取用户画像`
+  - Input 3: `项目智慧库`（新增）
+  - Input 4: `组织智慧库`（新增）
+
+**步骤4：修改 整合上下文 (Code) 节点**
+```javascript
+// 整合所有知识来源
+const allItems = $input.all();
+const projectKnowledge = [];
+const orgKnowledge = [];
+const projectWisdom = [];
+const orgWisdom = [];
+let studentProfile = '';
+
+for (const item of allItems) {
+  const data = item.json;
+
+  // hybrid_search 返回格式（数组）
+  if (Array.isArray(data)) {
+    for (const row of data) {
+      if (row.content) {
+        // 根据来源分类
+        if (row.title === '项目智慧库') {
+          projectWisdom.push(row.content);
+        } else if (row.title === '组织智慧库') {
+          orgWisdom.push(row.content);
+        } else {
+          projectKnowledge.push(row.content);
+        }
+      }
+    }
+    continue;
+  }
+
+  // 单条 hybrid_search 结果
+  if (data.content && data.similarity !== undefined) {
+    projectKnowledge.push(data.content);
+    continue;
+  }
+
+  // 智慧库结果（Postgres 返回格式）
+  if (data.content && data.summary) {
+    projectWisdom.push(data.content);
+    continue;
+  }
+  if (data.content && data.topic) {
+    orgWisdom.push(data.content);
+    continue;
+  }
+
+  // 用户画像
+  if (data.summary_text) {
+    studentProfile = data.summary_text;
+    continue;
+  }
+}
+
+// 构建分层上下文
+const contextParts = [];
+
+if (projectKnowledge.length > 0) {
+  contextParts.push('【项目知识库】\n' + projectKnowledge.join('\n\n---\n\n'));
+}
+if (projectWisdom.length > 0) {
+  contextParts.push('【项目智慧库】\n' + projectWisdom.join('\n\n---\n\n'));
+}
+if (orgWisdom.length > 0) {
+  contextParts.push('【组织智慧库】\n' + orgWisdom.join('\n\n---\n\n'));
+}
+
+return [{
+  json: {
+    context: contextParts.length > 0 ? contextParts.join('\n\n') : '(无相关知识)',
+    student_profile: studentProfile,
+    has_project_knowledge: projectKnowledge.length > 0,
+    has_project_wisdom: projectWisdom.length > 0,
+    has_org_wisdom: orgWisdom.length > 0
+  }
+}];
+```
+
+**步骤5：优化 Prompt（可选）**
+在 `6-Final-AI-Answer` 的 Prompt 中区分知识来源：
+```
+## 知识库检索结果
+{{ $('整合上下文').first().json.context }}
+
+回复指南：
+1. 优先使用【项目知识库】的内容（用户上传的文档）
+2. 参考【项目智慧库】的内容（从聊天中提取的经验）
+3. 参考【组织智慧库】的内容（跨项目的通用知识）
+```
 
 ### 🚧 第四阶段：性能优化 + 真流式输出（待完成）
 
