@@ -7,16 +7,20 @@ import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
 
 async function handleChatRequest(request: NextRequest): Promise<Response> {
   const startTime = Date.now()
+  const timings: Record<string, number> = {}
 
   try {
     // 1. 权限验证
+    const authStart = Date.now()
     const auth = await requireAuth(request)
+    timings.auth = Date.now() - authStart
+
     if (!auth.authorized) {
       return auth.response
     }
 
     const { user, supabase } = auth
-    logger.info('Chat request received', { userId: user.id })
+    logger.info('Chat request received', { userId: user.id, authTime: `${timings.auth}ms` })
 
     // 2. 解析和验证请求参数
     const body = await request.json()
@@ -66,7 +70,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
 
     // 并行查询：聊天历史 + 用户画像 + 项目信息
     // 🔥 修复：按项目过滤聊天历史，避免不同项目的知识库内容互相污染
-    logger.dbQuery('chat_history + student_summaries + project_info', 'SELECT')
+    const dbStart = Date.now()
 
     // 构建聊天历史查询（按项目过滤）
     let chatHistoryQuery = supabase
@@ -105,10 +109,14 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       projectInfoQuery
     ])
 
+    timings.db = Date.now() - dbStart
+
     const chatHistory = chatHistoryResult.data
     const studentSummary = studentSummaryResult.data
     const userProfile = profileResult.data
     const projectsInfo = projectInfoResult.data || []
+
+    logger.info('DB queries completed', { dbTime: `${timings.db}ms` })
 
     // 构建用户画像字符串（来自盖亚的分析）
     const studentProfileText = studentSummary ? `
@@ -319,10 +327,18 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       finalReply = `[调试] 解析失败。N8N响应长度: ${responseText.length}, 前200字符: ${responseText.substring(0, 200)}`
     }
 
-    const totalDuration = Date.now() - startTime
+    timings.n8n = n8nDuration
+    timings.total = Date.now() - startTime
+
     logger.info('AI response completed', {
       responseLength: finalReply.length,
-      duration: `${totalDuration}ms`
+      timings: {
+        auth: `${timings.auth}ms`,
+        db: `${timings.db}ms`,
+        n8n: `${timings.n8n}ms`,
+        total: `${timings.total}ms`,
+        overhead: `${timings.total - timings.n8n}ms`
+      }
     })
 
     // 🔥 创建流式响应（前端打字机效果）
@@ -336,10 +352,16 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
         }) + '\n'
         controller.enqueue(new TextEncoder().encode(chunkData))
 
-        // 发送完成标记
+        // 发送完成标记（包含服务端计时信息）
         const doneData = JSON.stringify({
           type: 'done',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          serverTimings: {
+            auth: timings.auth,
+            db: timings.db,
+            n8n: timings.n8n,
+            total: timings.total
+          }
         }) + '\n'
         controller.enqueue(new TextEncoder().encode(doneData))
         controller.close()
