@@ -470,7 +470,7 @@ export default function PBLProjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400"></div>
       </div>
     )
@@ -478,7 +478,7 @@ export default function PBLProjectDetailPage() {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-white">项目不存在</div>
       </div>
     )
@@ -487,7 +487,7 @@ export default function PBLProjectDetailPage() {
   const diffConfig = DIFFICULTY_LABELS[project.subtitle as keyof typeof DIFFICULTY_LABELS] || DIFFICULTY_LABELS.option_a
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="bg-black/50 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">

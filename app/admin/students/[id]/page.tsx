@@ -134,7 +134,7 @@ export default function StudentDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
           <p className="text-purple-300 mt-4">加载中...</p>
@@ -145,7 +145,7 @@ export default function StudentDetailPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <p className="text-xl text-red-300">学员信息加载失败</p>
@@ -157,7 +157,7 @@ export default function StudentDetailPage() {
   const { student, summary, level_history, behavior_stats, progress, submissions, conversations } = data
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="bg-black/50 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">

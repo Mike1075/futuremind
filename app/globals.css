@@ -1906,3 +1906,39 @@ body {
   border-radius: calc(0.75rem - 2px);
   background-color: rgb(10, 10, 31);
 }
+
+/* 卡片炫彩边框效果 */
+.card-rainbow-border {
+  position: relative;
+}
+
+.card-rainbow-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(90deg,
+    rgba(255, 215, 0, 0) 0%,
+    rgba(255, 215, 0, 0.6) 25%,
+    rgba(157, 0, 255, 0.6) 50%,
+    rgba(0, 255, 255, 0.6) 75%,
+    rgba(255, 215, 0, 0) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: energy-flow 3s linear infinite;
+}
+
+.card-rainbow-border:hover::before {
+  opacity: 1;
+}
+
+.card-rainbow-border:hover {
+  border-color: transparent !important;
+  box-shadow:
+    0 0 20px rgba(255, 215, 0, 0.3),
+    0 0 40px rgba(157, 0, 255, 0.2),
+    inset 0 0 20px rgba(255, 215, 0, 0.05);
+}

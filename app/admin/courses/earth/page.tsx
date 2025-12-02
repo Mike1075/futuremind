@@ -469,7 +469,7 @@ export default function EarthCoursePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
           <p className="text-purple-300 mt-4">加载中...</p>
@@ -479,7 +479,7 @@ export default function EarthCoursePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden">
       {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden">
         {isMounted && particles.map((particle) => (

@@ -217,7 +217,7 @@ export default function CoursesPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => router.push('/admin/gaia-kb')}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg border border-purple-500/30 transition-all group"
+                className="btn-stardust flex items-center gap-2 px-4 py-2"
               >
                 <Brain className="w-5 h-5" />
                 <span className="text-small font-medium">盖亚知识库</span>
@@ -247,7 +247,7 @@ export default function CoursesPage() {
             const isDeletable = !protectedCourses.includes(course.system_key)
 
             return (
-              <div key={course.id} className="group relative card-glass rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center">
+              <div key={course.id} className="group relative card-glass rounded-2xl p-8 border border-white/10 card-rainbow-border transition-all duration-300 hover:scale-105 hover:bg-white/10 min-h-[280px] flex flex-col items-center justify-center text-center">
                 {/* Gradient Background Effect */}
                 <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none`} />
 

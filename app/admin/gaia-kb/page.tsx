@@ -316,14 +316,14 @@ export default function GaiaKnowledgeBasePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-black text-white py-8">
+    <div className="min-h-screen text-white py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 返回按钮 */}
         <button
@@ -390,7 +390,7 @@ export default function GaiaKnowledgeBasePage() {
               <button
                 type="submit"
                 disabled={uploading || !selectedFile || !title.trim()}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors flex items-center"
+                className="btn-stardust px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {uploading ? (
                   <>
