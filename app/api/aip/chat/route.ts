@@ -127,9 +127,11 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       student_profile: studentProfileText
     }
 
-    logger.debug('Calling N8N webhook', {
-      url: webhookUrl.substring(0, 50) + '...',
-      payloadSize: JSON.stringify(n8nPayload).length
+    // 🔥 打印完整的 Webhook URL（用于调试）
+    logger.info('Calling N8N webhook', {
+      fullUrl: webhookUrl,
+      payloadSize: JSON.stringify(n8nPayload).length,
+      payloadKeys: Object.keys(n8nPayload)
     })
 
     const n8nStartTime = Date.now()
@@ -152,9 +154,21 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       clearTimeout(timeout)
 
       const n8nDuration = Date.now() - n8nStartTime
-      logger.info('N8N response received', {
+
+      // 🔥 详细日志：打印所有响应头
+      const responseHeaders: Record<string, string> = {}
+      n8nResponse.headers.forEach((value, key) => {
+        responseHeaders[key] = value
+      })
+
+      logger.info('N8N response details', {
         status: n8nResponse.status,
-        duration: `${n8nDuration}ms`
+        statusText: n8nResponse.statusText,
+        duration: `${n8nDuration}ms`,
+        headers: responseHeaders,
+        url: n8nResponse.url,
+        redirected: n8nResponse.redirected,
+        type: n8nResponse.type
       })
 
       if (!n8nResponse.ok) {
