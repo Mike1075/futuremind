@@ -904,6 +904,82 @@ AND (NOT is_org_only_search OR dc.project_id IS NULL)
 | 没选项目 | ❌ 空 | ✅ 返回组织级文档（如有）|
 | 当前状态（无组织级文档）| 正常 | 返回空，不污染 |
 
+### 📚 智慧沉淀系统详解（2024-12-02 分析）
+
+#### 系统架构概览
+
+```
+用户聊天 (chat_history)
+    ↓ 累积到一定数量
+project-wisdom-accumulation 边缘函数
+    ↓ AI 提取高质量 Q&A
+项目智慧库 (documents 表, title='项目智慧库')
+    ↓ 多个项目智慧累积
+organization-wisdom-accumulation 边缘函数
+    ↓ AI 聚合归纳
+组织智慧库 (documents 表, title='组织智慧库')
+```
+
+#### 项目智慧库 (project-wisdom-accumulation)
+
+**来源**：`chat_history` 表中的聊天记录（不是上传的文档！）
+
+**沉淀流程**：
+1. 从 `chat_history` 获取项目的聊天记录
+2. 构建问答对（用户问题 + AI回答）
+3. AI (gpt-4o-mini) 提取高质量 Q&A（质量分数 >= 60）
+4. 生成向量嵌入
+5. 存入 `documents` 表，`title = '项目智慧库'`
+
+**AI 提取标准**：
+- 问题有价值、可复用（不是闲聊）
+- 回答包含实质性信息
+- 对项目其他成员有参考价值
+
+#### 组织智慧库 (organization-wisdom-accumulation)
+
+**来源**：`documents` 表中 `title='项目智慧库'` 的记录（从项目智慧聚合）
+
+**聚合流程**：
+1. 获取组织下所有项目的智慧
+2. AI 归纳主题、提炼洞察
+3. 存入 `documents` 表，`title = '组织智慧库'`，`project_id = NULL`
+
+**聚合输出**：topic（主题）、summary（总结）、key_insights（洞察）、confidence_score（置信度）
+
+#### 三种知识来源对比
+
+| 知识类型 | 来源 | 存储表 | 标识方式 | project_id |
+|---------|------|--------|---------|------------|
+| **上传文档** | 用户手动上传 | `document_chunks` | 有 project_id | 有值 |
+| **项目智慧** | 聊天记录提取 | `documents` | `title='项目智慧库'` | 有值 |
+| **组织智慧** | 项目智慧聚合 | `documents` | `title='组织智慧库'` | **NULL** |
+
+#### 当前状态与待办
+
+**已完成**：
+- [x] 边缘函数已部署（`project-wisdom-accumulation`、`organization-wisdom-accumulation`）
+- [x] `hybrid_search` 函数已修复（区分项目文档和组织文档）
+
+**待完成**（如需启用智慧沉淀）：
+- [ ] 添加数据库触发器：聊天消息达到阈值时自动调用边缘函数
+- [ ] 修改 N8N 工作流：添加查询 `documents` 表的智慧库节点
+- [ ] 或：将智慧也存入 `document_chunks` 表，与现有架构统一
+
+#### 参考：aip聊天生成历史2.0 的查询方式
+
+```sql
+-- 项目智慧库查询
+SELECT content, '项目智慧库' AS title
+FROM documents
+WHERE project_id = $1;
+
+-- 组织智慧库查询
+SELECT content, title
+FROM documents
+WHERE organization_id = $1 AND title = '组织智慧库';
+```
+
 ### 🚧 第四阶段：性能优化 + 真流式输出（待完成）
 
 #### 当前问题
