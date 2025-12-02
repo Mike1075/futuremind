@@ -783,6 +783,85 @@ Hybrid- Hybrid-    ↓
    | gpt-4o-mini | ~1-2s | 好 | 低 |
    | gpt-4o | ~3-5s | 最好 | 高 |
 
+### ✅ Bug 修复（2024-12-02 下午）
+
+#### Bug 1：对话记录"丢失"
+- **现象**：关闭对话框再打开，之前的对话不见了
+- **调查结果**：聊天记录确实有保存到数据库（`chat_history` 表）
+- **根因**：`hasLoadedHistory.current` 标记只在首次打开时为 false，之后一直是 true
+- **修复**：
+  - 文件：`components/aip/FloatingChatBot.tsx`
+  - 改用 `lastOpenTime.current` 记录上次打开时间
+  - 如果距离上次打开超过 30 秒，重新加载历史记录
+  - 确保每次打开对话框都能获取最新的聊天历史
+
+#### Bug 2：待审核/已拒绝文档被引用
+- **调查结果**：待审核/已拒绝的文档 `chunks_count = 0`，审核逻辑是正确的！
+- **这些文档没有被向量化**，用户看到的"引用"是由 Bug 3 导致的
+
+#### Bug 3：空项目引用其他项目知识库（最关键！）
+- **现象**：选择一个没有文档的项目，但 AI 回答包含之前问过的其他项目的知识库内容
+- **根因**：聊天历史是按**用户**加载的，不是按**项目**！
+  ```javascript
+  // 原代码 - 没有 project_id 过滤
+  .from('chat_history')
+  .eq('user_id', user.id)
+  .eq('agent_type', 'member')  // ❌ 缺少 project_id
+  ```
+- **污染流程**：
+  1. 在项目 A 问问题 → AI 回答（使用项目 A 知识库）
+  2. 切换到项目 B（空项目）
+  3. API 加载最近 10 条历史对话（包含项目 A 的对话）
+  4. 历史对话传给 N8N → AI 从历史中"学习"了项目 A 的内容
+  5. 看起来像"空项目引用了其他项目的知识库"
+
+- **修复**：
+  - 文件：`app/api/aip/chat/route.ts`
+  - 按项目过滤聊天历史：
+    ```javascript
+    // 修复后
+    if (projectIdsArray.length > 0) {
+      chatHistoryQuery = chatHistoryQuery.in('project_id', projectIdsArray)
+    }
+    ```
+  - 切换项目后，历史对话是干净的，不会被其他项目污染
+
+### 💡 如何使用通义千问（阿里云大模型）
+
+#### 方式 A：OpenAI 兼容接口（推荐）
+
+通义千问支持 OpenAI 兼容接口，配置简单：
+
+1. **获取 API Key**：访问 [阿里云百炼平台](https://bailian.console.aliyun.com/)
+2. **在 N8N 中配置**：
+   - 删除当前 Gemini 子节点
+   - 添加 `OpenAI Chat Model` 子节点
+   - 创建凭证：
+     - **API Key**: 阿里云百炼 API Key
+     - **Base URL**: `https://dashscope.aliyuncs.com/compatible-mode/v1`
+   - **模型名称**: `qwen-turbo`（最快）或 `qwen-plus`（平衡）
+
+#### 方式 B：安装社区节点
+
+```
+n8n-nodes-alibaba-qwen
+```
+
+在 N8N 中：Settings → Community Nodes → Install → 输入 `n8n-nodes-alibaba-qwen`
+
+#### 通义千问模型对比
+
+| 模型 | 速度 | 能力 | 价格 | 推荐场景 |
+|------|------|------|------|---------|
+| **qwen-turbo** | ⚡ 最快 | 一般 | 最低（0.3元/百万tokens） | 简单问答 |
+| **qwen-plus** | 中等 | 接近 GPT-4 | 中等（0.8元/百万tokens） | **推荐！平衡之选** |
+| **qwen-max** | 较慢 | 最强 | 较高 | 复杂推理 |
+
+**参考资源**：
+- [阿里云百炼 OpenAI 兼容接口文档](https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope)
+- [通义千问模型规格参数](https://help.aliyun.com/zh/model-studio/models)
+- [n8n-nodes-alibaba-qwen](https://libraries.io/npm/n8n-nodes-alibaba-qwen)
+
 ### 🚧 第四阶段：性能优化 + 真流式输出（待完成）
 
 #### 当前问题

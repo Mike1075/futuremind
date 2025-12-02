@@ -65,15 +65,25 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     }
 
     // 并行查询：聊天历史 + 用户画像
+    // 🔥 修复：按项目过滤聊天历史，避免不同项目的知识库内容互相污染
     logger.dbQuery('chat_history + student_summaries', 'SELECT')
+
+    // 构建聊天历史查询（按项目过滤）
+    let chatHistoryQuery = supabase
+      .from('chat_history')
+      .select('content, ai_content, created_at, project_id')
+      .eq('user_id', user.id)
+      .eq('agent_type', 'member')
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    // 如果选择了项目，只加载这些项目相关的历史对话
+    if (projectIdsArray.length > 0) {
+      chatHistoryQuery = chatHistoryQuery.in('project_id', projectIdsArray)
+    }
+
     const [chatHistoryResult, studentSummaryResult, profileResult] = await Promise.all([
-      supabase
-        .from('chat_history')
-        .select('content, ai_content, created_at')
-        .eq('user_id', user.id)
-        .eq('agent_type', 'member')
-        .order('created_at', { ascending: false })
-        .limit(10),
+      chatHistoryQuery,
       supabase
         .from('student_summaries')
         .select('personality_traits, learning_style, strengths, areas_for_growth')

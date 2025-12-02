@@ -37,7 +37,7 @@ export function FloatingChatBot({
   const [showProjectPanel, setShowProjectPanel] = useState(true) // 默认显示项目面板
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const hasLoadedHistory = useRef(false)
+  const lastOpenTime = useRef<number>(0) // 🔥 记录上次打开时间，用于判断是否需要重新加载
 
   // 自动滚动到底部
   const scrollToBottom = useCallback(() => {
@@ -89,21 +89,24 @@ export function FloatingChatBot({
 告诉我，你想创建什么样的项目？或者需要我帮你找到合适的探索方向？`
   }, [currentProject, organization])
 
-  // 合并：加载用户项目和聊天历史（只在打开时执行一次）
+  // 合并：加载用户项目和聊天历史（每次打开时执行）
   useEffect(() => {
     if (!isOpen) return
 
     let isMounted = true
+    const now = Date.now()
 
     const initializeChatBot = async () => {
       // 并行加载项目列表和聊天历史
       setIsLoadingProjects(true)
 
-      // 只在首次打开且没有消息时加载历史
-      const shouldLoadHistory = !hasLoadedHistory.current && messages.length === 0
+      // 🔥 修复：每次打开对话框时都重新加载历史（如果距离上次打开超过 30 秒）
+      const timeSinceLastOpen = now - lastOpenTime.current
+      const shouldLoadHistory = lastOpenTime.current === 0 || timeSinceLastOpen > 30000 // 首次打开或超过30秒
+
       if (shouldLoadHistory) {
         setIsLoadingHistory(true)
-        hasLoadedHistory.current = true
+        lastOpenTime.current = now
       }
 
       try {
@@ -160,7 +163,7 @@ export function FloatingChatBot({
     return () => {
       isMounted = false
     }
-  }, [isOpen, getWelcomeMessage, messages.length])
+  }, [isOpen, getWelcomeMessage]) // 🔥 移除 messages.length 依赖，避免不必要的重新加载
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
