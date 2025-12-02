@@ -703,12 +703,81 @@ Hybrid- Hybrid-    ↓
 6. 结合用户画像进行个性化回答（如果有）
 ```
 
-### ⏳ 第三阶段：监控和调试
+### ✅ 第三阶段：前端响应解析修复（2024-12-02）
 
-- [ ] **添加知识库命中率监控**：
-  - 记录每次查询的向量搜索结果数量
-  - 记录 Rerank 后的结果数量和分数
-  - 方便后续调优
+#### 问题：前端无法显示 AI 回答
+- **现象**：N8N 返回成功，但前端显示"抱歉，我无法回答这个问题"
+- **原因**：N8N 返回 **NDJSON 格式**（每行一个独立 JSON），而非单个 JSON 对象
+- **N8N 返回格式**：
+  ```
+  {"type":"begin","metadata":{...}}
+  {"type":"item","content":"实际的AI回答内容"}
+  {"type":"done",...}
+  ```
+
+#### 修复记录
+- [x] **修复1**：`app/api/aip/chat/route.ts` - 支持多种 N8N 返回格式（ai_content/text/output）
+- [x] **修复2**：正确解析 NDJSON 格式 - 按行分割，提取 `type: "item"` 的 content
+- [x] **关键代码**：
+  ```javascript
+  const lines = responseText.split('\n').filter(line => line.trim())
+  for (const line of lines) {
+    const json = JSON.parse(line)
+    if (json.type === 'item' && json.content) {
+      // 提取 content（可能是嵌套 JSON 或纯文本）
+    }
+  }
+  ```
+
+### 🚧 第四阶段：性能优化 + 真流式输出（待完成）
+
+#### 当前问题
+- **响应慢**：~12-15秒（之前 Basic LLM Chain 是 ~2.5秒）
+- **假流式**：后端等待 N8N 完整响应后才发送给前端
+
+#### 根因分析（基于 [N8N 官方文档](https://docs.n8n.io/workflows/streaming/)）
+
+| 节点类型 | 支持流式输出 | 响应速度 |
+|---------|-------------|---------|
+| **AI Agent** | ✅ 支持 | 慢（10-15秒）|
+| **Basic LLM Chain** | ❌ 不支持 | 快（2-3秒）|
+
+**关键发现**：
+1. N8N 的流式输出 **只有 AI Agent 节点支持**
+2. Basic LLM Chain 不支持流式，即使开启 streaming 也没用
+3. 当前配置可能导致超时等待
+
+#### 解决方案选择
+
+**方案 A：关闭 N8N Streaming（推荐，恢复快速响应）**
+- 在 N8N "Respond to Webhook" 节点**关闭** "Enable Streaming"
+- 保持 Basic LLM Chain
+- 预期效果：~2-3秒响应，前端打字机效果模拟流式
+
+**方案 B：使用 AI Agent + 真流式（复杂，速度较慢）**
+- 把 Basic LLM Chain 改回 AI Agent
+- 开启 Respond to Webhook 的 "Enable Streaming"
+- 后端代码改为真正的流式转发
+- 预期效果：10-15秒，但是真正的逐字显示
+
+#### N8N 配置检查清单
+
+**如果选择方案 A（关闭 streaming）：**
+1. [ ] 打开 N8N 工作流 `aip聊天助手-未来教育 探索者联盟`
+2. [ ] 找到 "Respond to Webhook" 节点
+3. [ ] 在 Options 中**关闭** "Enable Streaming"
+4. [ ] 保存并激活工作流
+
+**如果选择方案 B（真流式）：**
+1. [ ] 把 Basic LLM Chain 改回 AI Agent
+2. [ ] 在 Respond to Webhook 节点**开启** "Enable Streaming"
+3. [ ] 在 Webhook 触发节点设置 "Respond using 'Respond to Webhook' node"
+4. [ ] 修改后端代码处理真正的流式数据
+
+#### 参考资源
+- [N8N Streaming Responses 官方文档](https://docs.n8n.io/workflows/streaming/)
+- [N8N Chat Streaming 配置](https://n8nchatui.com/docs/configuration/chat-streaming)
+- [社区讨论：AI Agent 流式输出](https://community.n8n.io/t/i-want-to-make-my-agentic-chat-as-streaming-output/158179)
 
 ---
 
