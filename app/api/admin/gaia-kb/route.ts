@@ -53,19 +53,21 @@ export async function GET() {
           logger.debug(`[盖亚知识库] >>> 发现processing状态文档，开始查询向量块，project_id: ${projectId}`)
 
           try {
-            // 从 document_chunks 表查询向量块数量
+            // 从 documents 表查询向量块数量（N8N 存储到 documents 表）
+            // 查询条件：metadata->>'document_id' 等于当前文档 ID，且有 embedding
             logger.debug(`[盖亚知识库] 开始查询向量块...`)
 
-            const { data: chunks, error: vectorError } = await supabase
-              .from('document_chunks')
-              .select('id')
-              .eq('metadata->>project_id', projectId)
+            const { count, error: vectorError } = await supabase
+              .from('documents')
+              .select('id', { count: 'exact', head: true })
+              .eq('metadata->>document_id', doc.id)
+              .not('embedding', 'is', null)
 
             let vectorCount = 0
             if (vectorError) {
               logger.error(`[盖亚知识库] ❌ 查询失败:`, vectorError)
-            } else if (chunks) {
-              vectorCount = chunks.length
+            } else if (count !== null) {
+              vectorCount = count
               logger.debug(`[盖亚知识库] ✅ 查询成功，向量块: ${vectorCount}`)
             } else {
               logger.debug(`[盖亚知识库] ⚠️ 查询返回null`)
@@ -368,10 +370,10 @@ export async function DELETE(request: Request) {
     const metadata = doc.metadata as any
     const projectId = metadata?.project_id
 
-    // 第二步：删除所有关联的向量块（从 document_chunks 表）
+    // 第二步：删除所有关联的向量块（N8N 存储到 documents 表）
     // 使用 document_id 精确匹配，避免删除其他文档的向量块
     const { data: vectorChunks, error: deleteVectorError } = await supabase
-      .from('document_chunks')
+      .from('documents')
       .delete()
       .eq('metadata->>document_id', documentId)
       .select('id')
