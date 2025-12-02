@@ -120,7 +120,7 @@ Respond to Webhook
 - [x] 创建 `hybrid_search_gaia` 函数（查询 document_chunks）
 - [x] N8N 上传工作流修改（tableName → document_chunks）
 - [x] 后端状态检测/删除逻辑修正（查询 document_chunks）
-- [ ] **待测试**：用户重新上传文档验证完整流程
+- [x] 完整流程验证通过（529 向量块正确存储到 document_chunks）
 - [ ] 重构 N8N 盖亚聊天工作流（并行 + Basic LLM Chain）
 
 **N8N 盖亚聊天工作流新架构**（待实现）：
