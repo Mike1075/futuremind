@@ -146,13 +146,15 @@ Respond to Webhook
   - 新增 `project_count` 字段
   - 支持单项目和多项目两种格式
 
-### AIP 聊天 - 待完成
-- [ ] N8N `1-Parse-Input-Parameters` 添加 `projects_info`、`project_count` 解析
-- [ ] N8N Prompt 使用新的 `projects_info` 字段显示项目信息
+### AIP 聊天 - 性能分析 (2024-12-02)
+- **正常响应时间**：前端 6-7 秒 = N8N 4秒 + API开销 1-2秒 + 网络 0.5秒
+- **添加了计时日志**：响应中包含 `serverTimings`（auth/db/n8n/total）
+- **冷启动影响**：首次请求可能多 5-10 秒（Vercel 冷启动）
+- **解决方案**：连续请求时正常，偶发慢是冷启动导致
 
-### 性能优化
-- [ ] 检查 N8N Streaming 配置
-- [ ] 考虑切换 AI 模型（通义千问 OpenAI 兼容接口）
+### 性能优化 - 待办
+- [ ] 考虑 Vercel Pro 的 Instant Start 功能（减少冷启动）
+- [ ] 考虑切换 AI 模型提速（通义千问 OpenAI 兼容接口）
 
 ---
 
