@@ -101,16 +101,19 @@ Respond to Webhook
 - 环境变量：`GAIA_KB_PROJECT_ID=2ffbe00d-d17f-43f0-9c22-103b73617342`
 - 环境变量：`N8N_UPLOAD_WEBHOOK`（文档上传 webhook）
 
-**数据流设计**（重要！）：
+**父子架构设计**（复用 AIP 方案）：
 ```
-前端上传 → documents 表（元数据，1条/文档）
-               ↓
-          N8N webhook
-               ↓
-        document_chunks 表（向量块，N条/文档）
-               ↓
-        metadata.document_id 关联
+documents 表：存完整文档内容（1本书）
+    ↓
+document_chunks 表：存子块 + parent_document_id（每一页 + 书架编号）
+    ↓
+检索时：找到子块 → 通过 parent_document_id 查完整原文
 ```
+
+**为什么这样设计**：
+- 完整内容只存一份，不浪费空间
+- 小块和完整文档分开管理，数据干净
+- 检索时多一次查询（几毫秒），换来架构清晰
 
 **重构进度**：
 - [x] 分析现有架构和数据库结构
@@ -120,8 +123,12 @@ Respond to Webhook
 - [x] 创建 `hybrid_search_gaia` 函数（查询 document_chunks）
 - [x] N8N 上传工作流修改（tableName → document_chunks）
 - [x] 后端状态检测/删除逻辑修正（查询 document_chunks）
-- [x] 完整流程验证通过（529 向量块正确存储到 document_chunks）
-- [ ] 重构 N8N 盖亚聊天工作流（并行 + Basic LLM Chain）
+- [x] 完整流程验证通过
+- [ ] **进行中**：后端 API 存入文件内容到 documents.content
+- [ ] N8N 工作流添加 parent_document_id 到 metadata
+- [ ] hybrid_search_gaia 支持返回父文档内容
+- [ ] 添加 Rerank 重排序
+- [ ] 重构 N8N 盖亚聊天工作流（并行 + Basic LLM Chain + 聊天记录）
 
 **N8N 盖亚聊天工作流新架构**（待实现）：
 ```

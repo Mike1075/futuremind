@@ -152,6 +152,10 @@ export async function POST(request: Request) {
       )
     }
 
+    // 读取文件内容（用于存入 documents.content，支持父子架构检索）
+    const fileBuffer = await file.arrayBuffer()
+    const fileContent = Buffer.from(fileBuffer).toString('utf-8')
+
     // 使用盖亚专属的 project_id（从环境变量获取）
     const gaiaProjectId = process.env.GAIA_KB_PROJECT_ID
     if (!gaiaProjectId) {
@@ -160,21 +164,22 @@ export async function POST(request: Request) {
     }
 
     // 先记录到数据库（标记为processing状态）
+    // 存入完整文件内容，支持父子架构检索（子块通过 parent_document_id 关联到此记录）
     const { data: newDoc, error: insertError } = await supabase
       .from('documents')
       .insert({
         title,
-        content: '', // 内容由N8N处理
+        content: fileContent, // 存入完整文件内容
         user_id: user.id,
-        project_id: gaiaProjectId, // 使用盖亚专属 project_id
+        project_id: gaiaProjectId,
         metadata: {
           type: 'gaia_knowledge_base',
-          project_id: gaiaProjectId, // 同时保存到 metadata（向量搜索用）
+          project_id: gaiaProjectId,
           filename: file.name,
           file_size: file.size,
           file_type: file.type,
           uploaded_at: new Date().toISOString(),
-          status: 'processing' // 标记为处理中
+          status: 'processing'
         },
       })
       .select()
@@ -215,8 +220,7 @@ export async function POST(request: Request) {
       mimeType = 'text/plain'
     }
 
-    // 创建带正确MIME类型的Blob
-    const fileBuffer = await file.arrayBuffer()
+    // 创建带正确MIME类型的Blob（复用前面已读取的 fileBuffer）
     const blob = new Blob([fileBuffer], { type: mimeType })
 
     n8nFormData.append('file', blob, fileName)
