@@ -862,7 +862,7 @@ n8n-nodes-alibaba-qwen
 - [通义千问模型规格参数](https://help.aliyun.com/zh/model-studio/models)
 - [n8n-nodes-alibaba-qwen](https://libraries.io/npm/n8n-nodes-alibaba-qwen)
 
-### ✅ 移除组织知识库搜索（2024-12-02）
+### ✅ 修复组织知识库污染问题（2024-12-02）
 
 #### 问题
 - 用户选择一个空项目，AI 回答却引用了其他项目的内容（如"观音之道"）
@@ -870,37 +870,39 @@ n8n-nodes-alibaba-qwen
 - 组织知识库功能暂未使用，但却污染了项目级别的回答
 
 #### 解决方案
-**完全移除组织知识库搜索**，简化为：
-- 用户没选项目 → 大模型正常回答（无知识库）
-- 用户选了项目 → 查询项目知识库回答
-- 选多个项目 → 查询多个项目的知识库
-- 项目没有知识库 → 大模型正常回答
+**修改 `hybrid_search` 函数**，区分"项目文档"和"组织文档"：
 
-#### N8N 修改步骤
-1. **删除 `Hybrid-组织知识` 节点**
-2. **修改 `合并搜索结果` 节点**：`Number of Inputs` 从 `3` 改为 `2`
-3. **确保连接**：
-   - Input 1: `Hybrid-项目知识1`
-   - Input 2: `获取用户画像`
+| 文档类型 | 条件 | 用途 |
+|---------|------|------|
+| **项目文档** | `project_id IS NOT NULL` | 属于特定项目的知识 |
+| **组织文档** | `project_id IS NULL` | 组织级通用知识（公告、跨项目内容）|
 
-#### 修改后的架构
+**核心逻辑**：
+```sql
+-- 判断是否是"仅组织知识"搜索
+-- 条件：传入了 organization_id，但没有传入 project_id
+is_org_only_search := (project_ids IS NULL AND actual_organization_id IS NOT NULL);
+
+-- 如果是仅组织知识搜索，只返回 project_id IS NULL 的文档
+AND (NOT is_org_only_search OR dc.project_id IS NULL)
 ```
-1-Parse-Input-Parameters
-    ↓              ↓
-生成向量      获取用户画像
-    ↓              ↓
-Hybrid-项目知识    ↓
-    ↓              ↓
-    └──────┬───────┘
-           ↓
-   合并搜索结果 (2个输入)
-           ↓
-       整合上下文
-           ↓
-   Basic LLM Chain
-           ↓
-     Respond to Webhook
-```
+
+#### 修改效果
+- **N8N 工作流无需修改**，保留 `Hybrid-组织知识` 节点
+- 当前组织没有组织级文档（`project_id IS NULL`），组织知识搜索返回空
+- 将来可以添加组织级文档，自动生效
+- 项目文档不会被误认为组织知识
+
+#### 迁移文件
+`hybrid_search_fix_org_knowledge`
+
+#### 最终行为
+| 场景 | 项目知识 | 组织知识 |
+|------|---------|---------|
+| 选了项目（有知识库）| ✅ 返回项目文档 | ✅ 返回组织级文档（如有）|
+| 选了项目（空项目）| ❌ 空 | ✅ 返回组织级文档（如有）|
+| 没选项目 | ❌ 空 | ✅ 返回组织级文档（如有）|
+| 当前状态（无组织级文档）| 正常 | 返回空，不污染 |
 
 ### 🚧 第四阶段：性能优化 + 真流式输出（待完成）
 
