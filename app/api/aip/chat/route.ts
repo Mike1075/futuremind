@@ -181,43 +181,60 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
 
     let fullContent = ''
 
-    // 🔥 N8N 返回 NDJSON 格式（每行一个 JSON）
-    // {"type":"begin","metadata":{...}}
-    // {"type":"item","content":"..."}  <- 我们需要这个
-    // {"type":"done",...}
-    const lines = responseText.split('\n').filter(line => line.trim())
+    // 🔥 方法1：尝试解析为单个 JSON 对象（streaming 关闭时）
+    try {
+      const json = JSON.parse(responseText)
+      logger.debug('Parsed as single JSON', { keys: Object.keys(json) })
 
-    for (const line of lines) {
-      try {
-        const json = JSON.parse(line)
+      if (json.ai_content) {
+        fullContent = json.ai_content
+      } else if (json.text) {
+        fullContent = json.text
+      } else if (json.output) {
+        fullContent = json.output
+      } else if (json.content) {
+        fullContent = json.content
+      }
+    } catch {
+      // 🔥 方法2：尝试 NDJSON 格式（streaming 开启时）
+      // {"type":"begin","metadata":{...}}
+      // {"type":"item","content":"..."}  <- 我们需要这个
+      // {"type":"done",...}
+      logger.debug('Trying NDJSON format')
+      const lines = responseText.split('\n').filter(line => line.trim())
 
-        // 🔥 type: "item" 包含实际内容
-        if (json.type === 'item' && json.content) {
-          // content 可能是字符串或嵌套 JSON
-          try {
-            const innerJson = JSON.parse(json.content)
-            if (innerJson.ai_content) {
-              fullContent = innerJson.ai_content
-            } else if (innerJson.text) {
-              fullContent = innerJson.text
-            } else if (innerJson.output) {
-              fullContent = innerJson.output
+      for (const line of lines) {
+        try {
+          const json = JSON.parse(line)
+
+          // type: "item" 包含实际内容
+          if (json.type === 'item' && json.content) {
+            // content 可能是字符串或嵌套 JSON
+            try {
+              const innerJson = JSON.parse(json.content)
+              if (innerJson.ai_content) {
+                fullContent = innerJson.ai_content
+              } else if (innerJson.text) {
+                fullContent = innerJson.text
+              } else if (innerJson.output) {
+                fullContent = innerJson.output
+              }
+            } catch {
+              // content 是纯文本
+              fullContent += json.content
             }
-          } catch {
-            // content 是纯文本
-            fullContent += json.content
           }
+          // 也支持直接返回的格式
+          else if (json.ai_content) {
+            fullContent = json.ai_content
+          } else if (json.text && json.type !== 'begin' && json.type !== 'done') {
+            fullContent = json.text
+          } else if (json.output) {
+            fullContent = json.output
+          }
+        } catch {
+          // 忽略解析错误，继续处理下一行
         }
-        // 🔥 也支持直接返回的格式（非流式）
-        else if (json.ai_content) {
-          fullContent = json.ai_content
-        } else if (json.text && json.type !== 'begin' && json.type !== 'done') {
-          fullContent = json.text
-        } else if (json.output) {
-          fullContent = json.output
-        }
-      } catch {
-        // 忽略解析错误，继续处理下一行
       }
     }
 
