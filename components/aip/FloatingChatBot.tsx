@@ -221,13 +221,23 @@ export function FloatingChatBot({
       }
 
       // 调用流式API
+      console.log('[FloatingChatBot] 🚀 发送请求:', JSON.stringify(requestBody, null, 2))
+
       const response = await fetch('/api/aip/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       })
 
+      // 🔥 详细日志：打印响应信息
+      console.log('[FloatingChatBot] 📥 响应状态:', response.status, response.statusText)
+      console.log('[FloatingChatBot] 📥 响应头:', Object.fromEntries(response.headers.entries()))
+      console.log('[FloatingChatBot] 📥 响应类型:', response.type)
+      console.log('[FloatingChatBot] 📥 响应URL:', response.url)
+
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[FloatingChatBot] ❌ 错误响应体:', errorText)
         throw new Error('AI响应失败')
       }
 
@@ -290,19 +300,24 @@ export function FloatingChatBot({
         }, 50) // 每50ms更新一次显示
       }
 
+      let chunkCount = 0
       try {
         while (true) {
           const { done, value } = await reader.read()
+          chunkCount++
+
+          console.log(`[FloatingChatBot] 📦 Chunk #${chunkCount}: done=${done}, valueLength=${value?.length || 0}`)
+
           if (done) {
-            console.log('[FloatingChatBot] Stream done, buffer remaining:', buffer)
+            console.log('[FloatingChatBot] ✅ Stream done, buffer remaining:', buffer, 'Total chunks:', chunkCount)
             break
           }
 
           const chunk = decoder.decode(value, { stream: true })
           buffer += chunk
 
-          // 🔥 调试日志：显示收到的原始数据
-          console.log('[FloatingChatBot] Received chunk:', chunk.substring(0, 200))
+          // 🔥 调试日志：显示收到的原始数据（完整显示）
+          console.log(`[FloatingChatBot] 📦 Chunk #${chunkCount} 原始数据:`, chunk)
 
           const lines = buffer.split('\n')
           buffer = lines.pop() || ''
