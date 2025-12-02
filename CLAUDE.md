@@ -718,16 +718,21 @@ Hybrid- Hybrid-    ↓
 #### 修复记录
 - [x] **修复1**：`app/api/aip/chat/route.ts` - 支持多种 N8N 返回格式（ai_content/text/output）
 - [x] **修复2**：正确解析 NDJSON 格式 - 按行分割，提取 `type: "item"` 的 content
-- [x] **关键代码**：
-  ```javascript
-  const lines = responseText.split('\n').filter(line => line.trim())
-  for (const line of lines) {
-    const json = JSON.parse(line)
-    if (json.type === 'item' && json.content) {
-      // 提取 content（可能是嵌套 JSON 或纯文本）
+- [x] **修复3**：关闭 N8N Streaming，改用单 JSON 返回格式
+- [x] **修复4（2024-12-02 最新）**：修复 N8N 返回**数组格式**导致解析失败
+  - **问题**：N8N `Respond to Webhook` 返回数组格式 `[{ ai_content: '...' }]`
+  - **原因**：代码直接读取 `json.ai_content`，但数组没有这个属性
+  - **解决**：检测数组格式，自动提取第一个元素
+  - **关键代码**：
+    ```javascript
+    let json = JSON.parse(responseText)
+
+    // 🔥 如果 N8N 返回数组，取第一个元素
+    if (Array.isArray(json)) {
+      json = json[0] || {}
     }
-  }
-  ```
+    ```
+  - **提交**：`c8c518f`
 
 ### 🚧 第四阶段：性能优化 + 真流式输出（待完成）
 
