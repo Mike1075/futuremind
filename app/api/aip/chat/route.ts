@@ -171,230 +171,92 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
         return errorResponse('AI service error', undefined, 502)
       }
 
-    // 🔥 检测是否是流式响应
-    const contentType = n8nResponse.headers.get('content-type') || ''
-    const isStreamResponse = contentType.includes('stream') || contentType.includes('event-stream')
+    // 🔥 简化处理：直接读取完整响应
+    const responseText = await n8nResponse.text()
 
-    logger.debug('N8N response type', {
-      contentType,
-      isStreamResponse
+    logger.debug('N8N raw response', {
+      length: responseText.length,
+      preview: responseText.substring(0, 500)
     })
 
-    // 🔥 创建流式响应转发给前端
+    let fullContent = ''
+
+    // 🔥 尝试解析 JSON
+    try {
+      const json = JSON.parse(responseText)
+      logger.debug('Parsed N8N JSON', {
+        keys: Object.keys(json),
+        hasAiContent: !!json.ai_content,
+        hasText: !!json.text,
+        hasOutput: !!json.output
+      })
+
+      // 按优先级提取内容
+      if (json.ai_content) {
+        fullContent = json.ai_content
+      } else if (json.text) {
+        fullContent = json.text
+      } else if (json.output) {
+        fullContent = json.output
+      }
+    } catch (parseError) {
+      logger.error('Failed to parse N8N response as JSON', parseError, {
+        responsePreview: responseText.substring(0, 200)
+      })
+    }
+
+    // 清理格式
+    const finalReply = fullContent
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .trim() || '抱歉，我现在无法回应。请稍后再试。'
+
+    const totalDuration = Date.now() - startTime
+    logger.info('AI response completed', {
+      responseLength: finalReply.length,
+      duration: `${totalDuration}ms`
+    })
+
+    // 🔥 创建流式响应（前端打字机效果）
     const stream = new ReadableStream({
-      async start(controller) {
-        const reader = n8nResponse.body?.getReader()
-        const decoder = new TextDecoder()
-        let fullContent = ''
+      start(controller) {
+        // 发送内容
+        const chunkData = JSON.stringify({
+          type: 'chunk',
+          content: finalReply,
+          timestamp: new Date().toISOString()
+        }) + '\n'
+        controller.enqueue(new TextEncoder().encode(chunkData))
 
-        if (!reader) {
-          controller.close()
-          return
-        }
+        // 发送完成标记
+        const doneData = JSON.stringify({
+          type: 'done',
+          timestamp: new Date().toISOString()
+        }) + '\n'
+        controller.enqueue(new TextEncoder().encode(doneData))
+        controller.close()
 
-        try {
-          let buffer = ''
-          let firstChunkReceived = false
-
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) {
-              logger.debug('Reader done, buffer remaining', {
-                bufferLength: buffer.length,
-                bufferPreview: buffer.substring(0, 200)
-              })
-              break
-            }
-
-            const chunk = decoder.decode(value, { stream: true })
-            buffer += chunk
-
-            // 🔥 调试日志
-            logger.debug('Received chunk from N8N', {
-              chunkLength: chunk.length,
-              chunkPreview: chunk.substring(0, 300)
-            })
-
-            // 🔥 尝试逐行解析（支持流式和非流式）
-            const lines = buffer.split('\n')
-            buffer = lines.pop() || '' // 保留未完成的行
-
-            logger.debug('Split lines', {
-              linesCount: lines.length,
-              bufferRemaining: buffer.length
-            })
-
-            for (const line of lines) {
-              const trimmedLine = line.trim()
-              if (!trimmedLine) continue
-
-              try {
-                const json = JSON.parse(trimmedLine)
-
-                if (!firstChunkReceived) {
-                  logger.debug('First chunk received', {
-                    elapsed: `${Date.now() - startTime}ms`
-                  })
-                  firstChunkReceived = true
-                }
-
-                // 🔥 支持多种N8N返回格式
-                let content = ''
-
-                // 格式1: 流式 { type: 'item', content: '...' }
-                if (json.type === 'item' && json.content) {
-                  try {
-                    const innerJson = JSON.parse(json.content)
-                    if (innerJson.output) {
-                      fullContent = innerJson.output
-                      content = fullContent
-                    } else if (innerJson.text) {
-                      fullContent = innerJson.text
-                      content = fullContent
-                    }
-                  } catch {
-                    fullContent += json.content
-                    content = fullContent
-                  }
-                }
-                // 格式2: 非流式 { ai_content: '...' }
-                else if (json.ai_content) {
-                  fullContent = json.ai_content
-                  content = fullContent
-                }
-                // 格式3: 非流式 { text: '...' }
-                else if (json.text) {
-                  fullContent = json.text
-                  content = fullContent
-                }
-                // 格式4: 非流式 { output: '...' }
-                else if (json.output) {
-                  fullContent = json.output
-                  content = fullContent
-                }
-
-                // 🔥 如果获取到内容，发送给前端
-                if (content) {
-                  const cleanedContent = content
-                    .replace(/\*\*/g, '')
-                    .replace(/\*/g, '')
-
-                  const streamData = JSON.stringify({
-                    type: 'chunk',
-                    content: cleanedContent,
-                    timestamp: new Date().toISOString()
-                  }) + '\n'
-
-                  controller.enqueue(new TextEncoder().encode(streamData))
-                }
-              } catch {
-                // 忽略JSON解析错误，继续处理
-              }
-            }
+        // 异步保存聊天记录
+        supabase.from('chat_history').insert({
+          user_id: user.id,
+          content: chatInput,
+          role: 'user',
+          agent_type: 'member',
+          project_id: projectIdsArray[0] || null,
+          ai_content: finalReply,
+          metadata: {
+            organization_id,
+            project_ids: projectIdsArray,
+            project_count: projectIdsArray.length
           }
-
-          // 🔥 处理最后可能残留的buffer内容
-          logger.debug('Processing remaining buffer', {
-            bufferLength: buffer.length,
-            bufferContent: buffer.substring(0, 500)
-          })
-
-          if (buffer.trim()) {
-            try {
-              const json = JSON.parse(buffer.trim())
-              logger.debug('Parsed buffer JSON', {
-                hasAiContent: !!json.ai_content,
-                hasText: !!json.text,
-                hasOutput: !!json.output,
-                keys: Object.keys(json)
-              })
-
-              let content = ''
-
-              if (json.ai_content) {
-                fullContent = json.ai_content
-                content = fullContent
-                logger.debug('Found ai_content', { length: content.length })
-              } else if (json.text) {
-                fullContent = json.text
-                content = fullContent
-                logger.debug('Found text', { length: content.length })
-              } else if (json.output) {
-                fullContent = json.output
-                content = fullContent
-                logger.debug('Found output', { length: content.length })
-              }
-
-              if (content) {
-                const cleanedContent = content
-                  .replace(/\*\*/g, '')
-                  .replace(/\*/g, '')
-
-                const streamData = JSON.stringify({
-                  type: 'chunk',
-                  content: cleanedContent,
-                  timestamp: new Date().toISOString()
-                }) + '\n'
-
-                logger.debug('Sending chunk to frontend', { length: cleanedContent.length })
-                controller.enqueue(new TextEncoder().encode(streamData))
-              }
-            } catch (parseError) {
-              logger.error('Failed to parse buffer JSON', parseError, {
-                buffer: buffer.substring(0, 200)
-              })
-            }
+        }).then(({ error: dbError }) => {
+          if (dbError) {
+            logger.error('Failed to save chat history', dbError)
           }
-
-          // 🔥 清理最终回复
-          const finalReply = fullContent
-            .replace(/\*\*/g, '')
-            .replace(/\*/g, '')
-            .trim() || '抱歉，我现在无法回应。请稍后再试。'
-
-          const totalDuration = Date.now() - startTime
-          logger.info('AI response completed', {
-            responseLength: finalReply.length,
-            duration: `${totalDuration}ms`
-          })
-
-          // 🔥 发送完成标记
-          const doneData = JSON.stringify({
-            type: 'done',
-            timestamp: new Date().toISOString()
-          }) + '\n'
-
-          controller.enqueue(new TextEncoder().encode(doneData))
-          controller.close()
-
-          // 🔥 异步保存聊天记录（不阻塞响应）
-          supabase.from('chat_history').insert({
-            user_id: user.id,
-            content: chatInput,
-            role: 'user',
-            agent_type: 'member',
-            project_id: projectIdsArray[0] || null,
-            ai_content: finalReply,
-            metadata: {
-              organization_id,
-              project_ids: projectIdsArray,
-              project_count: projectIdsArray.length
-            }
-          }).then(({ error: dbError }) => {
-            if (dbError) {
-              logger.error('Failed to save chat history', dbError)
-            }
-          })
-        } catch (error) {
-          logger.error('Stream processing error', error)
-          controller.error(error)
-        } finally {
-          reader.releaseLock()
-        }
+        })
       }
     })
 
-    // 返回流式响应
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
