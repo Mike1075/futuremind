@@ -94,24 +94,36 @@ Respond to Webhook
 
 ## 待办事项
 
-### 盖亚对话重构（进行中）
+### 盖亚知识库重构（2025-12-02 进行中）
 
 **核心设计决策**：
 - 盖亚知识库不按课程区分，使用专属全局 project_id
-- 环境变量：`GAIA_KB_PROJECT_ID`（固定 UUID）
-- 复用 `hybrid_search` RPC 函数 + 父子结构检索
+- 环境变量：`GAIA_KB_PROJECT_ID=2ffbe00d-d17f-43f0-9c22-103b73617342`
+- 环境变量：`N8N_UPLOAD_WEBHOOK`（文档上传 webhook）
 
-**重构步骤**：
+**数据流设计**（重要！）：
+```
+前端上传 → documents 表（元数据，1条/文档）
+               ↓
+          N8N webhook
+               ↓
+        document_chunks 表（向量块，N条/文档）
+               ↓
+        metadata.document_id 关联
+```
+
+**重构进度**：
 - [x] 分析现有架构和数据库结构
-- [ ] 创建盖亚专属 project_id 并更新环境变量
-- [ ] 修改前端知识库管理界面（移除课程选择）
-- [ ] 修改后端 API 使用固定 project_id
-- [ ] 创建 `hybrid_search_gaia` 函数（支持父子结构）
+- [x] 创建盖亚专属 project_id 并更新环境变量
+- [x] 修改前端知识库管理界面（移除课程选择）
+- [x] 修改后端 API 使用固定 project_id
+- [x] 创建 `hybrid_search_gaia` 函数（查询 document_chunks）
+- [x] N8N 上传工作流修改（tableName → document_chunks）
+- [x] 后端状态检测/删除逻辑修正（查询 document_chunks）
+- [ ] **待测试**：用户重新上传文档验证完整流程
 - [ ] 重构 N8N 盖亚聊天工作流（并行 + Basic LLM Chain）
-- [ ] 重构 N8N 上传文档工作流（父子结构分块）
-- [ ] 测试验证并清理旧数据、重新上传
 
-**N8N 盖亚聊天工作流新架构**：
+**N8N 盖亚聊天工作流新架构**（待实现）：
 ```
 Webhook (streaming)
     ↓
@@ -133,7 +145,7 @@ Basic LLM Chain (快！)
 Respond to Webhook
 ```
 
-### AIP 聊天 - 最近完成 (2024-12-02)
+### AIP 聊天 - 最近完成 (2025-12-02)
 - [x] 修复 `hybrid_search` 函数空字符串问题（UUID 类型不接受空字符串）
 - [x] N8N 添加 `项目智慧库`、`组织智慧库` Postgres 节点（5路输入）
 - [x] 清理污染的聊天历史（candy 项目 + 无知识库项目）
@@ -146,7 +158,7 @@ Respond to Webhook
   - 新增 `project_count` 字段
   - 支持单项目和多项目两种格式
 
-### AIP 聊天 - 性能分析 (2024-12-02)
+### AIP 聊天 - 性能分析 (2025-12-02)
 - **正常响应时间**：前端 6-7 秒 = N8N 4秒 + API开销 1-2秒 + 网络 0.5秒
 - **添加了计时日志**：响应中包含 `serverTimings`（auth/db/n8n/total）
 - **冷启动影响**：首次请求可能多 5-10 秒（Vercel 冷启动）
@@ -172,7 +184,8 @@ npm run build    # 构建生产版本
 - `project_files` - 文件审核（review_status 字段）
 
 ## 关键 RPC 函数
-- `hybrid_search` - 混合搜索（支持多项目 ID、区分项目/组织文档）
+- `hybrid_search` - AIP 混合搜索（支持多项目 ID、区分项目/组织文档）
+- `hybrid_search_gaia` - 盖亚混合搜索（查询 document_chunks，用 project_id 过滤）
 
 ---
 
