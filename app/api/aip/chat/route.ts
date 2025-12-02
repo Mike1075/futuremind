@@ -64,9 +64,9 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       }
     }
 
-    // 并行查询：聊天历史 + 用户画像
+    // 并行查询：聊天历史 + 用户画像 + 项目信息
     // 🔥 修复：按项目过滤聊天历史，避免不同项目的知识库内容互相污染
-    logger.dbQuery('chat_history + student_summaries', 'SELECT')
+    logger.dbQuery('chat_history + student_summaries + project_info', 'SELECT')
 
     // 构建聊天历史查询（按项目过滤）
     let chatHistoryQuery = supabase
@@ -82,7 +82,16 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       chatHistoryQuery = chatHistoryQuery.in('project_id', projectIdsArray)
     }
 
-    const [chatHistoryResult, studentSummaryResult, profileResult] = await Promise.all([
+    // 构建项目信息查询（如果选择了单个项目）
+    const projectInfoQuery = projectIdsArray.length === 1
+      ? supabase
+          .from('projects')
+          .select('name, description')
+          .eq('id', projectIdsArray[0])
+          .maybeSingle()
+      : Promise.resolve({ data: null })
+
+    const [chatHistoryResult, studentSummaryResult, profileResult, projectInfoResult] = await Promise.all([
       chatHistoryQuery,
       supabase
         .from('student_summaries')
@@ -93,12 +102,14 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
         .from('profiles')
         .select('full_name, email')
         .eq('id', user.id)
-        .maybeSingle()
+        .maybeSingle(),
+      projectInfoQuery
     ])
 
     const chatHistory = chatHistoryResult.data
     const studentSummary = studentSummaryResult.data
     const userProfile = profileResult.data
+    const projectInfo = projectInfoResult.data
 
     // 构建用户画像字符串（来自盖亚的分析）
     const studentProfileText = studentSummary ? `
@@ -131,6 +142,9 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       project_id: projectIdValue,
       project_ids: projectIdsArray,
       organization_id: organization_id || '',
+      // 添加项目信息（名称和描述）
+      project_name: projectInfo?.name || '',
+      project_description: projectInfo?.description || '',
       // 添加历史消息供N8N使用
       chat_history: historyMessages,
       // 添加用户画像（来自盖亚的分析）

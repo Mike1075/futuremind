@@ -13,7 +13,6 @@ interface Document {
   title: string
   metadata: {
     type: string
-    custom_project_id: string
     project_id: string
     filename: string
     file_size: number
@@ -25,30 +24,14 @@ interface Document {
   created_at: string
 }
 
-// CQ-10: 课程类型定义
-interface Course {
-  id: string
-  name: string
-}
-
-// CQ-10: 默认课程列表（作为fallback，优先从数据库加载）
-const DEFAULT_COURSES: Course[] = [
-  { id: 'p001', name: '伊卡洛斯计划' },
-  { id: 'p002', name: '自在聆听·观音之旅' },
-  { id: 'p003', name: '卡洛罗韦利4本' },
-  { id: 'p004', name: '欢迎来到地球' },
-]
-
 export default function GaiaKnowledgeBasePage() {
   const toast = useToast()
   const { confirm } = useConfirm()
   const [documents, setDocuments] = useState<Document[]>([])
-  const [courses, setCourses] = useState<Course[]>(DEFAULT_COURSES) // CQ-10: 动态课程列表
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
-  const [courseId, setCourseId] = useState<string>('') // CQ-10: 初始为空，等课程加载后设置
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState(false)
   const router = useRouter()
@@ -56,7 +39,6 @@ export default function GaiaKnowledgeBasePage() {
 
   useEffect(() => {
     checkAuth()
-    loadCourses() // CQ-10: 加载课程列表
     loadDocuments()
   }, [])
 
@@ -75,35 +57,6 @@ export default function GaiaKnowledgeBasePage() {
 
     if (!profile || !profile.role || !['teacher', 'principal'].includes(profile.role)) {
       router.push('/')
-    }
-  }
-
-  // CQ-10: 从数据库加载课程列表
-  const loadCourses = async () => {
-    try {
-      const { data: courseSystems } = await supabase
-        .from('course_systems')
-        .select('id, title, system_key')
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-
-      if (courseSystems && courseSystems.length > 0) {
-        const loadedCourses = courseSystems.map(cs => ({
-          id: cs.system_key || cs.id,
-          name: cs.title
-        }))
-        setCourses(loadedCourses)
-        // 设置默认选中第一个课程
-        if (!courseId && loadedCourses.length > 0) {
-          setCourseId(loadedCourses[0].id)
-        }
-      } else {
-        // 如果数据库没有课程，使用默认值
-        setCourseId(DEFAULT_COURSES[0].id)
-      }
-    } catch {
-      // 加载失败时使用默认课程列表
-      setCourseId(DEFAULT_COURSES[0].id)
     }
   }
 
@@ -164,7 +117,7 @@ export default function GaiaKnowledgeBasePage() {
       const formData = new FormData()
       formData.append('file', selectedFile)
       formData.append('title', title.trim())
-      formData.append('courseId', courseId) // 添加课程ID
+      // 不再传递 courseId，后端使用固定的盖亚专属 project_id
 
       const response = await fetch('/api/admin/gaia-kb', {
         method: 'POST',
@@ -174,7 +127,7 @@ export default function GaiaKnowledgeBasePage() {
       const data = await response.json()
 
       if (response.ok) {
-        toast.success(`上传成功！项目ID: ${data.project_id}，标题: ${title.trim()}。${data.message || '文档正在后台处理向量化，请稍后刷新查看。'}`)
+        toast.success(`上传成功！${data.message || '文档正在后台处理向量化，请稍后刷新查看。'}`)
         setSelectedFile(null)
         setTitle('')
         // 重置文件输入
@@ -398,28 +351,6 @@ export default function GaiaKnowledgeBasePage() {
           <form onSubmit={handleUpload} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                所属课程 *
-              </label>
-              <select
-                value={courseId}
-                onChange={(e) => setCourseId(e.target.value)}
-                className="block w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                required
-                disabled={courses.length === 0}
-              >
-                {courses.map(course => (
-                  <option key={course.id} value={course.id} className="bg-zinc-900">
-                    {course.name}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                选择文档所属的课程项目
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
                 文件 *
               </label>
               <input
@@ -525,9 +456,6 @@ export default function GaiaKnowledgeBasePage() {
                       />
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      课程
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       标题
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -559,11 +487,6 @@ export default function GaiaKnowledgeBasePage() {
                           onChange={() => toggleDocSelection(doc.id)}
                           className="w-4 h-4 rounded border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-900"
                         />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-500/20 text-purple-300">
-                          {doc.metadata?.project_id || doc.metadata?.custom_project_id || 'N/A'}
-                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-white line-clamp-2 max-w-xs">

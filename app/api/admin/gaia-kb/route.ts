@@ -43,7 +43,7 @@ export async function GET() {
     if (documents && documents.length > 0) {
       for (const doc of documents) {
         const metadata = doc.metadata as any
-        const projectId = metadata?.custom_project_id || metadata?.project_id
+        const projectId = metadata?.project_id
         const currentStatus = metadata?.status
 
         logger.debug(`[盖亚知识库] 检查文档: ${doc.id}, title: ${doc.title}, status: ${currentStatus}, project_id: ${projectId}`)
@@ -53,25 +53,20 @@ export async function GET() {
           logger.debug(`[盖亚知识库] >>> 发现processing状态文档，开始查询向量块，project_id: ${projectId}`)
 
           try {
-            // 🔧 修复：.neq()不匹配NULL，需要查询所有然后手动过滤
+            // 从 document_chunks 表查询向量块数量
             logger.debug(`[盖亚知识库] 开始查询向量块...`)
 
-            const { data: allDocs, error: vectorError } = await supabase
-              .from('documents')
-              .select('id, metadata')
+            const { data: chunks, error: vectorError } = await supabase
+              .from('document_chunks')
+              .select('id')
               .eq('metadata->>project_id', projectId)
 
             let vectorCount = 0
             if (vectorError) {
               logger.error(`[盖亚知识库] ❌ 查询失败:`, vectorError)
-            } else if (allDocs) {
-              // 手动过滤掉主文档（type = 'gaia_knowledge_base'）
-              const vectors = allDocs.filter((d: any) => {
-                const meta = d.metadata as any
-                return meta?.type !== 'gaia_knowledge_base'
-              })
-              vectorCount = vectors.length
-              logger.debug(`[盖亚知识库] ✅ 查询成功，总文档: ${allDocs.length}, 向量块: ${vectorCount}`)
+            } else if (chunks) {
+              vectorCount = chunks.length
+              logger.debug(`[盖亚知识库] ✅ 查询成功，向量块: ${vectorCount}`)
             } else {
               logger.debug(`[盖亚知识库] ⚠️ 查询返回null`)
             }
@@ -149,13 +144,19 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const title = formData.get('title') as string
-    const courseId = formData.get('courseId') as string
 
-    if (!file || !title || !courseId) {
+    if (!file || !title) {
       return NextResponse.json(
-        { error: '缺少文件、标题或课程ID' },
+        { error: '缺少文件或标题' },
         { status: 400 }
       )
+    }
+
+    // 使用盖亚专属的 project_id（从环境变量获取）
+    const gaiaProjectId = process.env.GAIA_KB_PROJECT_ID
+    if (!gaiaProjectId) {
+      logger.error('[盖亚知识库] GAIA_KB_PROJECT_ID环境变量未配置')
+      return NextResponse.json({ error: '服务配置错误' }, { status: 503 })
     }
 
     // 先记录到数据库（标记为processing状态）
@@ -165,10 +166,10 @@ export async function POST(request: Request) {
         title,
         content: '', // 内容由N8N处理
         user_id: user.id,
+        project_id: gaiaProjectId, // 使用盖亚专属 project_id
         metadata: {
           type: 'gaia_knowledge_base',
-          custom_project_id: courseId, // 使用用户选择的课程ID
-          project_id: courseId, // 同时保存到project_id字段（用于向量搜索）
+          project_id: gaiaProjectId, // 同时保存到 metadata（向量搜索用）
           filename: file.name,
           file_size: file.size,
           file_type: file.type,
@@ -184,7 +185,7 @@ export async function POST(request: Request) {
       throw insertError
     }
 
-    logger.debug('[盖亚知识库] 已保存到数据库', { document_id: newDoc.id, course_id: courseId })
+    logger.debug('[盖亚知识库] 已保存到数据库', { document_id: newDoc.id, project_id: gaiaProjectId })
 
     // SEC-03: N8N webhook URL必须通过环境变量配置
     // 盖亚知识库复用通用上传webhook（N8N_UPLOAD_WEBHOOK）
@@ -219,13 +220,13 @@ export async function POST(request: Request) {
     const blob = new Blob([fileBuffer], { type: mimeType })
 
     n8nFormData.append('file', blob, fileName)
-    n8nFormData.append('project_id', courseId) // 使用用户选择的课程ID
+    n8nFormData.append('project_id', gaiaProjectId) // 使用盖亚专属 project_id
     n8nFormData.append('title', title)
     n8nFormData.append('document_id', newDoc.id) // 传递document_id，供N8N回调使用
 
     logger.debug('[盖亚知识库] 开始上传到N8N（后台处理）:', {
       url: webhookUrl,
-      project_id: courseId,
+      project_id: gaiaProjectId,
       document_id: newDoc.id,
       title: title,
       filename: fileName,
@@ -296,7 +297,6 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       document: newDoc,
-      project_id: courseId,
       message: '文档已提交，正在后台处理向量化...'
     })
   } catch (error: any) {
@@ -366,22 +366,21 @@ export async function DELETE(request: Request) {
     }
 
     const metadata = doc.metadata as any
-    const projectId = metadata?.custom_project_id
+    const projectId = metadata?.project_id
 
-    // 第二步：删除所有关联的向量块
-    if (projectId) {
-      const { data: vectorChunks, error: deleteVectorError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('metadata->>project_id', projectId)
-        .select('id')
+    // 第二步：删除所有关联的向量块（从 document_chunks 表）
+    // 使用 document_id 精确匹配，避免删除其他文档的向量块
+    const { data: vectorChunks, error: deleteVectorError } = await supabase
+      .from('document_chunks')
+      .delete()
+      .eq('metadata->>document_id', documentId)
+      .select('id')
 
-      logger.debug('[后端DELETE] 向量块删除', { count: vectorChunks?.length || 0 })
+    logger.debug('[后端DELETE] 向量块删除', { count: vectorChunks?.length || 0, documentId })
 
-      if (deleteVectorError) {
-        logger.error('[后端DELETE] 删除向量块失败', deleteVectorError)
-        throw deleteVectorError
-      }
+    if (deleteVectorError) {
+      logger.error('[后端DELETE] 删除向量块失败', deleteVectorError)
+      throw deleteVectorError
     }
 
     // 第三步：删除主记录

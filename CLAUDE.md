@@ -94,16 +94,54 @@ Respond to Webhook
 
 ## 待办事项
 
-### AIP 聊天 - 智慧库集成（进行中）
-- [ ] N8N 添加 `项目智慧库` Postgres 节点
-- [ ] N8N 添加 `组织智慧库` Postgres 节点
-- [ ] 修改 Merge 节点（3→5 输入）
-- [ ] 修改整合上下文 Code 节点
+### 盖亚对话重构（进行中）
 
-### 盖亚对话重构（待开始）
-- [ ] 复用 AIP 的 Hybrid Search 架构
-- [ ] 知识库上传功能
-- [ ] 前端聊天组件优化
+**核心设计决策**：
+- 盖亚知识库不按课程区分，使用专属全局 project_id
+- 环境变量：`GAIA_KB_PROJECT_ID`（固定 UUID）
+- 复用 `hybrid_search` RPC 函数 + 父子结构检索
+
+**重构步骤**：
+- [x] 分析现有架构和数据库结构
+- [ ] 创建盖亚专属 project_id 并更新环境变量
+- [ ] 修改前端知识库管理界面（移除课程选择）
+- [ ] 修改后端 API 使用固定 project_id
+- [ ] 创建 `hybrid_search_gaia` 函数（支持父子结构）
+- [ ] 重构 N8N 盖亚聊天工作流（并行 + Basic LLM Chain）
+- [ ] 重构 N8N 上传文档工作流（父子结构分块）
+- [ ] 测试验证并清理旧数据、重新上传
+
+**N8N 盖亚聊天工作流新架构**：
+```
+Webhook (streaming)
+    ↓
+Edit Fields
+    ↓
+┌─────────────────────────────────┐
+│       并行执行 (3路)             │
+├───────────┬───────────┬─────────┤
+│ Embeddings│ 用户名    │ 用户画像│
+│ (HTTP Req)│ (Postgres)│(Postgres)│
+└───────────┴───────────┴─────────┘
+    ↓
+HTTP Request → hybrid_search_gaia
+    ↓
+Code (整合上下文)
+    ↓
+Basic LLM Chain (快！)
+    ↓
+Respond to Webhook
+```
+
+### AIP 聊天 - 最近完成 (2024-12-02)
+- [x] 修复 `hybrid_search` 函数空字符串问题（UUID 类型不接受空字符串）
+- [x] N8N 添加 `项目智慧库`、`组织智慧库` Postgres 节点（5路输入）
+- [x] 清理污染的聊天历史（candy 项目 + 无知识库项目）
+- [x] API 添加项目信息传递（`project_name`、`project_description`）
+
+### AIP 聊天 - 待完成
+- [ ] N8N `1-Parse-Input-Parameters` 添加 `project_name`、`project_description` 解析
+- [ ] N8N Prompt 优化：添加项目上下文，禁止编造内容
 
 ### 性能优化
 - [ ] 检查 N8N Streaming 配置
