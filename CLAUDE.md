@@ -719,20 +719,43 @@ Hybrid- Hybrid-    ↓
 - [x] **修复1**：`app/api/aip/chat/route.ts` - 支持多种 N8N 返回格式（ai_content/text/output）
 - [x] **修复2**：正确解析 NDJSON 格式 - 按行分割，提取 `type: "item"` 的 content
 - [x] **修复3**：关闭 N8N Streaming，改用单 JSON 返回格式
-- [x] **修复4（2024-12-02 最新）**：修复 N8N 返回**数组格式**导致解析失败
+- [x] **修复4（2024-12-02）**：修复 N8N 返回**数组格式**导致解析失败
   - **问题**：N8N `Respond to Webhook` 返回数组格式 `[{ ai_content: '...' }]`
   - **原因**：代码直接读取 `json.ai_content`，但数组没有这个属性
   - **解决**：检测数组格式，自动提取第一个元素
-  - **关键代码**：
-    ```javascript
-    let json = JSON.parse(responseText)
+  - **提交**：`c8c518f`
 
-    // 🔥 如果 N8N 返回数组，取第一个元素
-    if (Array.isArray(json)) {
-      json = json[0] || {}
+- [ ] **问题5（2024-12-02 待修复）**：N8N `Code1` 节点输出为空导致响应长度为 0
+  - **现象**：前端显示 "N8N响应长度: 0"，但 N8N 执行记录显示有数据
+  - **根因分析**：
+    | 节点 | 输入 | 输出 | 问题 |
+    |------|------|------|------|
+    | Basic LLM Chain | prompt | `{ text: "AI回答..." }` | ✅ 正常 |
+    | **Code1** | `{ text: "..." }` | `{ context: "" }` | ❌ **空！** |
+    | Create a row | 多个来源 | 数据库记录 | ✅ 绕过 Code1 |
+    | Respond to Webhook | Create a row | 返回数据 | ⚠️ 可能受影响 |
+
+  - **Code1 代码问题**：
+    ```javascript
+    // Code1 的代码是为处理搜索结果数组设计的
+    if (arr) { ... }  // Basic LLM Chain 输出不是数组，跳过
+    if (typeof data === "string") { ... }  // 不是字符串，是对象，跳过
+    // 结果：parts 为空，context: ""
+    ```
+
+  - **解决方案**：在 N8N 的 Code1 节点添加对 LLM 输出格式的处理：
+    ```javascript
+    // 添加到 Code1 代码中
+    if (data.text && typeof data.text === "string") {
+      parts.push(data.text);
+      continue;
+    }
+    // 支持新版本格式
+    if (data.response?.text) {
+      parts.push(data.response.text);
+      continue;
     }
     ```
-  - **提交**：`c8c518f`
 
 ### 🚧 第四阶段：性能优化 + 真流式输出（待完成）
 
