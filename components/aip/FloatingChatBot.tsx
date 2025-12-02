@@ -293,20 +293,32 @@ export function FloatingChatBot({
       try {
         while (true) {
           const { done, value } = await reader.read()
-          if (done) break
+          if (done) {
+            console.log('[FloatingChatBot] Stream done, buffer remaining:', buffer)
+            break
+          }
 
           const chunk = decoder.decode(value, { stream: true })
           buffer += chunk
 
+          // 🔥 调试日志：显示收到的原始数据
+          console.log('[FloatingChatBot] Received chunk:', chunk.substring(0, 200))
+
           const lines = buffer.split('\n')
           buffer = lines.pop() || ''
+
+          console.log('[FloatingChatBot] Lines to process:', lines.length, 'Buffer remaining:', buffer.length)
 
           for (const line of lines) {
             const trimmedLine = line.trim()
             if (!trimmedLine) continue
 
+            // 🔥 调试日志：显示解析的每一行
+            console.log('[FloatingChatBot] Parsing line:', trimmedLine.substring(0, 100))
+
             try {
               const json = JSON.parse(trimmedLine)
+              console.log('[FloatingChatBot] Parsed JSON:', json.type, json.content?.substring(0, 50))
 
               if (json.type === 'chunk') {
                 fullAnswer = json.content
