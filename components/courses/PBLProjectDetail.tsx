@@ -589,7 +589,7 @@ export function PBLProjectDetail({
   const progressPercentage = Math.round(totalWeightedProgress * 100)
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen text-white">
       {/* 统一导航栏 */}
       <UnifiedNavbar
         onOpenProfile={() => setShowProfileModal(true)}
@@ -658,11 +658,7 @@ export function PBLProjectDetail({
           {/* 选择/取消项目按钮 */}
           <button
             onClick={handleToggleSelection}
-            className={`btn-stardust px-6 py-3 font-medium ${
-              isSelected
-                ? 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white'
-            }`}
+            className={`btn-stardust px-6 py-3 font-medium ${isSelected ? 'text-gray-300' : ''}`}
           >
             {isSelected ? '取消项目' : '选择这个项目'}
           </button>
@@ -696,17 +692,19 @@ export function PBLProjectDetail({
 
                   return (
                 <button
-                  onClick={() => toggleWeek(week.week)}
+                  onClick={() => {
+                    if (!isWeekUnlocked) {
+                      setToast({ show: true, message: '需要完成上一个项目才能解锁哦', type: 'info' })
+                      return
+                    }
+                    toggleWeek(week.week)
+                  }}
                   className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-900/70 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <span className={`flex items-center justify-center w-10 h-10 rounded-full font-bold ${
-                      isWeekUnlocked
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                        : 'bg-gray-700 text-gray-500'
-                    }`}>
-                      {week.week}
-                    </span>
+                    {!isWeekUnlocked && (
+                        <span className="text-gray-500 text-xl">🔒</span>
+                      )}
                     <div className="text-left">
                       <h3 className="text-lg font-semibold text-white">
                         第 {week.week} 周：{week.theme}
@@ -797,8 +795,10 @@ export function PBLProjectDetail({
                                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                   </svg>
+                                ) : !isUnlocked ? (
+                                  <span className="text-gray-500">🔒</span>
                                 ) : (
-                                  dayNumber
+                                  <span className="w-2 h-2 bg-gray-500 rounded-full"></span>
                                 )}
                               </div>
 
@@ -939,7 +939,7 @@ export function PBLProjectDetail({
                                     setShowSubmissionsHistory(true)
                                     fetchSubmissionsHistory(dayKey)
                                   }}
-                                  className="flex-shrink-0 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm font-medium transition-colors"
+                                  className="btn-stardust px-4 py-2 text-sm font-medium"
                                 >
                                   查看记录
                                 </button>

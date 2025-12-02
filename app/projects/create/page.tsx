@@ -58,7 +58,7 @@ export default function CreateProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen text-white">
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* 返回按钮 */}
         <Link

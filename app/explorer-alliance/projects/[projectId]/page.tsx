@@ -306,7 +306,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
   if (projectLoading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen text-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
       </div>
     )
@@ -314,7 +314,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-400">项目不存在</h1>
           <Link href="/explorer-alliance" className="text-purple-400 hover:text-purple-300 mt-4 inline-block">
@@ -338,7 +338,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen text-white">
       {/* 统一导航栏 */}
       <UnifiedNavbar
         onOpenProfile={() => setShowProfileModal(true)}

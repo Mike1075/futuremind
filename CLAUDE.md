@@ -420,37 +420,63 @@ Webhook → Code(调试) → 1-Parse-Input-Parameters
     ```
 - 连接：从 `1-Parse-Input-Parameters` 连接到此节点
 
-**第2步：添加 Hybrid-项目知识 节点（Postgres）**
+**第2步：添加 Hybrid-项目知识 节点（HTTP Request 调用 Supabase RPC）**
+
+> ⚠️ **重要发现**：Postgres 节点的 Query Parameters 用逗号分隔参数，但向量数组内部有 1536 个逗号，会被错误拆分！
+> 根据 [Supabase GitHub 讨论 #28113](https://github.com/orgs/supabase/discussions/28113)，向量参数必须作为**字符串格式** `"[0.1,0.2,...]"` 传递。
+>
+> **解决方案**：用 HTTP Request 节点调用 Supabase RPC，用 JSON 格式传参数，避免逗号分隔问题。
+
+- 节点类型：`HTTP Request`
 - 节点名称：`Hybrid-项目知识`
 - 配置：
-  - Operation: `Execute Query`
-  - Query:
-    ```sql
-    SELECT id, content, metadata, similarity
-    FROM hybrid_search(
-      '{{ $('1-Parse-Input-Parameters').item.json.chatInput }}',
-      '{{ JSON.stringify($json.data[0].embedding) }}'::vector,
-      '{{ $('1-Parse-Input-Parameters').item.json.project_id }}'::uuid,
-      NULL,
-      10
-    )
+  - Method: `POST`
+  - URL: `https://usnfslkxsqosvkomqrdz.supabase.co/rest/v1/rpc/hybrid_search`
+  - Authentication: `Predefined Credential Type`
+  - Credential Type: `Supabase API`
+  - Credential: 选择已有的 Supabase 凭证
+  - Send Headers: ✅ 开启
+    - Header 1: `Content-Type` = `application/json`
+    - Header 2: `Prefer` = `return=representation`
+  - Send Body: ✅ 开启
+  - Body Content Type: `JSON`
+  - Specify Body: `Using JSON`
+  - JSON:
+    ```json
+    {
+      "query_text": "{{ $('1-Parse-Input-Parameters').item.json.chatInput }}",
+      "query_embedding": "[{{ $('生成向量').item.json.data[0].embedding.join(',') }}]",
+      "filter_project_id": "{{ $('1-Parse-Input-Parameters').item.json.project_id }}",
+      "match_count": 10
+    }
     ```
 - 连接：从 `生成向量` 连接到此节点
 
-**第3步：添加 Hybrid-组织知识 节点（Postgres）**
+> **注意**：`query_embedding` 的值是**字符串**格式 `"[0.1,0.2,...]"`，不是数组！
+
+**第3步：添加 Hybrid-组织知识 节点（HTTP Request 调用 Supabase RPC）**
+- 节点类型：`HTTP Request`
 - 节点名称：`Hybrid-组织知识`
 - 配置：
-  - Operation: `Execute Query`
-  - Query:
-    ```sql
-    SELECT id, content, metadata, similarity
-    FROM hybrid_search(
-      '{{ $('1-Parse-Input-Parameters').item.json.chatInput }}',
-      '{{ JSON.stringify($json.data[0].embedding) }}'::vector,
-      NULL,
-      '{{ $('1-Parse-Input-Parameters').item.json.organization_id }}'::uuid,
-      10
-    )
+  - Method: `POST`
+  - URL: `https://usnfslkxsqosvkomqrdz.supabase.co/rest/v1/rpc/hybrid_search`
+  - Authentication: `Predefined Credential Type`
+  - Credential Type: `Supabase API`
+  - Credential: 选择已有的 Supabase 凭证
+  - Send Headers: ✅ 开启
+    - Header 1: `Content-Type` = `application/json`
+    - Header 2: `Prefer` = `return=representation`
+  - Send Body: ✅ 开启
+  - Body Content Type: `JSON`
+  - Specify Body: `Using JSON`
+  - JSON:
+    ```json
+    {
+      "query_text": "{{ $('1-Parse-Input-Parameters').item.json.chatInput }}",
+      "query_embedding": "[{{ $('生成向量').item.json.data[0].embedding.join(',') }}]",
+      "filter_organization_id": "{{ $('1-Parse-Input-Parameters').item.json.organization_id }}",
+      "match_count": 10
+    }
     ```
 - 连接：从 `生成向量` 连接到此节点
 
@@ -462,13 +488,14 @@ Webhook → Code(调试) → 1-Parse-Input-Parameters
   - Input 2: `获取用户画像`
 
 **第5步：删除旧节点**
-- 删除 `Vector-项目知识`
-- 删除 `Vector-组织知识`
-- 删除 `Embeddings OpenAI`
-- 删除 `Embeddings OpenAI1`
-- 删除 `Reranker Cohere`
-- 删除 `Reranker Cohere1`
-- 删除 `全文搜索`（功能已合并到 hybrid_search）
+- 删除 `Vector-项目知识`（被 HTTP Request + RPC 替代）
+- 删除 `Vector-组织知识`（被 HTTP Request + RPC 替代）
+- 删除 `Embeddings OpenAI`（被 HTTP Request 直接调用 API 替代）
+- 删除 `Embeddings OpenAI1`（同上）
+- 删除 `Reranker Cohere`（RRF 融合在 hybrid_search RPC 中完成）
+- 删除 `Reranker Cohere1`（同上）
+- 删除 `全文搜索`（功能已合并到 hybrid_search RPC）
+- 删除刚才创建的 `Hybrid-项目知识` Postgres 节点（改用 HTTP Request）
 
 **第6步：修改 整合上下文 Code 节点**
 ```javascript
@@ -549,12 +576,27 @@ Response: {"data": [{"embedding": [0.1, 0.2, ...], "index": 0}]}
 - [x] 配置 Cohere Reranker（rerank-multilingual-v3.0，Top N=6）
 - [x] 工作流架构：并行执行 + 强制检索（不依赖 AI 决策）
 
-### 🚧 第二阶段：Hybrid Search（混合检索）- 方案 A 进行中
+### 🚧 第二阶段：Hybrid Search（混合检索）- HTTP Request + RPC 方案进行中
 
-- [ ] 创建数据库迁移 - 添加 `fts` 全文搜索列和索引
-- [ ] 在 N8N 添加 Postgres 节点执行全文搜索
-- [ ] 修改 Merge 节点（4 个输入）
-- [ ] 修改 Code 节点实现 RRF 融合
+> ⚠️ **方案变更**：原计划用 Postgres 节点，但发现其 Query Parameters 用逗号分隔，向量（1536维）的逗号被错误拆分。
+> 改用 HTTP Request 节点调用 Supabase RPC，用 JSON 格式传参数。
+
+- [x] 创建 `hybrid_search` RPC 函数（向量+全文搜索+RRF融合）
+- [x] 修复 `document_chunks.organization_id` 数据（80条）
+- [x] 创建 `auto_fill_organization_id` 触发器
+- [x] 修复 `hybrid_search` 函数空字符串问题（2024-12-02）
+  - 问题：N8N 传递空 `project_id` 时报错 `invalid input syntax for type uuid: ""`
+  - 原因：UUID 类型不接受空字符串
+  - 解决：参数类型从 `UUID` 改为 `TEXT`，内部用 `NULLIF(filter_project_id, '')::uuid` 处理
+- [x] N8N 第1步：添加 HTTP Request 节点调用 OpenAI Embeddings API ✅
+- [x] N8N 第2步：添加 HTTP Request 节点调用 `hybrid_search` RPC（项目知识）✅
+  - URL: `https://lvjezsnwesyblnlkkirz.supabase.co/rest/v1/rpc/hybrid_search`
+  - 认证：Supabase API 凭证
+  - Body: JSON 格式，包含 query_text, query_embedding, filter_project_id
+- [ ] N8N 第3步：添加 HTTP Request 节点调用 `hybrid_search` RPC（组织知识）
+- [ ] N8N 第4步：修改连接
+- [ ] N8N 第5步：删除旧节点
+- [ ] N8N 第6步：修改 整合上下文 Code 节点
 - [ ] 测试并验证效果
 
 ### ⏳ 第三阶段：监控和调试
