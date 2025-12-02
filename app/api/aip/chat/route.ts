@@ -171,7 +171,16 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
         return errorResponse('AI service error', undefined, 502)
       }
 
-    // 🔥 创建流式响应并转发给前端
+    // 🔥 检测是否是流式响应
+    const contentType = n8nResponse.headers.get('content-type') || ''
+    const isStreamResponse = contentType.includes('stream') || contentType.includes('event-stream')
+
+    logger.debug('N8N response type', {
+      contentType,
+      isStreamResponse
+    })
+
+    // 🔥 创建流式响应转发给前端
     const stream = new ReadableStream({
       async start(controller) {
         const reader = n8nResponse.body?.getReader()
@@ -184,48 +193,75 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
         }
 
         try {
+          let buffer = ''
           let firstChunkReceived = false
+
           while (true) {
             const { done, value } = await reader.read()
             if (done) break
 
             const chunk = decoder.decode(value, { stream: true })
+            buffer += chunk
 
-            // 解析每行JSON
-            const lines = chunk.split('\n').filter(line => line.trim())
+            // 🔥 尝试逐行解析（支持流式和非流式）
+            const lines = buffer.split('\n')
+            buffer = lines.pop() || '' // 保留未完成的行
+
             for (const line of lines) {
+              const trimmedLine = line.trim()
+              if (!trimmedLine) continue
+
               try {
-                const json = JSON.parse(line)
+                const json = JSON.parse(trimmedLine)
 
-                // 处理type: "item"的流式数据
+                if (!firstChunkReceived) {
+                  logger.debug('First chunk received', {
+                    elapsed: `${Date.now() - startTime}ms`
+                  })
+                  firstChunkReceived = true
+                }
+
+                // 🔥 支持多种N8N返回格式
+                let content = ''
+
+                // 格式1: 流式 { type: 'item', content: '...' }
                 if (json.type === 'item' && json.content) {
-                  if (!firstChunkReceived) {
-                    logger.debug('First chunk received', {
-                      elapsed: `${Date.now() - startTime}ms`
-                    })
-                    firstChunkReceived = true
-                  }
-
-                  const content = json.content
-
-                  // 尝试解析content
                   try {
-                    const innerJson = JSON.parse(content)
-                    // 如果有output字段，使用完整回复
+                    const innerJson = JSON.parse(json.content)
                     if (innerJson.output) {
                       fullContent = innerJson.output
+                      content = fullContent
+                    } else if (innerJson.text) {
+                      fullContent = innerJson.text
+                      content = fullContent
                     }
                   } catch {
-                    // content是纯文本，累加
-                    fullContent += content
+                    fullContent += json.content
+                    content = fullContent
                   }
+                }
+                // 格式2: 非流式 { ai_content: '...' }
+                else if (json.ai_content) {
+                  fullContent = json.ai_content
+                  content = fullContent
+                }
+                // 格式3: 非流式 { text: '...' }
+                else if (json.text) {
+                  fullContent = json.text
+                  content = fullContent
+                }
+                // 格式4: 非流式 { output: '...' }
+                else if (json.output) {
+                  fullContent = json.output
+                  content = fullContent
+                }
 
-                  // 🔥 清理markdown格式：移除多余的星号
-                  const cleanedContent = fullContent
-                    .replace(/\*\*/g, '')  // 移除加粗标记 **
-                    .replace(/\*/g, '')    // 移除斜体标记 *
+                // 🔥 如果获取到内容，发送给前端
+                if (content) {
+                  const cleanedContent = content
+                    .replace(/\*\*/g, '')
+                    .replace(/\*/g, '')
 
-                  // 🔥 实时发送给前端（流式输出）
                   const streamData = JSON.stringify({
                     type: 'chunk',
                     content: cleanedContent,
@@ -235,12 +271,47 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
                   controller.enqueue(new TextEncoder().encode(streamData))
                 }
               } catch {
-                // 继续处理下一行
+                // 忽略JSON解析错误，继续处理
               }
             }
           }
 
-          // 🔥 流结束后，先发送完成标记，再异步保存到数据库
+          // 🔥 处理最后可能残留的buffer内容
+          if (buffer.trim()) {
+            try {
+              const json = JSON.parse(buffer.trim())
+              let content = ''
+
+              if (json.ai_content) {
+                fullContent = json.ai_content
+                content = fullContent
+              } else if (json.text) {
+                fullContent = json.text
+                content = fullContent
+              } else if (json.output) {
+                fullContent = json.output
+                content = fullContent
+              }
+
+              if (content) {
+                const cleanedContent = content
+                  .replace(/\*\*/g, '')
+                  .replace(/\*/g, '')
+
+                const streamData = JSON.stringify({
+                  type: 'chunk',
+                  content: cleanedContent,
+                  timestamp: new Date().toISOString()
+                }) + '\n'
+
+                controller.enqueue(new TextEncoder().encode(streamData))
+              }
+            } catch {
+              // 忽略
+            }
+          }
+
+          // 🔥 清理最终回复
           const finalReply = fullContent
             .replace(/\*\*/g, '')
             .replace(/\*/g, '')
@@ -252,7 +323,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
             duration: `${totalDuration}ms`
           })
 
-          // 🔥 先发送完成标记，不等待数据库保存
+          // 🔥 发送完成标记
           const doneData = JSON.stringify({
             type: 'done',
             timestamp: new Date().toISOString()
