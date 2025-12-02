@@ -171,7 +171,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
         return errorResponse('AI service error', undefined, 502)
       }
 
-    // 🔥 简化处理：直接读取完整响应
+    // 🔥 读取完整响应
     const responseText = await n8nResponse.text()
 
     logger.debug('N8N raw response', {
@@ -181,29 +181,50 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
 
     let fullContent = ''
 
-    // 🔥 尝试解析 JSON
-    try {
-      const json = JSON.parse(responseText)
-      logger.debug('Parsed N8N JSON', {
-        keys: Object.keys(json),
-        hasAiContent: !!json.ai_content,
-        hasText: !!json.text,
-        hasOutput: !!json.output
-      })
+    // 🔥 N8N 返回 NDJSON 格式（每行一个 JSON）
+    // {"type":"begin","metadata":{...}}
+    // {"type":"item","content":"..."}  <- 我们需要这个
+    // {"type":"done",...}
+    const lines = responseText.split('\n').filter(line => line.trim())
 
-      // 按优先级提取内容
-      if (json.ai_content) {
-        fullContent = json.ai_content
-      } else if (json.text) {
-        fullContent = json.text
-      } else if (json.output) {
-        fullContent = json.output
+    for (const line of lines) {
+      try {
+        const json = JSON.parse(line)
+
+        // 🔥 type: "item" 包含实际内容
+        if (json.type === 'item' && json.content) {
+          // content 可能是字符串或嵌套 JSON
+          try {
+            const innerJson = JSON.parse(json.content)
+            if (innerJson.ai_content) {
+              fullContent = innerJson.ai_content
+            } else if (innerJson.text) {
+              fullContent = innerJson.text
+            } else if (innerJson.output) {
+              fullContent = innerJson.output
+            }
+          } catch {
+            // content 是纯文本
+            fullContent += json.content
+          }
+        }
+        // 🔥 也支持直接返回的格式（非流式）
+        else if (json.ai_content) {
+          fullContent = json.ai_content
+        } else if (json.text && json.type !== 'begin' && json.type !== 'done') {
+          fullContent = json.text
+        } else if (json.output) {
+          fullContent = json.output
+        }
+      } catch {
+        // 忽略解析错误，继续处理下一行
       }
-    } catch (parseError) {
-      logger.error('Failed to parse N8N response as JSON', parseError, {
-        responsePreview: responseText.substring(0, 200)
-      })
     }
+
+    logger.debug('Extracted content', {
+      contentLength: fullContent.length,
+      preview: fullContent.substring(0, 100)
+    })
 
     // 清理格式
     const finalReply = fullContent
