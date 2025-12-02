@@ -367,114 +367,166 @@ Code (调试) → 1-Parse-Input-Parameters
 | **实现复杂度** | 低 | 中（需要创建 RPC 函数） |
 | **可维护性** | 低（依赖有 Bug 的节点） | ✅ 高（SQL 逻辑清晰） |
 
-##### ✅ 推荐方案 B：Postgres 节点 + Supabase RPC
+##### ✅ 确定方案：HTTP Request + Postgres + hybrid_search RPC
 
-**核心思路**：用一个 Supabase RPC 函数同时实现向量搜索 + 全文搜索 + Metadata 过滤
+**核心思路**：
+1. 用 **HTTP Request 节点**调用 OpenAI Embeddings API 生成向量（因为 Embeddings 子节点不能独立使用）
+2. 用 **Postgres 节点**调用 `hybrid_search` RPC 函数实现混合搜索 + Metadata 过滤
 
-##### 方案 B 架构（推荐）✅
+##### 新架构图
 ```
-Webhook
-    ↓
-1-Parse-Input-Parameters
-    ↓
-Embeddings OpenAI (生成 query embedding)
-    ↓
-┌─────────────────────────────────────────────────────────────┐
-│                   并行执行                                   │
-├────────────────────────┬────────────────────┬───────────────┤
-│ Postgres 节点          │ Postgres 节点      │ Supabase      │
-│ hybrid_search RPC      │ hybrid_search RPC  │ 获取用户画像  │
-│ (项目知识,带过滤)      │ (组织知识,带过滤)  │               │
-│ ↓                      │ ↓                  │               │
-│ Reranker Cohere1       │ Reranker Cohere    │               │
-└────────────────────────┴────────────────────┴───────────────┘
-                    ↓
-              Merge（合并 3 个输入）
-                    ↓
-            Code（整合上下文）
-                    ↓
-            6-Final-AI-Answer
-```
-
-##### 方案 B 实现步骤
-
-**步骤 1：创建 Supabase RPC 函数** 🚧 待完成
-```sql
-CREATE OR REPLACE FUNCTION hybrid_search(
-  query_text TEXT,
-  query_embedding vector(1536),
-  filter_project_id UUID DEFAULT NULL,
-  filter_organization_id UUID DEFAULT NULL,
-  match_count INT DEFAULT 10,
-  full_text_weight FLOAT DEFAULT 0.3,
-  semantic_weight FLOAT DEFAULT 0.7,
-  rrf_k INT DEFAULT 60
-)
-RETURNS TABLE (
-  id UUID,
-  content TEXT,
-  metadata JSONB,
-  similarity FLOAT
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RETURN QUERY
-  WITH semantic_search AS (
-    SELECT dc.id, dc.content, dc.metadata,
-           ROW_NUMBER() OVER (ORDER BY dc.embedding <=> query_embedding) AS rank
-    FROM document_chunks dc
-    WHERE (filter_project_id IS NULL OR dc.project_id = filter_project_id)
-      AND (filter_organization_id IS NULL OR dc.organization_id = filter_organization_id)
-    ORDER BY dc.embedding <=> query_embedding
-    LIMIT match_count * 2
-  ),
-  keyword_search AS (
-    SELECT dc.id, dc.content, dc.metadata,
-           ROW_NUMBER() OVER (ORDER BY ts_rank(to_tsvector('simple', dc.content),
-                                               plainto_tsquery('simple', query_text)) DESC) AS rank
-    FROM document_chunks dc
-    WHERE (filter_project_id IS NULL OR dc.project_id = filter_project_id)
-      AND (filter_organization_id IS NULL OR dc.organization_id = filter_organization_id)
-      AND dc.content ILIKE '%' || query_text || '%'
-    LIMIT match_count * 2
-  )
-  SELECT
-    COALESCE(s.id, k.id) AS id,
-    COALESCE(s.content, k.content) AS content,
-    COALESCE(s.metadata, k.metadata) AS metadata,
-    -- RRF 融合分数
-    (COALESCE(semantic_weight / (rrf_k + s.rank), 0.0) +
-     COALESCE(full_text_weight / (rrf_k + k.rank), 0.0))::FLOAT AS similarity
-  FROM semantic_search s
-  FULL OUTER JOIN keyword_search k ON s.id = k.id
-  ORDER BY similarity DESC
-  LIMIT match_count;
-END;
-$$;
+Webhook → Code(调试) → 1-Parse-Input-Parameters
+                              ↓
+                    HTTP Request (OpenAI Embeddings)
+                              ↓
+         ┌──────────────┬──────────────┬────────────────┐
+         ↓              ↓              ↓
+   Hybrid-项目知识  Hybrid-组织知识  获取用户画像
+   (Postgres+RPC)   (Postgres+RPC)  (Supabase)
+         ↓              ↓              ↓
+         └──────────────┴──────────────┘
+                              ↓
+                    合并搜索结果 (Merge 3输入)
+                              ↓
+                        整合上下文 (Code)
+                              ↓
+                    6-Final-AI-Answer (Gemini)
+                              ↓
+                         Code1 → If → Create a row → Respond
 ```
 
-**步骤 2：在 N8N 替换 Vector Store 节点** 🚧 待完成
-- 删除 `Vector-项目知识` 和 `Vector-组织知识` 节点
-- 添加两个 **Postgres** 节点，调用 `hybrid_search` RPC
-- SQL 示例：
-```sql
-SELECT * FROM hybrid_search(
-  '{{ $json.query }}',                    -- 用户问题
-  '{{ $json.embedding }}'::vector,        -- 向量
-  '{{ $json.project_id }}'::uuid,         -- 项目过滤
-  NULL                                    -- 组织过滤
-);
+##### 已完成的准备工作
+- [x] **修复数据**：`document_chunks` 表的 `organization_id` 已填充（80条记录）
+- [x] **创建 RPC 函数**：`hybrid_search` 函数已部署到 Supabase
+- [x] **创建触发器**：`auto_fill_organization_id` 确保以后上传的文档自动填充
+
+##### N8N 修改步骤（共6步）
+
+**第1步：添加 HTTP Request 节点（调用 OpenAI Embeddings API）**
+- 节点名称：`生成向量`
+- 位置：`1-Parse-Input-Parameters` 之后
+- 配置：
+  - Method: `POST`
+  - URL: `https://api.openai.com/v1/embeddings`
+  - Authentication: Header Auth
+    - Name: `Authorization`
+    - Value: `Bearer sk-xxx`（你的 OpenAI API Key）
+  - Body: JSON
+    ```json
+    {
+      "input": "{{ $json.chatInput }}",
+      "model": "text-embedding-3-small"
+    }
+    ```
+- 连接：从 `1-Parse-Input-Parameters` 连接到此节点
+
+**第2步：添加 Hybrid-项目知识 节点（Postgres）**
+- 节点名称：`Hybrid-项目知识`
+- 配置：
+  - Operation: `Execute Query`
+  - Query:
+    ```sql
+    SELECT id, content, metadata, similarity
+    FROM hybrid_search(
+      '{{ $('1-Parse-Input-Parameters').item.json.chatInput }}',
+      '{{ JSON.stringify($json.data[0].embedding) }}'::vector,
+      '{{ $('1-Parse-Input-Parameters').item.json.project_id }}'::uuid,
+      NULL,
+      10
+    )
+    ```
+- 连接：从 `生成向量` 连接到此节点
+
+**第3步：添加 Hybrid-组织知识 节点（Postgres）**
+- 节点名称：`Hybrid-组织知识`
+- 配置：
+  - Operation: `Execute Query`
+  - Query:
+    ```sql
+    SELECT id, content, metadata, similarity
+    FROM hybrid_search(
+      '{{ $('1-Parse-Input-Parameters').item.json.chatInput }}',
+      '{{ JSON.stringify($json.data[0].embedding) }}'::vector,
+      NULL,
+      '{{ $('1-Parse-Input-Parameters').item.json.organization_id }}'::uuid,
+      10
+    )
+    ```
+- 连接：从 `生成向量` 连接到此节点
+
+**第4步：修改连接**
+- `获取用户画像` 改为从 `1-Parse-Input-Parameters` 连接（保持不变）
+- `合并搜索结果` 改为 3 个输入：
+  - Input 0: `Hybrid-项目知识`
+  - Input 1: `Hybrid-组织知识`
+  - Input 2: `获取用户画像`
+
+**第5步：删除旧节点**
+- 删除 `Vector-项目知识`
+- 删除 `Vector-组织知识`
+- 删除 `Embeddings OpenAI`
+- 删除 `Embeddings OpenAI1`
+- 删除 `Reranker Cohere`
+- 删除 `Reranker Cohere1`
+- 删除 `全文搜索`（功能已合并到 hybrid_search）
+
+**第6步：修改 整合上下文 Code 节点**
+```javascript
+// 整合 hybrid_search 结果
+const allItems = $input.all();
+const parts = [];
+let studentProfile = '';
+
+for (const item of allItems) {
+  const data = item.json;
+
+  // hybrid_search 返回格式（可能是数组）
+  if (Array.isArray(data)) {
+    for (const row of data) {
+      if (row.content) parts.push(row.content);
+    }
+    continue;
+  }
+
+  // 单条 hybrid_search 结果
+  if (data.content && data.similarity !== undefined) {
+    parts.push(data.content);
+    continue;
+  }
+
+  // 用户画像格式
+  if (data.summary_text) {
+    studentProfile = data.summary_text;
+    continue;
+  }
+}
+
+return [{
+  json: {
+    context: parts.length > 0 ? parts.join('\n\n---\n\n') : '(无相关知识库内容)',
+    student_profile: studentProfile
+  }
+}];
 ```
 
-**步骤 3：保留 Reranker 节点**
-- Reranker 接收 RPC 结果进行重排序
+##### 技术说明
 
-##### 方案 B 优势
-1. **一石二鸟**：同时解决 Metadata Filter Bug 和实现 Hybrid Search
-2. **速度快**：并行执行，向量+全文搜索在同一个 SQL 中完成
-3. **精准**：RRF 算法融合两种搜索结果
-4. **可靠**：不依赖有 Bug 的 N8N 节点
+**为什么用 HTTP Request 而不是 Embeddings 子节点？**
+- N8N 的 Embeddings OpenAI 是**子节点**，只能连接到 Vector Store 等根节点
+- 我们要绕过有 Bug 的 Vector Store 节点，所以直接调用 API
+
+**OpenAI Embeddings API 格式**：
+```
+POST https://api.openai.com/v1/embeddings
+Headers: Authorization: Bearer sk-xxx
+Body: {"input": "text", "model": "text-embedding-3-small"}
+Response: {"data": [{"embedding": [0.1, 0.2, ...], "index": 0}]}
+```
+
+**hybrid_search RPC 优势**：
+1. 向量搜索 + 全文搜索 + RRF 融合
+2. 支持 project_id / organization_id 过滤
+3. 一次调用完成所有操作
 
 #### 参考资源
 - [N8N Supabase Vector Store 文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.vectorstoresupabase/)
