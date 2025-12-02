@@ -198,14 +198,31 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
 
           while (true) {
             const { done, value } = await reader.read()
-            if (done) break
+            if (done) {
+              logger.debug('Reader done, buffer remaining', {
+                bufferLength: buffer.length,
+                bufferPreview: buffer.substring(0, 200)
+              })
+              break
+            }
 
             const chunk = decoder.decode(value, { stream: true })
             buffer += chunk
 
+            // 🔥 调试日志
+            logger.debug('Received chunk from N8N', {
+              chunkLength: chunk.length,
+              chunkPreview: chunk.substring(0, 300)
+            })
+
             // 🔥 尝试逐行解析（支持流式和非流式）
             const lines = buffer.split('\n')
             buffer = lines.pop() || '' // 保留未完成的行
+
+            logger.debug('Split lines', {
+              linesCount: lines.length,
+              bufferRemaining: buffer.length
+            })
 
             for (const line of lines) {
               const trimmedLine = line.trim()
@@ -277,20 +294,35 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
           }
 
           // 🔥 处理最后可能残留的buffer内容
+          logger.debug('Processing remaining buffer', {
+            bufferLength: buffer.length,
+            bufferContent: buffer.substring(0, 500)
+          })
+
           if (buffer.trim()) {
             try {
               const json = JSON.parse(buffer.trim())
+              logger.debug('Parsed buffer JSON', {
+                hasAiContent: !!json.ai_content,
+                hasText: !!json.text,
+                hasOutput: !!json.output,
+                keys: Object.keys(json)
+              })
+
               let content = ''
 
               if (json.ai_content) {
                 fullContent = json.ai_content
                 content = fullContent
+                logger.debug('Found ai_content', { length: content.length })
               } else if (json.text) {
                 fullContent = json.text
                 content = fullContent
+                logger.debug('Found text', { length: content.length })
               } else if (json.output) {
                 fullContent = json.output
                 content = fullContent
+                logger.debug('Found output', { length: content.length })
               }
 
               if (content) {
@@ -304,10 +336,13 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
                   timestamp: new Date().toISOString()
                 }) + '\n'
 
+                logger.debug('Sending chunk to frontend', { length: cleanedContent.length })
                 controller.enqueue(new TextEncoder().encode(streamData))
               }
-            } catch {
-              // 忽略
+            } catch (parseError) {
+              logger.error('Failed to parse buffer JSON', parseError, {
+                buffer: buffer.substring(0, 200)
+              })
             }
           }
 

@@ -593,11 +593,115 @@ Response: {"data": [{"embedding": [0.1, 0.2, ...], "index": 0}]}
   - URL: `https://lvjezsnwesyblnlkkirz.supabase.co/rest/v1/rpc/hybrid_search`
   - 认证：Supabase API 凭证
   - Body: JSON 格式，包含 query_text, query_embedding, filter_project_id
-- [ ] N8N 第3步：添加 HTTP Request 节点调用 `hybrid_search` RPC（组织知识）
-- [ ] N8N 第4步：修改连接
-- [ ] N8N 第5步：删除旧节点
-- [ ] N8N 第6步：修改 整合上下文 Code 节点
-- [ ] 测试并验证效果
+- [x] N8N 第3步：添加 HTTP Request 节点调用 `hybrid_search` RPC（组织知识）✅
+- [x] N8N 第4步 + 第5步：删除旧节点 + 修改连接 ✅
+
+**已删除的节点（共7个）：**
+| 节点名称 | 类型 | 原因 |
+|---------|------|------|
+| `Vector-项目知识` | Supabase Vector Store | 被 Hybrid-项目知识1 替代 |
+| `Embeddings OpenAI` | 子节点 | 被 生成向量 HTTP Request 替代 |
+| `Reranker Cohere` | 子节点 | RRF融合已在 hybrid_search RPC 中完成 |
+| `Vector-组织知识` | Supabase Vector Store | 被 Hybrid-组织知识 替代 |
+| `Embeddings OpenAI1` | 子节点 | 被 生成向量 HTTP Request 替代 |
+| `Reranker Cohere1` | 子节点 | RRF融合已在 hybrid_search RPC 中完成 |
+| `全文搜索` | Postgres | 功能已合并到 hybrid_search RPC |
+
+**要保留的节点：**
+- `1-Parse-Input-Parameters` - 解析输入
+- `获取用户画像` - 获取学生摘要
+- `合并搜索结果` - Merge 节点
+- `整合上下文` - Code 节点
+- `6-Final-AI-Answer` 及后续节点
+- `生成向量`（新）
+- `Hybrid-项目知识1`（新）
+- `Hybrid-组织知识`（新）
+
+**新连接方式：**
+```
+1-Parse-Input-Parameters
+    ↓              ↓
+生成向量      获取用户画像
+    ↓              ↓
+┌───┴───┐          ↓
+↓       ↓          ↓
+Hybrid- Hybrid-    ↓
+项目知识 组织知识   ↓
+    ↓       ↓      ↓
+    └───┬───┴──────┘
+        ↓
+  合并搜索结果 (3个输入)
+        ↓
+    整合上下文
+        ↓
+  6-Final-AI-Answer
+```
+
+- [x] N8N 第6步：修改 整合上下文 Code 节点 ✅
+  - 更新代码以处理 hybrid_search 返回的数据格式
+  - 分离项目知识库和组织知识库内容
+- [x] 端到端测试验证效果 ✅
+  - 知识库检索成功，返回相关内容
+  - 发现问题：回答质量需优化、响应速度慢（~13秒）
+
+### 🔧 优化阶段（2024-12-02 进行中）
+
+#### 问题1：AI 回答质量不理想
+- **现象**：AI 说"没有直接标记为'第三天'的内容"，但知识库确实有相关内容
+- **原因**：Prompt 需要优化，让 AI 更好地利用检索到的内容
+- **解决**：优化 Prompt，强调"仔细阅读知识库内容"
+
+#### 问题2：响应速度慢（~13秒）
+- **瓶颈分析**：
+  | 步骤 | 耗时 |
+  |------|------|
+  | 生成向量 (OpenAI) | ~1秒 |
+  | Hybrid 搜索 x2 | ~2秒（已并行）|
+  | Gemini Agent | **~10秒** ← 主要瓶颈 |
+
+- **优化方案**：
+  - 方案 A：换成 `gemini-2.5-flash` 模型 ✅ 已实施
+  - 方案 B：改用 **Basic LLM Chain** 节点替代 Agent 节点 ✅ 已实施
+
+- **实施结果**（2024-12-02）：
+  - 将 `6-Final-AI-Answer` 从 AI Agent 节点改为 Basic LLM Chain 节点
+  - 原因：[N8N 社区确认](https://community.n8n.io/t/why-is-the-ai-agent-in-n8n-is-extremely-slow-when-processing-data/73442) AI Agent 节点有性能问题，同样的模型 Agent 需要 20-27秒，Basic LLM Chain 只需 ~4秒
+  - 效果：执行时间从 ~13秒 降到 **~2.5秒** ✅
+
+- **注意事项**：
+  - Basic LLM Chain 输出字段是 `text`，不是 `output`
+  - 后续节点引用需要从 `$('6-Final-AI-Answer').first().json.output` 改为 `$('新节点名').first().json.text`
+
+#### 优化后的 Prompt（推荐）
+```
+你是「探索者联盟」的AI智能助手，名叫"小探"。
+
+## 用户信息
+- 用户名：{{ $('1-Parse-Input-Parameters').first().json.user_name }}
+
+## 用户画像
+{{ $('整合上下文').first().json.student_profile }}
+
+## 知识库检索结果
+以下是与用户问题相关的知识库内容，请仔细阅读并用于回答：
+---
+{{ $('整合上下文').first().json.context }}
+---
+
+## 历史对话
+{{ $('1-Parse-Input-Parameters').first().json.chat_history_text }}
+
+## 用户当前问题
+{{ $('1-Parse-Input-Parameters').first().json.chatInput }}
+
+## 回复指南
+1. 【最重要】仔细阅读上面的知识库内容，从中提取信息直接回答用户问题
+2. 如果知识库内容包含答案，直接引用并组织成清晰的回答
+3. 不要说"知识库中没有"、"没有找到"等否定词，直接给出最佳回答
+4. 回复要友好、简洁、有条理
+5. 适当使用 emoji 让对话更生动 😊
+6. 结合用户画像进行个性化回答（如果有）
+```
 
 ### ⏳ 第三阶段：监控和调试
 
