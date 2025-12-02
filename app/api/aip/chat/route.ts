@@ -186,11 +186,20 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
 
     // 🔥 方法1：尝试解析为单个 JSON 对象（streaming 关闭时）
     try {
-      const json = JSON.parse(responseText)
-      logger.info('Parsed as single JSON SUCCESS', {
+      let json = JSON.parse(responseText)
+
+      // 🔥 如果 N8N 返回数组，取第一个元素
+      if (Array.isArray(json)) {
+        logger.info('N8N returned array', { arrayLength: json.length })
+        json = json[0] || {}
+      }
+
+      logger.info('Parsed JSON', {
         keys: Object.keys(json),
         hasAiContent: !!json.ai_content,
-        aiContentPreview: json.ai_content?.substring(0, 100)
+        hasText: !!json.text,
+        hasOutput: !!json.output,
+        hasContent: !!json.content
       })
 
       if (json.ai_content) {
