@@ -82,14 +82,13 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       chatHistoryQuery = chatHistoryQuery.in('project_id', projectIdsArray)
     }
 
-    // 构建项目信息查询（如果选择了单个项目）
-    const projectInfoQuery = projectIdsArray.length === 1
+    // 构建项目信息查询（支持多个项目）
+    const projectInfoQuery = projectIdsArray.length > 0
       ? supabase
           .from('projects')
-          .select('name, description')
-          .eq('id', projectIdsArray[0])
-          .maybeSingle()
-      : Promise.resolve({ data: null })
+          .select('id, name, description')
+          .in('id', projectIdsArray)
+      : Promise.resolve({ data: [] })
 
     const [chatHistoryResult, studentSummaryResult, profileResult, projectInfoResult] = await Promise.all([
       chatHistoryQuery,
@@ -109,7 +108,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     const chatHistory = chatHistoryResult.data
     const studentSummary = studentSummaryResult.data
     const userProfile = profileResult.data
-    const projectInfo = projectInfoResult.data
+    const projectsInfo = projectInfoResult.data || []
 
     // 构建用户画像字符串（来自盖亚的分析）
     const studentProfileText = studentSummary ? `
@@ -135,6 +134,18 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
 
     const userName = userProfile?.full_name || userProfile?.email?.split('@')[0] || '探索者'
 
+    // 构建项目信息文本（支持多个项目）
+    let projectsInfoText = ''
+    if (projectsInfo.length === 1) {
+      // 单个项目
+      projectsInfoText = `项目名称：${projectsInfo[0].name || '未命名项目'}\n项目简介：${projectsInfo[0].description || '暂无简介'}`
+    } else if (projectsInfo.length > 1) {
+      // 多个项目
+      projectsInfoText = projectsInfo.map((p: any, i: number) =>
+        `【项目${i + 1}】${p.name || '未命名项目'}\n简介：${p.description || '暂无简介'}`
+      ).join('\n\n')
+    }
+
     const n8nPayload = {
       chatInput,
       user_id: user.id,
@@ -142,9 +153,9 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       project_id: projectIdValue,
       project_ids: projectIdsArray,
       organization_id: organization_id || '',
-      // 添加项目信息（名称和描述）
-      project_name: projectInfo?.name || '',
-      project_description: projectInfo?.description || '',
+      // 添加项目信息（支持多个项目）
+      projects_info: projectsInfoText,
+      project_count: projectsInfo.length,
       // 添加历史消息供N8N使用
       chat_history: historyMessages,
       // 添加用户画像（来自盖亚的分析）

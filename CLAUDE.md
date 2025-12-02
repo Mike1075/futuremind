@@ -137,11 +137,18 @@ Respond to Webhook
 - [x] 修复 `hybrid_search` 函数空字符串问题（UUID 类型不接受空字符串）
 - [x] N8N 添加 `项目智慧库`、`组织智慧库` Postgres 节点（5路输入）
 - [x] 清理污染的聊天历史（candy 项目 + 无知识库项目）
-- [x] API 添加项目信息传递（`project_name`、`project_description`）
+- [x] N8N Prompt 优化：使用 `||` 替代三元运算符（N8N 不支持 `? :`）
+- [x] 修复多选项目支持：
+  - `项目智慧库` SQL 用 `ANY(string_to_array(...))` 语法
+  - `hybrid_search` RPC 已原生支持逗号分隔的多项目 ID
+- [x] API 支持多项目信息传递：
+  - 字段从 `project_name`/`project_description` 改为 `projects_info`（格式化文本）
+  - 新增 `project_count` 字段
+  - 支持单项目和多项目两种格式
 
 ### AIP 聊天 - 待完成
-- [ ] N8N `1-Parse-Input-Parameters` 添加 `project_name`、`project_description` 解析
-- [ ] N8N Prompt 优化：添加项目上下文，禁止编造内容
+- [ ] N8N `1-Parse-Input-Parameters` 添加 `projects_info`、`project_count` 解析
+- [ ] N8N Prompt 使用新的 `projects_info` 字段显示项目信息
 
 ### 性能优化
 - [ ] 检查 N8N Streaming 配置
