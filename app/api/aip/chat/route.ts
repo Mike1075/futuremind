@@ -251,10 +251,15 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     })
 
     // 清理格式
-    const finalReply = fullContent
+    let finalReply = fullContent
       .replace(/\*\*/g, '')
       .replace(/\*/g, '')
-      .trim() || '抱歉，我现在无法回应。请稍后再试。'
+      .trim()
+
+    // 🔥 如果没有内容，返回调试信息
+    if (!finalReply) {
+      finalReply = `[调试] 解析失败。N8N响应长度: ${responseText.length}, 前200字符: ${responseText.substring(0, 200)}`
+    }
 
     const totalDuration = Date.now() - startTime
     logger.info('AI response completed', {
