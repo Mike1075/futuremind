@@ -969,8 +969,8 @@ export function PBLProjectDetail({
 
       {/* 提交对话框 */}
       {showSubmitDialog && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-gray-900 border border-gray-800 rounded-lg max-w-2xl w-full p-6 my-8">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl max-w-2xl w-full p-6 my-8 shadow-2xl">
             <h3 className="text-xl font-bold mb-4">{historyDayLabel ? `${historyDayLabel} - 提交任务` : '提交任务'}</h3>
 
             {/* 如果没有AI评估结果，显示提交表单 */}
@@ -1199,7 +1199,7 @@ export function PBLProjectDetail({
           }}
         >
           <div
-            className="bg-gray-900 border border-gray-800 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6"
+            className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
@@ -1212,7 +1212,7 @@ export function PBLProjectDetail({
                   setSelectedSubmission(null)
                   setHistoryDayLabel(null)
                 }}
-                className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1245,7 +1245,7 @@ export function PBLProjectDetail({
                 {submissionsHistory.map((submission) => (
                   <div
                     key={submission.id}
-                    className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-blue-500/30 transition-colors"
+                    className="bg-white/5 border border-white/10 rounded-lg p-4 hover:border-blue-500/30 transition-colors"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
@@ -1352,14 +1352,14 @@ export function PBLProjectDetail({
           onClick={() => setSelectedSubmission(null)}
         >
           <div
-            className="bg-gray-900 border border-blue-500/30 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
+            className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-white">提交详情</h3>
               <button
                 onClick={() => setSelectedSubmission(null)}
-                className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1399,7 +1399,7 @@ export function PBLProjectDetail({
               {/* 提交内容 */}
               <div>
                 <p className="text-sm text-gray-400 mb-2">提交内容</p>
-                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
                   <p className="text-gray-300 whitespace-pre-wrap">{selectedSubmission.content}</p>
                 </div>
               </div>
@@ -1481,7 +1481,7 @@ export function PBLProjectDetail({
           onClick={() => setShowSelectProjectModal(false)}
         >
           <div
-            className="bg-gradient-to-br from-gray-900 via-gray-900 to-purple-900/30 border-2 border-purple-500/50 rounded-2xl max-w-md w-full p-8 shadow-2xl"
+            className="bg-white/5 backdrop-blur-xl border border-purple-500/30 rounded-2xl max-w-md w-full p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* 顶部图标和关闭按钮 */}
@@ -1495,7 +1495,7 @@ export function PBLProjectDetail({
               </div>
               <button
                 onClick={() => setShowSelectProjectModal(false)}
-                className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1514,7 +1514,7 @@ export function PBLProjectDetail({
             </p>
 
             {/* 特性说明 */}
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mb-6 space-y-3">
+            <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-6 space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <svg className="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
