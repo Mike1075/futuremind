@@ -160,8 +160,18 @@ export async function POST(request: Request) {
     const gaiaProjectId = process.env.GAIA_KB_PROJECT_ID
     if (!gaiaProjectId) {
       logger.error('[盖亚知识库] GAIA_KB_PROJECT_ID环境变量未配置')
-      return NextResponse.json({ error: '服务配置错误' }, { status: 503 })
+      return NextResponse.json({ error: '服务配置错误', details: 'GAIA_KB_PROJECT_ID未配置' }, { status: 503 })
     }
+
+    // 调试日志
+    logger.debug('[盖亚知识库] 准备插入数据库', {
+      title,
+      content_length: fileContent.length,
+      user_id: user.id,
+      project_id: gaiaProjectId,
+      filename: file.name,
+      file_size: file.size
+    })
 
     // 先记录到数据库（标记为processing状态）
     // 存入完整文件内容，支持父子架构检索（子块通过 parent_document_id 关联到此记录）
@@ -305,8 +315,14 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     logger.error('[盖亚知识库] 上传失败:', error)
+    // 临时：返回详细错误信息用于调试
     return NextResponse.json(
-      { error: process.env.NODE_ENV === 'development' ? (error.message || '上传失败') : '上传失败' },
+      {
+        error: '上传失败',
+        details: error.message || '未知错误',
+        code: error.code,
+        hint: error.hint
+      },
       { status: 500 }
     )
   }

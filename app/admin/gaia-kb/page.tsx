@@ -119,12 +119,26 @@ export default function GaiaKnowledgeBasePage() {
       formData.append('title', title.trim())
       // 不再传递 courseId，后端使用固定的盖亚专属 project_id
 
+      console.log('[盖亚上传] 开始上传', {
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        fileType: selectedFile.type,
+        title: title.trim()
+      })
+
       const response = await fetch('/api/admin/gaia-kb', {
         method: 'POST',
         body: formData,
       })
 
+      console.log('[盖亚上传] 响应状态', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      })
+
       const data = await response.json()
+      console.log('[盖亚上传] 响应数据', data)
 
       if (response.ok) {
         toast.success(`上传成功！${data.message || '文档正在后台处理向量化，请稍后刷新查看。'}`)
@@ -137,10 +151,11 @@ export default function GaiaKnowledgeBasePage() {
         // 重新加载列表
         await loadDocuments()
       } else {
-        toast.error(`上传失败：${data.error || '未知错误'}。请检查文件格式和网络连接后重试。`)
+        console.error('[盖亚上传] 上传失败', { status: response.status, data })
+        toast.error(`上传失败：${data.error || '未知错误'}${data.details ? `（${data.details}）` : ''}`)
       }
     } catch (error: any) {
-      console.error('上传失败:', error)
+      console.error('[盖亚上传] 异常:', error)
       toast.error(`上传失败：${error.message || '网络错误'}。请检查网络连接后重试。`)
     } finally {
       setUploading(false)
