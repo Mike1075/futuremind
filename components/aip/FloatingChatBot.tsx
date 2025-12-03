@@ -654,7 +654,7 @@ export function FloatingChatBot({
                   <div
                     className={`max-w-[70%] rounded-lg p-3 ${
                       message.role === 'user'
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-indigo-500/20 text-white border border-indigo-400/30'
                         : 'bg-zinc-800 text-zinc-100 border border-zinc-700'
                     }`}
                   >

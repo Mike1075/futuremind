@@ -985,7 +985,7 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
 
                         <div className={`max-w-[85%] ${
                           isUserMessage(message)
-                            ? 'bg-indigo-600/70 text-white'
+                            ? 'bg-indigo-500/20 text-white border border-indigo-400/30'
                             : 'bg-white/5 text-gray-100 border border-white/10'
                         } rounded-2xl px-4 py-3 shadow-sm transition-all duration-300 ${
                           isHighlighted
