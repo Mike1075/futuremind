@@ -397,11 +397,13 @@ POST https://api.cohere.ai/v1/rerank
 > - [真流式解决方案（使用 Supabase）](https://demodomain.dev/2025/06/13/finally-real-llm-streaming-with-n8n-heres-how-with-a-little-help-from-supabase/)
 > - [AI Agent vs Basic LLM Chain 对比](https://docs.n8n.io/advanced-ai/examples/agent-chain-comparison/)
 
-### ⚠️ 关键事实
+### ⚠️ 关键事实（已更正）
 
-1. **Basic LLM Chain 不支持流式** - n8n 的 Code 节点会等待整个流完成后才传递结果
-2. **AI Agent 也不支持流式** - 同样受 n8n 架构限制
-3. **n8n 架构本身是阻碍** - "n8n 的顺序执行、逐节点处理模式对真正的 LLM 流式处理存在**根本障碍**"
+1. **Basic LLM Chain 不支持流式** - 等待完整响应后才传递
+2. **AI Agent 支持流式！** - 需要 n8n **1.106.3+** 版本
+3. **配置要求**：Webhook `Response Mode = Streaming` + AI Agent 默认启用
+
+参考：[AI Agent 流式教程](https://community.n8n.io/t/ai-agent-streaming-tutorial-complete-guide-workflows-scripts-included/167369)
 
 ### 当前状态：伪流式（推荐保持）
 
@@ -455,7 +457,106 @@ N8N 等待 LLM 完整响应 → 一次性返回 → 前端 50ms 打字机效果
 | 真流式（Supabase） | 0.5-1 秒 | 高 | ⚠️ 仅在体验要求极高时考虑 |
 | 改回 AI Agent | 更慢 | 中 | ❌ 不推荐（响应 13 秒 vs 2.5 秒）|
 
-**最终建议**：保持当前伪流式方案，优化其他环节（如 Rerank 提升回答质量）比追求真流式更有价值。
+---
+
+## 分支开发环境指南（2025-12-03）
+
+### 1. Git 代码分支（已创建）
+
+```bash
+# 已创建 worktree 分支
+git worktree add ../futuremind-streaming-rerank -b feature/streaming-rerank
+
+# 分支目录：D:\CursorWork\FutureMindInstitute\futuremind-streaming-rerank
+```
+
+### 2. N8N 工作流分支
+
+N8N **没有原生分支功能**，推荐做法：
+
+**方法 A：复制工作流（推荐）**
+1. 在 N8N 中复制现有工作流
+2. 重命名为 `[测试] 盖亚聊天 - AI Agent 流式`
+3. 修改 Webhook URL（自动生成新的）
+4. 在代码分支中使用新的 Webhook URL
+
+**方法 B：使用 Source Control**
+- N8N 支持 Git 集成（Source Control 功能）
+- 可将工作流导出为 JSON，提交到 Git 分支
+
+参考：[n8n 工作流版本控制最佳实践](https://ones.com/blog/mastering-n8n-workflow-version-control-best-practices/)
+
+### 3. Supabase 数据库分支
+
+> **Supabase Branching 2.0**：可直接从 Dashboard 创建，无需 Git！
+>
+> 参考：[Supabase Branching 官方文档](https://supabase.com/docs/guides/deployment/branching)
+
+**创建步骤**：
+1. 登录 Supabase Dashboard
+2. 点击右上角用户图标 → 启用 "Branching via dashboard"
+3. 点击顶部项目名称旁的箭头 → "Create branch"
+4. 分支会有**独立的 API 凭证**（Project URL + Anon Key）
+
+**在代码分支中使用**：
+```env
+# .env.local（futuremind-streaming-rerank 目录）
+NEXT_PUBLIC_SUPABASE_URL=https://xxx-branch.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...（分支的 key）
+```
+
+**限制**：
+- 目前是 Public Alpha 状态
+- 分支只能合并到 main，不能合并到其他分支
+- 新分支不会复制生产数据（保护隐私）
+
+### 4. 完整的分支开发流程
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Git 分支                                                  │
+│    futuremind-streaming-rerank/                              │
+│    - 修改前端代码适配流式                                      │
+│    - 修改 API 路由处理 SSE                                    │
+├─────────────────────────────────────────────────────────────┤
+│ 2. N8N 测试工作流                                            │
+│    [测试] 盖亚聊天 - AI Agent 流式                            │
+│    - 复制原工作流                                             │
+│    - 改用 AI Agent 节点                                       │
+│    - 配置 Webhook Response Mode = Streaming                  │
+│    - 添加 Cohere Reranker                                    │
+├─────────────────────────────────────────────────────────────┤
+│ 3. Supabase 分支                                             │
+│    develop-streaming                                         │
+│    - 测试数据隔离                                             │
+│    - 独立 API 凭证                                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 5. AI Agent 流式 + Rerank 改造要点
+
+**N8N 工作流修改**：
+```
+Webhook (Response Mode = Streaming)
+    ↓
+Edit Fields
+    ↓
+并行：Embeddings + 用户画像 + 聊天记录
+    ↓
+hybrid_search_gaia
+    ↓
+🆕 Cohere Reranker（HTTP Request）
+    ↓
+整合上下文
+    ↓
+🆕 AI Agent（替代 Basic LLM Chain，支持流式）
+    ↓
+Respond to Webhook (enableStreaming: true)
+```
+
+**前端修改**：
+- 处理真正的 SSE（Server-Sent Events）流
+- 替换当前的伪打字机效果
 
 ---
 
