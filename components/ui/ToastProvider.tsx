@@ -115,8 +115,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={toast}>
       {children}
 
-      {/* Toast Container - 居中显示 */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none">
+      {/* Toast Container - 屏幕正中间显示 */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none">
         <AnimatePresence mode="popLayout">
           {toasts.map((t) => (
             <motion.div
