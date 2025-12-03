@@ -388,7 +388,15 @@ export function GlobalGaiaV3() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to get response')
+        // 尝试读取错误信息
+        let errorMsg = '服务暂时不可用'
+        try {
+          const errorData = await response.json()
+          errorMsg = errorData.error || errorData.message || errorMsg
+        } catch {
+          // 无法解析 JSON，使用默认错误信息
+        }
+        throw new Error(errorMsg)
       }
 
       // 🔥 流式读取响应
@@ -595,13 +603,14 @@ export function GlobalGaiaV3() {
           return newMessages
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       // 出错时更新占位消息为错误消息
+      const errorMessage = error?.message || '网络连接失败'
       setMessages(prev => {
         const newMessages = [...prev]
         newMessages[assistantMessageIndex] = {
           role: 'assistant',
-          content: '抱歉，我遇到了一些问题。请稍后再试。',
+          content: `❌ ${errorMessage}\n\n请稍后再试，或刷新页面重新开始对话。`,
           timestamp: new Date().toISOString()
         }
         return newMessages
@@ -907,18 +916,29 @@ export function GlobalGaiaV3() {
                           ? 'ring-2 ring-blue-500'
                           : ''
                       }`}>
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                        <p className={`text-xs mt-2 ${
-                          isUserMessage(message) ? 'text-purple-100' : 'text-gray-500'
-                        }`}>
-                          {new Date(message.timestamp).toLocaleDateString('zh-CN', {
-                            month: '2-digit',
-                            day: '2-digit'
-                          })} {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
+                        {/* 如果是占位消息（正在加载的AI回复），显示加载动画 */}
+                        {isAssistantMessage(message) && message.content === '' && isLoading ? (
+                          <div className="flex gap-2 py-1">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                            <p className={`text-xs mt-2 ${
+                              isUserMessage(message) ? 'text-purple-100' : 'text-gray-500'
+                            }`}>
+                              {new Date(message.timestamp).toLocaleDateString('zh-CN', {
+                                month: '2-digit',
+                                day: '2-digit'
+                              })} {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </>
+                        )}
                       </div>
 
                       {/* 编辑模式下显示复选框（右侧-AI消息） */}
@@ -955,17 +975,7 @@ export function GlobalGaiaV3() {
                   </div>
                 )}
 
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3">
-                      <div className="flex gap-2">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
+{/* 加载动画已整合到占位消息中，不再单独显示 */}
 
                 <div ref={messagesEndRef} />
               </div>
