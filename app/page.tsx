@@ -4,7 +4,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { MessageCircle, TreePine, Users, Shield, User, ChevronDown, LogOut, Key, Settings } from 'lucide-react'
-import GaiaDialog from '@/components/GaiaDialog'
 
 // 盖亚图标组件 - 炫彩旋转边框 + 对话气泡
 function GaiaIcon() {
@@ -25,7 +24,6 @@ import UserProfileModal from '@/components/UserProfileModal'
 import { createClient } from '@/lib/supabase/client'
 
 export default function Home() {
-  const [showGaiaDialog, setShowGaiaDialog] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -41,16 +39,6 @@ export default function Home() {
     checkAdminStatus()
   }, [])
 
-  useEffect(() => {
-    const handleGlobalGaiaOpened = () => {
-      setShowGaiaDialog(false)
-    }
-
-    window.addEventListener('globalGaiaOpened', handleGlobalGaiaOpened)
-    return () => {
-      window.removeEventListener('globalGaiaOpened', handleGlobalGaiaOpened)
-    }
-  }, [])
 
   const checkAdminStatus = async () => {
     try {
@@ -97,11 +85,8 @@ export default function Home() {
   }
 
   const handleGaiaClick = () => {
-    if (!isLoggedIn) {
-      setShowAuthModal(true)
-    } else {
-      setShowGaiaDialog(true)
-    }
+    // 触发全局盖亚打开事件（GlobalGaiaV3 会处理登录检查）
+    window.dispatchEvent(new CustomEvent('openGaia'))
   }
 
   const handlePBLClick = () => {
@@ -433,9 +418,6 @@ export default function Home() {
         transition={{ duration: 1.5, delay: 1.5 }}
         className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gaia-gold/30 to-transparent"
       />
-
-      {/* 对话框 */}
-      <GaiaDialog isOpen={showGaiaDialog} onClose={() => setShowGaiaDialog(false)} />
 
       {/* 登录弹窗 */}
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />

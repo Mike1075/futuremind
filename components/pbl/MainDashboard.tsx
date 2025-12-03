@@ -8,7 +8,6 @@ import { ProjectDetailModal } from './ProjectDetailModal'
 import { MyProjectsPage } from './MyProjectsPage'
 import { CommunityPage } from './CommunityPage'
 import { UserProfile } from './UserProfile'
-import GaiaDialog from '@/components/GaiaDialog'
 import { PBLProject, pblDataService } from '@/lib/pbl-data'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -37,7 +36,6 @@ interface UserState {
 
 interface ModalState {
   projectDetail: boolean
-  gaiaDialog: boolean
 }
 
 // PF-10: 默认用户状态
@@ -53,8 +51,7 @@ export function MainDashboard() {
 
   // PF-10: 合并模态框状态
   const [modals, setModals] = useState<ModalState>({
-    projectDetail: false,
-    gaiaDialog: false
+    projectDetail: false
   })
 
   // PF-10: 合并用户相关状态
@@ -281,20 +278,14 @@ export function MainDashboard() {
         {renderContent()}
       </div>
 
-      {/* 塞娅AI助手 - 浮动按钮 */}
+      {/* 塞娅AI助手 - 浮动按钮（触发全局盖亚） */}
       <button
-        onClick={() => setModals(prev => ({ ...prev, gaiaDialog: true }))}
+        onClick={() => window.dispatchEvent(new CustomEvent('openGaia'))}
         className="fixed bottom-8 right-8 w-16 h-16 btn-stardust rounded-full shadow-lg hover:shadow-purple-500/50 transition-all duration-300 flex items-center justify-center z-50 hover:scale-110"
         aria-label="打开塞娅对话"
       >
         <MessageCircle className="w-8 h-8 text-white" />
       </button>
-
-      {/* 塞娅对话框 */}
-      <GaiaDialog
-        isOpen={modals.gaiaDialog}
-        onClose={() => setModals(prev => ({ ...prev, gaiaDialog: false }))}
-      />
 
       {/* 项目详情模态框 */}
       <ProjectDetailModal

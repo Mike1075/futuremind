@@ -77,12 +77,16 @@ types/                 # TypeScript 类型定义
 
 ## AI 聊天系统架构
 
-### 两个独立的 AI 聊天系统
+### 统一的 AI 聊天系统 (2025-12-03 重构)
 
-| 系统 | 用途 | 工作流名称 | API 路由 |
-|------|------|-----------|---------|
-| **探索者联盟 AIP** | 项目协作 | `aip聊天助手-未来教育 探索者联盟` | `/api/aip/chat` |
-| **盖亚对话** | 个人成长 | 通过 `N8N_CHAT_WEBHOOK_URL` | `/api/gaia/chat` |
+| 系统 | 用途 | 组件 | API 路由 |
+|------|------|------|---------|
+| **探索者联盟 AIP** | 项目协作 | `FloatingChatBot` | `/api/aip/chat` |
+| **盖亚对话** | 个人成长 | `GlobalGaiaV3` | `/api/gaia/chat` |
+
+> **重要**：`GaiaDialog` 和 `/api/n8n/chat` 已于 2025-12-03 删除，全站统一使用 `GlobalGaiaV3`。
+> - `GlobalGaiaV3` 通过 `app/layout.tsx` → `DynamicGaiaWrapper` 全局加载
+> - 首页和其他页面通过 `window.dispatchEvent(new CustomEvent('openGaia'))` 触发打开
 
 ### Hybrid Search 架构（已在 AIP 实现）
 
@@ -349,12 +353,22 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
 
 ### Bug 修复 (2025-12-03)
 
-1. **✅ 盖亚聊天 UI 修复**
+1. **✅ 盖亚聊天系统统一重构**
+   - 问题：首页使用旧的 `GaiaDialog` 组件，其他页面使用 `GlobalGaiaV3`，两套系统不一致
+   - 修复：删除 `GaiaDialog` 和 `/api/n8n/chat`，全站统一使用 `GlobalGaiaV3`
+   - 删除文件：`components/GaiaDialog.tsx`、`app/api/n8n/chat/route.ts`
+   - 修改文件：`app/page.tsx`、`components/pbl/MainDashboard.tsx`
+   - 添加事件：`GlobalGaiaV3` 监听 `openGaia` 事件，支持外部触发打开
+
+2. **✅ 盖亚聊天 UI 修复**
    - 问题 1：错误时一直转圈
    - 修复：显示实际错误信息（`❌ ${errorMessage}`），停止加载状态
-   - 问题 2：思考图标短暂重复显示
-   - 原因：占位消息和加载动画分开渲染，导致短暂重叠
-   - 修复：将加载动画整合到占位消息中，使用条件渲染
+   - 问题 2：多余盖亚图标出现
+   - 修复：过滤空的 assistant 消息（当 isLoading 为 false 时）
+   - 问题 3：输入框清除延迟 2 秒
+   - 修复：使用 `flushSync` 强制同步清除输入框
+   - 问题 4：打字机效果速度不一致
+   - 修复：统一为 50ms 间隔（与探索者联盟一致）
 
 2. **✅ PDF 上传支持**
    - 问题：上传 PDF 报错 "unsupported Unicode escape sequence"

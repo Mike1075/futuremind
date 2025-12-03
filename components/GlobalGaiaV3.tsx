@@ -105,17 +105,21 @@ export function GlobalGaiaV3() {
     }
   }, [isResizing])
 
-  // 监听GaiaDialog打开事件，自动关闭侧边栏
+  // 监听外部打开请求（用于首页等地方触发打开）
   useEffect(() => {
-    const handleGaiaDialogOpened = () => {
-      setIsOpen(false)
+    const handleOpenGaia = () => {
+      if (!isLoggedIn) {
+        setShowAuthModal(true)
+      } else {
+        setIsOpen(true)
+      }
     }
 
-    window.addEventListener('gaiaDialogOpened', handleGaiaDialogOpened)
+    window.addEventListener('openGaia', handleOpenGaia)
     return () => {
-      window.removeEventListener('gaiaDialogOpened', handleGaiaDialogOpened)
+      window.removeEventListener('openGaia', handleOpenGaia)
     }
-  }, [])
+  }, [isLoggedIn])
 
   // 当侧边栏打开时，通知其他组件
   useEffect(() => {

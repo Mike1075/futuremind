@@ -152,7 +152,7 @@ export function OrganizationList({ organizations, onSelect, onRefresh }: Organiz
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="flex flex-wrap justify-center gap-6">
       {organizations.map((org) => {
         const projects = orgProjects[org.organization_id] || []
         const activeProjects = projects.filter(p => p.status === 'active').length
@@ -163,7 +163,7 @@ export function OrganizationList({ organizations, onSelect, onRefresh }: Organiz
           <div
             key={org.id}
             onClick={() => onSelect(org.organization_id)}
-            className="portal-card-wrapper cursor-pointer"
+            className="portal-card-wrapper cursor-pointer w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] max-w-[400px]"
           >
             {/* 卡片内容 */}
             <div className="portal-card-inner p-6 group">
