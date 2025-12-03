@@ -388,64 +388,74 @@ POST https://api.cohere.ai/v1/rerank
 
 ---
 
-## 真正的流式输出实现指南（2025-12-03 调研）
+## 真正的流式输出实现指南（2025-12-03 深度调研）
 
-> **参考文档**：
-> - [n8n 流式响应官方文档](https://docs.n8n.io/workflows/streaming/)
-> - [社区：如何实现 Agent 流式输出](https://community.n8n.io/t/i-want-to-make-my-agentic-chat-as-streaming-output/158179)
-> - [社区：Webhook 流式支持讨论](https://community.n8n.io/t/webhook-streaming/182718)
+> **重要发现**：n8n **原生不支持**真正的流式输出！
+>
+> 参考文档：
+> - [社区讨论：功能请求状态](https://community.n8n.io/t/stream-ai-responses-on-http-responses-llm-chains-and-ai-agents-nodes/52084) - 虽标注 "GOT CREATED" 但实际**未实现**
+> - [真流式解决方案（使用 Supabase）](https://demodomain.dev/2025/06/13/finally-real-llm-streaming-with-n8n-heres-how-with-a-little-help-from-supabase/)
+> - [AI Agent vs Basic LLM Chain 对比](https://docs.n8n.io/advanced-ai/examples/agent-chain-comparison/)
 
-### 当前状态：伪流式
+### ⚠️ 关键事实
 
-当前两个工作流的 `Respond to Webhook` 节点都设置了 `enableStreaming: false`：
-- N8N 等待 LLM 完整响应后一次性返回
-- 前端使用 50ms 间隔的打字机效果模拟流式显示
-- **用户感知延迟 = N8N 处理时间 + LLM 生成时间**
+1. **Basic LLM Chain 不支持流式** - n8n 的 Code 节点会等待整个流完成后才传递结果
+2. **AI Agent 也不支持流式** - 同样受 n8n 架构限制
+3. **n8n 架构本身是阻碍** - "n8n 的顺序执行、逐节点处理模式对真正的 LLM 流式处理存在**根本障碍**"
 
-### 真正的流式输出要求
-
-1. **Webhook 节点**：`responseMode: "responseNode"` ✅ 已配置
-2. **Respond to Webhook 节点**：`enableStreaming: true` ❌ 需要修改
-3. **LLM 节点**：必须是支持流式的节点（Basic LLM Chain、AI Agent）
-
-### 实现步骤
+### 当前状态：伪流式（推荐保持）
 
 ```
-// 在 N8N 中修改 Respond to Webhook 节点
-{
-  "options": {
-    "enableStreaming": true  // 改为 true
-  }
-}
+N8N 等待 LLM 完整响应 → 一次性返回 → 前端 50ms 打字机效果
 ```
 
-### ⚠️ 重要限制
+| 指标 | 值 |
+|-----|-----|
+| 首字延迟 | 4-8 秒 |
+| 优点 | 简单、稳定、聊天记录保存正常 |
+| 用户体验 | 等待 → 快速打字机显示 |
 
-**问题**：启用流式后，`Create a row`（保存聊天记录）节点可能无法获取完整的 AI 回复。
+### 真流式方案：Supabase Edge Functions（复杂度高）
 
-**原因**：流式输出时，数据逐块发送，后续节点可能在 LLM 完成前就开始执行。
+如果必须要真流式（首字延迟 0.5-1 秒），需要借助外部服务：
 
-**解决方案**：
-1. **方案 A：前端保存**
-   - 流式结束后，前端调用单独的 API 保存完整对话
-   - 需要修改前端代码
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 方案架构                                                      │
+├─────────────────────────────────────────────────────────────┤
+│ UI → n8n(业务逻辑/RAG) → Supabase Edge Function → LLM API   │
+│                                    ↓                        │
+│                         流式写入数据库表                      │
+│                                    ↓                        │
+│ UI ← Supabase Realtime 订阅 ← 数据库表                       │
+└─────────────────────────────────────────────────────────────┘
+```
 
-2. **方案 B：使用 Memory 节点**
-   - 用 LangChain 的 Memory 节点自动保存对话
-   - 不依赖 Respond to Webhook 后的节点
+**实现步骤**：
+1. n8n 处理业务逻辑（RAG 检索、用户画像等）
+2. 调用 Supabase Edge Function（传递上下文 + prompt）
+3. Edge Function 直接调用 LLM API 并**流式写入**数据库表
+4. 前端订阅 Supabase Realtime，实时渲染
 
-3. **方案 C：双通道**
-   - 流式输出给前端
-   - 异步触发另一个工作流保存聊天记录
+**所需组件**：
+- Supabase Edge Functions（Deno 运行时）
+- Supabase Realtime（实时数据推送）
+- 自定义前端逻辑（订阅 + 渲染）
 
-### 性能对比
+**代价**：
+- 架构复杂度大幅增加
+- 需要维护 Edge Functions 代码
+- 调试难度增加
 
-| 模式 | 首字延迟 | 用户体验 |
-|-----|---------|---------|
-| 伪流式（当前） | 4-8 秒 | 等待 → 打字机显示 |
-| 真流式 | 0.5-1 秒 | 几乎立即开始显示 |
+### 结论与建议
 
-**建议**：先在开发环境测试，确保聊天记录保存正常后再上线。
+| 方案 | 首字延迟 | 复杂度 | 建议 |
+|-----|---------|-------|------|
+| **伪流式（当前）** | 4-8 秒 | 低 | ✅ 推荐保持 |
+| 真流式（Supabase） | 0.5-1 秒 | 高 | ⚠️ 仅在体验要求极高时考虑 |
+| 改回 AI Agent | 更慢 | 中 | ❌ 不推荐（响应 13 秒 vs 2.5 秒）|
+
+**最终建议**：保持当前伪流式方案，优化其他环节（如 Rerank 提升回答质量）比追求真流式更有价值。
 
 ---
 
