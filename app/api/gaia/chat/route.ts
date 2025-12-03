@@ -266,7 +266,8 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
       if (!n8nRes.ok) {
         const errorText = await n8nRes.text()
         logger.error('N8N request failed', undefined, {
-          status: n8nRes.status
+          status: n8nRes.status,
+          errorText: errorText.substring(0, 200)
         })
         return errorResponse('Failed to get response from Gaia', undefined, 502)
       }
@@ -279,150 +280,141 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
       throw error
     }
 
-    // 6. 创建流式响应并转发给前端
-    const stream = new ReadableStream({
-      async start(controller) {
-        const reader = n8nRes.body?.getReader()
-        const decoder = new TextDecoder()
-        let fullContent = ''
+    // 🔥 复用 AIP 的成功方案：一次性读取完整响应，然后解析
+    const responseText = await n8nRes.text()
 
-        if (!reader) {
-          logger.error('No reader available from N8N response')
-          controller.close()
-          return
-        }
+    logger.info('[gaia-chat] N8N raw response', {
+      length: responseText.length,
+      preview: responseText.substring(0, 500)
+    })
 
+    let fullContent = ''
+
+    // 🔥 方法1：尝试解析为单个 JSON 对象（streaming 关闭时）
+    try {
+      let json = JSON.parse(responseText)
+
+      // 如果 N8N 返回数组，取第一个元素
+      if (Array.isArray(json)) {
+        logger.info('[gaia-chat] N8N returned array', { arrayLength: json.length })
+        json = json[0] || {}
+      }
+
+      logger.info('[gaia-chat] Parsed JSON', {
+        keys: Object.keys(json),
+        hasText: !!json.text,
+        hasOutput: !!json.output,
+        hasAiContent: !!json.ai_content,
+        hasContent: !!json.content
+      })
+
+      if (json.text) {
+        fullContent = json.text
+      } else if (json.output) {
+        fullContent = json.output
+      } else if (json.ai_content) {
+        fullContent = json.ai_content
+      } else if (json.content) {
+        fullContent = json.content
+      }
+    } catch (parseError) {
+      // 🔥 方法2：尝试 NDJSON 格式（streaming 开启时）
+      logger.info('[gaia-chat] Single JSON parse FAILED, trying NDJSON', {
+        error: parseError instanceof Error ? parseError.message : String(parseError)
+      })
+
+      const lines = responseText.split('\n').filter(line => line.trim())
+      for (const line of lines) {
         try {
-          let firstChunkReceived = false  // 🔥 追踪第一个chunk
-          let rawBuffer = ''  // 🔥 原始数据缓冲区
-
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) {
-              logger.info('[gaia-chat] Stream reading completed', { rawBufferLength: rawBuffer.length })
-              break
-            }
-
-            const chunk = decoder.decode(value, { stream: true })
-            rawBuffer += chunk
-
-            logger.info('[gaia-chat] Received chunk from N8N', {
-              chunkLength: chunk.length,
-              chunkPreview: chunk.substring(0, 300)
-            })
-          }
-
-          // 🔥 简化处理：读取完所有数据后，尝试解析整个缓冲区
-          logger.info('[gaia-chat] Parsing raw buffer', {
-            bufferLength: rawBuffer.length,
-            bufferPreview: rawBuffer.substring(0, 500)
-          })
-
-          if (rawBuffer.trim()) {
+          const json = JSON.parse(line)
+          if (json.type === 'item' && json.content) {
             try {
-              const json = JSON.parse(rawBuffer.trim())
-              logger.info('[gaia-chat] Parsed JSON successfully', { keys: Object.keys(json) })
-
-              // 🔥 处理 N8N 直接返回的 { text: "..." } 格式
-              if (json.text) {
-                fullContent = json.text
-                logger.info('[gaia-chat] Found text field', { contentLength: fullContent.length })
-
-                // 清理markdown格式
-                const cleanedContent = fullContent
-                  .replace(/\*\*/g, '')
-                  .replace(/\*/g, '')
-
-                // 发送给前端
-                const streamData = JSON.stringify({
-                  type: 'chunk',
-                  content: cleanedContent,
-                  timestamp: new Date().toISOString()
-                }) + '\n'
-
-                controller.enqueue(new TextEncoder().encode(streamData))
-                logger.info('[gaia-chat] Sent content to frontend', { contentLength: cleanedContent.length })
-              }
-              // 处理 { output: "..." } 格式
-              else if (json.output) {
-                fullContent = json.output
-                const cleanedContent = fullContent.replace(/\*\*/g, '').replace(/\*/g, '')
-                const streamData = JSON.stringify({
-                  type: 'chunk',
-                  content: cleanedContent,
-                  timestamp: new Date().toISOString()
-                }) + '\n'
-                controller.enqueue(new TextEncoder().encode(streamData))
-                logger.info('[gaia-chat] Sent output to frontend', { contentLength: cleanedContent.length })
-              }
-              else {
-                logger.error('[gaia-chat] Unknown JSON format', { keys: Object.keys(json) })
-              }
-            } catch (e) {
-              logger.error('[gaia-chat] Failed to parse raw buffer as JSON', {
-                error: e,
-                bufferPreview: rawBuffer.substring(0, 200)
-              })
+              const innerJson = JSON.parse(json.content)
+              if (innerJson.text) fullContent = innerJson.text
+              else if (innerJson.output) fullContent = innerJson.output
+              else if (innerJson.ai_content) fullContent = innerJson.ai_content
+            } catch {
+              fullContent += json.content
             }
-          } else {
-            logger.error('[gaia-chat] Empty raw buffer')
+          } else if (json.text && json.type !== 'begin' && json.type !== 'done') {
+            fullContent = json.text
+          } else if (json.output) {
+            fullContent = json.output
           }
-
-          // 7. 流结束后，保存到数据库
-          // 🔥 清理最终内容
-          const finalReply = fullContent
-            .replace(/\*\*/g, '')
-            .replace(/\*/g, '')
-            .trim() || '抱歉，我现在无法回应。请稍后再试。'
-
-          const assistantMessage = {
-            role: 'assistant',
-            content: finalReply,
-            timestamp: new Date().toISOString()
-          }
-
-          const finalMessages = [...updatedMessages, assistantMessage]
-
-          // 生成标题
-          let title = conversation.title
-          if (isNewConversation && finalMessages.length >= 2) {
-            const firstUserMessage = finalMessages.find(m => m.role === 'user')
-            if (firstUserMessage) {
-              title = firstUserMessage.content.length > 30
-                ? firstUserMessage.content.substring(0, 30) + '...'
-                : firstUserMessage.content
-            }
-          }
-
-          // 更新数据库
-          // CQ-02: 将消息数组转换为JSON格式存储
-          await supabase
-            .from('gaia_conversations')
-            .update({
-              title,
-              messages: finalMessages as unknown as Json,
-              message_count: finalMessages.length,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', conversation?.id)
-
-          // 发送完成标记
-          const doneData = JSON.stringify({
-            type: 'done',
-            conversationId: conversation.id,
-            timestamp: new Date().toISOString()
-          }) + '\n'
-
-          controller.enqueue(new TextEncoder().encode(doneData))
-          controller.close()
-        } catch (error) {
-          logger.error('Stream processing error', error)
-          controller.error(error)
-        } finally {
-          reader.releaseLock()
+        } catch {
+          // 忽略解析错误
         }
       }
+    }
+
+    // 清理格式
+    let finalReply = fullContent
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .trim()
+
+    // 如果没有内容，返回调试信息
+    if (!finalReply) {
+      logger.error('[gaia-chat] No content extracted', {
+        responseLength: responseText.length,
+        responsePreview: responseText.substring(0, 300)
+      })
+      finalReply = '抱歉，我现在无法回应。请稍后再试。'
+    }
+
+    logger.info('[gaia-chat] Final reply ready', { length: finalReply.length })
+
+    // 🔥 创建流式响应（前端打字机效果）
+    const stream = new ReadableStream({
+      start(controller) {
+        // 发送内容
+        const chunkData = JSON.stringify({
+          type: 'chunk',
+          content: finalReply,
+          timestamp: new Date().toISOString()
+        }) + '\n'
+        controller.enqueue(new TextEncoder().encode(chunkData))
+
+        // 发送完成标记
+        const doneData = JSON.stringify({
+          type: 'done',
+          conversationId: conversation?.id,
+          timestamp: new Date().toISOString()
+        }) + '\n'
+        controller.enqueue(new TextEncoder().encode(doneData))
+        controller.close()
+      }
     })
+
+    // 🔥 保存到数据库（在返回响应前）
+    const assistantMessage = {
+      role: 'assistant',
+      content: finalReply,
+      timestamp: new Date().toISOString()
+    }
+    const finalMessages = [...updatedMessages, assistantMessage]
+
+    // 生成标题
+    let title = conversation.title
+    if (isNewConversation && finalMessages.length >= 2) {
+      const firstUserMessage = finalMessages.find(m => m.role === 'user')
+      if (firstUserMessage) {
+        title = firstUserMessage.content.length > 30
+          ? firstUserMessage.content.substring(0, 30) + '...'
+          : firstUserMessage.content
+      }
+    }
+
+    // 更新数据库
+    await supabase
+      .from('gaia_conversations')
+      .update({
+        title,
+        messages: finalMessages as unknown as Json,
+        message_count: finalMessages.length,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', conversation?.id)
 
     // 返回流式响应
     return new Response(stream, {
