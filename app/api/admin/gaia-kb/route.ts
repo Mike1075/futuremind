@@ -2,6 +2,7 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
+import pdf from 'pdf-parse'
 
 // GET: 获取盖亚知识库文档列表
 export async function GET() {
@@ -154,7 +155,32 @@ export async function POST(request: Request) {
 
     // 读取文件内容（用于存入 documents.content，支持父子架构检索）
     const fileBuffer = await file.arrayBuffer()
-    const fileContent = Buffer.from(fileBuffer).toString('utf-8')
+    const buffer = Buffer.from(fileBuffer)
+
+    // 根据文件类型提取文本内容
+    let fileContent: string
+    const fileName = file.name.toLowerCase()
+
+    if (fileName.endsWith('.pdf')) {
+      // PDF 文件：使用 pdf-parse 提取文本
+      try {
+        const pdfData = await pdf(buffer)
+        fileContent = pdfData.text
+        logger.debug('[盖亚知识库] PDF 解析成功', {
+          pages: pdfData.numpages,
+          textLength: fileContent.length
+        })
+      } catch (pdfError: any) {
+        logger.error('[盖亚知识库] PDF 解析失败:', pdfError)
+        return NextResponse.json({
+          error: 'PDF 解析失败',
+          details: pdfError.message || '无法提取 PDF 文本内容'
+        }, { status: 400 })
+      }
+    } else {
+      // 文本文件：直接转换为 UTF-8
+      fileContent = buffer.toString('utf-8')
+    }
 
     // 使用盖亚专属的 project_id（从环境变量获取）
     const gaiaProjectId = process.env.GAIA_KB_PROJECT_ID

@@ -15,8 +15,6 @@ interface UserProfile {
   email: string
   avatar_url: string | null
   role: string | null
-  consciousness_level: number | null
-  composite_score: number | null
   created_at: string | null
 }
 
@@ -130,8 +128,6 @@ export default function UsersManagementPage() {
           email,
           avatar_url,
           role,
-          consciousness_level,
-          composite_score,
           created_at
         `)
         .order('created_at', { ascending: false })
@@ -434,9 +430,6 @@ export default function UsersManagementPage() {
                     角色
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    等级/评分
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                     注册时间
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -470,17 +463,6 @@ export default function UsersManagementPage() {
                           <Icon className="w-4 h-4" />
                           {roleConfig.label}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {user.role === 'student' || !user.role ? (
-                          <div className="text-sm">
-                            <span className="text-purple-400 font-semibold">L{user.consciousness_level ?? 1}</span>
-                            <span className="text-gray-400 mx-2">·</span>
-                            <span className="text-cyan-400">{(user.composite_score ?? 0).toFixed(2)}</span>
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-400">
