@@ -299,105 +299,53 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
           while (true) {
             const { done, value } = await reader.read()
             if (done) {
-              logger.debug('Stream reading completed', { rawBufferLength: rawBuffer.length })
+              logger.info('[gaia-chat] Stream reading completed', { rawBufferLength: rawBuffer.length })
               break
             }
 
             const chunk = decoder.decode(value, { stream: true })
             rawBuffer += chunk
 
-            logger.debug('Received chunk from N8N', {
+            logger.info('[gaia-chat] Received chunk from N8N', {
               chunkLength: chunk.length,
-              chunkPreview: chunk.substring(0, 200)
+              chunkPreview: chunk.substring(0, 300)
             })
-
-            // 解析每行JSON
-            const lines = chunk.split('\n').filter(line => line.trim())
-            for (const line of lines) {
-              try {
-                const json = JSON.parse(line)
-                logger.debug('Parsed JSON from N8N', { keys: Object.keys(json) })
-
-                // 🔥 处理 N8N 直接返回的 { text: "..." } 格式
-                if (json.text) {
-                  if (!firstChunkReceived) {
-                    logger.debug('First content received (text format)', {
-                      elapsed: `${Date.now() - startTime}ms`
-                    })
-                    firstChunkReceived = true
-                  }
-
-                  fullContent = json.text
-
-                  // 清理markdown格式
-                  const cleanedContent = fullContent
-                    .replace(/\*\*/g, '')
-                    .replace(/\*/g, '')
-
-                  // 发送给前端
-                  const streamData = JSON.stringify({
-                    type: 'chunk',
-                    content: cleanedContent,
-                    timestamp: new Date().toISOString()
-                  }) + '\n'
-
-                  controller.enqueue(new TextEncoder().encode(streamData))
-                  logger.debug('Sent chunk to frontend (text format)', { contentLength: cleanedContent.length })
-                }
-                // 处理type: "item"的流式数据（旧格式兼容）
-                else if (json.type === 'item' && json.content) {
-                  if (!firstChunkReceived) {
-                    logger.debug('First chunk received (item format)', {
-                      elapsed: `${Date.now() - startTime}ms`
-                    })
-                    firstChunkReceived = true
-                  }
-
-                  const content = json.content
-
-                  // 尝试解析content
-                  try {
-                    const innerJson = JSON.parse(content)
-                    // 如果有output字段，使用完整回复
-                    if (innerJson.output) {
-                      fullContent = innerJson.output
-                    }
-                  } catch {
-                    // content是纯文本，累加
-                    fullContent += content
-                  }
-
-                  // 🔥 清理markdown格式：移除多余的星号
-                  const cleanedContent = fullContent
-                    .replace(/\*\*/g, '')  // 移除加粗标记 **
-                    .replace(/\*/g, '')    // 移除斜体标记 *
-
-                  // 🔥 实时发送给前端（流式输出）
-                  const streamData = JSON.stringify({
-                    type: 'chunk',
-                    content: cleanedContent,
-                    timestamp: new Date().toISOString()
-                  }) + '\n'
-
-                  controller.enqueue(new TextEncoder().encode(streamData))
-                }
-              } catch (parseError) {
-                logger.debug('Failed to parse line as JSON', { line: line.substring(0, 100) })
-                // 继续处理下一行
-              }
-            }
           }
 
-          // 🔥 如果没有收到任何内容，尝试解析整个原始缓冲区
-          if (!fullContent && rawBuffer.trim()) {
-            logger.debug('No content parsed, trying to parse raw buffer', {
-              bufferLength: rawBuffer.length,
-              bufferPreview: rawBuffer.substring(0, 300)
-            })
+          // 🔥 简化处理：读取完所有数据后，尝试解析整个缓冲区
+          logger.info('[gaia-chat] Parsing raw buffer', {
+            bufferLength: rawBuffer.length,
+            bufferPreview: rawBuffer.substring(0, 500)
+          })
+
+          if (rawBuffer.trim()) {
             try {
               const json = JSON.parse(rawBuffer.trim())
+              logger.info('[gaia-chat] Parsed JSON successfully', { keys: Object.keys(json) })
+
+              // 🔥 处理 N8N 直接返回的 { text: "..." } 格式
               if (json.text) {
                 fullContent = json.text
+                logger.info('[gaia-chat] Found text field', { contentLength: fullContent.length })
+
+                // 清理markdown格式
+                const cleanedContent = fullContent
+                  .replace(/\*\*/g, '')
+                  .replace(/\*/g, '')
+
+                // 发送给前端
+                const streamData = JSON.stringify({
+                  type: 'chunk',
+                  content: cleanedContent,
+                  timestamp: new Date().toISOString()
+                }) + '\n'
+
+                controller.enqueue(new TextEncoder().encode(streamData))
+                logger.info('[gaia-chat] Sent content to frontend', { contentLength: cleanedContent.length })
+              }
+              // 处理 { output: "..." } 格式
+              else if (json.output) {
+                fullContent = json.output
                 const cleanedContent = fullContent.replace(/\*\*/g, '').replace(/\*/g, '')
                 const streamData = JSON.stringify({
                   type: 'chunk',
@@ -405,11 +353,19 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
                   timestamp: new Date().toISOString()
                 }) + '\n'
                 controller.enqueue(new TextEncoder().encode(streamData))
-                logger.info('Parsed content from raw buffer', { contentLength: cleanedContent.length })
+                logger.info('[gaia-chat] Sent output to frontend', { contentLength: cleanedContent.length })
+              }
+              else {
+                logger.error('[gaia-chat] Unknown JSON format', { keys: Object.keys(json) })
               }
             } catch (e) {
-              logger.error('Failed to parse raw buffer', { error: e })
+              logger.error('[gaia-chat] Failed to parse raw buffer as JSON', {
+                error: e,
+                bufferPreview: rawBuffer.substring(0, 200)
+              })
             }
+          } else {
+            logger.error('[gaia-chat] Empty raw buffer')
           }
 
           // 7. 流结束后，保存到数据库

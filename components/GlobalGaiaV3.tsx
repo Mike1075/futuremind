@@ -372,7 +372,7 @@ export function GlobalGaiaV3() {
     setMessages(prev => [...prev, userMessage, placeholderMessage])
     setIsLoading(true)
 
-    console.log('[Gaia] 发送消息，占位消息索引:', assistantMessageIndex)
+    console.log('[gaia-chat] 发送消息，占位消息索引:', assistantMessageIndex)
 
     try {
       // 需要发送当前所有消息的情况：
@@ -407,10 +407,10 @@ export function GlobalGaiaV3() {
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
 
-      console.log('[Gaia] 开始读取流式响应')
+      console.log('[gaia-chat] 开始读取流式响应')
 
       if (!reader) {
-        console.error('[Gaia] 无法获取 reader')
+        console.error('[gaia-chat] 无法获取 reader')
         throw new Error('No reader available')
       }
 
@@ -461,14 +461,14 @@ export function GlobalGaiaV3() {
         while (true) {
           const { done, value } = await reader.read()
           if (done) {
-            console.log('[Gaia] 流读取完成，fullAnswer长度:', fullAnswer.length)
+            console.log('[gaia-chat] 流读取完成，fullAnswer长度:', fullAnswer.length)
             break
           }
 
           const chunk = decoder.decode(value, { stream: true })
           buffer += chunk
 
-          console.log('[Gaia] 收到数据块:', chunk.substring(0, 200))
+          console.log('[gaia-chat] 收到数据块:', chunk.substring(0, 200))
 
           // 🔥 简化处理：按换行符分割
           const lines = buffer.split('\n')
@@ -478,12 +478,12 @@ export function GlobalGaiaV3() {
             const trimmedLine = line.trim()
             if (!trimmedLine) continue
 
-            console.log('[Gaia] 解析行:', trimmedLine.substring(0, 100))
+            console.log('[gaia-chat] 解析行:', trimmedLine.substring(0, 100))
 
             // 🔥 尝试解析JSON，失败则跳过
             try {
               const json = JSON.parse(trimmedLine)
-              console.log('[Gaia] JSON解析成功，type:', json.type, 'content长度:', json.content?.length)
+              console.log('[gaia-chat] JSON解析成功，type:', json.type, 'content长度:', json.content?.length)
 
               if (json.type === 'chunk') {
                 // 标记首个内容chunk
@@ -896,81 +896,103 @@ export function GlobalGaiaV3() {
                   // 检查是否是高亮消息
                   const isHighlighted = highlightedMessageIndex === index
 
+                  // 🔥 检查是否需要显示盖亚头部（只在第一条 AI 消息或前一条是用户消息时显示）
+                  const prevMessage = index > 0 ? messages[index - 1] : null
+                  const showGaiaHeader = isAssistantMessage(message) && (!prevMessage || isUserMessage(prevMessage))
+
                   return (
                     <div
-                      key={index}
+                      key={`${message.timestamp}-${index}`}
                       ref={(el) => { messageRefs.current[index] = el }}
-                      className={`flex gap-3 ${isUserMessage(message) ? 'justify-end' : 'justify-start'}`}
+                      className={`flex flex-col ${isUserMessage(message) ? 'items-end' : 'items-start'}`}
                     >
-                      {/* 编辑模式下显示复选框（左侧-用户消息） */}
-                      {isEditMode && isUserMessage(message) && (
-                        <div className="flex items-center pt-2">
-                          <input
-                            type="checkbox"
-                            id={`checkbox-user-${index}`}
-                            checked={selectedMessages.has(index)}
-                            onChange={(e) => {
-                              e.stopPropagation()
-                              toggleMessageSelection(index)
-                            }}
-                            className="gaia-checkbox"
-                          />
+                      {/* 🔥 盖亚头部：只在第一条 AI 消息或前一条是用户消息时显示 */}
+                      {showGaiaHeader && (
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="gaia-icon gaia-icon-tiny">
+                            <div className="gaia-icon-glow" />
+                            <div className="gaia-icon-border" />
+                            <div className="gaia-icon-inner" />
+                            <div className="gaia-icon-chat">
+                              <MessageCircle strokeWidth={2.5} />
+                            </div>
+                          </div>
+                          <span className="text-sm text-gray-400">盖亚</span>
                         </div>
                       )}
 
-                      <div className={`max-w-[85%] ${
-                        isUserMessage(message)
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                          : 'bg-gray-800 text-gray-100 border border-gray-700'
-                      } rounded-2xl px-4 py-3 shadow-sm transition-all duration-300 ${
-                        isHighlighted
-                          ? 'ring-4 ring-yellow-400 ring-opacity-75 scale-105 animate-pulse'
-                          : ''
-                      } ${
-                        isEditMode && selectedMessages.has(index)
-                          ? 'ring-2 ring-blue-500'
-                          : ''
-                      }`}>
-                        {/* 如果是占位消息（正在加载的AI回复），显示加载动画 */}
-                        {isAssistantMessage(message) && message.content === '' && isLoading ? (
-                          <div className="flex gap-2 py-1">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      {/* 消息行：包含复选框和消息气泡 */}
+                      <div className={`flex gap-3 ${isUserMessage(message) ? 'justify-end' : 'justify-start'} w-full`}>
+                        {/* 编辑模式下显示复选框（左侧-用户消息） */}
+                        {isEditMode && isUserMessage(message) && (
+                          <div className="flex items-center pt-2">
+                            <input
+                              type="checkbox"
+                              id={`checkbox-user-${index}`}
+                              checked={selectedMessages.has(index)}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                toggleMessageSelection(index)
+                              }}
+                              className="gaia-checkbox"
+                            />
                           </div>
-                        ) : (
-                          <>
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                            <p className={`text-xs mt-2 ${
-                              isUserMessage(message) ? 'text-purple-100' : 'text-gray-500'
-                            }`}>
-                              {new Date(message.timestamp).toLocaleDateString('zh-CN', {
-                                month: '2-digit',
-                                day: '2-digit'
-                              })} {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
-                          </>
+                        )}
+
+                        <div className={`max-w-[85%] ${
+                          isUserMessage(message)
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                            : 'bg-gray-800 text-gray-100 border border-gray-700'
+                        } rounded-2xl px-4 py-3 shadow-sm transition-all duration-300 ${
+                          isHighlighted
+                            ? 'ring-4 ring-yellow-400 ring-opacity-75 scale-105 animate-pulse'
+                            : ''
+                        } ${
+                          isEditMode && selectedMessages.has(index)
+                            ? 'ring-2 ring-blue-500'
+                            : ''
+                        }`}>
+                          {/* 如果是占位消息（正在加载的AI回复），显示加载动画 */}
+                          {isAssistantMessage(message) && message.content === '' && isLoading ? (
+                            <div className="flex gap-2 py-1">
+                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                              <p className={`text-xs mt-2 ${
+                                isUserMessage(message) ? 'text-purple-100' : 'text-gray-500'
+                              }`}>
+                                {new Date(message.timestamp).toLocaleDateString('zh-CN', {
+                                  month: '2-digit',
+                                  day: '2-digit'
+                                })} {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </>
+                          )}
+                        </div>
+
+                        {/* 编辑模式下显示复选框（右侧-AI消息） */}
+                        {isEditMode && isAssistantMessage(message) && (
+                          <div className="flex items-center pt-2">
+                            <input
+                              type="checkbox"
+                              id={`checkbox-assistant-${index}`}
+                              checked={selectedMessages.has(index)}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                toggleMessageSelection(index)
+                              }}
+                              className="gaia-checkbox"
+                            />
+                          </div>
                         )}
                       </div>
-
-                      {/* 编辑模式下显示复选框（右侧-AI消息） */}
-                      {isEditMode && isAssistantMessage(message) && (
-                        <div className="flex items-center pt-2">
-                          <input
-                            type="checkbox"
-                            id={`checkbox-assistant-${index}`}
-                            checked={selectedMessages.has(index)}
-                            onChange={(e) => {
-                              e.stopPropagation()
-                              toggleMessageSelection(index)
-                            }}
-                            className="gaia-checkbox"
-                          />
-                        </div>
-                      )}
                     </div>
                   )
                 })}

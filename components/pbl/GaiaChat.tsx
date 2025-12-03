@@ -1,11 +1,12 @@
 // @ts-nocheck
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
-import { X, Send, Sparkles, User, Trash2, Brain, Zap, Heart, Edit3, Check } from 'lucide-react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { X, Send, Sparkles, User, Trash2, Brain, Zap, Heart, Edit3, Check, History, ChevronUp, Loader2 } from 'lucide-react'
 import { PBLProject } from '@/lib/pbl-data'
 import { MarkdownRenderer } from './MarkdownRenderer'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
+import gaiaChatAPI from '@/lib/api/gaia-chat'
 
 interface GaiaChatProps {
   onClose: () => void
@@ -22,6 +23,11 @@ interface ChatMessage {
   emotion?: 'curious' | 'excited' | 'thoughtful' | 'supportive'
 }
 
+// 分页配置
+const INITIAL_LOAD = 5      // 初始加载5条消息
+const LOAD_MORE = 10        // 点击加载更多加载10条
+const HISTORY_LOAD = 20     // 点击历史记录按钮加载20条
+
 export function GaiaChat({ onClose, currentProject, showProjectSelector = true, userName = '探索者' }: GaiaChatProps) {
   const { confirm } = useConfirm()
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -30,26 +36,110 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
   const [gaiaEmotion, setGaiaEmotion] = useState<'curious' | 'excited' | 'thoughtful' | 'supportive'>('curious')
   const [isEditMode, setIsEditMode] = useState(false)
   const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set())
+  const [loadedCount, setLoadedCount] = useState(0)  // 已加载的消息数
+  const [hasMore, setHasMore] = useState(false)      // 是否还有更多
+  const [isLoadingMore, setIsLoadingMore] = useState(false)  // 加载更多中
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)  // 加载历史中
+  const [conversationId, setConversationId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  // 加载聊天历史
+  const loadHistory = useCallback(async (limit: number, prepend: boolean = false) => {
+    const offset = prepend ? loadedCount : 0
+    const result = await gaiaChatAPI.loadChatHistory(limit, offset)
+
+    if (result.success && result.data) {
+      const historyMessages = result.data.messages.map(msg => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        emotion: msg.emotion
+      }))
+
+      if (result.data.conversationId) {
+        setConversationId(result.data.conversationId)
+      }
+
+      if (prepend && historyMessages.length > 0) {
+        // 加载更多：prepend到现有消息前面
+        setMessages(prev => {
+          // 过滤掉欢迎消息
+          const existingWithoutWelcome = prev.filter(m => m.id !== 'welcome' && !m.id.startsWith('welcome-'))
+          return [...historyMessages, ...existingWithoutWelcome]
+        })
+        setLoadedCount(prev => prev + limit)
+      } else if (!prepend) {
+        // 初始加载
+        if (historyMessages.length > 0) {
+          setMessages(historyMessages)
+          setLoadedCount(limit)
+        } else {
+          // 没有历史记录，显示欢迎消息
+          const welcomeMessage: ChatMessage = {
+            id: 'welcome',
+            role: 'assistant',
+            content: getWelcomeMessage(),
+            timestamp: new Date(),
+            emotion: 'supportive'
+          }
+          setMessages([welcomeMessage])
+          setLoadedCount(0)
+        }
+      }
+
+      setHasMore(result.data.hasMore)
+    }
+  }, [loadedCount])
+
+  // 加载更多（10条）
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMore) return
+    setIsLoadingMore(true)
+
+    const container = messagesContainerRef.current
+    const scrollHeightBefore = container?.scrollHeight || 0
+
+    await loadHistory(LOAD_MORE, true)
+
+    if (container) {
+      const scrollHeightAfter = container.scrollHeight
+      container.scrollTop = scrollHeightAfter - scrollHeightBefore
+    }
+
+    setIsLoadingMore(false)
+  }
+
+  // 加载历史记录（20条）
+  const handleLoadHistory = async () => {
+    if (isLoadingHistory || !hasMore) return
+    setIsLoadingHistory(true)
+
+    const container = messagesContainerRef.current
+    const scrollHeightBefore = container?.scrollHeight || 0
+
+    await loadHistory(HISTORY_LOAD, true)
+
+    if (container) {
+      const scrollHeightAfter = container.scrollHeight
+      container.scrollTop = scrollHeightAfter - scrollHeightBefore
+    }
+
+    setIsLoadingHistory(false)
   }
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
-  // 初始化塞娅的欢迎消息
+  // 初始化：加载最近5条历史记录
   useEffect(() => {
-    const welcomeMessage: ChatMessage = {
-      id: 'welcome',
-      role: 'assistant',
-      content: getWelcomeMessage(),
-      timestamp: new Date(),
-      emotion: 'supportive'
-    }
-    setMessages([welcomeMessage])
+    loadHistory(INITIAL_LOAD, false)
   }, [currentProject])
 
   const getWelcomeMessage = () => {
@@ -207,6 +297,10 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
     })
 
     if (confirmed) {
+      // 清除数据库中的历史记录
+      await gaiaChatAPI.clearChatHistory()
+
+      // 重置状态
       const welcomeMessage: ChatMessage = {
         id: 'welcome-new',
         role: 'assistant',
@@ -215,6 +309,8 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
         emotion: 'supportive'
       }
       setMessages([welcomeMessage])
+      setLoadedCount(0)
+      setHasMore(false)
     }
   }
 
@@ -310,6 +406,20 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
               </>
             ) : (
               <>
+                {hasMore && (
+                  <button
+                    onClick={handleLoadHistory}
+                    disabled={isLoadingHistory}
+                    className="p-2 text-cosmic-400 hover:text-white transition-colors rounded-lg hover:bg-cosmic-800"
+                    title="加载更多历史记录"
+                  >
+                    {isLoadingHistory ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <History className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={() => setIsEditMode(true)}
                   className="p-2 text-cosmic-400 hover:text-white transition-colors rounded-lg hover:bg-cosmic-800"
@@ -336,7 +446,30 @@ export function GaiaChat({ onClose, currentProject, showProjectSelector = true, 
         </div>
 
         {/* 消息列表 */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* 加载更多按钮 - 显示在消息列表顶部 */}
+          {hasMore && (
+            <div className="flex justify-center">
+              <button
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-cosmic-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-cosmic-700 transition-all disabled:opacity-50"
+              >
+                {isLoadingMore ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    加载中...
+                  </>
+                ) : (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                    加载更多
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
           {messages.map((message) => (
             <div
               key={message.id}

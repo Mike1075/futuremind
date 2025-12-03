@@ -1,16 +1,23 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { Check, Send, MessageSquare, X, Trash2 } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Check, Send, MessageSquare, X, Trash2, History, ChevronUp, Loader2 } from 'lucide-react'
 import { useOrganizations } from '@/lib/aip/hooks'
 import { useUserProjects } from '@/lib/aip/useUserProjects'
+import aipChatAPI from '@/lib/api/aip-chat'
 
 interface Message {
+  id?: string
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
 }
+
+// 分页配置
+const INITIAL_LOAD = 5      // 初始加载5条
+const LOAD_MORE = 10        // 点击加载更多加载10条
+const HISTORY_LOAD = 20     // 点击历史记录按钮加载20条
 
 export function ChatBot() {
   const [isOpen, setIsOpen] = useState(false)
@@ -18,7 +25,12 @@ export function ChatBot() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [selectedProjects, setSelectedProjects] = useState<string[]>([])
+  const [loadedRecords, setLoadedRecords] = useState(0)  // 已加载的记录数
+  const [hasMore, setHasMore] = useState(false)          // 是否还有更多
+  const [isLoadingMore, setIsLoadingMore] = useState(false)  // 加载更多中
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)  // 加载历史中
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   const { organizations } = useOrganizations()
   const { projects, loading: projectsLoading } = useUserProjects()
@@ -27,20 +39,96 @@ export function ChatBot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  // 加载聊天历史
+  const loadHistory = useCallback(async (limit: number, prepend: boolean = false) => {
+    const offset = prepend ? loadedRecords : 0
+    const result = await aipChatAPI.loadChatHistory(limit, offset)
+
+    if (result.success && result.data) {
+      const historyMessages = result.data.messages.map(msg => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp
+      }))
+
+      if (prepend && historyMessages.length > 0) {
+        // 加载更多：prepend到现有消息前面
+        setMessages(prev => {
+          // 过滤掉欢迎消息
+          const existingWithoutWelcome = prev.filter(m => m.id !== 'welcome')
+          return [...historyMessages, ...existingWithoutWelcome]
+        })
+        setLoadedRecords(prev => prev + limit)
+      } else if (!prepend) {
+        // 初始加载
+        if (historyMessages.length > 0) {
+          setMessages(historyMessages)
+          setLoadedRecords(limit)
+        } else {
+          // 没有历史记录，显示欢迎消息
+          setMessages([{
+            id: 'welcome',
+            role: 'assistant',
+            content: '您好！我是AIP AI助手\n\n我可以帮您管理项目、分配任务、搜索文档等。您可以选择特定项目进行更精准的查询。',
+            timestamp: new Date()
+          }])
+          setLoadedRecords(0)
+        }
+      }
+
+      setHasMore(result.data.hasMore)
+    }
+  }, [loadedRecords])
+
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
-  // 初始化欢迎消息
+  // 打开时加载最近5条历史记录
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      setMessages([{
-        role: 'assistant',
-        content: '您好！我是AIP AI助手\n\n我可以帮您管理项目、分配任务、搜索文档等。您可以选择特定项目进行更精准的查询。',
-        timestamp: new Date()
-      }])
+      loadHistory(INITIAL_LOAD, false)
     }
   }, [isOpen])
+
+  // 加载更多（10条）
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMore) return
+    setIsLoadingMore(true)
+
+    // 保存当前滚动位置
+    const container = messagesContainerRef.current
+    const scrollHeightBefore = container?.scrollHeight || 0
+
+    await loadHistory(LOAD_MORE, true)
+
+    // 恢复滚动位置
+    if (container) {
+      const scrollHeightAfter = container.scrollHeight
+      container.scrollTop = scrollHeightAfter - scrollHeightBefore
+    }
+
+    setIsLoadingMore(false)
+  }
+
+  // 加载历史记录（20条）
+  const handleLoadHistory = async () => {
+    if (isLoadingHistory || !hasMore) return
+    setIsLoadingHistory(true)
+
+    const container = messagesContainerRef.current
+    const scrollHeightBefore = container?.scrollHeight || 0
+
+    await loadHistory(HISTORY_LOAD, true)
+
+    if (container) {
+      const scrollHeightAfter = container.scrollHeight
+      container.scrollTop = scrollHeightAfter - scrollHeightBefore
+    }
+
+    setIsLoadingHistory(false)
+  }
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return
@@ -140,12 +228,19 @@ export function ChatBot() {
   }
 
   // 清空对话
-  const handleClearConversation = () => {
+  const handleClearConversation = async () => {
+    // 清除数据库中的历史记录
+    await aipChatAPI.clearChatHistory()
+
+    // 重置状态
     setMessages([{
+      id: 'welcome',
       role: 'assistant',
       content: '您好！我是AIP AI助手\n\n我可以帮您管理项目、分配任务、搜索文档等。您可以选择特定项目进行更精准的查询。',
       timestamp: new Date()
     }])
+    setLoadedRecords(0)
+    setHasMore(false)
   }
 
   // 切换项目选择
@@ -210,6 +305,20 @@ export function ChatBot() {
                   <p className="text-sm text-gray-400 mt-1">智能项目管理助手</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {hasMore && (
+                    <button
+                      onClick={handleLoadHistory}
+                      disabled={isLoadingHistory}
+                      className="p-2 hover:bg-white/10 rounded-lg transition-colors group"
+                      title="加载更多历史记录"
+                    >
+                      {isLoadingHistory ? (
+                        <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+                      ) : (
+                        <History className="h-5 w-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                      )}
+                    </button>
+                  )}
                   <button
                     onClick={handleClearConversation}
                     className="p-2 hover:bg-white/10 rounded-lg transition-colors group"
@@ -228,7 +337,30 @@ export function ChatBot() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* 加载更多按钮 - 显示在消息列表顶部 */}
+                {hasMore && (
+                  <div className="flex justify-center">
+                    <button
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-all disabled:opacity-50"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          加载中...
+                        </>
+                      ) : (
+                        <>
+                          <ChevronUp className="w-4 h-4" />
+                          加载更多
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
                 {messages.map((msg, index) => (
                   <div
                     key={index}
