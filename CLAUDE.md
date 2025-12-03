@@ -345,7 +345,19 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
 
 ### Bug 修复 (2025-12-03)
 
-1. **✅ 聊天记录丢失问题**
+1. **✅ 盖亚聊天 UI 修复**
+   - 问题 1：错误时一直转圈
+   - 修复：显示实际错误信息（`❌ ${errorMessage}`），停止加载状态
+   - 问题 2：思考图标短暂重复显示
+   - 原因：占位消息和加载动画分开渲染，导致短暂重叠
+   - 修复：将加载动画整合到占位消息中，使用条件渲染
+
+2. **✅ PDF 上传支持**
+   - 问题：上传 PDF 报错 "unsupported Unicode escape sequence"
+   - 原因：PDF 二进制文件被当作 UTF-8 文本处理
+   - 修复：添加 `pdf-parse` 库，自动检测文件类型并解析
+
+3. **✅ 聊天记录丢失问题**
    - 问题：用户聊天后切换页面，历史记录丢失
    - 原因：数据库保存是异步 fire-and-forget，用户导航离开前可能未完成
    - 修复：`app/api/aip/chat/route.ts` 改为同步 `await` 保存
@@ -447,6 +459,15 @@ Respond to Webhook
 ```
 
 **Rerank 优化**：暂时跳过，后续可在 hybrid_search_gaia 之后添加 Cohere Rerank 节点
+
+**⚠️ N8N 盖亚工作流待修复的 SQL 列名**：
+
+| 节点 | 错误列名 | 正确列名 |
+|-----|---------|---------|
+| **聊天记录** | `chat_type` | `agent_type` |
+| **用户画像** | `summary` | `overall_summary` |
+
+请在 N8N 中手动修改这两个 Postgres 节点的 SQL 查询。
 
 ### AIP 聊天 - 最近完成 (2025-12-02)
 - [x] 修复 `hybrid_search` 函数空字符串问题（UUID 类型不接受空字符串）
