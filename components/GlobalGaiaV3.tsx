@@ -22,7 +22,7 @@ interface Message {
 }
 
 // 🔥 版本号 - 用于确认部署
-const GAIA_VERSION = 'v2.0.5-2025-12-03'
+const GAIA_VERSION = 'v2.1.0-2025-12-03'
 console.error('🔥🔥🔥 [GAIA] GlobalGaiaV3 组件加载, 版本:', GAIA_VERSION)
 
 export function GlobalGaiaV3() {
