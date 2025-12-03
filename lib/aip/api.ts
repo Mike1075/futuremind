@@ -186,7 +186,8 @@ export async function getOrganizationProjects(
     }
 
     // 3. 普通组织：按organization_id查询
-    const { data, error } = await supabase
+    // 🔥 修复：社区项目组织只显示公开项目，其他组织显示所有项目
+    let query = supabase
       .from('projects')
       .select(`
         *,
@@ -194,7 +195,13 @@ export async function getOrganizationProjects(
         organization:organizations(id, name)
       `)
       .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false })
+
+    // 如果是"社区项目"组织，只显示公开项目
+    if (org?.name === '社区项目') {
+      query = query.eq('is_public', true)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false })
 
     if (error) throw error
     return { data: data || [] }
