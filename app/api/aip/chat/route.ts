@@ -341,6 +341,36 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       }
     })
 
+    // 🔥 修复：先保存聊天记录到数据库（同步等待），再返回响应
+    // 这样可以确保用户导航离开页面前数据已保存
+    const saveStart = Date.now()
+    const { error: dbError } = await supabase.from('chat_history').insert({
+      user_id: user.id,
+      content: chatInput,
+      role: 'user',
+      agent_type: 'member',
+      project_id: projectIdsArray[0] || null,
+      ai_content: finalReply,
+      metadata: {
+        organization_id,
+        project_ids: projectIdsArray,
+        project_count: projectIdsArray.length
+      }
+    })
+
+    const saveTime = Date.now() - saveStart
+    if (dbError) {
+      logger.error('Failed to save chat history', {
+        code: dbError.code,
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint,
+        saveTime: `${saveTime}ms`
+      })
+    } else {
+      logger.info('Chat history saved successfully', { saveTime: `${saveTime}ms` })
+    }
+
     // 🔥 创建流式响应（前端打字机效果）
     const stream = new ReadableStream({
       start(controller) {
@@ -360,37 +390,12 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
             auth: timings.auth,
             db: timings.db,
             n8n: timings.n8n,
-            total: timings.total
+            total: timings.total,
+            dbSave: saveTime
           }
         }) + '\n'
         controller.enqueue(new TextEncoder().encode(doneData))
         controller.close()
-
-        // 异步保存聊天记录
-        supabase.from('chat_history').insert({
-          user_id: user.id,
-          content: chatInput,
-          role: 'user',
-          agent_type: 'member',
-          project_id: projectIdsArray[0] || null,
-          ai_content: finalReply,
-          metadata: {
-            organization_id,
-            project_ids: projectIdsArray,
-            project_count: projectIdsArray.length
-          }
-        }).then(({ error: dbError }) => {
-          if (dbError) {
-            logger.error('Failed to save chat history', {
-              code: dbError.code,
-              message: dbError.message,
-              details: dbError.details,
-              hint: dbError.hint
-            })
-          } else {
-            logger.info('Chat history saved successfully')
-          }
-        })
       }
     })
 
