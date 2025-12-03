@@ -18,6 +18,10 @@ interface Message {
   }
 }
 
+// 🔥 版本号 - 用于确认部署
+const GAIA_VERSION = 'v2.0.3-2025-12-03'
+console.error('🔥🔥🔥 [GAIA] GlobalGaiaV3 组件加载, 版本:', GAIA_VERSION)
+
 export function GlobalGaiaV3() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
