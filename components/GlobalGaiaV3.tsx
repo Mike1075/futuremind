@@ -21,7 +21,7 @@ interface Message {
 }
 
 // 🔥 版本号 - 用于确认部署
-const GAIA_VERSION = 'v2.0.3-2025-12-03'
+const GAIA_VERSION = 'v2.0.4-2025-12-03'
 console.error('🔥🔥🔥 [GAIA] GlobalGaiaV3 组件加载, 版本:', GAIA_VERSION)
 
 export function GlobalGaiaV3() {
@@ -473,7 +473,7 @@ export function GlobalGaiaV3() {
             }
             return newMessages
           })
-        }, 100) // PF-03: 每100ms更新一次显示（从50ms优化，减少渲染次数50%）
+        }, 50) // 每50ms更新一次显示（与探索者联盟一致）
       }
 
       try {
@@ -912,6 +912,12 @@ export function GlobalGaiaV3() {
                 )}
 
                 {messages.map((message, index) => {
+                  // 🔥 跳过空的 assistant 消息（当 isLoading 为 false 时）
+                  // 这可以防止多余的盖亚图标出现
+                  if (isAssistantMessage(message) && message.content === '' && !isLoading) {
+                    return null
+                  }
+
                   // 检查是否应该显示这条消息（折叠机制）
                   if (collapsedAfterIndex !== null && !showCollapsed) {
                     if (index > collapsedAfterIndex && index < messages.length - 1) {
