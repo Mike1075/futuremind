@@ -1,10 +1,29 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react'
 
 type ToastType = 'success' | 'error' | 'info' | 'warning'
+
+// 全局 toast 事件名称
+const TOAST_EVENT = 'global-toast-event'
+
+// 全局 toast 函数（可在任何地方使用，包括非组件代码）
+export const globalToast = {
+  success: (message: string, duration?: number) => {
+    window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: { message, type: 'success', duration } }))
+  },
+  error: (message: string, duration?: number) => {
+    window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: { message, type: 'error', duration } }))
+  },
+  info: (message: string, duration?: number) => {
+    window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: { message, type: 'info', duration } }))
+  },
+  warning: (message: string, duration?: number) => {
+    window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: { message, type: 'warning', duration } }))
+  }
+}
 
 interface ToastItem {
   id: string
@@ -71,6 +90,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setTimeout(() => removeToast(id), duration)
     }
   }, [removeToast])
+
+  // 监听全局 toast 事件
+  useEffect(() => {
+    const handleGlobalToast = (event: CustomEvent) => {
+      const { message, type, duration } = event.detail
+      addToast(message, type, duration)
+    }
+
+    window.addEventListener(TOAST_EVENT, handleGlobalToast as EventListener)
+    return () => {
+      window.removeEventListener(TOAST_EVENT, handleGlobalToast as EventListener)
+    }
+  }, [addToast])
 
   const toast = {
     success: (message: string, duration?: number) => addToast(message, 'success', duration),

@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Toast } from '@/components/ui/Toast'
 import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
 import UserProfileModal from '@/components/UserProfileModal'
+import { globalToast } from '@/components/ui/ToastProvider'
 
 // 伊卡洛斯项目模块名称映射（与主界面保持一致）
 const MODULE_NAMES: Record<number, string> = {
@@ -438,13 +439,13 @@ export function PBLProjectDetail({
       if (response.ok) {
         // 立即从本地状态中移除
         setSubmissionsHistory(prev => prev.filter(s => s.id !== submissionId))
-        alert('删除成功')
+        globalToast.success('删除成功')
       } else {
         const error = await response.json()
-        alert(`删除失败: ${error.error || '请重试'}`)
+        globalToast.error(`删除失败: ${error.error || '请重试'}`)
       }
     } catch (error) {
-      alert('删除失败，请重试')
+      globalToast.error('删除失败，请重试')
     }
   }
 
@@ -483,7 +484,7 @@ export function PBLProjectDetail({
       // 触发公开作业列表刷新
       setPublicSubmissionsRefreshKey(prev => prev + 1)
     } catch (err) {
-      alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
+      globalToast.error(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
     } finally {
       setTogglingId(null)
     }
@@ -492,12 +493,12 @@ export function PBLProjectDetail({
   // 提交任务
   const handleSubmitTask = async () => {
     if (!currentDayKey || !submissionContent.trim()) {
-      alert('请填写提交内容')
+      globalToast.warning('请填写提交内容')
       return
     }
 
     if (!userId) {
-      alert('请先登录')
+      globalToast.warning('请先登录')
       return
     }
 

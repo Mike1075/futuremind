@@ -54,47 +54,24 @@ export async function createOrganization(
   input: CreateOrganizationInput
 ): Promise<ApiResponse<Organization>> {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('未登录')
-
-    // 检查权限（只有 principal 可以创建组织）
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (!profile || profile.role !== 'principal') {
-      throw new Error('只有校长可以创建组织')
-    }
-
-    const { data, error } = await supabase
-      .from('organizations')
-      .insert({
+    // 调用 API 路由创建组织（使用 service role 绕过 RLS）
+    const response = await fetch('/api/aip/create-organization', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         name: input.name,
         description: input.description,
         is_public: input.is_public ?? false,
-      })
-      .select()
-      .single()
+      }),
+    })
 
-    if (error) throw error
+    const result = await response.json()
 
-    // 自动将创建者添加为owner
-    const { error: memberError } = await supabase
-      .from('user_organizations')
-      .insert({
-        user_id: user.id,
-        organization_id: data.id,
-        role_in_org: 'owner',
-      })
-
-    if (memberError) {
-      console.error('[createOrganization] 添加组织成员失败:', memberError)
-      // 删除刚创建的组织
-      await supabase.from('organizations').delete().eq('id', data.id)
-      throw new Error('创建组织失败：无法添加组织成员')
+    if (!response.ok) {
+      throw new Error(result.error || '创建组织失败')
     }
+
+    const data = result.data
 
     // 为新组织创建组织智慧库文档（与对标网站一致）
     try {
