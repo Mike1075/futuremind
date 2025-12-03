@@ -2,6 +2,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import { MessageCircle, X, Send, Loader2, History, Edit3, Check, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AuthModal from '@/components/AuthModal'
@@ -21,7 +22,7 @@ interface Message {
 }
 
 // 🔥 版本号 - 用于确认部署
-const GAIA_VERSION = 'v2.0.4-2025-12-03'
+const GAIA_VERSION = 'v2.0.5-2025-12-03'
 console.error('🔥🔥🔥 [GAIA] GlobalGaiaV3 组件加载, 版本:', GAIA_VERSION)
 
 export function GlobalGaiaV3() {
@@ -361,9 +362,11 @@ export function GlobalGaiaV3() {
 
     console.error('🔥🔥🔥 [GAIA] 开始发送消息:', messageText.substring(0, 50))
 
-    // 🔥 立即设置 loading 状态和清空输入框（防止重复发送）
-    setIsLoading(true)
-    setInput('')
+    // 🔥 使用 flushSync 强制同步清除输入框（避免延迟）
+    flushSync(() => {
+      setIsLoading(true)
+      setInput('')
+    })
 
     // 检查最后一条消息是否是知识点问题
     const lastMessage = messages[messages.length - 1]
