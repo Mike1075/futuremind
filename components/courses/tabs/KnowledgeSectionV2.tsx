@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { Lightbulb, MessageSquare, Loader2, Sparkles, Check } from 'lucide-react'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
 
 interface KnowledgeSectionV2Props {
   knowledgePoints: string[]
@@ -19,6 +20,7 @@ export function KnowledgeSectionV2({
   knowledgePoints,
   contentId
 }: KnowledgeSectionV2Props) {
+  const { confirm } = useConfirm()
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
   const [questions, setQuestions] = useState<Record<number, QuestionData>>({})
@@ -181,9 +183,13 @@ export function KnowledgeSectionV2({
 
         if (data.discussed) {
           // 问题已讨论过，触发跳转到历史记录的事件
-          const shouldContinue = window.confirm(
-            '💡 这个话题我们之前聊过哦！\n\n要不要回顾一下之前的讨论，继续深入探讨呢？'
-          )
+          const shouldContinue = await confirm({
+            title: '话题回顾',
+            message: '这个话题我们之前聊过哦！\n\n要不要回顾一下之前的讨论，继续深入探讨呢？',
+            type: 'info',
+            confirmText: '回顾讨论',
+            cancelText: '取消'
+          })
 
           if (shouldContinue) {
             window.dispatchEvent(new CustomEvent('scrollToDiscussion', {
@@ -264,14 +270,20 @@ export function KnowledgeSectionV2({
 
               {/* 盖亚的问题 */}
               {isExpanded && questionData && (
-                <div className="border-t border-white/10 bg-purple-500/10 backdrop-blur-sm p-5">
+                <div className="border-t border-white/10 bg-white/5 backdrop-blur-sm p-5">
                   <div className="flex items-start gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-4 h-4 text-white" />
+                    {/* 使用新的 gaia-icon 样式 */}
+                    <div className="gaia-icon gaia-icon-tiny flex-shrink-0">
+                      <div className="gaia-icon-glow" />
+                      <div className="gaia-icon-border" />
+                      <div className="gaia-icon-inner" />
+                      <div className="gaia-icon-chat">
+                        <Sparkles className="w-3 h-3" strokeWidth={2.5} />
+                      </div>
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <p className="text-xs text-purple-400 font-medium">盖亚的问题</p>
+                        <p className="text-xs text-cyan-400 font-medium">盖亚的问题</p>
                         {questionData.hasResponded && (
                           <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">
                             这是你的专属问题

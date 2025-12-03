@@ -749,11 +749,23 @@ export function EarthContentDetail({
                     </motion.div>
                   </Link>
                 ) : (
-                  // 锁定状态
+                  // 锁定状态 - 点击显示友好提示
                   <div className="flex-1">
                     <motion.div
                       whileHover={{ scale: 1.01 }}
-                      className="relative h-full px-6 py-4 bg-gray-800/30 border-2 border-gray-700/50 rounded-xl cursor-not-allowed"
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        globalToast.info(
+                          `🔒 下一阶段还没解锁哦～\n\n` +
+                          `💡 试试这些方法来增加进度：\n` +
+                          `   📖 完成当前阶段的课程内容\n` +
+                          `   💬 和盖亚聊聊你的想法\n` +
+                          `   ✍️ 认真回答课后问题\n\n` +
+                          `加油，很快就能解锁啦！🌟`,
+                          8000
+                        )
+                      }}
+                      className="relative h-full px-6 py-4 bg-gray-800/30 border-2 border-gray-700/50 rounded-xl cursor-pointer hover:border-gray-600/50 transition-colors"
                     >
                       <div className="flex items-center gap-3 opacity-50">
                         <div className="flex-1">

@@ -4,6 +4,7 @@
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { Eye, Ear, Brain, Users, Globe, Sparkles } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
 
 // 获取阶段对应的矢量图标
 const getStageIconComponent = (stageNumber: number) => {
@@ -50,6 +51,7 @@ export function StageNode({
   systemKey
 }: StageNodeProps) {
   const router = useRouter()
+  const toast = useToast()
 
   const isCompleted = progress === 100
   const isUnlocked = stage.isUnlocked
@@ -62,7 +64,22 @@ export function StageNode({
   // 处理点击事件 - 直接跳转到课程页面，不显示弹窗
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
-    if (!isUnlocked || !firstContentId) return
+
+    // 未解锁时显示友好提示
+    if (!isUnlocked) {
+      toast.info(
+        `🔒 第${stage.stageNumber}阶段还没解锁哦～\n\n` +
+        `💡 试试这些方法来增加进度：\n` +
+        `   📖 完成上面的课程内容\n` +
+        `   💬 和盖亚聊聊你的想法\n` +
+        `   ✍️ 认真回答课后问题\n\n` +
+        `加油，很快就能解锁啦！🌟`,
+        8000  // 显示8秒，因为内容较多
+      )
+      return
+    }
+
+    if (!firstContentId) return
     router.push(`/courses/${systemKey}/${firstContentId}`)
   }
 
