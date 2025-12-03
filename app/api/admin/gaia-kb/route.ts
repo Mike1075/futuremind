@@ -238,8 +238,8 @@ export async function POST(request: Request) {
     const n8nFormData = new FormData()
 
     // 🔧 修复：根据文件扩展名设置正确的MIME类型
-    const fileName = file.name
-    const fileExtension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase()
+    const n8nFileName = file.name
+    const fileExtension = n8nFileName.substring(n8nFileName.lastIndexOf('.')).toLowerCase()
     let mimeType = file.type || 'application/octet-stream'
 
     // 强制设置正确的MIME类型（N8N只支持text/plain和application/pdf）
@@ -259,7 +259,7 @@ export async function POST(request: Request) {
     // 创建带正确MIME类型的Blob（复用前面已读取的 fileBuffer）
     const blob = new Blob([fileBuffer], { type: mimeType })
 
-    n8nFormData.append('file', blob, fileName)
+    n8nFormData.append('file', blob, n8nFileName)
     n8nFormData.append('project_id', gaiaProjectId) // 使用盖亚专属 project_id
     n8nFormData.append('title', title)
     n8nFormData.append('document_id', newDoc.id) // 传递document_id，供N8N回调使用
@@ -269,7 +269,7 @@ export async function POST(request: Request) {
       project_id: gaiaProjectId,
       document_id: newDoc.id,
       title: title,
-      filename: fileName,
+      filename: n8nFileName,
       original_mime_type: file.type,
       corrected_mime_type: mimeType,
       file_size: file.size
