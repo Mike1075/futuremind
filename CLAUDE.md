@@ -378,6 +378,19 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
    - 问题：4 条 document_chunks 内容为纯 UUID
    - 修复：DELETE 删除这些无效记录
 
+5. **✅ 组织管理功能 (2025-12-03)**
+   - 新增：校长（principal）可以创建新组织，设置公开/私有可见性
+   - 新增：组织所有者可以编辑和删除自己创建的组织
+   - 保护：系统组织（社区项目、我的项目、系统）不可编辑/删除
+   - 删除组织前需先删除该组织下的所有项目
+   - **涉及文件**：
+     - `app/api/aip/create-organization/route.ts` - 创建组织 API（使用 service role）
+     - `app/api/aip/organization/[id]/route.ts` - 组织 CRUD API
+     - `lib/aip/api.ts` - 添加 `updateOrganization`、`deleteOrganization` 函数
+     - `components/aip/OrganizationList.tsx` - 添加编辑/删除按钮
+     - `components/aip/EditOrganizationModal.tsx` - 编辑组织弹窗
+     - `components/aip/CreateOrganizationModal.tsx` - UI 优化（玻璃效果、开关颜色统一）
+
 ### 盖亚知识库项目说明
 
 | 项目 | 值 |

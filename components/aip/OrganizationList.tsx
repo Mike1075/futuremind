@@ -2,18 +2,28 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Building2, ChevronRight, Star, TrendingUp, CheckCircle2 } from 'lucide-react'
-import { getOrganizationProjects } from '@/lib/aip/api'
-import type { UserOrganization, Project } from '@/lib/aip/types'
+import { Building2, ChevronRight, Star, TrendingUp, CheckCircle2, Pencil, Trash2 } from 'lucide-react'
+import { getOrganizationProjects, deleteOrganization } from '@/lib/aip/api'
+import { EditOrganizationModal } from './EditOrganizationModal'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmProvider'
+import type { UserOrganization, Project, Organization } from '@/lib/aip/types'
+
+// 系统组织名称（不可编辑/删除）
+const SYSTEM_ORG_NAMES = ['社区项目', '我的项目', '系统']
 
 interface OrganizationListProps {
   organizations: UserOrganization[]
   onSelect: (organizationId: string) => void
+  onRefresh?: () => void
 }
 
-export function OrganizationList({ organizations, onSelect }: OrganizationListProps) {
+export function OrganizationList({ organizations, onSelect, onRefresh }: OrganizationListProps) {
   const [orgProjects, setOrgProjects] = useState<Record<string, Project[]>>({})
   const [loadingProjects, setLoadingProjects] = useState(true)
+  const [editingOrg, setEditingOrg] = useState<Organization | null>(null)
+  const toast = useToast()
+  const { confirm } = useConfirm()
 
   useEffect(() => {
     loadAllOrganizationProjects()
@@ -102,6 +112,45 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
     }
   }
 
+  // 检查是否可以编辑/删除组织
+  const canManageOrg = (org: UserOrganization) => {
+    const orgName = org.organization?.name || ''
+    // 系统组织不可编辑/删除
+    if (SYSTEM_ORG_NAMES.includes(orgName)) return false
+    // 只有 owner 可以编辑/删除
+    return org.role_in_org === 'owner'
+  }
+
+  // 处理删除组织
+  const handleDeleteOrg = async (e: React.MouseEvent, org: UserOrganization) => {
+    e.stopPropagation() // 阻止冒泡触发 onSelect
+
+    const confirmed = await confirm({
+      title: '确认删除',
+      message: `确定要删除组织"${org.organization?.name}"吗？此操作不可撤销。`,
+      type: 'warning'
+    })
+
+    if (!confirmed) return
+
+    const result = await deleteOrganization(org.organization_id)
+
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success('组织已删除')
+      onRefresh?.()
+    }
+  }
+
+  // 处理编辑组织
+  const handleEditOrg = (e: React.MouseEvent, org: UserOrganization) => {
+    e.stopPropagation() // 阻止冒泡触发 onSelect
+    if (org.organization) {
+      setEditingOrg(org.organization)
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {organizations.map((org) => {
@@ -133,7 +182,27 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
                     </p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {canManageOrg(org) && (
+                    <>
+                      <button
+                        onClick={(e) => handleEditOrg(e, org)}
+                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-blue-600 text-zinc-400 hover:text-white transition-colors"
+                        title="编辑组织"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteOrg(e, org)}
+                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-600 text-zinc-400 hover:text-white transition-colors"
+                        title="删除组织"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+                  <ChevronRight className="h-5 w-5 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-1 transition-all" />
+                </div>
               </div>
 
               {/* 描述 */}
@@ -218,6 +287,19 @@ export function OrganizationList({ organizations, onSelect }: OrganizationListPr
           </div>
         )
       })}
+
+      {/* 编辑组织弹窗 */}
+      {editingOrg && (
+        <EditOrganizationModal
+          organization={editingOrg}
+          onClose={() => setEditingOrg(null)}
+          onSuccess={() => {
+            setEditingOrg(null)
+            toast.success('组织已更新')
+            onRefresh?.()
+          }}
+        />
+      )}
     </div>
   )
 }

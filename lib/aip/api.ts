@@ -116,6 +116,49 @@ ${data.description || '这是一个新创建的组织，暂无详细描述。'}
   }
 }
 
+export async function updateOrganization(
+  organizationId: string,
+  input: { name: string; description?: string; is_public?: boolean }
+): Promise<ApiResponse<Organization>> {
+  try {
+    const response = await fetch(`/api/aip/organization/${organizationId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || '更新组织失败')
+    }
+
+    return { data: result.data }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function deleteOrganization(
+  organizationId: string
+): Promise<ApiResponse<void>> {
+  try {
+    const response = await fetch(`/api/aip/organization/${organizationId}`, {
+      method: 'DELETE',
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || '删除组织失败')
+    }
+
+    return { message: '组织已删除' }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
 // ============ 项目相关 API ============
 
 export async function getOrganizationProjects(

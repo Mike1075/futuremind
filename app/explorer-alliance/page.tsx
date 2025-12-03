@@ -191,6 +191,7 @@ export default function ExplorerAlliancePage() {
             onSelect={(orgId) => {
               router.push(`/explorer-alliance/organizations/${orgId}`)
             }}
+            onRefresh={reloadOrganizations}
           />
         )}
       </div>

@@ -558,7 +558,7 @@ export function PBLProjectDetail({
       router.refresh()
 
     } catch (error) {
-      alert('提交失败，请重试')
+      globalToast.error('提交失败，请重试')
     } finally {
       setSubmittingDay(null)
       setUploading(false)

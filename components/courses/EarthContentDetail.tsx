@@ -19,6 +19,7 @@ import { Play, ExternalLink } from 'lucide-react'
 import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
 import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
 import UserProfileModal from '@/components/UserProfileModal'
+import { globalToast } from '@/components/ui/ToastProvider'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -226,7 +227,7 @@ export function EarthContentDetail({
     for (const file of filesArray) {
       // 验证文件类型：只允许图片
       if (!file.type.startsWith('image/') || !allowedImageTypes.includes(file.type)) {
-        alert(`❌ 不支持的文件格式: ${file.name}\n\n只支持图片格式: JPG, PNG, GIF, WEBP`)
+        globalToast.error(`不支持的文件格式: ${file.name}\n只支持图片格式: JPG, PNG, GIF, WEBP`)
         continue
       }
 
@@ -304,13 +305,13 @@ export function EarthContentDetail({
       if (response.ok) {
         // 立即从本地状态中移除
         setSubmissionsHistory(prev => prev.filter(s => s.id !== submissionId))
-        alert('删除成功')
+        globalToast.success('删除成功')
       } else {
         const error = await response.json()
-        alert(`删除失败: ${error.error || '请重试'}`)
+        globalToast.error(`删除失败: ${error.error || '请重试'}`)
       }
     } catch (error) {
-      alert('删除失败，请重试')
+      globalToast.error('删除失败，请重试')
     }
   }
 
@@ -349,7 +350,7 @@ export function EarthContentDetail({
       // 触发公开作业列表刷新
       setPublicSubmissionsRefreshKey(prev => prev + 1)
     } catch (err) {
-      alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
+      globalToast.error(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
     } finally {
       setTogglingId(null)
     }
@@ -358,17 +359,17 @@ export function EarthContentDetail({
   // 提交任务
   const handleSubmitTask = async () => {
     if (!submissionContent.trim()) {
-      alert('请填写提交内容')
+      globalToast.warning('请填写提交内容')
       return
     }
 
     if (!userId) {
-      alert('请先登录')
+      globalToast.warning('请先登录')
       return
     }
 
     if (!selectedProject) {
-      alert('项目信息错误')
+      globalToast.error('项目信息错误')
       return
     }
 
@@ -428,7 +429,7 @@ export function EarthContentDetail({
       setSubmissionResult(data)
 
     } catch (error) {
-      alert('提交失败，请重试')
+      globalToast.error('提交失败，请重试')
     } finally {
       setSubmitting(false)
       setUploading(false)
