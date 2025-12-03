@@ -346,7 +346,8 @@ export function GlobalGaiaV3() {
     const messageText = input.trim()
     if (!messageText || isLoading) return
 
-    // 🔥 立即清空输入框（放在最前面，避免视觉延迟）
+    // 🔥 立即设置 loading 状态和清空输入框（防止重复发送）
+    setIsLoading(true)
     setInput('')
 
     // 检查最后一条消息是否是知识点问题
@@ -370,7 +371,6 @@ export function GlobalGaiaV3() {
     }
 
     setMessages(prev => [...prev, userMessage, placeholderMessage])
-    setIsLoading(true)
 
     console.log('[gaia-chat] 发送消息，占位消息索引:', assistantMessageIndex)
 
