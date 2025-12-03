@@ -346,10 +346,12 @@ export function GlobalGaiaV3() {
     const messageText = input.trim()
     if (!messageText || isLoading) return
 
+    // 🔥 立即清空输入框（放在最前面，避免视觉延迟）
+    setInput('')
+
     // 检查最后一条消息是否是知识点问题
     const lastMessage = messages[messages.length - 1]
     const isReplyingToKnowledgePoint = lastMessage?.metadata?.source === 'knowledge_point'
-
 
     const userMessage: Message = {
       role: 'user',
@@ -357,18 +359,20 @@ export function GlobalGaiaV3() {
       timestamp: new Date().toISOString()
     }
 
-    setMessages(prev => [...prev, userMessage])
-    setInput('')
-    setIsLoading(true)
-
-    // 🔥 创建占位AI消息用于流式更新
+    // 🔥 计算占位消息的索引（在添加用户消息之前计算）
     const assistantMessageIndex = messages.length + 1
+
+    // 🔥 同时添加用户消息和占位AI消息
     const placeholderMessage: Message = {
       role: 'assistant',
       content: '',
       timestamp: new Date().toISOString()
     }
-    setMessages(prev => [...prev, placeholderMessage])
+
+    setMessages(prev => [...prev, userMessage, placeholderMessage])
+    setIsLoading(true)
+
+    console.log('[Gaia] 发送消息，占位消息索引:', assistantMessageIndex)
 
     try {
       // 需要发送当前所有消息的情况：
@@ -403,7 +407,10 @@ export function GlobalGaiaV3() {
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
 
+      console.log('[Gaia] 开始读取流式响应')
+
       if (!reader) {
+        console.error('[Gaia] 无法获取 reader')
         throw new Error('No reader available')
       }
 
@@ -453,10 +460,15 @@ export function GlobalGaiaV3() {
       try {
         while (true) {
           const { done, value } = await reader.read()
-          if (done) break
+          if (done) {
+            console.log('[Gaia] 流读取完成，fullAnswer长度:', fullAnswer.length)
+            break
+          }
 
           const chunk = decoder.decode(value, { stream: true })
           buffer += chunk
+
+          console.log('[Gaia] 收到数据块:', chunk.substring(0, 200))
 
           // 🔥 简化处理：按换行符分割
           const lines = buffer.split('\n')
@@ -466,9 +478,12 @@ export function GlobalGaiaV3() {
             const trimmedLine = line.trim()
             if (!trimmedLine) continue
 
+            console.log('[Gaia] 解析行:', trimmedLine.substring(0, 100))
+
             // 🔥 尝试解析JSON，失败则跳过
             try {
               const json = JSON.parse(trimmedLine)
+              console.log('[Gaia] JSON解析成功，type:', json.type, 'content长度:', json.content?.length)
 
               if (json.type === 'chunk') {
                 // 标记首个内容chunk
