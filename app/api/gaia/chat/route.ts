@@ -362,7 +362,7 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
       finalReply = '抱歉，我现在无法回应。请稍后再试。'
     }
 
-    logger.info('[gaia-chat] Final reply ready', { length: finalReply.length })
+    logger.info('[gaia-chat] Final reply ready - v2', { length: finalReply.length, preview: finalReply.substring(0, 100) })
 
     // 🔥 创建流式响应（前端打字机效果）
     const stream = new ReadableStream({
