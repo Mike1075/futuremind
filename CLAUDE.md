@@ -330,7 +330,124 @@ return [{
 | **中文数字转换** | ✅ 已实现 | `normalize_chinese_numbers()` | 第三天 = 第3天 |
 | **父子结构** | ✅ 已实现 | `documents`(父) ↔ `document_chunks`(子) | 返回 `expanded_content` |
 | **混合搜索 (RRF)** | ✅ 已实现 | `hybrid_search` 中 RRF 公式融合 | 向量+全文双路融合 |
-| **Rerank** | ❌ 未实现 | - | 被 RRF 排序替代，后续可加 Cohere |
+| **Rerank** | ⏳ 待实现 | N8N Cohere Reranker 节点 | 见下方实现指南 |
+| **流式输出** | ⚠️ 伪流式 | 前端打字机效果 | 见下方真流式方案 |
+
+---
+
+## Rerank 实现指南（2025-12-03 调研）
+
+> **参考文档**：
+> - [n8n Reranker Cohere 节点文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.rerankercohere/)
+> - [n8n Blog: 在 AI 工作流中实现 Rerankers](https://blog.n8n.io/implementing-rerankers-in-your-ai-workflows/)
+> - [社区：终极 RAG 架构（含 Reranking）](https://community.n8n.io/t/building-the-ultimate-rag-setup-with-contextual-summaries-sparse-vectors-and-reranking/54861)
+
+### 什么是 Rerank？
+
+Reranker 提供检索的**第二遍处理**：向量搜索返回候选文档后，Reranker 基于**语义相关性**重新计算评分并排序，将最相关的文档排在前面。
+
+### 在 N8N 中添加 Rerank 的位置
+
+```
+hybrid_search 返回 8-10 条候选文档
+         ↓
+   Cohere Reranker（重新排序，取 Top 3-5）
+         ↓
+      整合上下文
+         ↓
+      LLM 生成回复
+```
+
+### 两种实现方式
+
+**方式 1：使用 n8n 原生 Reranker Cohere 节点（推荐）**
+- 需要 n8n **1.98+** 版本
+- 在 Vector Store Retriever 子节点中添加 Reranker
+- 自动与 LangChain 生态集成
+
+**方式 2：使用 HTTP Request 节点直接调用 Cohere API**
+```javascript
+// 在"合并搜索结果"之后添加 HTTP Request 节点
+POST https://api.cohere.ai/v1/rerank
+{
+  "model": "rerank-english-v3.0",  // 或 rerank-multilingual-v3.0（支持中文）
+  "query": "{{ $json.query }}",
+  "documents": {{ $json.search_results }},
+  "top_n": 5
+}
+```
+
+### 对性能的影响
+
+| 操作 | 耗时 | 说明 |
+|-----|------|------|
+| Cohere Rerank API | 100-300ms | 取决于文档数量 |
+| 总体增加 | 约 10-15% | 相比不加 Rerank |
+
+**建议**：先在 AIP 工作流测试，效果好再推广到盖亚。
+
+---
+
+## 真正的流式输出实现指南（2025-12-03 调研）
+
+> **参考文档**：
+> - [n8n 流式响应官方文档](https://docs.n8n.io/workflows/streaming/)
+> - [社区：如何实现 Agent 流式输出](https://community.n8n.io/t/i-want-to-make-my-agentic-chat-as-streaming-output/158179)
+> - [社区：Webhook 流式支持讨论](https://community.n8n.io/t/webhook-streaming/182718)
+
+### 当前状态：伪流式
+
+当前两个工作流的 `Respond to Webhook` 节点都设置了 `enableStreaming: false`：
+- N8N 等待 LLM 完整响应后一次性返回
+- 前端使用 50ms 间隔的打字机效果模拟流式显示
+- **用户感知延迟 = N8N 处理时间 + LLM 生成时间**
+
+### 真正的流式输出要求
+
+1. **Webhook 节点**：`responseMode: "responseNode"` ✅ 已配置
+2. **Respond to Webhook 节点**：`enableStreaming: true` ❌ 需要修改
+3. **LLM 节点**：必须是支持流式的节点（Basic LLM Chain、AI Agent）
+
+### 实现步骤
+
+```
+// 在 N8N 中修改 Respond to Webhook 节点
+{
+  "options": {
+    "enableStreaming": true  // 改为 true
+  }
+}
+```
+
+### ⚠️ 重要限制
+
+**问题**：启用流式后，`Create a row`（保存聊天记录）节点可能无法获取完整的 AI 回复。
+
+**原因**：流式输出时，数据逐块发送，后续节点可能在 LLM 完成前就开始执行。
+
+**解决方案**：
+1. **方案 A：前端保存**
+   - 流式结束后，前端调用单独的 API 保存完整对话
+   - 需要修改前端代码
+
+2. **方案 B：使用 Memory 节点**
+   - 用 LangChain 的 Memory 节点自动保存对话
+   - 不依赖 Respond to Webhook 后的节点
+
+3. **方案 C：双通道**
+   - 流式输出给前端
+   - 异步触发另一个工作流保存聊天记录
+
+### 性能对比
+
+| 模式 | 首字延迟 | 用户体验 |
+|-----|---------|---------|
+| 伪流式（当前） | 4-8 秒 | 等待 → 打字机显示 |
+| 真流式 | 0.5-1 秒 | 几乎立即开始显示 |
+
+**建议**：先在开发环境测试，确保聊天记录保存正常后再上线。
+
+---
 
 **N8N 工作流架构**（注意：已删除 AI Agent，使用 Basic LLM Chain）：
 ```
