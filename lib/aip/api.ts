@@ -57,15 +57,15 @@ export async function createOrganization(
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('未登录')
 
-    // 检查权限（只有teacher和principal可以创建组织）
+    // 检查权限（只有 principal 可以创建组织）
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .maybeSingle()
 
-    if (!profile || !profile.role || !['teacher', 'principal'].includes(profile.role)) {
-      throw new Error('只有教师和校长可以创建组织')
+    if (!profile || profile.role !== 'principal') {
+      throw new Error('只有校长可以创建组织')
     }
 
     const { data, error } = await supabase
@@ -73,6 +73,7 @@ export async function createOrganization(
       .insert({
         name: input.name,
         description: input.description,
+        is_public: input.is_public ?? false,
       })
       .select()
       .single()

@@ -303,6 +303,7 @@ export interface UpdateTaskInput {
 export interface CreateOrganizationInput {
   name: string
   description?: string
+  is_public?: boolean  // 是否公开可见（默认 false）
 }
 
 export interface InviteToProjectInput {

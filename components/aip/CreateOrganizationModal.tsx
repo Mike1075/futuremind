@@ -12,6 +12,7 @@ interface CreateOrganizationModalProps {
 export function CreateOrganizationModal({ onClose, onSuccess }: CreateOrganizationModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [isPublic, setIsPublic] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,7 +28,8 @@ export function CreateOrganizationModal({ onClose, onSuccess }: CreateOrganizati
 
     const result = await createOrganization({
       name: name.trim(),
-      description: description.trim()
+      description: description.trim(),
+      is_public: isPublic
     })
 
     if (result.error) {
@@ -71,6 +73,26 @@ export function CreateOrganizationModal({ onClose, onSuccess }: CreateOrganizati
               className="w-full px-4 py-3 bg-black/50 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 resize-none"
               placeholder="描述这个组织的用途..."
             />
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-black/30 border border-white/10 rounded-lg">
+            <div>
+              <p className="text-white font-medium">公开可见</p>
+              <p className="text-sm text-gray-400">开启后所有用户都能看到此组织</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsPublic(!isPublic)}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+                isPublic ? 'bg-purple-500' : 'bg-gray-600'
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
+                  isPublic ? 'translate-x-7' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
 
           {error && (
