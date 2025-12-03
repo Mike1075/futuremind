@@ -161,7 +161,7 @@ export default function AdminDashboardClient() {
             </div>
             <button
               onClick={() => router.push('/')}
-              className="px-4 py-2 card-glass hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all"
+              className="btn-stardust px-4 py-2"
             >
               返回首页
             </button>
@@ -184,7 +184,7 @@ export default function AdminDashboardClient() {
                   <button
                     key={card.title}
                     onClick={() => router.push(card.href)}
-                    className="group relative card-glass rounded-2xl p-10 border border-white/10 hover:border-white/30 transition-all duration-500 hover:scale-105 hover:bg-white/10 min-h-[320px] w-full flex flex-col items-center justify-center"
+                    className="group relative card-glass card-rainbow-border rounded-2xl p-10 border border-white/10 transition-all duration-500 hover:scale-105 hover:bg-white/10 min-h-[320px] w-full flex flex-col items-center justify-center"
                   >
                   {/* Gradient Background Effect */}
                   <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
