@@ -313,6 +313,67 @@ return [{
 
 ---
 
+## AIP 聊天系统功能实现状态 (2025-12-03 确认)
+
+| 功能 | 状态 | 实现位置 | 说明 |
+|-----|------|---------|------|
+| **向量搜索** | ✅ 已实现 | `hybrid_search` → `semantic_search` CTE | 使用 pgvector 余弦距离 |
+| **全文精准搜索** | ✅ 已实现 | `hybrid_search` → `keyword_search` CTE | 支持 ILIKE 模糊匹配 |
+| **中文数字转换** | ✅ 已实现 | `normalize_chinese_numbers()` | 第三天 = 第3天 |
+| **父子结构** | ✅ 已实现 | `documents`(父) ↔ `document_chunks`(子) | 返回 `expanded_content` |
+| **混合搜索 (RRF)** | ✅ 已实现 | `hybrid_search` 中 RRF 公式融合 | 向量+全文双路融合 |
+| **Rerank** | ❌ 未实现 | - | 被 RRF 排序替代，后续可加 Cohere |
+
+**N8N 工作流架构**（注意：已删除 AI Agent，使用 Basic LLM Chain）：
+```
+Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
+                                          ↓
+                         ┌────────────────┼────────────────┐
+                         ↓                ↓                ↓
+                   Hybrid-项目知识  Hybrid-组织知识   获取用户画像
+                         ↓                ↓                ↓
+                         └────────────────┼────────────────┘
+                                          ↓
+                                    合并搜索结果
+                                          ↓
+                                    整合上下文 (Code)
+                                          ↓
+                                  Basic LLM Chain (Gemini)  ← 不是 AI Agent!
+                                          ↓
+                                   Respond to Webhook
+```
+
+### Bug 修复 (2025-12-03)
+
+1. **✅ 聊天记录丢失问题**
+   - 问题：用户聊天后切换页面，历史记录丢失
+   - 原因：数据库保存是异步 fire-and-forget，用户导航离开前可能未完成
+   - 修复：`app/api/aip/chat/route.ts` 改为同步 `await` 保存
+
+2. **✅ 社区项目显示私有项目**
+   - 问题：私有项目（如盖亚知识库）显示在"所有公开项目"列表
+   - 修复：`lib/aip/api.ts` → `getOrganizationProjects` 添加 `is_public=true` 过滤
+
+3. **✅ document_chunks.organization_id 为空**
+   - 问题：部分分块 organization_id 为 null，导致搜索过滤失败
+   - 修复：批量更新 SQL 填充正确的 organization_id
+
+4. **✅ 垃圾数据清理**
+   - 问题：4 条 document_chunks 内容为纯 UUID
+   - 修复：DELETE 删除这些无效记录
+
+### 盖亚知识库项目说明
+
+| 项目 | 值 |
+|-----|-----|
+| **项目 ID** | `2ffbe00d-d17f-43f0-9c22-103b73617342` |
+| **创建者** | Mike (1134055818@qq.com) |
+| **用途** | **系统真正使用的盖亚知识库**（不是误创建） |
+| **环境变量** | `GAIA_KB_PROJECT_ID=2ffbe00d-d17f-43f0-9c22-103b73617342` |
+| **可见性** | `is_public=false`（私有，不显示在公开列表） |
+
+---
+
 ## 待办事项
 
 ### 盖亚知识库重构（2025-12-02 进行中）
@@ -461,7 +522,11 @@ npm run build    # 构建生产版本
   - **支持中文数字自动转换**（第三天 = 第3天）
   - **返回扩展上下文** `expanded_content`（~2000字符，chunk 前后各 1000 字符）
   - 符合 [LangChain ParentDocumentRetriever 最佳实践](https://python.langchain.com/docs/how_to/parent_document_retriever/)
-- `hybrid_search_gaia` - 盖亚混合搜索（查询 `document_chunks`，用 project_id 过滤）
+- `hybrid_search_gaia` - 盖亚混合搜索 **v2**（2025-12-03 升级）
+  - 查询 `document_chunks` 表，用 `gaia_project_id` 过滤
+  - **支持中文数字自动转换**（第三天 = 第3天）
+  - **返回扩展上下文** `expanded_content`（~2000字符）
+  - 返回 `parent_title`（父文档标题）
 - `get_parent_documents` - 批量获取父文档（备用）
 - `normalize_chinese_numbers` - 中文数字转阿拉伯数字（一→1，二→2，三→3...）
 
