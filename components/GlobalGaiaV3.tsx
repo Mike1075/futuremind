@@ -343,8 +343,15 @@ export function GlobalGaiaV3() {
 
   // 发送消息
   const handleSend = async () => {
+    console.error('🔥🔥🔥 [GAIA] handleSend 被调用了！')
+
     const messageText = input.trim()
-    if (!messageText || isLoading) return
+    if (!messageText || isLoading) {
+      console.error('🔥🔥🔥 [GAIA] 提前返回:', { messageText: !!messageText, isLoading })
+      return
+    }
+
+    console.error('🔥🔥🔥 [GAIA] 开始发送消息:', messageText.substring(0, 50))
 
     // 🔥 立即设置 loading 状态和清空输入框（防止重复发送）
     setIsLoading(true)
@@ -380,6 +387,8 @@ export function GlobalGaiaV3() {
       // 2. 回复知识点问题（包含知识点问题+用户回答）
       const shouldSendCurrentMessages = messages.length <= 1 || isReplyingToKnowledgePoint
 
+      console.error('🔥🔥🔥 [GAIA] 准备发送 fetch 请求到 /api/gaia/chat')
+
       const response = await fetch('/api/gaia/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -390,6 +399,8 @@ export function GlobalGaiaV3() {
           currentMessages: shouldSendCurrentMessages ? messages : undefined
         })
       })
+
+      console.error('🔥🔥🔥 [GAIA] fetch 响应:', { status: response.status, ok: response.ok })
 
       if (!response.ok) {
         // 尝试读取错误信息
@@ -407,10 +418,10 @@ export function GlobalGaiaV3() {
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
 
-      console.log('[gaia-chat] 开始读取流式响应')
+      console.error('🔥🔥🔥 [GAIA] 开始读取流式响应，reader:', !!reader)
 
       if (!reader) {
-        console.error('[gaia-chat] 无法获取 reader')
+        console.error('🔥🔥🔥 [GAIA] 无法获取 reader!')
         throw new Error('No reader available')
       }
 
@@ -459,16 +470,19 @@ export function GlobalGaiaV3() {
 
       try {
         while (true) {
+          console.error('🔥🔥🔥 [GAIA] 等待读取下一个数据块...')
           const { done, value } = await reader.read()
+          console.error('🔥🔥🔥 [GAIA] 读取结果:', { done, hasValue: !!value, valueLength: value?.length })
+
           if (done) {
-            console.log('[gaia-chat] 流读取完成，fullAnswer长度:', fullAnswer.length)
+            console.error('🔥🔥🔥 [GAIA] 流读取完成，fullAnswer长度:', fullAnswer.length)
             break
           }
 
           const chunk = decoder.decode(value, { stream: true })
           buffer += chunk
 
-          console.log('[gaia-chat] 收到数据块:', chunk.substring(0, 200))
+          console.error('🔥🔥🔥 [GAIA] 收到数据块:', chunk)
 
           // 🔥 简化处理：按换行符分割
           const lines = buffer.split('\n')
@@ -478,12 +492,12 @@ export function GlobalGaiaV3() {
             const trimmedLine = line.trim()
             if (!trimmedLine) continue
 
-            console.log('[gaia-chat] 解析行:', trimmedLine.substring(0, 100))
+            console.error('🔥🔥🔥 [GAIA] 解析行:', trimmedLine)
 
             // 🔥 尝试解析JSON，失败则跳过
             try {
               const json = JSON.parse(trimmedLine)
-              console.log('[gaia-chat] JSON解析成功，type:', json.type, 'content长度:', json.content?.length)
+              console.error('🔥🔥🔥 [GAIA] JSON解析成功:', { type: json.type, contentLength: json.content?.length, content: json.content?.substring(0, 100) })
 
               if (json.type === 'chunk') {
                 // 标记首个内容chunk
