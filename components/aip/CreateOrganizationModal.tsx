@@ -83,13 +83,13 @@ export function CreateOrganizationModal({ onClose, onSuccess }: CreateOrganizati
             <button
               type="button"
               onClick={() => setIsPublic(!isPublic)}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
-                isPublic ? 'bg-purple-500' : 'bg-gray-600'
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                isPublic ? 'bg-purple-500' : 'bg-white/20'
               }`}
             >
               <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
-                  isPublic ? 'translate-x-7' : 'translate-x-1'
+                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-200 ${
+                  isPublic ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
             </button>

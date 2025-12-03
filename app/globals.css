@@ -224,22 +224,29 @@ body {
 
   /* 星尘按钮 */
   .btn-stardust {
+    --btn-radius: 9999px;
     position: relative;
     background: transparent;
     border: 1px solid rgba(255, 215, 0, 0.4);
     color: var(--color-starlight);
     padding: 0.875rem 2rem;
-    border-radius: 9999px;
+    border-radius: var(--btn-radius);
     font-weight: 500;
     letter-spacing: 0.05em;
     overflow: hidden;
     transition: all 0.4s ease;
   }
 
+  /* 支持 Tailwind 圆角类覆盖 */
+  .btn-stardust.rounded-lg { --btn-radius: 0.5rem; }
+  .btn-stardust.rounded-xl { --btn-radius: 0.75rem; }
+  .btn-stardust.rounded-2xl { --btn-radius: 1rem; }
+
   .btn-stardust::before {
     content: '';
     position: absolute;
     inset: 0;
+    border-radius: inherit;
     background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(157, 0, 255, 0.1) 50%, rgba(0, 255, 255, 0.1) 100%);
     opacity: 0;
     transition: opacity 0.4s ease;
@@ -251,7 +258,7 @@ body {
     inset: -2px;
     background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.6), rgba(157, 0, 255, 0.6), rgba(0, 255, 255, 0.6), transparent);
     background-size: 200% 100%;
-    border-radius: 9999px;
+    border-radius: var(--btn-radius);
     z-index: -1;
     opacity: 0;
     animation: energy-flow 3s linear infinite;
