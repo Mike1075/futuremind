@@ -1907,28 +1907,36 @@ body {
   background-color: rgb(10, 10, 31);
 }
 
-/* 卡片炫彩边框效果 */
+/* 卡片炫彩边框效果 - 只有边框炫彩，内部保持透明玻璃 */
 .card-rainbow-border {
   position: relative;
+  overflow: visible;
 }
 
 .card-rainbow-border::before {
   content: '';
   position: absolute;
-  inset: -2px;
+  inset: 0;
+  padding: 2px;
   background: linear-gradient(90deg,
-    rgba(255, 215, 0, 0) 0%,
-    rgba(255, 215, 0, 0.6) 25%,
-    rgba(157, 0, 255, 0.6) 50%,
-    rgba(0, 255, 255, 0.6) 75%,
-    rgba(255, 215, 0, 0) 100%
+    #FFD700,
+    #FF6B6B,
+    #9D00FF,
+    #00FFFF,
+    #00FF88,
+    #FFD700
   );
-  background-size: 200% 100%;
+  background-size: 300% 100%;
   border-radius: inherit;
-  z-index: -1;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   opacity: 0;
   transition: opacity 0.3s ease;
   animation: energy-flow 3s linear infinite;
+  pointer-events: none;
 }
 
 .card-rainbow-border:hover::before {
@@ -1938,7 +1946,6 @@ body {
 .card-rainbow-border:hover {
   border-color: transparent !important;
   box-shadow:
-    0 0 20px rgba(255, 215, 0, 0.3),
-    0 0 40px rgba(157, 0, 255, 0.2),
-    inset 0 0 20px rgba(255, 215, 0, 0.05);
+    0 0 20px rgba(255, 215, 0, 0.2),
+    0 0 40px rgba(157, 0, 255, 0.15);
 }

@@ -263,12 +263,18 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
       const supabase = createClient()
 
       // 1. 删除 project_files 记录
-      const { error: fileError } = await supabase
+      const { error: fileError, count } = await supabase
         .from('project_files')
         .delete()
         .eq('id', doc.id)
+        .select()
 
       if (fileError) throw fileError
+
+      // 检查是否真的删除了数据（RLS 可能静默阻止删除）
+      if (count === 0) {
+        throw new Error('删除失败：可能没有权限删除此文档')
+      }
 
       // 2. 删除对应的 document_chunks（知识库分块）
       // 使用 RPC 调用来执行复杂的删除逻辑
