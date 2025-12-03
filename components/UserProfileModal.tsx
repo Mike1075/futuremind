@@ -136,7 +136,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
-      <div className="bg-cosmic-void/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
         {/* 头部 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 className="text-xl font-semibold text-white">个人资料</h2>
@@ -195,7 +195,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   type="email"
                   value={email}
                   disabled
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-gray-400 cursor-not-allowed"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-gray-400 cursor-not-allowed"
                 />
               </div>
 
@@ -208,7 +208,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   placeholder="请输入您的姓名"
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
@@ -224,7 +224,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                     placeholder="可选"
                     min="1"
                     max="150"
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
 
@@ -235,7 +235,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="">不公开</option>
                     <option value="male">男</option>
@@ -260,7 +260,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   value={profession}
                   onChange={(e) => setProfession(e.target.value)}
                   placeholder="例如：学生、工程师、设计师..."
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
@@ -274,7 +274,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   value={hobbies}
                   onChange={(e) => setHobbies(e.target.value)}
                   placeholder="例如：阅读、编程、音乐..."
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
@@ -288,7 +288,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="介绍一下自己吧..."
                   rows={3}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                 />
               </div>
 
@@ -308,7 +308,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                     type="button"
                     onClick={() => setWillingToJoinProjects(!willingToJoinProjects)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      willingToJoinProjects ? 'bg-blue-500' : 'bg-gray-600'
+                      willingToJoinProjects ? 'bg-blue-500' : 'bg-white/20'
                     }`}
                   >
                     <span
@@ -337,7 +337,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="至少6位"
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
@@ -350,7 +350,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="再次输入新密码"
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
             </>

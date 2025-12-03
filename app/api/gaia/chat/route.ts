@@ -287,28 +287,67 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
         let fullContent = ''
 
         if (!reader) {
+          logger.error('No reader available from N8N response')
           controller.close()
           return
         }
 
         try {
           let firstChunkReceived = false  // 🔥 追踪第一个chunk
+          let rawBuffer = ''  // 🔥 原始数据缓冲区
+
           while (true) {
             const { done, value } = await reader.read()
-            if (done) break
+            if (done) {
+              logger.debug('Stream reading completed', { rawBufferLength: rawBuffer.length })
+              break
+            }
 
             const chunk = decoder.decode(value, { stream: true })
+            rawBuffer += chunk
+
+            logger.debug('Received chunk from N8N', {
+              chunkLength: chunk.length,
+              chunkPreview: chunk.substring(0, 200)
+            })
 
             // 解析每行JSON
             const lines = chunk.split('\n').filter(line => line.trim())
             for (const line of lines) {
               try {
                 const json = JSON.parse(line)
+                logger.debug('Parsed JSON from N8N', { keys: Object.keys(json) })
 
-                // 处理type: "item"的流式数据
-                if (json.type === 'item' && json.content) {
+                // 🔥 处理 N8N 直接返回的 { text: "..." } 格式
+                if (json.text) {
                   if (!firstChunkReceived) {
-                    logger.debug('First chunk received', {
+                    logger.debug('First content received (text format)', {
+                      elapsed: `${Date.now() - startTime}ms`
+                    })
+                    firstChunkReceived = true
+                  }
+
+                  fullContent = json.text
+
+                  // 清理markdown格式
+                  const cleanedContent = fullContent
+                    .replace(/\*\*/g, '')
+                    .replace(/\*/g, '')
+
+                  // 发送给前端
+                  const streamData = JSON.stringify({
+                    type: 'chunk',
+                    content: cleanedContent,
+                    timestamp: new Date().toISOString()
+                  }) + '\n'
+
+                  controller.enqueue(new TextEncoder().encode(streamData))
+                  logger.debug('Sent chunk to frontend (text format)', { contentLength: cleanedContent.length })
+                }
+                // 处理type: "item"的流式数据（旧格式兼容）
+                else if (json.type === 'item' && json.content) {
+                  if (!firstChunkReceived) {
+                    logger.debug('First chunk received (item format)', {
                       elapsed: `${Date.now() - startTime}ms`
                     })
                     firstChunkReceived = true
@@ -342,9 +381,34 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
 
                   controller.enqueue(new TextEncoder().encode(streamData))
                 }
-              } catch {
+              } catch (parseError) {
+                logger.debug('Failed to parse line as JSON', { line: line.substring(0, 100) })
                 // 继续处理下一行
               }
+            }
+          }
+
+          // 🔥 如果没有收到任何内容，尝试解析整个原始缓冲区
+          if (!fullContent && rawBuffer.trim()) {
+            logger.debug('No content parsed, trying to parse raw buffer', {
+              bufferLength: rawBuffer.length,
+              bufferPreview: rawBuffer.substring(0, 300)
+            })
+            try {
+              const json = JSON.parse(rawBuffer.trim())
+              if (json.text) {
+                fullContent = json.text
+                const cleanedContent = fullContent.replace(/\*\*/g, '').replace(/\*/g, '')
+                const streamData = JSON.stringify({
+                  type: 'chunk',
+                  content: cleanedContent,
+                  timestamp: new Date().toISOString()
+                }) + '\n'
+                controller.enqueue(new TextEncoder().encode(streamData))
+                logger.info('Parsed content from raw buffer', { contentLength: cleanedContent.length })
+              }
+            } catch (e) {
+              logger.error('Failed to parse raw buffer', { error: e })
             }
           }
 

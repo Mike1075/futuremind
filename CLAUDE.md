@@ -57,9 +57,13 @@ types/                 # TypeScript 类型定义
 - **关键技术**: 使用 CSS `mask-composite: exclude` 实现只显示边框渐变
 
 #### 4. 弹窗/模态框
-- 背景遮罩: `bg-black/60 backdrop-blur-sm`（半透明，可见星空）
+- 背景遮罩: `bg-black/60 backdrop-blur-md`（半透明，可见星空）
 - 弹窗容器: `bg-white/5 backdrop-blur-xl border border-white/20`（玻璃效果）
 - 关闭按钮: `bg-white/10 hover:bg-white/20`（透明风格）
+- 输入框: `bg-white/5 border border-white/20`（玻璃透明效果）
+- 禁用输入框: `bg-white/5 border border-white/10`（更淡的边框）
+- 下拉框/select: `bg-white/5 border border-white/20`（与输入框一致）
+- 开关（关闭态）: `bg-white/20`（不要用 `bg-gray-600`）
 
 #### 5. Toast 提示
 - 位置: 屏幕正中央（`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`）
