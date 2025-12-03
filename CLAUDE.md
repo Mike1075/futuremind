@@ -473,6 +473,29 @@ Respond to Webhook
 
 请在 N8N 中手动修改这两个 Postgres 节点的 SQL 查询。
 
+### 组织管理权限优化 (2025-12-03)
+
+**需求**：只有校长可以创建组织，并可设置组织是否公开可见
+
+**数据库变更**：
+- 添加 `organizations.is_public` 字段（boolean，默认 false）
+- 修改 INSERT RLS 策略：只有 `principal` 可以创建（移除 `teacher`）
+- 修改 SELECT RLS 策略：可查看公开组织 OR 自己所属的组织
+
+**组织可见性**：
+| 组织名 | is_public | 说明 |
+|-------|-----------|------|
+| 社区项目 | ✅ true | 所有人可见 |
+| 我的项目 | ❌ false | 仅成员可见 |
+| 系统 | ❌ false | 仅管理员可见（盖亚知识库等） |
+
+**前端变更**：
+- `CreateOrganizationModal.tsx` 添加"公开可见"开关
+- `lib/aip/api.ts` 权限检查改为仅 `principal`
+- `lib/aip/types.ts` 添加 `is_public?: boolean`
+
+**迁移文件**：`organization_visibility_and_rls`
+
 ### AIP 聊天 - 最近完成 (2025-12-02)
 - [x] 修复 `hybrid_search` 函数空字符串问题（UUID 类型不接受空字符串）
 - [x] N8N 添加 `项目智慧库`、`组织智慧库` Postgres 节点（5路输入）
