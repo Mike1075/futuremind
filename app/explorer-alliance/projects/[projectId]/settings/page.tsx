@@ -325,7 +325,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
                 <button
                   onClick={() => setIsPublic(!isPublic)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    isPublic ? 'bg-green-600' : 'bg-gray-600'
+                    isPublic ? 'bg-green-600' : 'bg-white/20'
                   }`}
                 >
                   <span
@@ -353,7 +353,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
                 <button
                   onClick={() => setIsRecruiting(!isRecruiting)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    isRecruiting ? 'bg-green-600' : 'bg-gray-600'
+                    isRecruiting ? 'bg-green-600' : 'bg-white/20'
                   }`}
                 >
                   <span
