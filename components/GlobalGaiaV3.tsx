@@ -22,10 +22,14 @@ interface Message {
 }
 
 // 🔥 版本号 - 用于确认部署
-const GAIA_VERSION = 'v2.1.0-2025-12-03'
+const GAIA_VERSION = 'v2.1.1-2025-12-03'
 console.error('🔥🔥🔥 [GAIA] GlobalGaiaV3 组件加载, 版本:', GAIA_VERSION)
 
-export function GlobalGaiaV3() {
+interface GlobalGaiaV3Props {
+  hideFloatingButton?: boolean
+}
+
+export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) {
   const toast = useToast()
   const { confirm } = useConfirm()
   const [isOpen, setIsOpen] = useState(false)
@@ -782,8 +786,8 @@ export function GlobalGaiaV3() {
 
   return (
     <>
-      {/* 浮动按钮 - 炫彩旋转边框样式 */}
-      {!isOpen && (
+      {/* 浮动按钮 - 炫彩旋转边框样式（首页隐藏，因为首页有自己的按钮） */}
+      {!isOpen && !hideFloatingButton && (
         <div
           onClick={() => {
             // 检查登录状态
