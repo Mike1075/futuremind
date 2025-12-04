@@ -199,6 +199,7 @@ export function PBLProjectDetail({
   const [historyDayKey, setHistoryDayKey] = useState<string | null>(null)
   const [historyDayLabel, setHistoryDayLabel] = useState<string | null>(null) // 存储实际的day标签（如"Day 2-4"）
   const [isPublic, setIsPublic] = useState(false) // 作业是否公开（默认私密）
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null) // 删除确认弹窗
   const [togglingId, setTogglingId] = useState<string | null>(null) // 正在切换可见性的作业ID
 
   // 公开作业刷新机制
@@ -429,8 +430,6 @@ export function PBLProjectDetail({
 
   // 删除提交记录
   const handleDeleteSubmission = async (submissionId: string) => {
-    if (!confirm('确定要删除这条提交记录吗？')) return
-
     try {
       const response = await fetch(`/api/submissions?id=${submissionId}`, {
         method: 'DELETE'
@@ -551,6 +550,14 @@ export function PBLProjectDetail({
       }
 
       // 调用边缘函数进行评估
+      console.log('📤 提交作业参数:', {
+        user_id: userId,
+        content_id: project.id,
+        day_key: currentDayKey,
+        is_public: isPublic,
+        attachments_count: attachments.length
+      })
+
       const { data, error: functionError } = await supabase.functions.invoke('evaluate-pbl-task', {
         body: {
           user_id: userId,
@@ -562,6 +569,8 @@ export function PBLProjectDetail({
           is_public: isPublic
         }
       })
+
+      console.log('📥 边缘函数返回:', data)
 
       if (functionError) {
         throw functionError
@@ -576,6 +585,11 @@ export function PBLProjectDetail({
 
       // 🔄 立即刷新页面数据，更新进度和解锁状态
       router.refresh()
+
+      // 🔄 如果分数>=90且用户选择了公开，刷新优秀作业列表
+      if (data.evaluation?.score >= 90 && isPublic) {
+        setPublicSubmissionsRefreshKey(prev => prev + 1)
+      }
 
     } catch (error) {
       globalToast.error('提交失败，请重试')
@@ -1366,12 +1380,12 @@ export function PBLProjectDetail({
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => setSelectedSubmission(submission)}
-                        className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors text-white"
+                        className="btn-stardust flex-1 px-4 py-2 text-sm font-medium"
                       >
                         查看详情
                       </button>
                       <button
-                        onClick={() => handleDeleteSubmission(submission.id)}
+                        onClick={() => setDeleteConfirmId(submission.id)}
                         className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm font-medium transition-colors text-red-400"
                       >
                         删除
@@ -1496,7 +1510,7 @@ export function PBLProjectDetail({
               {/* 关闭按钮 */}
               <button
                 onClick={() => setSelectedSubmission(null)}
-                className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-semibold hover:opacity-90 transition-all text-white"
+                className="btn-stardust w-full px-6 py-3 font-semibold"
               >
                 关闭
               </button>
@@ -1628,6 +1642,23 @@ export function PBLProjectDetail({
         cancelText="不取消"
         type="warning"
         loading={isProcessing}
+      />
+
+      {/* 删除提交记录确认对话框 */}
+      <ConfirmDialog
+        isOpen={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            handleDeleteSubmission(deleteConfirmId)
+            setDeleteConfirmId(null)
+          }
+        }}
+        title="确认删除"
+        message="确定要删除这条提交记录吗？删除后无法恢复。"
+        confirmText="确认删除"
+        cancelText="取消"
+        type="warning"
       />
 
       {/* Toast 通知 */}

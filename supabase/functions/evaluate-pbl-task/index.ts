@@ -98,7 +98,7 @@ serve(async (req) => {
       )
     }
 
-    console.log(`📝 开始评估：user_id=${user_id}, content_id=${content_id}, day_key=${day_key}`)
+    console.log(`📝 开始评估：user_id=${user_id}, content_id=${content_id}, day_key=${day_key}, is_public=${is_public}`)
 
     // 2. 创建提交记录 - 保存附件信息、day_key和可见性设置
     const { data: newSubmission, error: insertError } = await supabase
