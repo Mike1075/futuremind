@@ -177,17 +177,12 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
       {/* 音频播放器 - 炫彩边框容器 */}
       <div className="audio-section-wrapper">
         <div className="audio-section-inner p-4">
-          {/* 隐藏的原生 audio 元素 */}
+          {/* 隐藏的原生 audio 元素 - 直接使用 src 属性 */}
           <audio
             ref={audioRef}
+            src={src}
             preload="metadata"
-          >
-            <source src={src} type="audio/mpeg" />
-            <source src={src} type="audio/mp3" />
-            <source src={src} type="audio/wav" />
-            <source src={src} type="audio/ogg" />
-            您的浏览器不支持音频播放
-          </audio>
+          />
 
           {/* 错误提示 */}
           {error && (

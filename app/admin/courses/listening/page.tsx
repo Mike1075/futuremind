@@ -477,7 +477,7 @@ export default function ListeningCoursePage() {
         {/* 右侧栏 - 内容编辑器 */}
         <div className="flex-1 overflow-y-auto">
           {selectedContent ? (
-            <div className="max-w-4xl mx-auto p-8">
+            <div className="w-full max-w-none p-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-h2 font-bold text-starlight">第 {selectedContent.sequence_number} 天</h2>
                 <button
@@ -498,7 +498,7 @@ export default function ListeningCoursePage() {
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="input-ethereal"
+                    className="input-ethereal w-full"
                     placeholder="输入标题..."
                   />
                 </div>
@@ -509,7 +509,7 @@ export default function ListeningCoursePage() {
                     value={formData.original_text}
                     onChange={(e) => setFormData({ ...formData, original_text: e.target.value })}
                     rows={6}
-                    className="input-ethereal"
+                    className="input-ethereal w-full"
                     placeholder="输入克里希那穆提的原文摘录..."
                   />
                 </div>
@@ -520,7 +520,7 @@ export default function ListeningCoursePage() {
                     value={formData.deep_interpretation}
                     onChange={(e) => setFormData({ ...formData, deep_interpretation: e.target.value })}
                     rows={10}
-                    className="input-ethereal"
+                    className="input-ethereal w-full"
                     placeholder="输入深度解读内容..."
                   />
                 </div>
@@ -531,7 +531,7 @@ export default function ListeningCoursePage() {
                     value={formData.meditation_guide}
                     onChange={(e) => setFormData({ ...formData, meditation_guide: e.target.value })}
                     rows={10}
-                    className="input-ethereal"
+                    className="input-ethereal w-full"
                     placeholder="输入冥想练习与引导..."
                   />
                 </div>
@@ -542,7 +542,7 @@ export default function ListeningCoursePage() {
                     value={formData.life_practice}
                     onChange={(e) => setFormData({ ...formData, life_practice: e.target.value })}
                     rows={8}
-                    className="input-ethereal"
+                    className="input-ethereal w-full"
                     placeholder="输入生活中的小练习..."
                   />
                 </div>

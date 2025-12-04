@@ -1906,6 +1906,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 10;  /* 🔥 确保边框在内容之上 */
   border-radius: 0.75rem;
   padding: 2px;
   background: linear-gradient(90deg,
