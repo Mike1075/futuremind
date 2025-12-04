@@ -574,14 +574,25 @@ export function PBLProjectDetail({
   let completedDays = 0
 
   if (totalDays > 0) {
-    for (const [key, score] of Object.entries(userProgress)) {
-      if (key.startsWith(currentProjectPrefix) && typeof score === 'number' && score > 0) {
-        // 每天的基础进度 = 1 / 总天数
-        const baseProgress = 1 / totalDays
-        // 实际进度 = 基础进度 × (得分/100)
-        const actualProgress = baseProgress * (score / 100)
-        totalWeightedProgress += actualProgress
-        completedDays++
+    for (const [key, value] of Object.entries(userProgress)) {
+      if (key.startsWith(currentProjectPrefix)) {
+        // 兼容旧数据格式：布尔值 true 视为默认分数 80，数字则直接使用
+        let score = 0
+        if (typeof value === 'number' && value > 0) {
+          score = value
+        } else if (value === true) {
+          // 旧格式：布尔值 true，按 80 分计算
+          score = 80
+        }
+
+        if (score > 0) {
+          // 每天的基础进度 = 1 / 总天数
+          const baseProgress = 1 / totalDays
+          // 实际进度 = 基础进度 × (得分/100)
+          const actualProgress = baseProgress * (score / 100)
+          totalWeightedProgress += actualProgress
+          completedDays++
+        }
       }
     }
   }
@@ -1053,11 +1064,11 @@ export function PBLProjectDetail({
                 )}
 
                 {/* 公开/私密选项 */}
-                <div className="mb-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <div className="mb-4 bg-white/5 border border-white/10 rounded-lg p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-white mb-1">作业可见性</h4>
-                      <p className="text-xs text-gray-400">
+                      <h4 className="text-sm font-semibold text-starlight mb-1">作业可见性</h4>
+                      <p className="text-xs text-starlight-muted">
                         {isPublic
                           ? '你的作业将对其他同学公开展示（需评分≥90分）'
                           : '你的作业仅自己和老师可见'}
@@ -1066,8 +1077,8 @@ export function PBLProjectDetail({
                     <button
                       type="button"
                       onClick={() => setIsPublic(!isPublic)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                        isPublic ? 'bg-green-500' : 'bg-gray-600'
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+                        isPublic ? 'bg-emerald-500' : 'bg-white/20'
                       }`}
                     >
                       <span
@@ -1079,7 +1090,7 @@ export function PBLProjectDetail({
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <span className={`px-2 py-0.5 rounded ${
-                      isPublic ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'
+                      isPublic ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-starlight-muted'
                     }`}>
                       {isPublic ? '公开' : '私密'}
                     </span>
@@ -1294,11 +1305,11 @@ export function PBLProjectDetail({
 
                     {/* 公开/私密切换 */}
                     {submission.status === 'approved' && (
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-700">
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-400">作业可见性:</span>
+                          <span className="text-sm text-starlight-muted">作业可见性:</span>
                           <span className={`text-xs px-2 py-0.5 rounded ${
-                            (submission.is_public ?? false) ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'
+                            (submission.is_public ?? false) ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-starlight-muted'
                           }`}>
                             {(submission.is_public ?? false) ? '公开' : '私密'}
                           </span>
@@ -1310,8 +1321,8 @@ export function PBLProjectDetail({
                             togglingId === submission.id
                               ? 'opacity-50 cursor-not-allowed'
                               : (submission.is_public ?? false)
-                              ? 'bg-green-500'
-                              : 'bg-gray-600'
+                              ? 'bg-emerald-500'
+                              : 'bg-white/20'
                           }`}
                         >
                           <span
