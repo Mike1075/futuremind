@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { ConsciousnessTreeCanvas } from './ConsciousnessTreeCanvas'
@@ -10,13 +10,82 @@ import { TreeParams, TreeGrowthData } from '@/lib/utils/consciousnessTreeGenerat
 import { ArrowLeft, Sparkles, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
-// 默认生长数据（累积生长制 - 可手动调控）
-const INITIAL_GROWTH_DATA: TreeGrowthData = {
+// 默认生长数据（种子状态 - 初始值）
+const SEED_STATE: TreeGrowthData = {
+  roots: { count: 0, depth_level: 0, is_solid: false },
+  trunk: { thickness: 0, height_level: 0, is_solid: false },
+  branches: { count: 0, avg_length: 0, is_solid: false },
+  leaves: { count: 0, is_solid: false },
+  fruits: { count: 0, is_solid: false },
+}
+
+// 演示用默认数据
+const DEMO_GROWTH_DATA: TreeGrowthData = {
   roots: { count: 12, depth_level: 3.5, is_solid: true },
   trunk: { thickness: 10, height_level: 5, is_solid: true },
   branches: { count: 10, avg_length: 0, is_solid: true },
   leaves: { count: 0, is_solid: false },
   fruits: { count: 0, is_solid: false },
+}
+
+/**
+ * 数据格式迁移函数（与 ConsciousnessTreeView 保持一致）
+ */
+function migrateOldFormat(dbData: any): TreeGrowthData {
+  if (!dbData) return SEED_STATE
+
+  // 检测旧格式1：main_roots 格式
+  const isMainRootsFormat = dbData?.roots?.main_roots !== undefined
+  if (isMainRootsFormat) {
+    const mainRoots = dbData.roots.main_roots || []
+    const totalRootLength = mainRoots.reduce((sum: number, root: any) => sum + (root.length || 0), 0)
+    const avgRootLength = mainRoots.length > 0 ? totalRootLength / mainRoots.length : 0
+    const trunkThickness = dbData?.trunk?.thickness ?? 0
+    const trunkStability = dbData?.trunk?.stability ?? 0
+    const totalLeaves = dbData?.branches_and_leaves?.total_leaves ?? 0
+    const fruitsCount = Array.isArray(dbData?.fruits) ? dbData.fruits.length : 0
+
+    const isInitialEmptyState = totalRootLength === 0 && totalLeaves === 0 && fruitsCount === 0 && (trunkThickness <= 1 && trunkStability <= 1)
+    if (isInitialEmptyState) return SEED_STATE
+
+    const rootsSolid = totalRootLength > 0
+    const trunkSolid = rootsSolid && trunkThickness > 0
+
+    return {
+      roots: { count: mainRoots.length, depth_level: avgRootLength, is_solid: rootsSolid },
+      trunk: { thickness: trunkThickness, height_level: trunkStability * 10, is_solid: trunkSolid },
+      branches: { count: Math.floor(totalLeaves / 10), avg_length: totalLeaves > 0 ? 5 : 0, is_solid: trunkSolid && totalLeaves > 0 },
+      leaves: { count: totalLeaves, is_solid: trunkSolid && totalLeaves > 0 },
+      fruits: { count: fruitsCount, is_solid: trunkSolid && fruitsCount > 0 }
+    }
+  }
+
+  // 检测旧格式2：growth_value 格式
+  const isGrowthValueFormat = dbData?.roots?.growth_value !== undefined
+  if (isGrowthValueFormat) {
+    const rootsValue = dbData?.roots?.growth_value ?? 0
+    const trunkValue = dbData?.trunk?.growth_value ?? 0
+    const branchesValue = dbData?.branches?.growth_value ?? 0
+    const leavesValue = dbData?.leaves?.growth_value ?? 0
+    const fruitsValue = dbData?.fruits?.growth_value ?? 0
+
+    return {
+      roots: { count: Math.round((rootsValue / 100) * 20), depth_level: (rootsValue / 100) * 10, is_solid: dbData?.roots?.is_solid ?? false },
+      trunk: { thickness: (trunkValue / 100) * 50, height_level: trunkValue, is_solid: dbData?.trunk?.is_solid ?? false },
+      branches: { count: Math.round((branchesValue / 100) * 20), avg_length: (branchesValue / 100) * 10, is_solid: dbData?.branches?.is_solid ?? false },
+      leaves: { count: Math.round((leavesValue / 100) * 200), is_solid: dbData?.leaves?.is_solid ?? false },
+      fruits: { count: Math.round((fruitsValue / 100) * 20), is_solid: dbData?.fruits?.is_solid ?? false },
+    }
+  }
+
+  // 新格式直接返回
+  return {
+    roots: { count: dbData?.roots?.count ?? 0, depth_level: dbData?.roots?.depth_level ?? 0, is_solid: dbData?.roots?.is_solid ?? false },
+    trunk: { thickness: dbData?.trunk?.thickness ?? 0, height_level: dbData?.trunk?.height_level ?? 0, is_solid: dbData?.trunk?.is_solid ?? false },
+    branches: { count: dbData?.branches?.count ?? 0, avg_length: dbData?.branches?.avg_length ?? 0, is_solid: dbData?.branches?.is_solid ?? false },
+    leaves: { count: dbData?.leaves?.count ?? 0, is_solid: dbData?.leaves?.is_solid ?? false },
+    fruits: { count: dbData?.fruits?.count ?? 0, is_solid: dbData?.fruits?.is_solid ?? false },
+  }
 }
 
 interface ConsciousnessTreeClientProps {
@@ -26,13 +95,45 @@ interface ConsciousnessTreeClientProps {
 
 export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeClientProps) {
   const router = useRouter()
-  const [growthData, setGrowthData] = useState<TreeGrowthData>(INITIAL_GROWTH_DATA)
+  const [growthData, setGrowthData] = useState<TreeGrowthData>(SEED_STATE)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [zoom, setZoom] = useState(1)
   const [refreshKey, setRefreshKey] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isDataLoaded, setIsDataLoaded] = useState(false)
 
   const isPrincipal = userRole === 'principal'
+
+  // 🔥 校长用户：从数据库加载真实数据作为初始值
+  useEffect(() => {
+    if (!isPrincipal) return
+
+    const loadTreeData = async () => {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('consciousness_tree_view')
+          .eq('id', userId)
+          .maybeSingle()
+
+        if (error) throw error
+
+        if (data?.consciousness_tree_view) {
+          const migratedData = migrateOldFormat(data.consciousness_tree_view)
+          setGrowthData(migratedData)
+        }
+      } catch (err) {
+        console.error('加载意识树数据失败:', err)
+        // 失败时使用演示数据
+        setGrowthData(DEMO_GROWTH_DATA)
+      } finally {
+        setIsDataLoaded(true)
+      }
+    }
+
+    loadTreeData()
+  }, [userId, isPrincipal])
 
   // 技术参数状态（简化版）
   const [techParams, setTechParams] = useState<TreeParams>({
@@ -84,21 +185,15 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
     }))
   }
 
-  // 重置为初始值
+  // 重置为演示值
   const resetToDefaults = () => {
-    setGrowthData(INITIAL_GROWTH_DATA)
-    setMessage({ type: 'success', text: '✅ 已重置为默认值' })
+    setGrowthData(DEMO_GROWTH_DATA)
+    setMessage({ type: 'success', text: '✅ 已重置为演示值' })
   }
 
   // 清空为种子状态
   const resetToSeed = () => {
-    setGrowthData({
-      roots: { count: 0, depth_level: 0, is_solid: false },
-      trunk: { thickness: 0, height_level: 0, is_solid: false },
-      branches: { count: 0, avg_length: 0, is_solid: false },
-      leaves: { count: 0, is_solid: false },
-      fruits: { count: 0, is_solid: false },
-    })
+    setGrowthData(SEED_STATE)
     setMessage({ type: 'success', text: '🌱 已重置为种子状态' })
   }
 

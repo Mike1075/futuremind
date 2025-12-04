@@ -441,7 +441,44 @@ body {
   color: var(--color-starlight);
 }
 
-/* ========== 音频播放器玻璃样式 ========== */
+/* ========== 音频播放器自定义样式（宇宙主题） ========== */
+.audio-player-custom {
+  border-radius: 8px;
+  background: transparent;
+}
+
+/* Webkit (Chrome, Safari, Edge) 音频控件样式 */
+.audio-player-custom::-webkit-media-controls-panel {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.2));
+  border-radius: 8px;
+}
+
+.audio-player-custom::-webkit-media-controls-play-button {
+  filter: brightness(1.5);
+}
+
+.audio-player-custom::-webkit-media-controls-current-time-display,
+.audio-player-custom::-webkit-media-controls-time-remaining-display {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+}
+
+.audio-player-custom::-webkit-media-controls-timeline {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  height: 6px;
+}
+
+.audio-player-custom::-webkit-media-controls-volume-slider {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.audio-player-custom::-webkit-media-controls-mute-button {
+  filter: brightness(1.5);
+}
+
+/* 旧版玻璃样式（保留兼容） */
 .audio-player-glass {
   filter: invert(1) hue-rotate(180deg);
   border-radius: 8px;

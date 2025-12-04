@@ -219,8 +219,9 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
                     </div>
                     <h3 className="font-semibold text-white">{resource.title}</h3>
                   </div>
-                  <div className="progress-ethereal rounded-full overflow-hidden">
-                    <audio controls className="w-full audio-player-glass">
+                  {/* 音频播放器容器 - 玻璃透明效果 */}
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3">
+                    <audio controls className="w-full h-12 audio-player-custom">
                       <source src={resource.url} type="audio/mpeg" />
                       您的浏览器不支持音频播放
                     </audio>
