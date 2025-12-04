@@ -692,7 +692,7 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
      - `components/courses/PBLProjectDetail.tsx` - 按钮样式、可见性逻辑、等待提示
      - `supabase/functions/evaluate-pbl-task/index.ts` - AI 改进建议
      - `app/api/pbl/clear-day-progress/route.ts` - 新增清除进度 API
-   - **⚠️ 边缘函数需手动部署**：`npx supabase functions deploy evaluate-pbl-task --no-verify-jwt`
+   - **✅ 边缘函数已部署**（如需重新部署：`npx supabase functions deploy evaluate-pbl-task --no-verify-jwt`）
 
 ### 盖亚知识库项目说明
 
