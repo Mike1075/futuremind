@@ -22,25 +22,50 @@ interface CachedTreeData {
  * 从缓存获取意识树数据
  */
 export function getCachedTreeData(userId: string): TreeGrowthData | null {
-  if (typeof window === 'undefined') return null
+  if (typeof window === 'undefined') {
+    console.log('[TreeCache] SSR环境，跳过缓存')
+    return null
+  }
 
   try {
     const cached = sessionStorage.getItem(CACHE_KEY)
-    if (!cached) return null
+    console.log('[TreeCache] 读取缓存', {
+      key: CACHE_KEY,
+      hasData: !!cached,
+      userId
+    })
+
+    if (!cached) {
+      console.log('[TreeCache] 缓存为空')
+      return null
+    }
 
     const parsed: CachedTreeData = JSON.parse(cached)
+    console.log('[TreeCache] 解析缓存', {
+      cachedUserId: parsed.userId,
+      requestUserId: userId,
+      match: parsed.userId === userId,
+      timestamp: new Date(parsed.timestamp).toISOString(),
+      age: Date.now() - parsed.timestamp
+    })
 
     // 检查是否是同一用户的数据
-    if (parsed.userId !== userId) return null
+    if (parsed.userId !== userId) {
+      console.log('[TreeCache] 用户ID不匹配')
+      return null
+    }
 
     // 检查缓存是否过期
     if (Date.now() - parsed.timestamp > CACHE_EXPIRY) {
+      console.log('[TreeCache] 缓存已过期')
       sessionStorage.removeItem(CACHE_KEY)
       return null
     }
 
+    console.log('[TreeCache] ✅ 返回有效缓存', parsed.data)
     return parsed.data
-  } catch {
+  } catch (e) {
+    console.error('[TreeCache] 读取缓存出错', e)
     return null
   }
 }
@@ -58,8 +83,9 @@ export function setCachedTreeData(userId: string, data: TreeGrowthData): void {
       timestamp: Date.now()
     }
     sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
-  } catch {
-    // 静默处理存储错误（如 quota exceeded）
+    console.log('[TreeCache] ✅ 已保存缓存', { userId, data })
+  } catch (e) {
+    console.error('[TreeCache] 保存缓存出错', e)
   }
 }
 

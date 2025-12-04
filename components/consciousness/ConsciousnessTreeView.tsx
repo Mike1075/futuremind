@@ -167,10 +167,25 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
   // 🔥 在初始化时同步检查缓存（避免闪烁）
   const initialCached = typeof window !== 'undefined' ? getCachedTreeData(userId) : null
 
+  // 🔍 调试日志
+  console.log('[ConsciousnessTreeView] 初始化', {
+    userId,
+    isPreview,
+    hasInitialCache: !!initialCached,
+    initialCachedData: initialCached
+  })
+
   const [growthData, setGrowthData] = useState<TreeGrowthData>(initialCached || INITIAL_GROWTH_DATA)
   const [loading, setLoading] = useState(!initialCached) // 有缓存则不显示 loading
   const [error, setError] = useState<string | null>(null)
   const hasCacheRef = useRef(!!initialCached)
+
+  // 🔍 调试：打印初始状态
+  console.log('[ConsciousnessTreeView] 初始状态', {
+    loading: !initialCached,
+    hasCacheRef: !!initialCached,
+    growthDataIsEmpty: !initialCached
+  })
 
   // 后台异步加载最新数据（不影响已显示的缓存）
   useEffect(() => {

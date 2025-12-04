@@ -1968,10 +1968,8 @@ body {
   position: relative;
   z-index: 1;
   border-radius: calc(0.75rem - 1px);
-  /* 🔥 透明玻璃效果 */
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* 🔥 完全透明背景（不用 blur，避免彩色渗透） */
+  background: transparent;
 }
 
 /* 卡片炫彩边框效果 - 只有边框炫彩，内部保持透明玻璃 */
