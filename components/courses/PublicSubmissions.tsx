@@ -283,17 +283,28 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {selectedSubmission.attachments.filter(att => att.type === 'image').map((attachment, idx) => (
-                        <div
-                          key={idx}
-                          className="relative aspect-square rounded-lg overflow-hidden bg-cosmic-void border border-white/10"
-                        >
-                          <Image
-                            src={attachment.url}
-                            alt={attachment.name}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 50vw, 33vw"
-                          />
+                        <div key={idx} className="space-y-2">
+                          <div className="relative aspect-square rounded-lg overflow-hidden bg-cosmic-void border border-white/10">
+                            <Image
+                              src={attachment.url}
+                              alt={attachment.name}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                            />
+                          </div>
+                          {/* 查看原图链接 */}
+                          <a
+                            href={attachment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                          >
+                            <span>查看原图</span>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
                         </div>
                       ))}
                     </div>
