@@ -63,13 +63,33 @@ types/                 # TypeScript 类型定义
 - 输入框: `bg-white/5 border border-white/20`（玻璃透明效果）
 - 禁用输入框: `bg-white/5 border border-white/10`（更淡的边框）
 - 下拉框/select: `bg-white/5 border border-white/20`（与输入框一致）
-- 开关（关闭态）: `bg-white/20`（不要用 `bg-gray-600`）
 
-#### 5. Toast 提示
+#### 5. 开关组件 (Toggle Switch)
+- **关闭态**: `bg-white/20`（❌ 不要用 `bg-gray-600`）
+- **开启态**: `bg-emerald-500`（统一用翠绿色表示开启）
+- **焦点环**: `focus:ring-purple-500 focus:ring-offset-black`
+- **状态标签**:
+  - 开启: `bg-emerald-500/20 text-emerald-400`
+  - 关闭: `bg-white/10 text-starlight-muted`
+
+```jsx
+// 标准开关组件示例
+<button
+  onClick={() => setEnabled(!enabled)}
+  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+    focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black
+    ${enabled ? 'bg-emerald-500' : 'bg-white/20'}`}
+>
+  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+    ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+</button>
+```
+
+#### 6. Toast 提示
 - 位置: 屏幕正中央（`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`）
 - 样式: 玻璃透明背景 + 对应状态的边框颜色
 
-#### 6. 进度条
+#### 7. 进度条
 - 使用 `progress-ethereal` + `progress-ethereal-bar` 类
 - 彩虹渐变效果
 
@@ -632,6 +652,30 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
      - `components/aip/OrganizationList.tsx` - 添加编辑/删除按钮
      - `components/aip/EditOrganizationModal.tsx` - 编辑组织弹窗
      - `components/aip/CreateOrganizationModal.tsx` - UI 优化（玻璃效果、开关颜色统一）
+
+6. **✅ 作业可见性逻辑和 UI 修复 (2025-12-03)**
+   - **问题 1**：用户选择"公开"但分数<90，系统显示"私密"，应该保持显示"公开"
+   - **修复**：始终显示用户的选择，分数不足时显示提示"(分数未达90，暂不展示)"
+   - **问题 2**：开关组件关闭态使用 `bg-gray-600`，不符合玻璃透明设计规范
+   - **修复**：统一改为 `bg-white/20`（关闭态）、`bg-emerald-500`（开启态）
+   - **涉及文件**：
+     - `app/courses/[system_key]/[content_id]/SubmissionDialog.tsx`
+     - `app/courses/[system_key]/[content_id]/SubmissionHistory.tsx`
+     - `components/courses/EarthContentDetail.tsx`
+     - `components/courses/PBLProjectDetail.tsx`
+
+7. **✅ 伊卡洛斯项目进度条不更新 (2025-12-04)**
+   - **问题**：提交作业后显示"已完成"，但进度条始终为 0%
+   - **原因**：
+     - 数据库中旧数据的 `progress` 字段存储布尔值 `true`，而非分数
+     - 前端代码只检查 `typeof score === 'number'`，忽略了布尔值
+     - 导致"已完成"标签显示正常（`true > 0` 为真），但进度计算为 0%
+   - **修复**：
+     - 前端进度计算逻辑现在同时支持布尔值和数字两种格式
+     - 布尔值 `true` 视为默认分数 80 进行计算
+     - 数据库旧数据通过 SQL 更新为实际分数
+   - **涉及文件**：`components/courses/PBLProjectDetail.tsx`
+   - **数据库修复**：`user_selected_projects.progress` 中的布尔值已转换为数字
 
 ### 盖亚知识库项目说明
 
