@@ -677,6 +677,23 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
    - **涉及文件**：`components/courses/PBLProjectDetail.tsx`
    - **数据库修复**：`user_selected_projects.progress` 中的布尔值已转换为数字
 
+8. **✅ 伊卡洛斯项目多项 UI 和功能优化 (2025-12-04)**
+   - **问题 1**：提交对话框按钮未使用 `btn-stardust` 风格
+   - **修复**：统一使用 `btn-stardust`，移除渐变背景
+   - **问题 2**：公开/私密状态在分数<90时未正确显示
+   - **修复**：始终显示用户选择，分数不足时显示"(分数未达90，暂不展示)"
+   - **问题 3**：删除所有提交记录后，按钮仍显示"再次提交"
+   - **修复**：删除最后一条记录时同时清除 `userProgress` 中的对应条目
+   - **问题 4**：AI 评语缺少改进建议
+   - **修复**：边缘函数 prompt 添加 `suggestions` 字段，分数<90时给出具体可操作建议
+   - **问题 5**：上传等待时间约 20 秒但无提示
+   - **修复**：添加"请耐心等待，不要关闭对话框，大约需要 30 秒左右"提示
+   - **涉及文件**：
+     - `components/courses/PBLProjectDetail.tsx` - 按钮样式、可见性逻辑、等待提示
+     - `supabase/functions/evaluate-pbl-task/index.ts` - AI 改进建议
+     - `app/api/pbl/clear-day-progress/route.ts` - 新增清除进度 API
+   - **⚠️ 边缘函数需手动部署**：`npx supabase functions deploy evaluate-pbl-task --no-verify-jwt`
+
 ### 盖亚知识库项目说明
 
 | 项目 | 值 |
