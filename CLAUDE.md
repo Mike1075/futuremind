@@ -694,6 +694,20 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
      - `app/api/pbl/clear-day-progress/route.ts` - 新增清除进度 API
    - **✅ 边缘函数已部署**（如需重新部署：`npx supabase functions deploy evaluate-pbl-task --no-verify-jwt`）
 
+9. **✅ 伊卡洛斯项目 UI 优化续 (2025-12-04)**
+   - **问题 1**："查看详情"按钮未使用 `btn-stardust` 炫彩样式
+   - **修复**：所有操作按钮统一使用 `btn-stardust`
+   - **问题 2**：删除确认框使用原生 `confirm()`，样式丑陋
+   - **修复**：改用自定义 `ConfirmDialog` 组件，居中显示美观对话框
+   - **问题 3**：提交90分作业后"优秀作业"列表未刷新
+   - **修复**：提交成功且分数>=90时触发 `publicSubmissionsRefreshKey` 更新
+   - **问题 4**：用户选择公开但显示私密
+   - **调查**：数据库显示 `is_public=false`，添加调试日志追踪
+   - **日志位置**：前端 `handleSubmitTask` + 边缘函数 `evaluate-pbl-task`
+   - **涉及文件**：
+     - `components/courses/PBLProjectDetail.tsx`
+     - `supabase/functions/evaluate-pbl-task/index.ts`
+
 ### 盖亚知识库项目说明
 
 | 项目 | 值 |
