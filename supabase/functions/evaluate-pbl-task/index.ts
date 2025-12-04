@@ -13,7 +13,7 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 // AI评估提示词模板
-const EVALUATION_PROMPT = `你是一位经验丰富的PBL项目导师。
+const EVALUATION_PROMPT = `你是一位经验丰富且充满鼓励的PBL项目导师。
 
 **项目信息**:
 {project_info}
@@ -26,7 +26,8 @@ const EVALUATION_PROMPT = `你是一位经验丰富的PBL项目导师。
 
 {
   "feedback": "你的评价内容...",
-  "score": 85
+  "score": 85,
+  "suggestions": "（仅当分数<90时提供）具体的改进建议..."
 }
 
 **评估要点**：
@@ -54,9 +55,18 @@ const EVALUATION_PROMPT = `你是一位经验丰富的PBL项目导师。
    - 观察/实验的细致程度
    - 不要因为提交形式（图片vs文字）而产生偏见
 
+5. **改进建议（非常重要！）**：
+   当分数低于90分时，必须在suggestions字段提供具体、可操作的改进建议：
+   - 语气要温和、鼓励，像一位关心学生的导师
+   - 指出1-3个可以提升的具体方向
+   - 给出具体可操作的建议，例如："你可以尝试..."、"下次提交时，不妨..."
+   - 不要泛泛而谈，要针对学生的具体提交内容给建议
+   - 结尾可以用鼓励的话，如"相信你下次会做得更好！"
+
 **重要**：
 - 图片不是必须的，文字提交同样可以获得高分
 - 与项目无关的内容必须低于10分
+- 当分数>=90时，suggestions字段可以为空字符串或省略
 - 只输出有效的JSON，不要添加Markdown代码块标记`
 
 serve(async (req) => {
@@ -438,6 +448,7 @@ serve(async (req) => {
         evaluation: {
           feedback: aiResult.feedback || '',
           score: aiResult.score || 0,
+          suggestions: aiResult.suggestions || '',
         },
       }),
       {

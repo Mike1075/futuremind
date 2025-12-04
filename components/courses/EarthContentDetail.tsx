@@ -1290,11 +1290,11 @@ export function EarthContentDetail({
 
                         {/* 公开/私密切换 */}
                         {submission.status === 'approved' && (
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-700">
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-400">作业可见性:</span>
+                              <span className="text-sm text-starlight-muted">作业可见性:</span>
                               <span className={`text-xs px-2 py-0.5 rounded ${
-                                (submission.is_public ?? false) ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'
+                                (submission.is_public ?? false) ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-starlight-muted'
                               }`}>
                                 {(submission.is_public ?? false) ? '公开' : '私密'}
                               </span>
@@ -1306,8 +1306,8 @@ export function EarthContentDetail({
                                 togglingId === submission.id
                                   ? 'opacity-50 cursor-not-allowed'
                                   : (submission.is_public ?? false)
-                                  ? 'bg-green-500'
-                                  : 'bg-gray-600'
+                                  ? 'bg-emerald-500'
+                                  : 'bg-white/20'
                               }`}
                             >
                               <span

@@ -438,7 +438,27 @@ export function PBLProjectDetail({
 
       if (response.ok) {
         // 立即从本地状态中移除
-        setSubmissionsHistory(prev => prev.filter(s => s.id !== submissionId))
+        const newHistory = submissionsHistory.filter(s => s.id !== submissionId)
+        setSubmissionsHistory(newHistory)
+
+        // 如果删除后没有更多记录，需要清除该天的进度
+        if (newHistory.length === 0 && historyDayKey && selectionId) {
+          try {
+            await fetch('/api/pbl/clear-day-progress', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                selectionId,
+                dayKey: historyDayKey
+              })
+            })
+            // 刷新页面以更新进度状态
+            router.refresh()
+          } catch {
+            // 静默处理，不影响删除成功的提示
+          }
+        }
+
         globalToast.success('删除成功')
       } else {
         const error = await response.json()
@@ -1054,12 +1074,17 @@ export function PBLProjectDetail({
 
                 {/* 上传进度提示 */}
                 {uploading && (
-                  <div className="mb-4 flex items-center gap-3 bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-                    <svg className="animate-spin h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p className="text-sm text-blue-400">正在上传文件和提交作业...</p>
+                  <div className="mb-4 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <svg className="animate-spin h-5 w-5 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <p className="text-sm text-blue-400 font-medium">正在上传文件并等待AI批改...</p>
+                    </div>
+                    <p className="text-xs text-blue-300/80 ml-8">
+                      ⏳ 请耐心等待，不要关闭对话框，大约需要 30 秒左右
+                    </p>
                   </div>
                 )}
 
@@ -1121,7 +1146,7 @@ export function PBLProjectDetail({
                   <button
                     onClick={handleSubmitTask}
                     disabled={!!submittingDay || !submissionContent.trim() || uploading}
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn-stardust flex-1 px-4 py-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {uploading ? '上传中...' : submittingDay ? '提交中...' : '确认提交'}
                   </button>
@@ -1131,7 +1156,7 @@ export function PBLProjectDetail({
                       setHistoryDayLabel(null)
                     }}
                     disabled={!!submittingDay || uploading}
-                    className="px-4 py-2 bg-gray-800 rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="btn-stardust px-4 py-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     取消
                   </button>
@@ -1190,7 +1215,7 @@ export function PBLProjectDetail({
                     setHistoryDayLabel(null)
                     router.refresh()
                   }}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                  className="btn-stardust w-full px-4 py-2 font-medium"
                 >
                   关闭
                 </button>
@@ -1303,7 +1328,7 @@ export function PBLProjectDetail({
                       </div>
                     </div>
 
-                    {/* 公开/私密切换 */}
+                    {/* 公开/私密切换 - 始终显示用户的选择 */}
                     {submission.status === 'approved' && (
                       <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
                         <div className="flex items-center gap-2">
@@ -1314,23 +1339,26 @@ export function PBLProjectDetail({
                             {(submission.is_public ?? false) ? '公开' : '私密'}
                           </span>
                         </div>
-                        <button
-                          onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
-                          disabled={togglingId === submission.id}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                            togglingId === submission.id
-                              ? 'opacity-50 cursor-not-allowed'
-                              : (submission.is_public ?? false)
-                              ? 'bg-emerald-500'
-                              : 'bg-white/20'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
+                        {/* 只有分数 >= 90 才能切换，否则显示提示 */}
+                        {submission.score && submission.score >= 90 ? (
+                          <button
+                            onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
+                            disabled={togglingId === submission.id}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed ${
+                              (submission.is_public ?? false) ? 'bg-emerald-500' : 'bg-white/20'
                             }`}
-                          />
-                        </button>
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        ) : (submission.is_public ?? false) ? (
+                          <span className="text-xs text-amber-400/80">
+                            (分数未达90，暂不展示)
+                          </span>
+                        ) : null}
                       </div>
                     )}
 

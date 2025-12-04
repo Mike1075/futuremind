@@ -222,8 +222,8 @@ export default function SubmissionDialog({
                   <button
                     type="button"
                     onClick={() => setIsPublic(!isPublic)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
-                      isPublic ? 'bg-blue-600' : 'bg-gray-600'
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+                      isPublic ? 'bg-emerald-500' : 'bg-white/20'
                     }`}
                   >
                     <span
@@ -235,7 +235,7 @@ export default function SubmissionDialog({
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <span className={`px-2 py-0.5 rounded ${
-                    isPublic ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-700 text-gray-400'
+                    isPublic ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-starlight-muted'
                   }`}>
                     {isPublic ? '公开' : '私密'}
                   </span>

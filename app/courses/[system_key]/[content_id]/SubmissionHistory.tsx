@@ -277,37 +277,38 @@ export default function SubmissionHistory({
                             </p>
                           )}
 
-                          {/* 公开/私密切换开关 */}
-                          {submission.score && submission.score >= 90 && (
-                            <div className="flex items-center gap-3 bg-gray-900/50 border border-gray-700 rounded-lg px-4 py-2">
-                              <div className="flex items-center gap-2">
-                                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-sm text-gray-300">作业可见性</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
-                                disabled={togglingId === submission.id}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed ${
-                                  (submission.is_public ?? false) ? 'bg-blue-600' : 'bg-gray-600'
+                          {/* 公开/私密切换开关 - 始终显示用户的选择 */}
+                        <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-starlight-muted">作业可见性:</span>
+                            <span className={`text-xs px-2 py-0.5 rounded ${
+                              (submission.is_public ?? false) ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-starlight-muted'
+                            }`}>
+                              {(submission.is_public ?? false) ? '公开' : '私密'}
+                            </span>
+                          </div>
+                          {/* 只有分数 >= 90 才能切换，否则显示提示 */}
+                          {submission.score && submission.score >= 90 ? (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
+                              disabled={togglingId === submission.id}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed ${
+                                (submission.is_public ?? false) ? 'bg-emerald-500' : 'bg-white/20'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                  (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
                                 }`}
-                              >
-                                <span
-                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                    (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
-                                  }`}
-                                />
-                              </button>
-                              <span className={`text-xs font-medium ${
-                                (submission.is_public ?? false) ? 'text-blue-400' : 'text-gray-400'
-                              }`}>
-                                {togglingId === submission.id ? '切换中...' : ((submission.is_public ?? false) ? '公开' : '私密')}
-                              </span>
-                            </div>
-                          )}
+                              />
+                            </button>
+                          ) : (submission.is_public ?? false) ? (
+                            <span className="text-xs text-amber-400/80">
+                              (分数未达90，暂不展示)
+                            </span>
+                          ) : null}
+                        </div>
                         </div>
 
                         {/* 删除按钮 */}
