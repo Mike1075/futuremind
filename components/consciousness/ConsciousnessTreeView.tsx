@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { ConsciousnessTreeCanvas } from './ConsciousnessTreeCanvas'
 import { TreeGrowthData, TreeParams } from '@/lib/utils/consciousnessTreeGenerator'
 import { createClient } from '@/lib/supabase/client'
@@ -164,79 +164,58 @@ function migrateOldFormat(dbData: any): TreeGrowthData {
 }
 
 export function ConsciousnessTreeView({ userId, isPreview = false, techParams }: ConsciousnessTreeViewProps) {
-  const [growthData, setGrowthData] = useState<TreeGrowthData>(INITIAL_GROWTH_DATA)
-  const [loading, setLoading] = useState(true)
+  // 🔥 在初始化时同步检查缓存（避免闪烁）
+  const initialCached = typeof window !== 'undefined' ? getCachedTreeData(userId) : null
+
+  const [growthData, setGrowthData] = useState<TreeGrowthData>(initialCached || INITIAL_GROWTH_DATA)
+  const [loading, setLoading] = useState(!initialCached) // 有缓存则不显示 loading
   const [error, setError] = useState<string | null>(null)
-  const [hasCacheLoaded, setHasCacheLoaded] = useState(false)
+  const hasCacheRef = useRef(!!initialCached)
 
-  // 🔥 优先从缓存加载（同步，立即显示）
+  // 后台异步加载最新数据（不影响已显示的缓存）
   useEffect(() => {
-    const cached = getCachedTreeData(userId)
-    if (cached) {
-      setGrowthData(cached)
-      setLoading(false) // 有缓存时不显示 loading
-      setHasCacheLoaded(true)
-    }
-  }, [userId])
-
-  // PF-08: 使用useCallback优化loadTreeData，避免不必要的重新创建
-  const loadTreeData = useCallback(async () => {
-    try {
-      // 🔥 如果已从缓存加载，不重置 loading 状态（平滑更新）
-      if (!hasCacheLoaded) {
-        setLoading(true)
-      }
-      setError(null)
-
-      // 添加超时保护（5秒）
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('加载超时')), 5000)
-      })
-
-      const supabase = createClient()
-
-      // 从 profiles 表获取 consciousness_tree_view
-      const dataPromise = supabase
-        .from('profiles')
-        .select('consciousness_tree_view')
-        .eq('id', userId)
-        .maybeSingle()
-
-      const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any
-
-      if (error) throw error
-
-      if (data?.consciousness_tree_view) {
-        // 使用迁移函数自动处理新旧格式
-        const migratedData = migrateOldFormat(data.consciousness_tree_view)
-        setGrowthData(migratedData)
-        // 🔥 更新缓存
-        setCachedTreeData(userId, migratedData)
-      } else {
-        // 如果没有数据，使用种子状态
-        setGrowthData(INITIAL_GROWTH_DATA)
-        setCachedTreeData(userId, INITIAL_GROWTH_DATA)
-      }
-    } catch {
-      // 预览模式下即使加载失败也显示种子状态
-      if (isPreview) {
-        setGrowthData(INITIAL_GROWTH_DATA)
+    const loadTreeData = async () => {
+      try {
         setError(null)
-      } else {
-        // 🔥 如果已有缓存数据，不显示错误
-        if (!hasCacheLoaded) {
+
+        const supabase = createClient()
+
+        // 从 profiles 表获取 consciousness_tree_view
+        const { data, error: dbError } = await supabase
+          .from('profiles')
+          .select('consciousness_tree_view')
+          .eq('id', userId)
+          .maybeSingle()
+
+        if (dbError) throw dbError
+
+        if (data?.consciousness_tree_view) {
+          // 使用迁移函数自动处理新旧格式
+          const migratedData = migrateOldFormat(data.consciousness_tree_view)
+          setGrowthData(migratedData)
+          // 🔥 更新缓存
+          setCachedTreeData(userId, migratedData)
+        } else {
+          // 如果没有数据，使用种子状态
+          setGrowthData(INITIAL_GROWTH_DATA)
+          setCachedTreeData(userId, INITIAL_GROWTH_DATA)
+        }
+      } catch {
+        // 预览模式下即使加载失败也显示种子状态
+        if (isPreview) {
+          setGrowthData(INITIAL_GROWTH_DATA)
+          setError(null)
+        } else if (!hasCacheRef.current) {
+          // 只有没有缓存时才显示错误
           setError('无法加载意识树数据')
         }
+      } finally {
+        setLoading(false)
       }
-    } finally {
-      setLoading(false)
     }
-  }, [userId, isPreview, hasCacheLoaded]) // PF-08: 添加useCallback依赖
 
-  // 组件挂载和userId变化时加载数据（后台刷新最新数据）
-  useEffect(() => {
     loadTreeData()
-  }, [loadTreeData])
+  }, [userId, isPreview])
 
   if (loading) {
     return (

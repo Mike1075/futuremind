@@ -441,93 +441,45 @@ body {
   color: var(--color-starlight);
 }
 
-/* ========== 音频播放器自定义样式（宇宙透明主题） ========== */
+/* ========== 音频播放器自定义样式（透明背景 + 炫彩进度条） ========== */
 .audio-player-custom {
-  border-radius: 12px;
-  background: transparent !important;
   width: 100%;
-  min-height: 54px;
-  /* 确保可点击 */
-  pointer-events: auto;
-  cursor: pointer;
+  border-radius: 8px;
 }
 
-/* Webkit (Chrome, Safari, Edge) 音频控件面板 - 透明背景 */
+/* Webkit (Chrome, Safari, Edge) - 透明面板 */
 .audio-player-custom::-webkit-media-controls-panel {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-radius: 12px;
-  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
 }
 
-/* 封面区域透明 */
 .audio-player-custom::-webkit-media-controls-enclosure {
-  background: transparent !important;
-  border-radius: 12px;
+  background: transparent;
+  border-radius: 8px;
 }
 
-/* 播放按钮 - 炫彩发光 */
-.audio-player-custom::-webkit-media-controls-play-button {
-  filter: brightness(1.3) drop-shadow(0 0 8px rgba(157, 0, 255, 0.6));
-  transform: scale(1.1);
-  transition: all 0.3s ease;
-}
-
-.audio-player-custom::-webkit-media-controls-play-button:hover {
-  filter: brightness(1.5) drop-shadow(0 0 12px rgba(157, 0, 255, 0.9));
-  transform: scale(1.2);
-}
-
-/* 时间显示 - 白色发光 */
+/* 时间显示 - 白色 */
 .audio-player-custom::-webkit-media-controls-current-time-display,
 .audio-player-custom::-webkit-media-controls-time-remaining-display {
-  color: rgba(255, 255, 255, 0.95) !important;
-  text-shadow: 0 0 8px rgba(157, 0, 255, 0.5);
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-/* 进度条（时间轴） - 炫彩渐变背景 */
+/* 进度条 - 炫彩渐变 */
 .audio-player-custom::-webkit-media-controls-timeline {
   background: linear-gradient(90deg,
-    rgba(255, 215, 0, 0.25),
-    rgba(255, 107, 107, 0.25),
-    rgba(157, 0, 255, 0.25),
-    rgba(0, 255, 255, 0.25)
-  ) !important;
-  border-radius: 6px;
-  height: 8px;
-  box-shadow: 0 0 10px rgba(157, 0, 255, 0.2);
-}
-
-/* 音量滑块 - 炫彩渐变 */
-.audio-player-custom::-webkit-media-controls-volume-slider {
-  background: linear-gradient(90deg,
-    rgba(0, 255, 255, 0.25),
-    rgba(157, 0, 255, 0.25)
-  ) !important;
-  border-radius: 6px;
+    rgba(255, 215, 0, 0.3),
+    rgba(255, 107, 107, 0.3),
+    rgba(157, 0, 255, 0.3),
+    rgba(0, 255, 255, 0.3)
+  );
+  border-radius: 4px;
   height: 6px;
 }
 
-/* 静音按钮 */
-.audio-player-custom::-webkit-media-controls-mute-button {
-  filter: brightness(1.3) drop-shadow(0 0 4px rgba(0, 255, 255, 0.4));
-}
-
-/* 隐藏下载按钮（如果有） */
-.audio-player-custom::-webkit-media-controls-download-button {
-  display: none;
-}
-
-/* Firefox 兼容 */
-.audio-player-custom::-moz-range-track {
-  background: linear-gradient(90deg, #FFD700, #9D00FF, #00FFFF) !important;
-  border-radius: 6px;
-}
-
-.audio-player-custom::-moz-range-thumb {
-  background: #FFD700 !important;
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+/* 音量滑块 */
+.audio-player-custom::-webkit-media-controls-volume-slider {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
 /* ========== 星空动画关键帧 (高性能CSS驱动) ========== */
@@ -1939,18 +1891,24 @@ body {
   border-color: rgba(255, 255, 255, 0.6);
 }
 
-/* ========== 音频播放器炫彩边框容器 ========== */
+/* ========== 音频播放器炫彩边框容器（只有边框炫彩，中心透明） ========== */
 .audio-section-wrapper {
   position: relative;
-  padding: 2px;
   border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.1);
-  transition: background 0.4s ease;
+  /* 默认状态：细白边框 */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  transition: border-color 0.3s ease;
 }
 
-.audio-section-wrapper:hover {
-  background: conic-gradient(
-    from var(--card-border-angle, 0deg),
+/* 悬停时：炫彩边框（使用伪元素实现，只显示边框） */
+.audio-section-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0.75rem;
+  padding: 2px;
+  background: linear-gradient(90deg,
     #FFD700,
     #FF6B6B,
     #9D00FF,
@@ -1958,41 +1916,62 @@ body {
     #00FF88,
     #FFD700
   );
-  animation: card-border-spin 4s linear infinite;
+  background-size: 300% 100%;
+  /* 🔥 关键：mask 让渐变只显示在边框上 */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  animation: energy-flow 3s linear infinite;
 }
 
+.audio-section-wrapper:hover {
+  border-color: transparent;
+}
+
+.audio-section-wrapper:hover::after {
+  opacity: 1;
+}
+
+/* 悬停时的外发光效果 */
 .audio-section-wrapper::before {
   content: '';
   position: absolute;
   inset: -4px;
   z-index: -1;
   border-radius: 1rem;
-  background: conic-gradient(
-    from var(--card-border-angle, 0deg),
-    rgba(255, 215, 0, 0.4),
-    rgba(255, 107, 107, 0.4),
-    rgba(157, 0, 255, 0.4),
-    rgba(0, 255, 255, 0.4),
-    rgba(0, 255, 136, 0.4),
-    rgba(255, 215, 0, 0.4)
+  background: linear-gradient(90deg,
+    rgba(255, 215, 0, 0.3),
+    rgba(255, 107, 107, 0.3),
+    rgba(157, 0, 255, 0.3),
+    rgba(0, 255, 255, 0.3),
+    rgba(0, 255, 136, 0.3),
+    rgba(255, 215, 0, 0.3)
   );
-  filter: blur(10px);
+  background-size: 300% 100%;
+  filter: blur(8px);
   opacity: 0;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.3s ease;
   pointer-events: none;
+  animation: energy-flow 3s linear infinite;
 }
 
 .audio-section-wrapper:hover::before {
-  opacity: 0.5;
-  animation: card-border-spin 4s linear infinite;
+  opacity: 0.6;
 }
 
 .audio-section-inner {
-  border-radius: calc(0.75rem - 2px);
-  /* 🔥 透明玻璃效果，符合宇宙主题 */
+  position: relative;
+  z-index: 1;
+  border-radius: calc(0.75rem - 1px);
+  /* 🔥 透明玻璃效果 */
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* 卡片炫彩边框效果 - 只有边框炫彩，内部保持透明玻璃 */
