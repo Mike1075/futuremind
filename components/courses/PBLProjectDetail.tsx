@@ -430,6 +430,10 @@ export function PBLProjectDetail({
 
   // 删除提交记录
   const handleDeleteSubmission = async (submissionId: string) => {
+    // 先记录被删除的作业是否是公开的（用于后续刷新）
+    const deletedSubmission = submissionsHistory.find(s => s.id === submissionId)
+    const wasPublic = deletedSubmission?.is_public && deletedSubmission?.score >= 90
+
     try {
       const response = await fetch(`/api/submissions?id=${submissionId}`, {
         method: 'DELETE'
@@ -439,6 +443,11 @@ export function PBLProjectDetail({
         // 立即从本地状态中移除
         const newHistory = submissionsHistory.filter(s => s.id !== submissionId)
         setSubmissionsHistory(newHistory)
+
+        // 如果删除的是公开作业，刷新优秀作业展示
+        if (wasPublic) {
+          setPublicSubmissionsRefreshKey(prev => prev + 1)
+        }
 
         // 如果删除后没有更多记录，需要清除该天的进度
         if (newHistory.length === 0 && historyDayKey && selectionId) {
@@ -1342,7 +1351,7 @@ export function PBLProjectDetail({
                       </div>
                     </div>
 
-                    {/* 公开/私密切换 - 始终显示用户的选择 */}
+                    {/* 公开/私密切换 - 始终显示 */}
                     {submission.status === 'approved' && (
                       <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
                         <div className="flex items-center gap-2">
@@ -1352,27 +1361,27 @@ export function PBLProjectDetail({
                           }`}>
                             {(submission.is_public ?? false) ? '公开' : '私密'}
                           </span>
+                          {/* 分数不足时显示提示 */}
+                          {(!submission.score || submission.score < 90) && (submission.is_public ?? false) && (
+                            <span className="text-xs text-amber-400/80">
+                              (分数未达90，暂不展示)
+                            </span>
+                          )}
                         </div>
-                        {/* 只有分数 >= 90 才能切换，否则显示提示 */}
-                        {submission.score && submission.score >= 90 ? (
-                          <button
-                            onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
-                            disabled={togglingId === submission.id}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed ${
-                              (submission.is_public ?? false) ? 'bg-emerald-500' : 'bg-white/20'
+                        {/* 始终显示开关，不禁用 */}
+                        <button
+                          onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
+                          disabled={togglingId === submission.id}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 ${
+                            (submission.is_public ?? false) ? 'bg-emerald-500' : 'bg-white/20'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
                             }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
-                        ) : (submission.is_public ?? false) ? (
-                          <span className="text-xs text-amber-400/80">
-                            (分数未达90，暂不展示)
-                          </span>
-                        ) : null}
+                          />
+                        </button>
                       </div>
                     )}
 

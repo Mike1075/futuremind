@@ -825,6 +825,11 @@ body {
   animation: spin 3s linear infinite;
 }
 
+/* 慢速旋转动画 - 用于优秀作业展示的炫彩边框 */
+.animate-spin-slow {
+  animation: spin 4s linear infinite;
+}
+
 .loader-dots {
   display: flex;
   gap: 0.5rem;

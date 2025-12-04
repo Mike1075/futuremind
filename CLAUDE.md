@@ -708,6 +708,25 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
      - `components/courses/PBLProjectDetail.tsx`
      - `supabase/functions/evaluate-pbl-task/index.ts`
 
+10. **✅ 优秀作业展示和开关组件优化 (2025-12-04)**
+    - **问题 1**：优秀作业展示尺寸过大，应显示4列
+    - **修复**：改为 `grid-cols-2 md:grid-cols-3 lg:grid-cols-4`，缩小卡片尺寸
+    - **问题 2**：星星图标和用户头像需要炫彩边框
+    - **修复**：星星图标添加琥珀色渐变旋转边框，用户头像添加蓝紫粉渐变边框 + 蓝色首字母
+    - **问题 3**：删除优秀作业后列表不刷新
+    - **修复**：`handleDeleteSubmission` 检测被删除作业是否公开，若是则触发 `publicSubmissionsRefreshKey`
+    - **问题 4**：90分作业的开关不显示
+    - **修复**：开关始终显示，分数<90时禁用（`disabled`），鼠标悬停显示提示
+    - **问题 5**：AI 改进建议不明确
+    - **修复**：优化边缘函数提示词，提供更具体的 JSON 示例
+    - **新增动画**：`globals.css` 添加 `.animate-spin-slow`（4秒旋转）
+    - **涉及文件**：
+      - `components/courses/PublicSubmissions.tsx` - 尺寸缩小、炫彩边框
+      - `components/courses/PBLProjectDetail.tsx` - 删除同步刷新、开关始终显示
+      - `app/courses/[system_key]/[content_id]/SubmissionHistory.tsx` - 开关始终显示
+      - `supabase/functions/evaluate-pbl-task/index.ts` - 优化 AI 提示词
+      - `app/globals.css` - 添加 `animate-spin-slow` 动画
+
 ### 盖亚知识库项目说明
 
 | 项目 | 值 |

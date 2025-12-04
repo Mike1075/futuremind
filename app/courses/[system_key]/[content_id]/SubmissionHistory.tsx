@@ -277,7 +277,7 @@ export default function SubmissionHistory({
                             </p>
                           )}
 
-                          {/* 公开/私密切换开关 - 始终显示用户的选择 */}
+                          {/* 公开/私密切换开关 - 始终显示 */}
                         <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-2">
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-starlight-muted">作业可见性:</span>
@@ -287,27 +287,27 @@ export default function SubmissionHistory({
                               {(submission.is_public ?? false) ? '公开' : '私密'}
                             </span>
                           </div>
-                          {/* 只有分数 >= 90 才能切换，否则显示提示 */}
-                          {submission.score && submission.score >= 90 ? (
-                            <button
-                              type="button"
-                              onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
-                              disabled={togglingId === submission.id}
-                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed ${
-                                (submission.is_public ?? false) ? 'bg-emerald-500' : 'bg-white/20'
+                          {/* 始终显示开关，不禁用 */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
+                            disabled={togglingId === submission.id}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 ${
+                              (submission.is_public ?? false) ? 'bg-emerald-500' : 'bg-white/20'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
                               }`}
-                            >
-                              <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                  (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
-                                }`}
-                              />
-                            </button>
-                          ) : (submission.is_public ?? false) ? (
+                            />
+                          </button>
+                          {/* 分数不足时显示提示 */}
+                          {(!submission.score || submission.score < 90) && (submission.is_public ?? false) && (
                             <span className="text-xs text-amber-400/80">
                               (分数未达90，暂不展示)
                             </span>
-                          ) : null}
+                          )}
                         </div>
                         </div>
 

@@ -2,7 +2,12 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
-import pdf from 'pdf-parse'
+
+// pdf-parse 没有默认导出，使用动态导入
+const pdfParse = async (buffer: Buffer) => {
+  const pdf = await import('pdf-parse').then(m => m.default || m)
+  return pdf(buffer)
+}
 
 // GET: 获取盖亚知识库文档列表
 export async function GET() {
@@ -164,7 +169,7 @@ export async function POST(request: Request) {
     if (fileName.endsWith('.pdf')) {
       // PDF 文件：使用 pdf-parse 提取文本
       try {
-        const pdfData = await pdf(buffer)
+        const pdfData = await pdfParse(buffer)
         fileContent = pdfData.text
         logger.debug('[盖亚知识库] PDF 解析成功', {
           pages: pdfData.numpages,
