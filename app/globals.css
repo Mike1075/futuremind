@@ -1891,7 +1891,7 @@ body {
   border-color: rgba(255, 255, 255, 0.6);
 }
 
-/* ========== 音频播放器炫彩边框容器（只有边框炫彩，中心透明） ========== */
+/* ========== 音频播放器炫彩边框容器（只有边框炫彩，内部黑色透明） ========== */
 .audio-section-wrapper {
   position: relative;
   border-radius: 0.75rem;
@@ -1937,39 +1937,15 @@ body {
   opacity: 1;
 }
 
-/* 悬停时的外发光效果 */
-.audio-section-wrapper::before {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  z-index: -1;
-  border-radius: 1rem;
-  background: linear-gradient(90deg,
-    rgba(255, 215, 0, 0.3),
-    rgba(255, 107, 107, 0.3),
-    rgba(157, 0, 255, 0.3),
-    rgba(0, 255, 255, 0.3),
-    rgba(0, 255, 136, 0.3),
-    rgba(255, 215, 0, 0.3)
-  );
-  background-size: 300% 100%;
-  filter: blur(8px);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-  animation: energy-flow 3s linear infinite;
-}
-
-.audio-section-wrapper:hover::before {
-  opacity: 0.6;
-}
+/* 🔥 移除外发光效果，避免内部彩色渗透 */
+/* .audio-section-wrapper::before 已删除 */
 
 .audio-section-inner {
   position: relative;
   z-index: 1;
   border-radius: calc(0.75rem - 1px);
-  /* 🔥 完全透明背景（不用 blur，避免彩色渗透） */
-  background: transparent;
+  /* 🔥 纯黑背景，完全隔绝外部颜色 */
+  background: #000;
 }
 
 /* 卡片炫彩边框效果 - 只有边框炫彩，内部保持透明玻璃 */

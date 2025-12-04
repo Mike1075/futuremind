@@ -180,15 +180,20 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
           {/* 隐藏的原生 audio 元素 */}
           <audio
             ref={audioRef}
-            src={src}
             preload="metadata"
-            crossOrigin="anonymous"
-          />
+          >
+            <source src={src} type="audio/mpeg" />
+            <source src={src} type="audio/mp3" />
+            <source src={src} type="audio/wav" />
+            <source src={src} type="audio/ogg" />
+            您的浏览器不支持音频播放
+          </audio>
 
           {/* 错误提示 */}
           {error && (
-            <div className="text-red-400 text-sm mb-3 p-2 bg-red-500/10 rounded-lg">
-              ❌ {error}
+            <div className="text-red-400 text-sm mb-3 p-2 bg-red-500/10 rounded-lg space-y-1">
+              <div>❌ {error}</div>
+              <div className="text-xs text-gray-500 break-all">URL: {src}</div>
             </div>
           )}
 

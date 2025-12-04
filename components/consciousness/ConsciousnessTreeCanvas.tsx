@@ -461,22 +461,14 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       style={{ background: '#000' }}
     >
 
-      {/* 🔥 Canvas包装器：预览模式居中显示，详情页可拖拽 */}
+      {/* 🔥 Canvas包装器：始终居中显示，详情页支持拖拽偏移 */}
       <div
         style={{
           position: 'absolute',
-          // 预览模式：使用 flexbox 居中；详情页：使用偏移量
-          ...(isPreview ? {
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          } : {
-            left: offset.x,
-            top: offset.y,
-            transform: `scale(${zoom})`,
-            transformOrigin: 'top left'
-          }),
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           cursor: isPreview ? 'default' : (isDragging ? 'grabbing' : 'grab')
         }}
         {...(!isPreview && {
@@ -488,7 +480,15 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       >
         <canvas
           ref={canvasRef}
-          style={{ display: 'block', background: '#000' }}
+          style={{
+            display: 'block',
+            background: '#000',
+            // 详情页支持缩放和拖拽偏移
+            ...(!isPreview && {
+              transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${offset.y / zoom}px)`,
+              transformOrigin: 'center center'
+            })
+          }}
         />
       </div>
     </div>
