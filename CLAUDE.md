@@ -93,6 +93,31 @@ types/                 # TypeScript 类型定义
 - 使用 `progress-ethereal` + `progress-ethereal-bar` 类
 - 彩虹渐变效果
 
+#### 8. 用户头像图标 - 旋转光影效果
+- **结构**: 外层旋转渐变 + 内层黑色剪影
+- **渐变**: `from-blue-400 via-purple-500 to-pink-500`（蓝→紫→粉）
+- **动画**: `animate-spin-slow`（4秒旋转一周）
+- **内层**: 黑色背景 + 彩色首字母
+
+```jsx
+// 标准用户头像图标示例
+<div className="relative">
+  {/* 旋转光影层 */}
+  <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow opacity-75 blur-[2px]"></div>
+  {/* 黑色剪影层 */}
+  <div className="relative w-7 h-7 bg-black rounded-lg flex items-center justify-center">
+    <span className="text-blue-400 font-bold text-xs">
+      {userName.charAt(0)}
+    </span>
+  </div>
+</div>
+```
+
+**变体**：
+- **星星图标**: 渐变用 `from-amber-400 via-orange-500 to-pink-500`（金→橙→粉）
+- **圆形头像**: `rounded-full` 替代 `rounded-lg`
+- **不同尺寸**: 调整 `w-7 h-7` 和字体大小
+
 ---
 
 ## AI 聊天系统架构

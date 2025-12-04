@@ -121,23 +121,23 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
         </div>
       </div>
 
-      {/* 作业列表 - 4列显示，缩小尺寸 */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      {/* 作业列表 - 居中显示，最多4列 */}
+      <div className="flex flex-wrap justify-center gap-3">
         {submissions.map((submission, index) => (
           <motion.div
             key={submission.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="card-glass p-3 hover:border-orange-500/50 transition-all"
+            className="card-glass p-3 hover:border-orange-500/50 transition-all w-[calc(50%-6px)] md:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] max-w-[280px]"
           >
             {/* 头部：学生信息和评分 */}
             <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
               <div className="flex items-center gap-2">
-                {/* 用户头像 - 炫彩边框 + 蓝色首字母 */}
+                {/* 用户头像 - 旋转光影 + 黑色剪影（与星星图标同款） */}
                 <div className="relative">
-                  <div className="absolute -inset-[1.5px] rounded-full bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow"></div>
-                  <div className="relative w-7 h-7 bg-transparent rounded-full flex items-center justify-center border border-transparent">
+                  <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow opacity-75 blur-[2px]"></div>
+                  <div className="relative w-7 h-7 bg-black rounded-lg flex items-center justify-center">
                     <span className="text-blue-400 font-bold text-xs">
                       {submission.studentName.charAt(0)}
                     </span>
