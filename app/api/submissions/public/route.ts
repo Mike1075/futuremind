@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
         content,
         attachments,
         score,
+        feedback,
         submitted_at,
         user_id,
         profiles:user_id (
@@ -61,6 +62,7 @@ export async function GET(request: NextRequest) {
       content: sub.content,
       attachments: sub.attachments,
       score: sub.score,
+      feedback: sub.feedback,
       submittedAt: sub.submitted_at,
       studentName: (sub.profiles as any)?.full_name || '匿名用户'
     })) || []

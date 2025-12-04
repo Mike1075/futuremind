@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 
 interface Attachment {
@@ -16,6 +16,7 @@ interface PublicSubmission {
   content: string
   attachments: Attachment[] | null
   score: number
+  feedback: string | null
   submittedAt: string
   studentName: string
 }
@@ -30,6 +31,7 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
   const [submissions, setSubmissions] = useState<PublicSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedSubmission, setSelectedSubmission] = useState<PublicSubmission | null>(null)
 
   useEffect(() => {
     fetchPublicSubmissions()
@@ -182,11 +184,152 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
               </div>
             )}
 
-            {/* 提交时间 */}
-            <p className="text-[10px] text-starlight-dim mt-2 truncate">{formatDate(submission.submittedAt)}</p>
+            {/* 底部：时间和查看详情按钮 */}
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/10">
+              <p className="text-[10px] text-starlight-dim truncate">{formatDate(submission.submittedAt)}</p>
+              <button
+                onClick={() => setSelectedSubmission(submission)}
+                className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+              >
+                <span>查看详情</span>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </motion.div>
         ))}
       </div>
+
+      {/* 详情弹窗 */}
+      <AnimatePresence>
+        {selectedSubmission && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedSubmission(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 弹窗头部 */}
+              <div className="sticky top-0 bg-black/80 backdrop-blur-xl border-b border-white/10 p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {/* 用户头像 */}
+                  <div className="relative">
+                    <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow opacity-75 blur-[2px]"></div>
+                    <div className="relative w-10 h-10 bg-black rounded-lg flex items-center justify-center">
+                      <span className="text-blue-400 font-bold text-sm">
+                        {selectedSubmission.studentName.charAt(0)}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-medium text-starlight">{selectedSubmission.studentName}</p>
+                    <p className="text-xs text-starlight-muted">{formatDate(selectedSubmission.submittedAt)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* 分数 */}
+                  <div className="flex items-center gap-1 bg-orange-500/20 px-3 py-1.5 rounded-lg">
+                    <svg className="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span className="text-orange-400 font-bold">{selectedSubmission.score}</span>
+                  </div>
+                  {/* 关闭按钮 */}
+                  <button
+                    onClick={() => setSelectedSubmission(null)}
+                    className="bg-white/10 hover:bg-white/20 rounded-lg p-2 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-starlight" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* 弹窗内容 */}
+              <div className="p-6 space-y-6">
+                {/* 作业内容 */}
+                <div>
+                  <h4 className="text-sm font-semibold text-starlight mb-3 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                    作业内容
+                  </h4>
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                    <p className="text-starlight whitespace-pre-wrap leading-relaxed">
+                      {selectedSubmission.content}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 附件图片 */}
+                {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-starlight mb-3 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                      </svg>
+                      附件图片
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {selectedSubmission.attachments.filter(att => att.type === 'image').map((attachment, idx) => (
+                        <div
+                          key={idx}
+                          className="relative aspect-square rounded-lg overflow-hidden bg-cosmic-void border border-white/10"
+                        >
+                          <Image
+                            src={attachment.url}
+                            alt={attachment.name}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 50vw, 33vw"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* AI 点评 */}
+                <div>
+                  <h4 className="text-sm font-semibold text-starlight mb-3 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                      <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                    </svg>
+                    AI 导师点评
+                  </h4>
+                  <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg p-4">
+                    <p className="text-starlight whitespace-pre-wrap leading-relaxed">
+                      {selectedSubmission.feedback || '暂无点评'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 弹窗底部 */}
+              <div className="sticky bottom-0 bg-black/80 backdrop-blur-xl border-t border-white/10 p-4">
+                <button
+                  onClick={() => setSelectedSubmission(null)}
+                  className="btn-stardust w-full py-3 font-medium"
+                >
+                  关闭
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

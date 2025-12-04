@@ -96,7 +96,7 @@ types/                 # TypeScript 类型定义
 #### 8. 用户头像图标 - 旋转光影效果
 - **结构**: 外层旋转渐变 + 内层黑色剪影
 - **渐变**: `from-blue-400 via-purple-500 to-pink-500`（蓝→紫→粉）
-- **动画**: `animate-spin-slow`（4秒旋转一周）
+- **动画**: `animate-spin-slow`（8秒旋转一周，优雅缓慢）
 - **内层**: 黑色背景 + 彩色首字母
 
 ```jsx

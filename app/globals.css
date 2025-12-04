@@ -827,7 +827,7 @@ body {
 
 /* 慢速旋转动画 - 用于优秀作业展示的炫彩边框 */
 .animate-spin-slow {
-  animation: spin 4s linear infinite;
+  animation: spin 8s linear infinite;
 }
 
 .loader-dots {
