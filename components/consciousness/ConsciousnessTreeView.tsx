@@ -5,9 +5,10 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { ConsciousnessTreeCanvas } from './ConsciousnessTreeCanvas'
 import { TreeGrowthData, TreeParams } from '@/lib/utils/consciousnessTreeGenerator'
 import { createClient } from '@/lib/supabase/client'
+import { getCachedTreeData, setCachedTreeData } from '@/lib/hooks/useConsciousnessTreeCache'
 
 // 🔥 组件版本号 - 用于诊断缓存问题
-const COMPONENT_VERSION = '2.0.1-debug'
+const COMPONENT_VERSION = '2.0.2-cache'
 
 interface ConsciousnessTreeViewProps {
   userId: string
@@ -166,11 +167,25 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
   const [growthData, setGrowthData] = useState<TreeGrowthData>(INITIAL_GROWTH_DATA)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasCacheLoaded, setHasCacheLoaded] = useState(false)
+
+  // 🔥 优先从缓存加载（同步，立即显示）
+  useEffect(() => {
+    const cached = getCachedTreeData(userId)
+    if (cached) {
+      setGrowthData(cached)
+      setLoading(false) // 有缓存时不显示 loading
+      setHasCacheLoaded(true)
+    }
+  }, [userId])
 
   // PF-08: 使用useCallback优化loadTreeData，避免不必要的重新创建
   const loadTreeData = useCallback(async () => {
     try {
-      setLoading(true)
+      // 🔥 如果已从缓存加载，不重置 loading 状态（平滑更新）
+      if (!hasCacheLoaded) {
+        setLoading(true)
+      }
       setError(null)
 
       // 添加超时保护（5秒）
@@ -195,9 +210,12 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
         // 使用迁移函数自动处理新旧格式
         const migratedData = migrateOldFormat(data.consciousness_tree_view)
         setGrowthData(migratedData)
+        // 🔥 更新缓存
+        setCachedTreeData(userId, migratedData)
       } else {
         // 如果没有数据，使用种子状态
         setGrowthData(INITIAL_GROWTH_DATA)
+        setCachedTreeData(userId, INITIAL_GROWTH_DATA)
       }
     } catch {
       // 预览模式下即使加载失败也显示种子状态
@@ -205,14 +223,17 @@ export function ConsciousnessTreeView({ userId, isPreview = false, techParams }:
         setGrowthData(INITIAL_GROWTH_DATA)
         setError(null)
       } else {
-        setError('无法加载意识树数据')
+        // 🔥 如果已有缓存数据，不显示错误
+        if (!hasCacheLoaded) {
+          setError('无法加载意识树数据')
+        }
       }
     } finally {
       setLoading(false)
     }
-  }, [userId, isPreview]) // PF-08: 添加useCallback依赖
+  }, [userId, isPreview, hasCacheLoaded]) // PF-08: 添加useCallback依赖
 
-  // 组件挂载和userId变化时加载数据
+  // 组件挂载和userId变化时加载数据（后台刷新最新数据）
   useEffect(() => {
     loadTreeData()
   }, [loadTreeData])

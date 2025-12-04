@@ -70,11 +70,13 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
         return { width, height }
       }
 
-      // 🔥 预览模式：直接使用容器尺寸，不需要大Canvas
+      // 🔥 预览模式：使用固定的虚拟尺寸生成树，然后缩放显示
+      // 这样可以确保显示完整的树缩略图
       if (isPreview) {
+        // 返回标准尺寸用于生成树（实际显示会缩放）
         return {
-          width: container.clientWidth || 400,
-          height: container.clientHeight || 400
+          width: 600,
+          height: 600
         }
       }
 
@@ -125,9 +127,25 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
     const draw = () => {
       const dimensions = calculateTreeDimensions()
 
-      // 设置Canvas尺寸为足够大
+      // 设置Canvas绘图尺寸
       canvas.width = dimensions.width
       canvas.height = dimensions.height
+
+      // 🔥 预览模式：通过 CSS 尺寸缩放整个画布，显示完整的树缩略图
+      if (isPreview && !isEmptyTree) {
+        const containerWidth = container.clientWidth || 256
+        const containerHeight = container.clientHeight || 256
+        const scaleX = containerWidth / dimensions.width
+        const scaleY = containerHeight / dimensions.height
+        const scale = Math.min(scaleX, scaleY) * 0.9 // 留10%边距
+
+        canvas.style.width = `${dimensions.width * scale}px`
+        canvas.style.height = `${dimensions.height * scale}px`
+      } else {
+        // 非预览模式：清除CSS尺寸约束
+        canvas.style.width = ''
+        canvas.style.height = ''
+      }
 
       // 清空画布
       ctx.fillStyle = '#000000'
@@ -443,14 +461,22 @@ export function ConsciousnessTreeCanvas({ growthData, techParams, zoom = 1, isPr
       style={{ background: '#000' }}
     >
 
-      {/* 🔥 Canvas包装器：预览模式固定位置，详情页可拖拽 */}
+      {/* 🔥 Canvas包装器：预览模式居中显示，详情页可拖拽 */}
       <div
         style={{
           position: 'absolute',
-          left: isPreview ? 0 : offset.x,
-          top: isPreview ? 0 : offset.y,
-          transform: `scale(${zoom})`,
-          transformOrigin: 'top left',
+          // 预览模式：使用 flexbox 居中；详情页：使用偏移量
+          ...(isPreview ? {
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          } : {
+            left: offset.x,
+            top: offset.y,
+            transform: `scale(${zoom})`,
+            transformOrigin: 'top left'
+          }),
           cursor: isPreview ? 'default' : (isDragging ? 'grabbing' : 'grab')
         }}
         {...(!isPreview && {

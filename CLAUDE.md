@@ -118,6 +118,24 @@ types/                 # TypeScript 类型定义
 - **圆形头像**: `rounded-full` 替代 `rounded-lg`
 - **不同尺寸**: 调整 `w-7 h-7` 和字体大小
 
+#### 9. 音频播放器 - 透明炫彩风格
+- **外层容器**: `audio-section-wrapper` + `audio-section-inner`（悬停显示炫彩边框）
+- **播放器样式**: `audio-player-custom`（透明背景 + 炫彩进度条）
+- **控件面板**: `rgba(255, 255, 255, 0.05)` 半透明背景
+- **进度条**: 四色渐变（金→粉→紫→青）
+- **播放按钮**: 紫色发光效果 `drop-shadow`
+
+```jsx
+// 标准音频播放器示例
+<div className="audio-section-wrapper">
+  <div className="audio-section-inner p-5">
+    <audio controls className="w-full audio-player-custom">
+      <source src={audioUrl} type="audio/mpeg" />
+    </audio>
+  </div>
+</div>
+```
+
 ---
 
 ## AI 聊天系统架构
@@ -751,6 +769,21 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
       - `app/courses/[system_key]/[content_id]/SubmissionHistory.tsx` - 开关始终显示
       - `supabase/functions/evaluate-pbl-task/index.ts` - 优化 AI 提示词
       - `app/globals.css` - 添加 `animate-spin-slow` 动画
+
+11. **✅ 意识树和音频播放器 UI 修复 (2025-12-04)**
+    - **问题 1**：Portal 意识树预览只显示部分树，不是完整缩略图
+    - **修复**：`ConsciousnessTreeCanvas` 预览模式使用 600x600 虚拟尺寸 + CSS 缩放显示完整树
+    - **问题 2**：点击"查看完整意识树"时先显示种子，再加载真实数据
+    - **修复**：添加 `useConsciousnessTreeCache` 缓存机制，登录时预加载，详情页优先显示缓存
+    - **问题 3**：聆听课程音频播放器背景白色/浅色，点不动，不美观
+    - **修复**：
+      - `audio-player-custom` 重写样式：透明背景 + 炫彩渐变进度条 + 发光效果
+      - `audio-section-inner` 改为透明玻璃效果（`bg-white/3 backdrop-blur`）
+    - **涉及文件**：
+      - `components/consciousness/ConsciousnessTreeCanvas.tsx` - 预览缩放逻辑
+      - `components/consciousness/ConsciousnessTreeView.tsx` - 缓存优先加载
+      - `lib/hooks/useConsciousnessTreeCache.ts` - 新增意识树数据缓存 hook
+      - `app/globals.css` - 音频播放器透明炫彩样式
 
 ### 盖亚知识库项目说明
 

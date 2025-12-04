@@ -441,57 +441,93 @@ body {
   color: var(--color-starlight);
 }
 
-/* ========== 音频播放器自定义样式（宇宙主题） ========== */
+/* ========== 音频播放器自定义样式（宇宙透明主题） ========== */
 .audio-player-custom {
-  border-radius: 8px;
-  background: transparent;
+  border-radius: 12px;
+  background: transparent !important;
+  width: 100%;
+  min-height: 54px;
+  /* 确保可点击 */
+  pointer-events: auto;
+  cursor: pointer;
 }
 
-/* Webkit (Chrome, Safari, Edge) 音频控件样式 */
+/* Webkit (Chrome, Safari, Edge) 音频控件面板 - 透明背景 */
 .audio-player-custom::-webkit-media-controls-panel {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.2));
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 12px;
+  padding: 0 10px;
 }
 
+/* 封面区域透明 */
+.audio-player-custom::-webkit-media-controls-enclosure {
+  background: transparent !important;
+  border-radius: 12px;
+}
+
+/* 播放按钮 - 炫彩发光 */
 .audio-player-custom::-webkit-media-controls-play-button {
-  filter: brightness(1.5);
+  filter: brightness(1.3) drop-shadow(0 0 8px rgba(157, 0, 255, 0.6));
+  transform: scale(1.1);
+  transition: all 0.3s ease;
 }
 
+.audio-player-custom::-webkit-media-controls-play-button:hover {
+  filter: brightness(1.5) drop-shadow(0 0 12px rgba(157, 0, 255, 0.9));
+  transform: scale(1.2);
+}
+
+/* 时间显示 - 白色发光 */
 .audio-player-custom::-webkit-media-controls-current-time-display,
 .audio-player-custom::-webkit-media-controls-time-remaining-display {
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 0 8px rgba(157, 0, 255, 0.5);
+  font-weight: 500;
 }
 
+/* 进度条（时间轴） - 炫彩渐变背景 */
 .audio-player-custom::-webkit-media-controls-timeline {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
+  background: linear-gradient(90deg,
+    rgba(255, 215, 0, 0.25),
+    rgba(255, 107, 107, 0.25),
+    rgba(157, 0, 255, 0.25),
+    rgba(0, 255, 255, 0.25)
+  ) !important;
+  border-radius: 6px;
+  height: 8px;
+  box-shadow: 0 0 10px rgba(157, 0, 255, 0.2);
+}
+
+/* 音量滑块 - 炫彩渐变 */
+.audio-player-custom::-webkit-media-controls-volume-slider {
+  background: linear-gradient(90deg,
+    rgba(0, 255, 255, 0.25),
+    rgba(157, 0, 255, 0.25)
+  ) !important;
+  border-radius: 6px;
   height: 6px;
 }
 
-.audio-player-custom::-webkit-media-controls-volume-slider {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-}
-
+/* 静音按钮 */
 .audio-player-custom::-webkit-media-controls-mute-button {
-  filter: brightness(1.5);
+  filter: brightness(1.3) drop-shadow(0 0 4px rgba(0, 255, 255, 0.4));
 }
 
-/* 旧版玻璃样式（保留兼容） */
-.audio-player-glass {
-  filter: invert(1) hue-rotate(180deg);
-  border-radius: 8px;
-  opacity: 0.9;
+/* 隐藏下载按钮（如果有） */
+.audio-player-custom::-webkit-media-controls-download-button {
+  display: none;
 }
 
-.audio-player-glass::-webkit-media-controls-panel {
-  background: rgba(255, 255, 255, 0.1);
+/* Firefox 兼容 */
+.audio-player-custom::-moz-range-track {
+  background: linear-gradient(90deg, #FFD700, #9D00FF, #00FFFF) !important;
+  border-radius: 6px;
 }
 
-.audio-player-glass::-webkit-media-controls-current-time-display,
-.audio-player-glass::-webkit-media-controls-time-remaining-display {
-  color: white;
+.audio-player-custom::-moz-range-thumb {
+  background: #FFD700 !important;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
 }
 
 /* ========== 星空动画关键帧 (高性能CSS驱动) ========== */
@@ -1953,7 +1989,10 @@ body {
 
 .audio-section-inner {
   border-radius: calc(0.75rem - 2px);
-  background-color: rgb(10, 10, 31);
+  /* 🔥 透明玻璃效果，符合宇宙主题 */
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* 卡片炫彩边框效果 - 只有边框炫彩，内部保持透明玻璃 */
