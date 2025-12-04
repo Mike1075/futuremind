@@ -9,6 +9,7 @@ import { ConsciousnessTreeView } from './ConsciousnessTreeView'
 import { TreeParams, TreeGrowthData } from '@/lib/utils/consciousnessTreeGenerator'
 import { ArrowLeft, Sparkles, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getCachedTreeData, setCachedTreeData } from '@/lib/hooks/useConsciousnessTreeCache'
 
 // 默认生长数据（种子状态 - 初始值）
 const SEED_STATE: TreeGrowthData = {
@@ -95,20 +96,28 @@ interface ConsciousnessTreeClientProps {
 
 export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeClientProps) {
   const router = useRouter()
-  const [growthData, setGrowthData] = useState<TreeGrowthData>(SEED_STATE)
+
+  // 🔥 优先从缓存读取数据（同步，避免显示种子）
+  const initialCached = typeof window !== 'undefined' ? getCachedTreeData(userId) : null
+  console.log('[ConsciousnessTreeClient] 初始化', {
+    userId,
+    userRole,
+    hasCache: !!initialCached
+  })
+
+  const [growthData, setGrowthData] = useState<TreeGrowthData>(initialCached || SEED_STATE)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [zoom, setZoom] = useState(1)
   const [refreshKey, setRefreshKey] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isDataLoaded, setIsDataLoaded] = useState(false)
+  const [isDataLoaded, setIsDataLoaded] = useState(!!initialCached)
 
   const isPrincipal = userRole === 'principal'
 
-  // 🔥 校长用户：从数据库加载真实数据作为初始值
+  // 🔥 所有用户：从数据库加载真实数据（后台更新）
   useEffect(() => {
-    if (!isPrincipal) return
-
     const loadTreeData = async () => {
+      console.log('[ConsciousnessTreeClient] 开始加载数据库数据...')
       try {
         const supabase = createClient()
         const { data, error } = await supabase
@@ -121,19 +130,24 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
         if (data?.consciousness_tree_view) {
           const migratedData = migrateOldFormat(data.consciousness_tree_view)
+          console.log('[ConsciousnessTreeClient] 数据库数据加载成功', migratedData)
           setGrowthData(migratedData)
+          // 🔥 更新缓存
+          setCachedTreeData(userId, migratedData)
         }
       } catch (err) {
-        console.error('加载意识树数据失败:', err)
-        // 失败时使用演示数据
-        setGrowthData(DEMO_GROWTH_DATA)
+        console.error('[ConsciousnessTreeClient] 加载失败:', err)
+        // 失败时如果没有缓存，使用演示数据
+        if (!initialCached) {
+          setGrowthData(DEMO_GROWTH_DATA)
+        }
       } finally {
         setIsDataLoaded(true)
       }
     }
 
     loadTreeData()
-  }, [userId, isPrincipal])
+  }, [userId])
 
   // 技术参数状态（简化版）
   const [techParams, setTechParams] = useState<TreeParams>({

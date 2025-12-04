@@ -11,6 +11,7 @@ import { CourseContentClient } from './CourseContentClient'
 import { ContentDetailWrapper } from './ContentDetailWrapper'
 import { CollapsibleSection } from '@/components/courses/CollapsibleSection'
 import { formatCourseText } from '@/lib/utils/text-formatter'
+import { AudioPlayer } from '@/components/courses/AudioPlayer'
 
 // Resource 类型定义（对应 course_contents.resources 的结构）
 interface Resource {
@@ -204,31 +205,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
         {resources.map((resource: Resource, index: number) => {
           if (resource.type === 'audio') {
             return (
-              <div key={index} className="space-y-3">
-                {/* 标题行 */}
-                <div className="flex items-center">
-                  <div className="section-icon mr-3">
-                    <div className="section-icon-glow"></div>
-                    <div className="section-icon-border"></div>
-                    <div className="section-icon-inner"></div>
-                    <div className="section-icon-content">
-                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <h3 className="font-semibold text-white">{resource.title}</h3>
-                </div>
-                {/* 音频播放器 - 炫彩边框容器 */}
-                <div className="audio-section-wrapper">
-                  <div className="audio-section-inner p-3">
-                    <audio controls className="w-full audio-player-custom">
-                      <source src={resource.url} type="audio/mpeg" />
-                      您的浏览器不支持音频播放
-                    </audio>
-                  </div>
-                </div>
-              </div>
+              <AudioPlayer key={index} src={resource.url} title={resource.title} />
             )
           }
 
