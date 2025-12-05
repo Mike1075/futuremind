@@ -134,8 +134,8 @@ export default function ViewProfileModal({
               {/* 头像和基本信息 */}
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  {/* 旋转光影层 */}
-                  <div className="absolute -inset-[2px] rounded-full bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow opacity-75 blur-[2px]"></div>
+                  {/* 炫彩边框层 */}
+                  <div className="absolute -inset-[2px] rounded-full bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 opacity-75 blur-[2px]"></div>
                   {/* 头像 */}
                   <div className="relative w-16 h-16 bg-black rounded-full flex items-center justify-center">
                     <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">

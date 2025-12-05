@@ -152,7 +152,7 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
                   className="relative group cursor-pointer"
                   title="点击查看资料"
                 >
-                  <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow opacity-75 blur-[2px] group-hover:opacity-100 transition-opacity"></div>
+                  <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 opacity-75 blur-[2px] group-hover:opacity-100 transition-opacity"></div>
                   <div className="relative w-7 h-7 bg-black rounded-lg flex items-center justify-center">
                     <span className="text-blue-400 font-bold text-xs">
                       {submission.studentName.charAt(0)}
@@ -250,7 +250,7 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
                     className="relative group cursor-pointer"
                     title="点击查看资料"
                   >
-                    <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow opacity-75 blur-[2px] group-hover:opacity-100 transition-opacity"></div>
+                    <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 opacity-75 blur-[2px] group-hover:opacity-100 transition-opacity"></div>
                     <div className="relative w-10 h-10 bg-black rounded-lg flex items-center justify-center">
                       <span className="text-blue-400 font-bold text-sm">
                         {selectedSubmission.studentName.charAt(0)}
