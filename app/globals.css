@@ -344,27 +344,28 @@ select:focus {
     opacity: 1;
   }
 
-  /* 输入框 - 空灵风格 */
+  /* 输入框 - 空灵风格（深色玻璃效果） */
   .input-ethereal {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--color-starlight);
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
     padding: 0.875rem 1.25rem;
-    border-radius: 1rem;
+    border-radius: 0.75rem;
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
   }
 
   .input-ethereal::placeholder {
-    color: var(--color-starlight-muted);
+    color: rgba(255, 255, 255, 0.4);
   }
 
   .input-ethereal:focus {
     outline: none;
-    border-color: rgba(157, 0, 255, 0.5);
+    border-color: rgba(168, 85, 247, 0.5);
     box-shadow:
-      0 0 0 3px rgba(157, 0, 255, 0.1),
-      0 0 20px rgba(0, 255, 255, 0.1);
+      0 0 0 3px rgba(168, 85, 247, 0.1),
+      0 0 20px rgba(168, 85, 247, 0.1);
   }
 }
 

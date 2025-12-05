@@ -4,7 +4,7 @@
 import { useState, useEffect, Suspense, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
-import { TreePine, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { Sparkles, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 function LoginForm() {
@@ -162,37 +162,42 @@ function LoginForm() {
         className="card-aurora w-full max-w-md mx-4 relative z-10"
       >
         <div className="card-aurora-inner p-8">
-          {/* Logo */}
+          {/* Logo - 炫彩星光图标 */}
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gaia-gold/20 via-mystic-purple/20 to-ethereal-blue/20 flex items-center justify-center border border-gaia-gold/30 shadow-glow-gold">
-                <TreePine className="w-7 h-7 text-gaia-gold" />
+            <div className="flex items-center justify-center mb-5">
+              <div className="relative">
+                {/* 炫彩边框层 */}
+                <div className="absolute -inset-[2px] rounded-xl bg-gradient-to-r from-amber-400 via-purple-500 to-cyan-400 opacity-75 blur-[3px]"></div>
+                {/* 图标容器 */}
+                <div className="relative w-14 h-14 bg-black rounded-xl flex items-center justify-center">
+                  <Sparkles className="w-7 h-7 text-amber-400" />
+                </div>
               </div>
             </div>
-            <h1 className="text-h1 text-gradient-gold-purple text-glow-gold tracking-wide">
-              未来心灵学院
+            <h1 className="text-2xl font-bold text-white mb-2">
+              {isForgotPassword ? '重置密码' : (isLogin ? '欢迎回来' : '创建账户')}
             </h1>
-            <p className="text-body text-starlight-dim mt-2">
+            <p className="text-sm text-gray-400">
               {isForgotPassword
                 ? '输入邮箱地址，我们将发送重置链接'
-                : (isLogin ? '欢迎回到觉醒之旅' : '开启你的意识探索')}
+                : (isLogin ? '登录以继续你的意识觉醒之旅' : '开启你的意识探索之旅')}
             </p>
           </div>
 
         {/* Forgot Password Form */}
         {isForgotPassword ? (
-          <form onSubmit={handleForgotPassword} className="space-y-6">
+          <form onSubmit={handleForgotPassword} className="space-y-5">
             <div>
-              <label className="block text-small font-medium text-starlight-dim mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 邮箱
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-starlight-muted" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-ethereal pl-10"
+                  className="input-ethereal pl-12"
                   placeholder="请输入注册时使用的邮箱"
                   required
                 />
@@ -200,10 +205,10 @@ function LoginForm() {
             </div>
 
             {message && (
-              <div className={`text-small p-3 rounded-lg ${
+              <div className={`text-sm p-3 rounded-lg ${
                 message.includes('失败') || message.includes('Error') || message.includes('请输入')
-                  ? 'bg-life-pink/20 text-life-pink border border-life-pink/30'
-                  : 'bg-nature-green/20 text-nature-green border border-nature-green/30'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
               }`}>
                 {message}
               </div>
@@ -224,7 +229,7 @@ function LoginForm() {
                   setIsForgotPassword(false)
                   setMessage('')
                 }}
-                className="text-mystic-purple hover:text-mystic-purple/80 text-small transition-colors flex items-center justify-center mx-auto"
+                className="text-purple-400 hover:text-purple-300 text-sm transition-colors flex items-center justify-center mx-auto"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 返回登录
@@ -233,10 +238,10 @@ function LoginForm() {
           </form>
         ) : (
         /* Auth Form */
-        <form onSubmit={handleAuth} className="space-y-6">
+        <form onSubmit={handleAuth} className="space-y-5">
           {!isLogin && (
             <div>
-              <label className="block text-small font-medium text-starlight-dim mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 姓名
               </label>
               <div className="relative">
@@ -253,16 +258,16 @@ function LoginForm() {
           )}
 
           <div>
-            <label className="block text-small font-medium text-starlight-dim mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               邮箱
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-starlight-muted" />
+              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-ethereal pl-10"
+                className="input-ethereal pl-12"
                 placeholder="请输入您的邮箱"
                 required
               />
@@ -270,23 +275,23 @@ function LoginForm() {
           </div>
 
           <div>
-            <label className="block text-small font-medium text-starlight-dim mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               密码
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-starlight-muted" />
+              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-ethereal pl-10 pr-12"
+                className="input-ethereal pl-12 pr-12"
                 placeholder="请输入您的密码"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-starlight-muted hover:text-starlight transition-colors"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
               >
                 {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
               </button>
@@ -300,7 +305,7 @@ function LoginForm() {
                     setIsForgotPassword(true)
                     setMessage('')
                   }}
-                  className="text-small text-gaia-gold hover:text-gaia-gold/80 transition-colors"
+                  className="text-sm text-amber-400 hover:text-amber-300 transition-colors"
                 >
                   忘记密码？
                 </button>
@@ -309,10 +314,10 @@ function LoginForm() {
           </div>
 
           {message && (
-            <div className={`text-small p-3 rounded-lg ${
+            <div className={`text-sm p-3 rounded-lg ${
               message.includes('错误') || message.includes('Error')
-                ? 'bg-life-pink/20 text-life-pink border border-life-pink/30'
-                : 'bg-nature-green/20 text-nature-green border border-nature-green/30'
+                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
             }`}>
               {message}
             </div>
@@ -334,19 +339,19 @@ function LoginForm() {
                 setIsLogin(!isLogin)
                 setMessage('')
               }}
-              className="text-mystic-purple hover:text-mystic-purple/80 text-small transition-colors"
+              className="text-sm text-gray-400 hover:text-white transition-colors"
             >
-              {isLogin ? '还没有账户？点击注册' : '已有账户？点击登录'}
+              {isLogin ? '还没有账号？立即注册' : '已有账户？点击登录'}
             </button>
           </div>
         </form>
         )}
 
         {/* Back to home */}
-        <div className="mt-6 text-center">
+        <div className="mt-4 text-center">
           <button
             onClick={() => router.push('/')}
-            className="text-starlight-muted hover:text-starlight text-small transition-colors"
+            className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
           >
             返回首页
           </button>

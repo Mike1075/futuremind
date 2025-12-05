@@ -109,6 +109,12 @@ export default function SubmissionHistory({
   const handleDelete = async (submissionId: string) => {
     setDeletingId(submissionId)
     try {
+      // 先获取被删除作业的信息，判断是否需要刷新公开列表
+      const deletedSubmission = submissions.find(s => s.id === submissionId)
+      const wasPublicSubmission = deletedSubmission &&
+        deletedSubmission.is_public &&
+        (deletedSubmission.score ?? 0) >= 90
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-submission`,
         {
@@ -132,6 +138,11 @@ export default function SubmissionHistory({
       setSubmissions(prev => prev.filter(s => s.id !== submissionId))
       setConfirmDeleteId(null)
       setExpandedId(null)
+
+      // 如果删除的是公开的优秀作业，刷新公开作业列表
+      if (wasPublicSubmission && onVisibilityChanged) {
+        onVisibilityChanged()
+      }
     } catch (err) {
       console.error('删除提交失败:', err)
       alert('删除失败，请重试')

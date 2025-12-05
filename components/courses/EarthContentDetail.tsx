@@ -297,6 +297,10 @@ export function EarthContentDetail({
   const handleDeleteSubmission = async (submissionId: string) => {
     if (!confirm('确定要删除这条提交记录吗？')) return
 
+    // 先记录被删除的作业是否是公开的（用于后续刷新）
+    const deletedSubmission = submissionsHistory.find(s => s.id === submissionId)
+    const wasPublic = deletedSubmission?.is_public && deletedSubmission?.score >= 90
+
     try {
       const response = await fetch(`/api/submissions?id=${submissionId}`, {
         method: 'DELETE'
@@ -306,6 +310,11 @@ export function EarthContentDetail({
         // 立即从本地状态中移除
         setSubmissionsHistory(prev => prev.filter(s => s.id !== submissionId))
         globalToast.success('删除成功')
+
+        // 如果删除的是公开作业，刷新优秀作业展示
+        if (wasPublic) {
+          setPublicSubmissionsRefreshKey(prev => prev + 1)
+        }
       } else {
         const error = await response.json()
         globalToast.error(`删除失败: ${error.error || '请重试'}`)
@@ -1168,6 +1177,10 @@ export function EarthContentDetail({
 
                     <button
                       onClick={() => {
+                        // 如果是公开的高分作业，刷新优秀作业展示
+                        if (isPublic && submissionResult?.evaluation?.score >= 90) {
+                          setPublicSubmissionsRefreshKey(prev => prev + 1)
+                        }
                         setShowSubmitDialog(false)
                         setSubmissionResult(null)
                         setSelectedProject(null)
