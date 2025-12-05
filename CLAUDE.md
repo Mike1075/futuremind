@@ -118,23 +118,41 @@ types/                 # TypeScript 类型定义
 - **圆形头像**: `rounded-full` 替代 `rounded-lg`
 - **不同尺寸**: 调整 `w-7 h-7` 和字体大小
 
-#### 9. 音频播放器 - 透明炫彩风格
-- **外层容器**: `audio-section-wrapper` + `audio-section-inner`（悬停显示炫彩边框）
-- **播放器样式**: `audio-player-custom`（透明背景 + 炫彩进度条）
-- **控件面板**: `rgba(255, 255, 255, 0.05)` 半透明背景
-- **进度条**: 四色渐变（金→粉→紫→青）
-- **播放按钮**: 紫色发光效果 `drop-shadow`
+#### 9. 音频播放器 - 透明炫彩风格（2025-12-05 更新）
 
-```jsx
-// 标准音频播放器示例
-<div className="audio-section-wrapper">
-  <div className="audio-section-inner p-5">
-    <audio controls className="w-full audio-player-custom">
-      <source src={audioUrl} type="audio/mpeg" />
-    </audio>
-  </div>
-</div>
+**组件**: `components/courses/AudioPlayer.tsx`（客户端组件，带调试日志）
+
+**设计规范**:
+- **外层容器**: `audio-section-wrapper`（悬停显示炫彩边框，`::after` 伪元素 + `mask-composite: exclude`）
+- **内层容器**: `audio-section-inner`（纯黑背景 `#000`，隔绝外部颜色）
+- **悬停效果**: **只有边框炫彩**，内部保持纯黑，不要有彩色光晕渗透
+- **进度条**: 三色渐变（粉→紫→青）`from-pink-500 via-purple-500 to-cyan-500`
+- **播放按钮**: 圆形 `bg-white/10 hover:bg-white/20`，加载时显示旋转动画
+
+**关键 CSS**:
+```css
+.audio-section-wrapper::after {
+  z-index: 10;  /* 确保边框在内容之上 */
+  /* mask-composite: exclude 只显示边框 */
+}
+.audio-section-inner {
+  background: #000;  /* 纯黑背景，完全隔绝外部颜色 */
+  z-index: 1;
+}
 ```
+
+**使用方式**:
+```tsx
+import { AudioPlayer } from '@/components/courses/AudioPlayer'
+
+// 在课程页面中
+<AudioPlayer src={resource.url} title={resource.title} />
+```
+
+**注意事项**:
+- 直接在 `<audio>` 元素上设置 `src` 属性，不要用 `<source>` 子元素
+- 组件包含详细的控制台调试日志（`[AudioPlayer]` 前缀）
+- 显示错误信息和音频 URL 方便诊断问题
 
 ---
 
@@ -784,6 +802,25 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
       - `components/consciousness/ConsciousnessTreeView.tsx` - 缓存优先加载
       - `lib/hooks/useConsciousnessTreeCache.ts` - 新增意识树数据缓存 hook
       - `app/globals.css` - 音频播放器透明炫彩样式
+
+12. **✅ 意识树居中 + 音频播放器完善 + 管理后台宽度 (2025-12-05)**
+    - **问题 1**：意识树详情页树偏右，未居中显示
+    - **修复**：`ConsciousnessTreeCanvas` 使用 flexbox 居中（`display: flex; align-items: center; justify-content: center`）
+    - **问题 2**：音频播放器悬停时内部有彩色光晕，应只有边框炫彩
+    - **修复**：
+      - 移除 `::before` 外发光效果
+      - `::after` 添加 `z-index: 10` 确保边框在内容之上
+      - `audio-section-inner` 使用纯黑背景 `#000` 隔绝颜色渗透
+    - **问题 3**：音频播放报错 `MEDIA_ERR_SRC_NOT_SUPPORTED`
+    - **修复**：直接在 `<audio>` 元素设置 `src` 属性，不用 `<source>` 子元素
+    - **问题 4**：管理后台内容区域太窄
+    - **修复**：移除 `max-w-4xl` 限制，改为 `w-full max-w-none`，输入框添加 `w-full`
+    - **涉及文件**：
+      - `components/consciousness/ConsciousnessTreeCanvas.tsx` - 居中布局
+      - `components/consciousness/ConsciousnessTreeClient.tsx` - 缓存支持
+      - `components/courses/AudioPlayer.tsx` - 新客户端组件
+      - `app/admin/courses/listening/page.tsx` - 宽度修复
+      - `app/globals.css` - 炫彩边框 CSS 优化
 
 ### 盖亚知识库项目说明
 
