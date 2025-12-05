@@ -895,6 +895,46 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
       - `components/ViewProfileModal.tsx` - 根据可见性设置条件显示基本信息
     - **迁移文件**：`add_profile_visibility_fields`
 
+17. **✅ 用户头像移除旋转动画 (2025-12-05)**
+    - **需求**：用户头像炫彩边框不需要旋转，转圈太晕，只保留星星图标旋转
+    - **修复**：移除用户头像的 `animate-spin-slow` 类，保留静态炫彩边框
+    - **涉及文件**：
+      - `components/courses/PublicSubmissions.tsx` - 两处用户头像移除旋转
+      - `components/ViewProfileModal.tsx` - 查看资料弹窗头像移除旋转
+
+18. **✅ 登录页面 UI 优化 (2025-12-05)**
+    - **问题 1**：顶部星星图标丑陋，使用了错误的 TreePine 图标
+    - **修复**：改用 Sparkles 图标 + 炫彩边框效果
+    - **问题 2**：输入框、按钮样式不符合宇宙主题
+    - **修复**：
+      - `.input-ethereal` 更新为深色玻璃效果（`rgba(255, 255, 255, 0.05)`）
+      - 统一标签颜色为 `text-gray-300`
+      - 按钮使用 `btn-stardust` 样式
+    - **涉及文件**：
+      - `app/login/page.tsx` - 图标、标签、按钮样式
+      - `app/globals.css` - `.input-ethereal` 类优化
+
+19. **✅ 优秀作业刷新机制统一优化 (2025-12-05)**
+    - **问题**：删除/新增 90 分以上作业后，优秀作业展示未即时刷新
+    - **设计**：全部课程统一使用**局部刷新**机制（`publicSubmissionsRefreshKey` 状态变量）
+    - **刷新触发条件**：
+      1. 删除公开且分数 >= 90 的作业
+      2. 新增公开且分数 >= 90 的作业
+    - **各课程刷新机制**：
+      | 课程类型 | 组件文件 | 刷新方式 |
+      |---------|---------|---------|
+      | 聆听课程 | `SubmissionButton.tsx` + `SubmissionDialog.tsx` + `SubmissionHistory.tsx` | 局部刷新 |
+      | 地球课程 | `EarthContentDetail.tsx` | 局部刷新 |
+      | 伊卡洛斯项目 | `PBLProjectDetail.tsx` | 局部刷新 |
+    - **回调传递模式**：
+      - `onSuccess(score, isPublic)` - 新增作业时传递分数和公开状态
+      - `onVisibilityChanged()` - 删除作业时触发刷新
+    - **涉及文件**：
+      - `app/courses/[system_key]/[content_id]/SubmissionButton.tsx` - handleSuccess 接收 score 和 isPublic
+      - `app/courses/[system_key]/[content_id]/SubmissionDialog.tsx` - onSuccess 传递分数和公开状态
+      - `app/courses/[system_key]/[content_id]/SubmissionHistory.tsx` - 删除时触发刷新
+      - `components/courses/EarthContentDetail.tsx` - 删除和新增时触发刷新
+
 ### AI批改话术设计规范
 
 #### 聆听课程（冥想内省类）

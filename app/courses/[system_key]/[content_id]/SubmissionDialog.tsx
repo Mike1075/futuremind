@@ -31,7 +31,7 @@ interface SubmissionDialogProps {
   contentId: string
   contentTitle: string
   onClose: () => void
-  onSuccess: () => void
+  onSuccess: (score?: number, isPublic?: boolean) => void
 }
 
 export default function SubmissionDialog({
@@ -382,7 +382,8 @@ export default function SubmissionDialog({
               {/* 关闭按钮 */}
               <button
                 onClick={() => {
-                  onSuccess()
+                  // 传递分数和公开状态，用于局部刷新优秀作业展示
+                  onSuccess(result?.evaluation?.score, isPublic)
                   onClose()
                 }}
                 className="btn-stardust w-full py-3 px-6 font-medium"

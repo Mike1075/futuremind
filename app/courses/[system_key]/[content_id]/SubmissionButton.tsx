@@ -21,9 +21,11 @@ export default function SubmissionButton({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
 
-  const handleSuccess = () => {
-    // 刷新页面以显示更新后的进度
-    window.location.reload()
+  const handleSuccess = (score?: number, isPublic?: boolean) => {
+    // 如果是公开的高分作业，触发局部刷新
+    if (score && score >= 90 && isPublic && onVisibilityChanged) {
+      onVisibilityChanged()
+    }
   }
 
   return (
