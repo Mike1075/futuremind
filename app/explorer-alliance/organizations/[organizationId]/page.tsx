@@ -16,6 +16,8 @@ import { EditDescriptionModal } from '@/components/aip/EditDescriptionModal'
 import { PendingRequestsPanel } from '@/components/aip/PendingRequestsPanel'
 import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { InteractionLog } from '@/components/aip/InteractionLog'
+import { PromptDialog } from '@/components/ui/PromptDialog'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project, Task } from '@/lib/aip/types'
 
@@ -39,6 +41,16 @@ export default function OrganizationDashboardPage() {
   const [showInteractionLog, setShowInteractionLog] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [editingProject, setEditingProject] = useState<{ id: string; name: string; description: string } | null>(null)
+
+  // 申请加入项目对话框
+  const [applyDialogOpen, setApplyDialogOpen] = useState(false)
+  const [applyingProject, setApplyingProject] = useState<{ id: string; name: string } | null>(null)
+  const [applyLoading, setApplyLoading] = useState(false)
+
+  // 删除项目确认对话框
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deletingProject, setDeletingProject] = useState<{ id: string; name: string } | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const { projects, loading: projectsLoading, reload: reloadProjects } = useOrganizationProjects(organizationId)
 
@@ -241,15 +253,21 @@ export default function OrganizationDashboardPage() {
     }
   }
 
-  const handleApplyToJoin = async (projectId: string, projectName: string) => {
+  // 打开申请对话框
+  const handleApplyToJoin = (projectId: string, projectName: string) => {
     if (!userId) {
       alert('请先登录')
       return
     }
+    setApplyingProject({ id: projectId, name: projectName })
+    setApplyDialogOpen(true)
+  }
 
-    const message = prompt(`申请加入项目"${projectName}"\n\n请输入申请理由（可选）：`)
-    if (message === null) return // 用户取消
+  // 提交申请
+  const submitApply = async (message: string) => {
+    if (!applyingProject || !userId) return
 
+    setApplyLoading(true)
     try {
       const supabase = createClient()
 
@@ -264,7 +282,7 @@ export default function OrganizationDashboardPage() {
       const { error } = await supabase
         .from('project_join_requests')
         .insert({
-          project_id: projectId,
+          project_id: applyingProject.id,
           user_id: userId,
           message: message.trim() || null,
           status: 'pending'
@@ -274,6 +292,9 @@ export default function OrganizationDashboardPage() {
         // 处理重复申请错误
         if (error.code === '23505') {
           alert('您已经申请过此项目，请等待审核结果')
+          setApplyDialogOpen(false)
+          setApplyingProject(null)
+          setApplyLoading(false)
           return
         }
         throw error
@@ -283,7 +304,7 @@ export default function OrganizationDashboardPage() {
       const { data: managers } = await supabase
         .from('project_members')
         .select('user_id')
-        .eq('project_id', projectId)
+        .eq('project_id', applyingProject.id)
         .in('role_in_project', ['owner', 'manager'])
 
       // 为每个管理员创建通知
@@ -292,11 +313,11 @@ export default function OrganizationDashboardPage() {
           user_id: manager.user_id,
           type: 'join_request',
           title: '新的加入申请',
-          message: `${applicantProfile?.full_name || applicantProfile?.email || '用户'} 申请加入项目"${projectName}"${message.trim() ? `\n理由：${message.trim()}` : ''}`,
+          message: `${applicantProfile?.full_name || applicantProfile?.email || '用户'} 申请加入项目"${applyingProject.name}"${message.trim() ? `\n理由：${message.trim()}` : ''}`,
           metadata: {
             request_type: 'project',
-            project_id: projectId,
-            project_name: projectName,
+            project_id: applyingProject.id,
+            project_name: applyingProject.name,
             applicant_id: userId,
             applicant_name: applicantProfile?.full_name,
             applicant_email: applicantProfile?.email
@@ -309,9 +330,13 @@ export default function OrganizationDashboardPage() {
       }
 
       alert('申请已提交，等待项目管理员审核')
+      setApplyDialogOpen(false)
+      setApplyingProject(null)
     } catch (err) {
       console.error('提交申请失败:', err)
       alert('提交申请失败，请重试')
+    } finally {
+      setApplyLoading(false)
     }
   }
 
@@ -601,6 +626,23 @@ export default function OrganizationDashboardPage() {
       <UserProfileModal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
+      />
+
+      {/* 申请加入项目对话框 */}
+      <PromptDialog
+        isOpen={applyDialogOpen}
+        onClose={() => {
+          setApplyDialogOpen(false)
+          setApplyingProject(null)
+        }}
+        onConfirm={submitApply}
+        title={`申请加入项目"${applyingProject?.name || ''}"`}
+        message="请输入申请理由（可选）"
+        placeholder="介绍一下自己，说明为什么想加入这个项目..."
+        confirmText="提交申请"
+        cancelText="取消"
+        multiline={true}
+        loading={applyLoading}
       />
     </div>
   )

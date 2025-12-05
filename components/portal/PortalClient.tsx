@@ -19,11 +19,15 @@ import {
   User,
   Home,
   ChevronDown,
-  Key
+  Key,
+  Bell,
+  Inbox
 } from 'lucide-react'
 import { usePortalCourses } from '@/lib/hooks/usePortalCourses'
 import { ConsciousnessTreeView } from '@/components/consciousness/ConsciousnessTreeView'
 import UserProfileModal from '@/components/UserProfileModal'
+import { InteractionLog } from '@/components/aip/InteractionLog'
+import { useUnreadCount } from '@/lib/aip/useUnreadCount'
 
 interface PortalClientProps {
   userId: string
@@ -44,6 +48,10 @@ export function PortalClient({
   const supabase = createClient()
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isMessageBoxOpen, setIsMessageBoxOpen] = useState(false)
+
+  // 未读消息数量
+  const { totalCount: unreadCount, loading: unreadLoading } = useUnreadCount()
 
   // ✅ 使用SWR缓存课程数据（首次3秒，后续瞬间）
   const { courses: enrolledCourses, loading: coursesLoading } = usePortalCourses(userId)
@@ -155,10 +163,18 @@ export function PortalClient({
                 onBlur={() => setTimeout(() => setIsUserMenuOpen(false), 200)}
                 className="flex items-center space-x-2 text-white hover:text-purple-200 transition-colors duration-300 group"
               >
-                <div className="user-avatar-icon">
-                  <div className="user-avatar-icon-inner">
-                    <User className="w-5 h-5 text-white" />
+                <div className="relative">
+                  <div className="user-avatar-icon">
+                    <div className="user-avatar-icon-inner">
+                      <User className="w-5 h-5 text-white" />
+                    </div>
                   </div>
+                  {/* 红色小铃铛 - 有未读消息时显示 */}
+                  {!unreadLoading && unreadCount > 0 && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+                      <Bell className="w-2.5 h-2.5 text-white" />
+                    </div>
+                  )}
                 </div>
                 <span className="font-medium">{userName || '用户'}</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
@@ -185,6 +201,23 @@ export function PortalClient({
                     >
                       <User className="w-4 h-4" />
                       <span>个人资料</span>
+                    </button>
+
+                    {/* 消息盒子 */}
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false)
+                        setIsMessageBoxOpen(true)
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+                    >
+                      <Inbox className="w-4 h-4" />
+                      <span className="flex-1 text-left">消息盒子</span>
+                      {!unreadLoading && unreadCount > 0 && (
+                        <span className="min-w-[20px] h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
                     </button>
 
                     {/* 修改密码 */}
@@ -382,6 +415,13 @@ export function PortalClient({
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
       />
+
+      {/* 消息盒子Modal */}
+      {isMessageBoxOpen && (
+        <InteractionLog
+          onClose={() => setIsMessageBoxOpen(false)}
+        />
+      )}
     </div>
   )
 }

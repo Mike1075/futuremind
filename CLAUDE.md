@@ -935,6 +935,27 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
       - `app/courses/[system_key]/[content_id]/SubmissionHistory.tsx` - 删除时触发刷新
       - `components/courses/EarthContentDetail.tsx` - 删除和新增时触发刷新
 
+20. **✅ 原生对话框替换为自定义 UI + 消息盒子优化 (2025-12-06)**
+    - **问题 1**：申请加入项目使用原生 `prompt()` 对话框，样式丑陋
+    - **修复**：创建 `PromptDialog` 组件，替换所有原生 prompt 调用
+    - **问题 2**：消息盒子未读数不即时更新（需等待数秒）
+    - **修复**：
+      - `useUnreadCount` 添加全局事件机制 `triggerUnreadCountRefresh()`
+      - `InteractionLog` 操作后触发事件立即刷新未读数
+    - **问题 3**：Portal 页面无法访问消息盒子
+    - **修复**：
+      - 用户头像添加红色小铃铛（有未读时显示）
+      - 下拉菜单添加"消息盒子"入口，显示未读数量徽章
+      - 点击打开与探索者联盟相同的 InteractionLog 弹窗
+    - **新增组件**：
+      - `components/ui/PromptDialog.tsx` - 文本输入对话框（支持单行/多行）
+    - **涉及文件**：
+      - `lib/aip/useUnreadCount.ts` - 添加 `triggerUnreadCountRefresh()` 函数和事件监听
+      - `components/aip/InteractionLog.tsx` - 使用 triggerUnreadCountRefresh 替换 onUnreadCountChange
+      - `app/explorer-alliance/organizations/[organizationId]/page.tsx` - 使用 PromptDialog
+      - `components/portal/PortalClient.tsx` - 添加消息盒子入口和红色铃铛
+    - **消息盒子功能同步**：Portal 和探索者联盟的消息盒子完全同步，共享同一个通知系统
+
 ### AI批改话术设计规范
 
 #### 聆听课程（冥想内省类）

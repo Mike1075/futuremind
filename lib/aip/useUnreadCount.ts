@@ -1,7 +1,15 @@
 // @ts-nocheck
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { playNotificationSound, isNotificationSoundEnabled } from '@/lib/utils/notificationSound'
+
+// 全局事件名称，用于跨组件通信
+export const UNREAD_COUNT_REFRESH_EVENT = 'unreadCountRefresh'
+
+// 触发刷新未读数的函数（可在任何地方调用）
+export function triggerUnreadCountRefresh() {
+  window.dispatchEvent(new CustomEvent(UNREAD_COUNT_REFRESH_EVENT))
+}
 
 export function useUnreadCount() {
   const [unreadCount, setUnreadCount] = useState(0)
@@ -93,7 +101,16 @@ export function useUnreadCount() {
     // 每30秒刷新一次
     const interval = setInterval(loadUnreadCount, 30000)
 
-    return () => clearInterval(interval)
+    // 监听刷新事件（立即刷新）
+    const handleRefreshEvent = () => {
+      loadUnreadCount()
+    }
+    window.addEventListener(UNREAD_COUNT_REFRESH_EVENT, handleRefreshEvent)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener(UNREAD_COUNT_REFRESH_EVENT, handleRefreshEvent)
+    }
   }, [])
 
   const refresh = () => {

@@ -6,6 +6,8 @@ import { X, Send, Inbox, Mail, Trash2, Eye, MessageSquare, Check as CheckIcon, X
 import { createClient } from '@/lib/supabase/client'
 import { InvitationCard } from './InvitationCard'
 import { reviewProjectJoinRequest } from '@/lib/aip/api'
+import { triggerUnreadCountRefresh } from '@/lib/aip/useUnreadCount'
+import { PromptDialog } from '@/components/ui/PromptDialog'
 
 // 检查是否是需要审核的文档通知（未处理的）
 const isFileReviewNotification = (interaction: any): boolean => {
@@ -91,6 +93,10 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // 文档拒绝原因对话框状态
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [rejectingFile, setRejectingFile] = useState<{ interactionId: string; fileId: string } | null>(null)
+
   useEffect(() => {
     loadInteractions()
 
@@ -105,7 +111,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
       }, () => {
         setTimeout(() => {
           loadInteractions()
-          onUnreadCountChange?.()
+          triggerUnreadCountRefresh()
         }, 500)
       })
       .on('postgres_changes', {
@@ -115,7 +121,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
       }, () => {
         setTimeout(() => {
           loadInteractions()
-          onUnreadCountChange?.()
+          triggerUnreadCountRefresh()
         }, 500)
       })
       .subscribe()
@@ -260,7 +266,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
 
       alert(action === 'accept' ? '已接受邀请，您已加入项目' : '已拒绝邀请')
       await loadInteractions()
-      onUnreadCountChange?.()
+      triggerUnreadCountRefresh()
     } catch (error: any) {
       console.error('响应邀请失败:', error)
       alert(`操作失败：${error.message || '请重试'}`)
@@ -298,7 +304,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
 
       alert(action === 'approve' ? '文档已通过审核' : '文档已拒绝')
       await loadInteractions()
-      onUnreadCountChange?.()
+      triggerUnreadCountRefresh()
     } catch (error: any) {
       console.error('审核文档失败:', error)
       alert(`操作失败：${error.message || '请重试'}`)
@@ -320,7 +326,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
       setInteractions(prev =>
         prev.map(i => i.id === notificationId ? { ...i, status: 'read' as const } : i)
       )
-      onUnreadCountChange?.()
+      triggerUnreadCountRefresh()
     } catch (error) {
       console.error('标记已读失败:', error)
     }
@@ -347,7 +353,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
         }
 
         setInteractions(prev => prev.filter(i => i.id !== interactionId))
-        onUnreadCountChange?.()
+        triggerUnreadCountRefresh()
       }
     } catch (error: any) {
       console.error('删除通知失败:', error)
@@ -442,7 +448,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
       setInteractions(prev => prev.filter(i => !selectedItems.has(i.id)))
       setSelectedItems(new Set())
       setIsManageMode(false)
-      onUnreadCountChange?.()
+      triggerUnreadCountRefresh()
     } catch (error) {
       console.error('批量删除失败:', error)
       alert('删除失败，请重试')
@@ -943,10 +949,8 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      const reason = prompt('请输入拒绝原因（可选）：')
-                                      if (reason !== null) {
-                                        handleFileReview(interaction.id, interaction.metadata.file_id, 'reject', reason || undefined)
-                                      }
+                                      setRejectingFile({ interactionId: interaction.id, fileId: interaction.metadata.file_id })
+                                      setRejectDialogOpen(true)
                                     }}
                                     disabled={processing === interaction.id}
                                     className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 text-red-500 rounded-md hover:bg-red-500/20 transition-colors text-sm border border-red-500/20 disabled:opacity-50"
@@ -1037,6 +1041,28 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
           )}
         </div>
       </div>
+
+      {/* 拒绝文档原因对话框 */}
+      <PromptDialog
+        isOpen={rejectDialogOpen}
+        onClose={() => {
+          setRejectDialogOpen(false)
+          setRejectingFile(null)
+        }}
+        onConfirm={(reason) => {
+          if (rejectingFile) {
+            handleFileReview(rejectingFile.interactionId, rejectingFile.fileId, 'reject', reason || undefined)
+          }
+          setRejectDialogOpen(false)
+          setRejectingFile(null)
+        }}
+        title="拒绝文档审核"
+        message="请输入拒绝原因（可选）"
+        placeholder="说明拒绝的原因，帮助上传者改进..."
+        confirmText="确认拒绝"
+        cancelText="取消"
+        multiline={true}
+      />
     </div>
   )
 }
