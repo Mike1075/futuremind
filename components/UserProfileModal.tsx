@@ -20,6 +20,10 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   const [bio, setBio] = useState('')
   const [profilePublic, setProfilePublic] = useState(false)
   const [willingToJoinProjects, setWillingToJoinProjects] = useState(false)
+  // 基本信息可见性开关
+  const [emailPublic, setEmailPublic] = useState(false)
+  const [agePublic, setAgePublic] = useState(false)
+  const [genderPublic, setGenderPublic] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -45,7 +49,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         // 从 profiles 表加载扩展信息
         const { data: profile } = await supabase
           .from('profiles')
-          .select('age, gender, profession, hobbies, bio, profile_public, willing_to_join_projects')
+          .select('age, gender, profession, hobbies, bio, profile_public, willing_to_join_projects, email_public, age_public, gender_public')
           .eq('id', user.id)
           .single()
 
@@ -57,6 +61,9 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           setBio(profile.bio || '')
           setProfilePublic(profile.profile_public || false)
           setWillingToJoinProjects(profile.willing_to_join_projects || false)
+          setEmailPublic(profile.email_public || false)
+          setAgePublic(profile.age_public || false)
+          setGenderPublic(profile.gender_public || false)
         }
       }
     } catch (error) {
@@ -94,7 +101,10 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           hobbies: hobbies || null,
           bio: bio || null,
           profile_public: profilePublic,
-          willing_to_join_projects: willingToJoinProjects
+          willing_to_join_projects: willingToJoinProjects,
+          email_public: emailPublic,
+          age_public: agePublic,
+          gender_public: genderPublic
         })
         .eq('id', user.id)
 
@@ -195,16 +205,35 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                 <div className="flex items-start gap-2">
                   <Eye className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
                   <div className="text-xs text-gray-300">
-                    <span className="text-blue-400 font-medium">姓名</span> 会显示给其他用户看到；
-                    <span className="text-gray-400">邮箱、年龄、性别</span> 仅自己可见，不会公开。
+                    <span className="text-blue-400 font-medium">姓名</span> 会显示给其他用户；
+                    <span className="text-gray-400">邮箱、年龄、性别</span> 可以选择是否公开。
                   </div>
                 </div>
               </div>
 
+              {/* 邮箱 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  邮箱 <span className="text-xs text-gray-500 font-normal">（仅自己可见）</span>
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-300">邮箱</label>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs ${emailPublic ? 'text-emerald-400' : 'text-gray-500'}`}>
+                      {emailPublic ? '公开' : '私密'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEmailPublic(!emailPublic)}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+                        emailPublic ? 'bg-emerald-500' : 'bg-white/20'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                          emailPublic ? 'translate-x-5' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
                 <input
                   type="email"
                   value={email}
@@ -213,9 +242,10 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                 />
               </div>
 
+              {/* 姓名 */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  姓名 <span className="text-xs text-purple-400 font-normal">（公开显示）</span>
+                  姓名 <span className="text-xs text-purple-400 font-normal">（始终公开）</span>
                 </label>
                 <input
                   type="text"
@@ -227,10 +257,29 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                {/* 年龄 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    年龄 <span className="text-xs text-gray-500 font-normal">（仅自己可见）</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-300">年龄</label>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs ${agePublic ? 'text-emerald-400' : 'text-gray-500'}`}>
+                        {agePublic ? '公开' : '私密'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setAgePublic(!agePublic)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+                          agePublic ? 'bg-emerald-500' : 'bg-white/20'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                            agePublic ? 'translate-x-5' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
                   <input
                     type="number"
                     value={age}
@@ -242,17 +291,36 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   />
                 </div>
 
+                {/* 性别 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    性别 <span className="text-xs text-gray-500 font-normal">（仅自己可见）</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-300">性别</label>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs ${genderPublic ? 'text-emerald-400' : 'text-gray-500'}`}>
+                        {genderPublic ? '公开' : '私密'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setGenderPublic(!genderPublic)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+                          genderPublic ? 'bg-emerald-500' : 'bg-white/20'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                            genderPublic ? 'translate-x-5' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
                     className="w-full px-4 py-3 bg-zinc-900 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer appearance-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '20px' }}
                   >
-                    <option value="" className="bg-zinc-900 text-white">不公开</option>
+                    <option value="" className="bg-zinc-900 text-white">请选择</option>
                     <option value="male" className="bg-zinc-900 text-white">男</option>
                     <option value="female" className="bg-zinc-900 text-white">女</option>
                     <option value="other" className="bg-zinc-900 text-white">其他</option>

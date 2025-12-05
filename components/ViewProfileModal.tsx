@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, User, Briefcase, Heart, FileText, EyeOff, Loader2 } from 'lucide-react'
+import { X, User, Briefcase, Heart, FileText, EyeOff, Loader2, Mail, Calendar } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface ViewProfileModalProps {
@@ -25,6 +25,9 @@ interface ProfileData {
   profile_public: boolean
   willing_to_join_projects: boolean
   consciousness_level: number
+  email_public: boolean
+  age_public: boolean
+  gender_public: boolean
 }
 
 export default function ViewProfileModal({
@@ -51,7 +54,7 @@ export default function ViewProfileModal({
       const supabase = createClient()
       const { data, error: fetchError } = await supabase
         .from('profiles')
-        .select('id, full_name, email, age, gender, profession, hobbies, bio, profile_public, willing_to_join_projects, consciousness_level')
+        .select('id, full_name, email, age, gender, profession, hobbies, bio, profile_public, willing_to_join_projects, consciousness_level, email_public, age_public, gender_public')
         .eq('id', userId)
         .single()
 
@@ -151,6 +154,35 @@ export default function ViewProfileModal({
                   </div>
                 </div>
               </div>
+
+              {/* 基本信息（根据可见性设置显示） */}
+              {(profile.email_public || profile.age_public || profile.gender_public) && (
+                <div className="flex flex-wrap gap-3 text-sm">
+                  {/* 邮箱 */}
+                  {profile.email_public && profile.email && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-lg">
+                      <Mail className="w-4 h-4 text-blue-400" />
+                      <span className="text-gray-300">{profile.email}</span>
+                    </div>
+                  )}
+                  {/* 年龄 */}
+                  {profile.age_public && profile.age && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-lg">
+                      <Calendar className="w-4 h-4 text-green-400" />
+                      <span className="text-gray-300">{profile.age} 岁</span>
+                    </div>
+                  )}
+                  {/* 性别 */}
+                  {profile.gender_public && profile.gender && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-lg">
+                      <User className="w-4 h-4 text-pink-400" />
+                      <span className="text-gray-300">
+                        {profile.gender === 'male' ? '男' : profile.gender === 'female' ? '女' : '其他'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* 详细信息 */}
               <div className="space-y-4">

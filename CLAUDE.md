@@ -875,6 +875,26 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
       - `app/globals.css` - 全局下拉框样式
       - `components/UserProfileModal.tsx` - 性别下拉框样式优化
 
+16. **✅ 基本信息可见性开关 (2025-12-05)**
+    - **需求**：邮箱、年龄、性别支持独立的可见性开关，用户可自主选择是否公开
+    - **数据库变更**：`profiles` 表添加三个字段
+      - `email_public` (boolean, 默认 false)
+      - `age_public` (boolean, 默认 false)
+      - `gender_public` (boolean, 默认 false)
+    - **UI 设计**：
+      - 每个字段右侧显示小型开关（h-5 w-9）
+      - 开关旁显示状态标签（公开/私密）
+      - 关闭态：`bg-white/20`，开启态：`bg-emerald-500`
+    - **ViewProfileModal 显示逻辑**：
+      - 只显示用户设置为公开的字段
+      - 邮箱：蓝色邮件图标 + 完整邮箱
+      - 年龄：绿色日历图标 + "XX 岁"
+      - 性别：粉色用户图标 + 男/女/其他
+    - **涉及文件**：
+      - `components/UserProfileModal.tsx` - 添加三个可见性开关 UI + 保存逻辑
+      - `components/ViewProfileModal.tsx` - 根据可见性设置条件显示基本信息
+    - **迁移文件**：`add_profile_visibility_fields`
+
 ### AI批改话术设计规范
 
 #### 聆听课程（冥想内省类）
