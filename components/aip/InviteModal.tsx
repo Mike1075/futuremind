@@ -5,6 +5,10 @@ import { useState, useEffect, useMemo } from 'react'
 import { X, Mail, Send, FolderOpen, Loader2, Check, AlertCircle, Users, Eye, Briefcase, Heart, FileText, Search, CheckSquare, Square } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Project } from '@/lib/aip/types'
+import dynamic from 'next/dynamic'
+
+// 动态导入 ViewProfileModal
+const ViewProfileModal = dynamic(() => import('@/components/ViewProfileModal'), { ssr: false })
 
 interface InviteModalProps {
   onClose: () => void
@@ -45,8 +49,8 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
 
-  // 用户资料预览
-  const [previewUser, setPreviewUser] = useState<WillingUser | null>(null)
+  // 用户资料预览（改为只存储 userId）
+  const [previewUserId, setPreviewUserId] = useState<string | null>(null)
 
   // 过滤后的用户列表（排除已是项目成员的用户）
   const filteredUsers = useMemo(() => {
@@ -492,7 +496,7 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation()
-                              setPreviewUser(user)
+                              setPreviewUserId(user.id)
                             }}
                             className="p-1.5 hover:bg-zinc-600 rounded text-zinc-400 hover:text-white transition-colors flex-shrink-0"
                             title="查看资料"
@@ -559,93 +563,14 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
         </form>
       </div>
 
-      {/* 用户资料预览弹窗 */}
-      {previewUser && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
-          onClick={() => setPreviewUser(null)}
-        >
-          <div
-            className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-zinc-700 flex items-center justify-between">
-              <h4 className="text-white font-semibold">用户资料</h4>
-              <button
-                onClick={() => setPreviewUser(null)}
-                className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
-              {/* 基本信息 */}
-              <div>
-                <div className="text-lg font-semibold text-white">
-                  {previewUser.full_name || '未命名用户'}
-                </div>
-                <div className="text-zinc-400 text-sm">
-                  {previewUser.email || '无邮箱'}
-                </div>
-              </div>
-
-              {/* 职业 */}
-              {previewUser.profession && (
-                <div className="flex items-start gap-2">
-                  <Briefcase className="h-4 w-4 text-zinc-500 mt-0.5" />
-                  <div>
-                    <div className="text-xs text-zinc-500 mb-0.5">职业</div>
-                    <div className="text-zinc-300 text-sm">{previewUser.profession}</div>
-                  </div>
-                </div>
-              )}
-
-              {/* 爱好 */}
-              {previewUser.hobbies && (
-                <div className="flex items-start gap-2">
-                  <Heart className="h-4 w-4 text-zinc-500 mt-0.5" />
-                  <div>
-                    <div className="text-xs text-zinc-500 mb-0.5">爱好</div>
-                    <div className="text-zinc-300 text-sm">{previewUser.hobbies}</div>
-                  </div>
-                </div>
-              )}
-
-              {/* 简介 */}
-              {previewUser.bio && (
-                <div className="flex items-start gap-2">
-                  <FileText className="h-4 w-4 text-zinc-500 mt-0.5" />
-                  <div>
-                    <div className="text-xs text-zinc-500 mb-0.5">个人简介</div>
-                    <div className="text-zinc-300 text-sm">{previewUser.bio}</div>
-                  </div>
-                </div>
-              )}
-
-              {/* 无额外信息 */}
-              {!previewUser.profession && !previewUser.hobbies && !previewUser.bio && (
-                <div className="text-zinc-500 text-sm text-center py-2">
-                  该用户暂未填写详细资料
-                </div>
-              )}
-            </div>
-            <div className="p-4 border-t border-zinc-700">
-              <button
-                type="button"
-                onClick={() => {
-                  if (previewUser.email) {
-                    toggleUserSelection(previewUser.id)
-                  }
-                  setPreviewUser(null)
-                }}
-                disabled={!previewUser.email}
-                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                {selectedUserIds.has(previewUser.id) ? '取消选择' : '选择该用户'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* 用户资料预览弹窗 - 使用 ViewProfileModal（邀请场景） */}
+      {previewUserId && (
+        <ViewProfileModal
+          isOpen={!!previewUserId}
+          onClose={() => setPreviewUserId(null)}
+          userId={previewUserId}
+          isInviteContext={true}
+        />
       )}
     </div>
   )

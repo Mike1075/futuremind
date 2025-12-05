@@ -274,6 +274,23 @@ export default function SubmissionDialog({
                 </div>
               )}
 
+              {/* 等待提示 */}
+              {isSubmitting && (
+                <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">🧘</span>
+                    <div className="flex-1">
+                      <p className="text-purple-300 text-sm">
+                        AI导师正在认真阅读你的作业...
+                      </p>
+                      <p className="text-purple-400/70 text-xs mt-1">
+                        请耐心等待约20秒，不要关闭窗口哦~
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* 提交按钮 */}
               <div className="flex gap-3">
                 <button

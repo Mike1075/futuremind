@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, User, Briefcase, Heart, FileText, Users } from 'lucide-react'
+import { X, User, Briefcase, Heart, FileText, Users, Eye, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface UserProfileModalProps {
@@ -18,6 +18,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   const [profession, setProfession] = useState('')
   const [hobbies, setHobbies] = useState('')
   const [bio, setBio] = useState('')
+  const [profilePublic, setProfilePublic] = useState(false)
   const [willingToJoinProjects, setWillingToJoinProjects] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -44,7 +45,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         // 从 profiles 表加载扩展信息
         const { data: profile } = await supabase
           .from('profiles')
-          .select('age, gender, profession, hobbies, bio, willing_to_join_projects')
+          .select('age, gender, profession, hobbies, bio, profile_public, willing_to_join_projects')
           .eq('id', user.id)
           .single()
 
@@ -54,6 +55,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           setProfession(profile.profession || '')
           setHobbies(profile.hobbies || '')
           setBio(profile.bio || '')
+          setProfilePublic(profile.profile_public || false)
           setWillingToJoinProjects(profile.willing_to_join_projects || false)
         }
       }
@@ -91,6 +93,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           profession: profession || null,
           hobbies: hobbies || null,
           bio: bio || null,
+          profile_public: profilePublic,
           willing_to_join_projects: willingToJoinProjects
         })
         .eq('id', user.id)
@@ -292,31 +295,74 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                 />
               </div>
 
-              {/* 愿意参与项目开关 */}
-              <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Users className="w-5 h-5 text-blue-400" />
-                    <div>
-                      <div className="text-white font-medium">愿意参与各种项目</div>
-                      <div className="text-sm text-gray-400">
-                        开启后，其他人在邀请成员时可以看到你
+              {/* 隐私设置区域 */}
+              <div className="space-y-3">
+                <div className="text-sm font-medium text-gray-300 mb-2">隐私设置</div>
+
+                {/* 公开资料开关 */}
+                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {profilePublic ? (
+                        <Eye className="w-5 h-5 text-purple-400" />
+                      ) : (
+                        <EyeOff className="w-5 h-5 text-gray-400" />
+                      )}
+                      <div>
+                        <div className="text-white font-medium">公开个人资料</div>
+                        <div className="text-sm text-gray-400">
+                          开启后，其他人点击你的头像可以查看你的资料
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setWillingToJoinProjects(!willingToJoinProjects)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      willingToJoinProjects ? 'bg-blue-500' : 'bg-white/20'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        willingToJoinProjects ? 'translate-x-6' : 'translate-x-1'
+                    <button
+                      type="button"
+                      onClick={() => setProfilePublic(!profilePublic)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+                        profilePublic ? 'bg-emerald-500' : 'bg-white/20'
                       }`}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          profilePublic ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 愿意参与项目开关 */}
+                <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Users className="w-5 h-5 text-blue-400" />
+                      <div>
+                        <div className="text-white font-medium">愿意被邀请参与项目</div>
+                        <div className="text-sm text-gray-400">
+                          开启后，其他人可以看到你的资料并邀请你加入项目
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setWillingToJoinProjects(!willingToJoinProjects)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+                        willingToJoinProjects ? 'bg-emerald-500' : 'bg-white/20'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          willingToJoinProjects ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {/* 提示：两个开关的关系说明 */}
+                  {!profilePublic && willingToJoinProjects && (
+                    <div className="mt-3 text-xs text-amber-400/80 bg-amber-500/10 rounded px-2 py-1">
+                      💡 你的资料仅在被邀请时可见，平时点击头像不会显示
+                    </div>
+                  )}
                 </div>
               </div>
             </>

@@ -4,6 +4,10 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
+
+// 动态导入 ViewProfileModal 避免 SSR 问题
+const ViewProfileModal = dynamic(() => import('@/components/ViewProfileModal'), { ssr: false })
 
 interface Attachment {
   type: string
@@ -18,6 +22,7 @@ interface PublicSubmission {
   score: number
   feedback: string | null
   submittedAt: string
+  studentId: string
   studentName: string
 }
 
@@ -32,6 +37,8 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedSubmission, setSelectedSubmission] = useState<PublicSubmission | null>(null)
+  // 查看用户资料
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchPublicSubmissions()
@@ -136,17 +143,33 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
             {/* 头部：学生信息和评分 */}
             <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
               <div className="flex items-center gap-2">
-                {/* 用户头像 - 旋转光影 + 黑色剪影（与星星图标同款） */}
-                <div className="relative">
-                  <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow opacity-75 blur-[2px]"></div>
+                {/* 用户头像 - 可点击查看资料 */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setViewingUserId(submission.studentId)
+                  }}
+                  className="relative group cursor-pointer"
+                  title="点击查看资料"
+                >
+                  <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow opacity-75 blur-[2px] group-hover:opacity-100 transition-opacity"></div>
                   <div className="relative w-7 h-7 bg-black rounded-lg flex items-center justify-center">
                     <span className="text-blue-400 font-bold text-xs">
                       {submission.studentName.charAt(0)}
                     </span>
                   </div>
-                </div>
+                </button>
                 <div className="min-w-0">
-                  <p className="font-medium text-starlight text-xs truncate">{submission.studentName}</p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setViewingUserId(submission.studentId)
+                    }}
+                    className="font-medium text-starlight text-xs truncate hover:text-purple-300 transition-colors cursor-pointer"
+                    title="点击查看资料"
+                  >
+                    {submission.studentName}
+                  </button>
                 </div>
               </div>
               <div className="flex items-center gap-1 bg-orange-500/20 px-1.5 py-0.5 rounded">
@@ -221,17 +244,27 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
               {/* 弹窗头部 */}
               <div className="sticky top-0 bg-black/80 backdrop-blur-xl border-b border-white/10 p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {/* 用户头像 */}
-                  <div className="relative">
-                    <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow opacity-75 blur-[2px]"></div>
+                  {/* 用户头像 - 可点击查看资料 */}
+                  <button
+                    onClick={() => setViewingUserId(selectedSubmission.studentId)}
+                    className="relative group cursor-pointer"
+                    title="点击查看资料"
+                  >
+                    <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-spin-slow opacity-75 blur-[2px] group-hover:opacity-100 transition-opacity"></div>
                     <div className="relative w-10 h-10 bg-black rounded-lg flex items-center justify-center">
                       <span className="text-blue-400 font-bold text-sm">
                         {selectedSubmission.studentName.charAt(0)}
                       </span>
                     </div>
-                  </div>
+                  </button>
                   <div>
-                    <p className="font-medium text-starlight">{selectedSubmission.studentName}</p>
+                    <button
+                      onClick={() => setViewingUserId(selectedSubmission.studentId)}
+                      className="font-medium text-starlight hover:text-purple-300 transition-colors cursor-pointer"
+                      title="点击查看资料"
+                    >
+                      {selectedSubmission.studentName}
+                    </button>
                     <p className="text-xs text-starlight-muted">{formatDate(selectedSubmission.submittedAt)}</p>
                   </div>
                 </div>
@@ -341,6 +374,15 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 查看用户资料弹窗 */}
+      {viewingUserId && (
+        <ViewProfileModal
+          isOpen={!!viewingUserId}
+          onClose={() => setViewingUserId(null)}
+          userId={viewingUserId}
+        />
+      )}
     </div>
   )
 }

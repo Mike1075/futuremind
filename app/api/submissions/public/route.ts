@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
       score: sub.score,
       feedback: sub.feedback,
       submittedAt: sub.submitted_at,
+      studentId: sub.user_id,
       studentName: (sub.profiles as any)?.full_name || '匿名用户'
     })) || []
 
