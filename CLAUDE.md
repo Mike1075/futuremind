@@ -846,6 +846,10 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
     - **两个开关**：
       - **公开个人资料**：开启后，其他人点击头像可查看资料
       - **愿意被邀请参与项目**：开启后，在邀请列表可见且资料可被查看
+    - **基本资料可见性规则**：
+      - **姓名**：公开显示（其他用户可见）
+      - **邮箱、年龄、性别**：仅自己可见，不会公开
+      - **扩展资料（职业、爱好、简介）**：根据隐私设置决定是否公开
     - **可见性逻辑矩阵**：
       | 公开资料 | 愿意参与项目 | 平时点头像 | 邀请成员时 |
       |---------|-------------|-----------|----------|
@@ -856,11 +860,20 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
     - **新增组件**：
       - `components/ViewProfileModal.tsx` - 查看他人资料弹窗（支持 `isInviteContext` 参数）
     - **修改文件**：
-      - `components/UserProfileModal.tsx` - 添加公开资料开关+修改提示文案
+      - `components/UserProfileModal.tsx` - 添加公开资料开关+修改提示文案+可见性说明
       - `components/courses/PublicSubmissions.tsx` - 点击头像/用户名查看资料
       - `components/aip/InviteModal.tsx` - 使用 ViewProfileModal（邀请场景）
       - `app/api/submissions/public/route.ts` - 返回 studentId 字段
     - **迁移文件**：`add_profile_public_field`
+
+15. **✅ 全局下拉框样式修复 (2025-12-05)**
+    - **问题 1**：下拉框选项背景白色，文字看不见
+    - **修复**：`globals.css` 添加全局 select/option 样式（zinc-900 背景）
+    - **问题 2**：下拉框点击行为异常（鼠标移开就收回）
+    - **修复**：使用 `appearance-none` + 自定义下拉箭头 SVG
+    - **涉及文件**：
+      - `app/globals.css` - 全局下拉框样式
+      - `components/UserProfileModal.tsx` - 性别下拉框样式优化
 
 ### AI批改话术设计规范
 

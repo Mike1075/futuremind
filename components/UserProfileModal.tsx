@@ -190,9 +190,20 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           {/* 基本信息 */}
           {activeTab === 'basic' && (
             <>
+              {/* 可见性说明 */}
+              <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-3 mb-2">
+                <div className="flex items-start gap-2">
+                  <Eye className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-gray-300">
+                    <span className="text-blue-400 font-medium">姓名</span> 会显示给其他用户看到；
+                    <span className="text-gray-400">邮箱、年龄、性别</span> 仅自己可见，不会公开。
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  邮箱
+                  邮箱 <span className="text-xs text-gray-500 font-normal">（仅自己可见）</span>
                 </label>
                 <input
                   type="email"
@@ -204,7 +215,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  姓名
+                  姓名 <span className="text-xs text-purple-400 font-normal">（公开显示）</span>
                 </label>
                 <input
                   type="text"
@@ -218,7 +229,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    年龄
+                    年龄 <span className="text-xs text-gray-500 font-normal">（仅自己可见）</span>
                   </label>
                   <input
                     type="number"
@@ -233,17 +244,18 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    性别
+                    性别 <span className="text-xs text-gray-500 font-normal">（仅自己可见）</span>
                   </label>
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-zinc-900 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer appearance-none"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '20px' }}
                   >
-                    <option value="">不公开</option>
-                    <option value="male">男</option>
-                    <option value="female">女</option>
-                    <option value="other">其他</option>
+                    <option value="" className="bg-zinc-900 text-white">不公开</option>
+                    <option value="male" className="bg-zinc-900 text-white">男</option>
+                    <option value="female" className="bg-zinc-900 text-white">女</option>
+                    <option value="other" className="bg-zinc-900 text-white">其他</option>
                   </select>
                 </div>
               </div>

@@ -144,17 +144,6 @@ export default function ViewProfileModal({
                   <h3 className="text-xl font-semibold text-white">
                     {profile.full_name || '未命名用户'}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    {profile.age && (
-                      <span className="text-sm text-gray-400">{profile.age}岁</span>
-                    )}
-                    {profile.age && getGenderText(profile.gender) && (
-                      <span className="text-gray-600">·</span>
-                    )}
-                    {getGenderText(profile.gender) && (
-                      <span className="text-sm text-gray-400">{getGenderText(profile.gender)}</span>
-                    )}
-                  </div>
                   {/* 意识等级 */}
                   <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 bg-purple-500/20 rounded-full">
                     <span className="text-xs text-purple-300">意识等级</span>
