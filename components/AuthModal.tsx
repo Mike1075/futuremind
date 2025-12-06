@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Mail, Lock, User, Sparkles, ArrowLeft } from 'lucide-react'
+import { X, Mail, Lock, User, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface AuthModalProps {
@@ -136,15 +136,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
               {/* 标题 */}
               <div className="text-center mb-8">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="w-12 h-12 bg-gradient-cosmic rounded-full flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                </div>
                 <h2 className="text-2xl font-bold text-white mb-2">
                   {mode === 'login' ? '欢迎回来' : mode === 'register' ? '加入我们' : '重置密码'}
                 </h2>
-                <p className="text-cosmic-400">
+                <p className="text-gray-400">
                   {mode === 'login'
                     ? '登录以继续你的意识觉醒之旅'
                     : mode === 'register'
@@ -161,13 +156,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       邮箱
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-cosmic-500" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="w-full pl-11 pr-4 py-3 bg-cosmic-800/50 border border-cosmic-700 rounded-lg text-white placeholder-cosmic-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                        className="w-full pl-11 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                         placeholder="请输入注册时使用的邮箱"
                       />
                     </div>
@@ -196,7 +191,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 bg-gradient-cosmic text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-primary-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn-stardust w-full py-3"
                   >
                     {loading ? '发送中...' : '发送重置邮件'}
                   </button>
@@ -223,13 +218,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       姓名
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-cosmic-500" />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
                       <input
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required
-                        className="w-full pl-11 pr-4 py-3 bg-cosmic-800/50 border border-cosmic-700 rounded-lg text-white placeholder-cosmic-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                        className="w-full pl-11 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                         placeholder="请输入您的姓名"
                       />
                     </div>
@@ -241,13 +236,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     邮箱
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-cosmic-500" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="w-full pl-11 pr-4 py-3 bg-cosmic-800/50 border border-cosmic-700 rounded-lg text-white placeholder-cosmic-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                      className="w-full pl-11 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                       placeholder="your@email.com"
                     />
                   </div>
@@ -258,14 +253,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     密码
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-cosmic-500" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={6}
-                      className="w-full pl-11 pr-4 py-3 bg-cosmic-800/50 border border-cosmic-700 rounded-lg text-white placeholder-cosmic-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                      className="w-full pl-11 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                       placeholder="••••••••"
                     />
                   </div>
@@ -299,7 +294,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-gradient-cosmic text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-primary-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-stardust w-full py-3"
                 >
                   {loading ? '处理中...' : mode === 'login' ? '登录' : '注册'}
                 </button>
@@ -314,7 +309,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       setMode(mode === 'login' ? 'register' : 'login')
                       setError('')
                     }}
-                    className="text-cosmic-400 hover:text-primary-400 transition-colors text-sm"
+                    className="text-sm text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-purple-400 to-cyan-400 hover:from-amber-300 hover:via-purple-300 hover:to-cyan-300 transition-all font-medium"
                   >
                     {mode === 'login'
                       ? '还没有账号？立即注册'
