@@ -10,8 +10,12 @@ import {
   Key,
   Settings,
   LogOut,
-  Home
+  Home,
+  Bell,
+  Inbox
 } from 'lucide-react'
+import { useUnreadCount } from '@/lib/aip/useUnreadCount'
+import { InteractionLog } from '@/components/aip/InteractionLog'
 
 interface UnifiedNavbarProps {
   // 可选：如果已有用户信息可以直接传入，避免重复获取
@@ -47,6 +51,8 @@ export function UnifiedNavbar({
   const [userEmail, setUserEmail] = useState(propUserEmail || '')
   const [userRole, setUserRole] = useState<string | null>(propUserRole || null)
   const [loading, setLoading] = useState(!propUserName)
+  const [isMessageBoxOpen, setIsMessageBoxOpen] = useState(false)
+  const { totalCount: unreadCount, loading: unreadLoading } = useUnreadCount()
 
   useEffect(() => {
     // 如果已经传入了用户信息，不需要再获取
@@ -108,6 +114,7 @@ export function UnifiedNavbar({
   }
 
   return (
+    <>
     <nav className={`relative z-20 ${transparent ? 'bg-white/5 backdrop-blur-md' : 'bg-zinc-900'} border-b border-white/10`}>
       <div className="px-8 py-4">
         <div className="flex items-center justify-between">
@@ -118,10 +125,18 @@ export function UnifiedNavbar({
               onBlur={() => setTimeout(() => setIsUserMenuOpen(false), 200)}
               className="flex items-center space-x-2 text-white hover:text-purple-200 transition-colors duration-300 group"
             >
-              <div className="user-avatar-icon">
-                <div className="user-avatar-icon-inner">
-                  <User className="w-5 h-5 text-white" />
+              <div className="relative">
+                <div className="user-avatar-icon">
+                  <div className="user-avatar-icon-inner">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
                 </div>
+                {/* 未读消息红色小铃铛 */}
+                {!unreadLoading && unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+                    <Bell className="w-2.5 h-2.5 text-white" />
+                  </div>
+                )}
               </div>
               <span className="font-medium">{displayName}</span>
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
@@ -164,6 +179,23 @@ export function UnifiedNavbar({
                   >
                     <Key className="w-4 h-4" />
                     <span>修改密码</span>
+                  </button>
+
+                  {/* 消息盒子 */}
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false)
+                      setIsMessageBoxOpen(true)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+                  >
+                    <Inbox className="w-4 h-4" />
+                    <span>消息盒子</span>
+                    {!unreadLoading && unreadCount > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </button>
 
                   {/* 管理后台 - 仅管理员可见 */}
@@ -224,5 +256,13 @@ export function UnifiedNavbar({
         </div>
       </div>
     </nav>
+
+    {/* 消息盒子弹窗 */}
+    {isMessageBoxOpen && (
+      <InteractionLog
+        onClose={() => setIsMessageBoxOpen(false)}
+      />
+    )}
+    </>
   )
 }
