@@ -192,12 +192,12 @@ function LoginForm() {
                 邮箱
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-ethereal pl-12"
+                  className="w-full bg-white/5 border border-white/20 text-white placeholder-white/40 rounded-xl py-3 px-4 pl-12 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all backdrop-blur-sm"
                   placeholder="请输入注册时使用的邮箱"
                   required
                 />
@@ -249,7 +249,7 @@ function LoginForm() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="input-ethereal"
+                  className="w-full bg-white/5 border border-white/20 text-white placeholder-white/40 rounded-xl py-3 px-4 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all backdrop-blur-sm"
                   placeholder="请输入您的姓名"
                   required={!isLogin}
                 />
@@ -262,12 +262,12 @@ function LoginForm() {
               邮箱
             </label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-ethereal pl-12"
+                className="w-full bg-white/5 border border-white/20 text-white placeholder-white/40 rounded-xl py-3 px-4 pl-12 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all backdrop-blur-sm"
                 placeholder="请输入您的邮箱"
                 required
               />
@@ -279,19 +279,19 @@ function LoginForm() {
               密码
             </label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-ethereal pl-12 pr-12"
+                className="w-full bg-white/5 border border-white/20 text-white placeholder-white/40 rounded-xl py-3 px-4 pl-12 pr-12 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all backdrop-blur-sm"
                 placeholder="请输入您的密码"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-purple-400 transition-colors"
               >
                 {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
               </button>
