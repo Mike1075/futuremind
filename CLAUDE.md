@@ -154,6 +154,50 @@ import { AudioPlayer } from '@/components/courses/AudioPlayer'
 - 组件包含详细的控制台调试日志（`[AudioPlayer]` 前缀）
 - 显示错误信息和音频 URL 方便诊断问题
 
+#### 10. 登录界面 - 炫彩统一风格（2025-12-06 更新）
+
+**两个登录入口**：
+- `app/login/page.tsx` - 独立登录页面（直接访问 /login）
+- `components/AuthModal.tsx` - 登录弹窗（从首页点击登录按钮）
+
+**设计规范**：
+
+**标题区域**：
+```tsx
+<h2 className="text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-200">
+  欢迎回来
+</h2>
+<p className="text-gray-300/80 text-sm tracking-wide">
+  登录以继续你的意识觉醒之旅
+</p>
+```
+
+**输入框**：
+```tsx
+className="w-full bg-white/5 border border-amber-500/30 rounded-xl py-3 px-4 pl-12
+  text-white placeholder-white/40
+  focus:border-purple-500/70 focus:ring-2 focus:ring-purple-500/40
+  focus:shadow-[0_0_15px_rgba(168,85,247,0.3)]
+  transition-all backdrop-blur-sm"
+```
+
+**按钮**：使用 `btn-stardust w-full py-3`
+
+**切换链接**（登录/注册）：
+```tsx
+className="text-sm text-transparent bg-clip-text bg-gradient-to-r
+  from-amber-400 via-purple-400 to-cyan-400
+  hover:from-amber-300 hover:via-purple-300 hover:to-cyan-300
+  transition-all font-medium"
+```
+
+**图标颜色**：`text-purple-400`
+
+**❌ 禁止**：
+- 不要添加顶部星星图标（已移除）
+- 不要使用 `bg-cosmic-800/50` 等旧样式
+- 不要使用 `bg-gradient-cosmic` 按钮样式
+
 ---
 
 ## AI 聊天系统架构
