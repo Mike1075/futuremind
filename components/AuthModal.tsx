@@ -136,10 +136,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
               {/* 标题 */}
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-200">
+                <h2 className="font-sacred text-2xl md:text-3xl text-white tracking-wide mb-3">
                   {mode === 'login' ? '欢迎回来' : mode === 'register' ? '加入我们' : '重置密码'}
                 </h2>
-                <p className="text-gray-300/80 text-sm tracking-wide">
+                <p className="text-starlight-dim text-sm">
                   {mode === 'login'
                     ? '登录以继续你的意识觉醒之旅'
                     : mode === 'register'
@@ -156,13 +156,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       邮箱
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400 z-10" />
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="w-full pl-11 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
+                        className="w-full pl-12 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                         placeholder="请输入注册时使用的邮箱"
                       />
                     </div>
@@ -218,13 +218,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       姓名
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400 z-10" />
                       <input
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required
-                        className="w-full pl-11 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
+                        className="w-full pl-12 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                         placeholder="请输入您的姓名"
                       />
                     </div>
@@ -236,13 +236,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     邮箱
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400 z-10" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="w-full pl-11 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
+                      className="w-full pl-12 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                       placeholder="your@email.com"
                     />
                   </div>
@@ -253,14 +253,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     密码
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400 z-10" />
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={6}
-                      className="w-full pl-11 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
+                      className="w-full pl-12 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                       placeholder="••••••••"
                     />
                   </div>
