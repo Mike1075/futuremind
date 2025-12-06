@@ -959,6 +959,17 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
       - 邀请/申请/审核类通知在卡片上直接显示"接受/拒绝"按钮
       - 无需展开即可快速响应
       - 按钮显示条件：通知状态为待处理（unread/pending）
+    - **首页消息盒子**（2025-12-06 补充）：
+      - 首页使用独立的用户菜单代码（非 UnifiedNavbar）
+      - 已同步添加消息盒子入口和红色铃铛
+      - 涉及文件：`app/page.tsx`
+    - **原生 alert 替换为 Toast**（2025-12-06 补充）：
+      - 问题：提交申请后显示原生浏览器 alert 对话框
+      - 修复：使用已有的 `Toast` 组件替换所有 `alert()` 调用
+      - 涉及文件：
+        - `app/explorer-alliance/organizations/[organizationId]/page.tsx`
+        - `components/aip/InteractionLog.tsx`
+      - Toast 类型：success（绿色）、error（红色）、warning（黄色）、info（蓝色）
 
 ### AI批改话术设计规范
 
