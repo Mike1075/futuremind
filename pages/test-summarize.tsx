@@ -996,7 +996,7 @@ export default function TestSummarizePage() {
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleConfirmClearTree}
         title="⚠️ 确认清空意识树"
-        message="确认要清空该用户的意识树数据吗？清空后，树将重置为"种子"状态，下次评估会从零开始累积生长。"
+        message={`确认要清空该用户的意识树数据吗？清空后，树将重置为"种子"状态，下次评估会从零开始累积生长。`}
         confirmText="确认清空"
         cancelText="取消"
         type="warning"
