@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 interface LogEntry {
   timestamp: string
@@ -37,6 +38,9 @@ export default function TestSummarizePage() {
   const [treeResult, setTreeResult] = useState<any>(null)
   const [treeEvalLogs, setTreeEvalLogs] = useState<LogEntry[]>([])
   const supabase = createClientComponentClient()
+
+  // ConfirmDialog 状态
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   // 保存userId到localStorage
   useEffect(() => {
@@ -414,15 +418,16 @@ export default function TestSummarizePage() {
   }
 
   // 清空意识树数据（强制重置）
-  const clearTreeData = async () => {
+  const clearTreeData = () => {
     if (!userId) {
       addTreeLog('error', '请先选择用户')
       return
     }
+    setConfirmOpen(true)
+  }
 
-    if (!window.confirm('⚠️ 确认要清空该用户的意识树数据吗？\n\n清空后，树将重置为"种子"状态，下次评估会从零开始累积生长。')) {
-      return
-    }
+  const handleConfirmClearTree = async () => {
+    setConfirmOpen(false)
 
     addTreeLog('warning', '正在清空意识树数据...')
 
@@ -985,6 +990,17 @@ export default function TestSummarizePage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmClearTree}
+        title="⚠️ 确认清空意识树"
+        message="确认要清空该用户的意识树数据吗？清空后，树将重置为"种子"状态，下次评估会从零开始累积生长。"
+        confirmText="确认清空"
+        cancelText="取消"
+        type="warning"
+      />
     </div>
   )
 }

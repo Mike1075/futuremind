@@ -7,6 +7,7 @@ import {
   Sparkles, Globe, Coffee, Search, Plus,
   BookOpen, Lightbulb, Target, Award
 } from 'lucide-react'
+import { Toast } from '@/components/ui/Toast'
 
 // 社区数据类型
 interface CommunityPost {
@@ -53,6 +54,17 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
   const [loading, setLoading] = useState(true)
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Toast 状态
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('info')
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
 
   useEffect(() => {
     loadCommunityData()
@@ -293,7 +305,7 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
                 </div>
               </div>
               <button
-                onClick={() => alert('注册功能开发中...')}
+                onClick={() => showToast('注册功能开发中...', 'info')}
                 className="btn-stardust text-small"
               >
                 立即加入
@@ -384,7 +396,7 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
 
             {!isGuest && (
               <button
-                onClick={() => alert('发布动态功能开发中...')}
+                onClick={() => showToast('发布动态功能开发中...', 'info')}
                 className="btn-stardust flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -585,7 +597,7 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
                     </div>
 
                     <button
-                      onClick={() => alert(isGuest ? '请先注册登录' : '发起对话功能开发中...')}
+                      onClick={() => showToast(isGuest ? '请先注册登录' : '发起对话功能开发中...', isGuest ? 'warning' : 'info')}
                       className="w-full bg-cosmic-700/50 hover:bg-primary-600/20 text-starlight-muted hover:text-primary-300 py-2 rounded-lg transition-colors text-small"
                     >
                       {isGuest ? '注册后联系' : '发起对话'}
@@ -603,7 +615,7 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
               <h3 className="text-h3 font-medium text-starlight mb-2">社区活动筹备中</h3>
               <p className="text-starlight-muted mb-6">精彩的工作坊、研讨会和协作活动即将上线</p>
               <button
-                onClick={() => alert('活动功能开发中...')}
+                onClick={() => showToast('活动功能开发中...', 'info')}
                 className="btn-stardust"
               >
                 {isGuest ? '注册参与活动' : '创建活动'}
@@ -612,6 +624,13 @@ export function CommunityPage({ isGuest }: CommunityPageProps) {
           )}
         </div>
       </div>
+
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
+      />
     </div>
   )
 }

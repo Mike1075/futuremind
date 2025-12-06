@@ -3,6 +3,7 @@
 
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { Toast } from '@/components/ui/Toast'
 
 interface MarkCompleteButtonProps {
   userId: string
@@ -17,6 +18,7 @@ export default function MarkCompleteButton({
 }: MarkCompleteButtonProps) {
   const [isCompleted, setIsCompleted] = useState(initialCompleted)
   const [isPending, startTransition] = useTransition()
+  const [toastOpen, setToastOpen] = useState(false)
   const supabase = createClient()
 
   const toggleComplete = async () => {
@@ -65,12 +67,13 @@ export default function MarkCompleteButton({
         console.error('标记完成状态失败:', error)
         // 回滚UI
         setIsCompleted(!newCompletedState)
-        alert('操作失败，请重试')
+        setToastOpen(true)
       }
     })
   }
 
   return (
+    <>
     <button
       onClick={toggleComplete}
       disabled={isPending}
@@ -109,5 +112,13 @@ export default function MarkCompleteButton({
         </span>
       )}
     </button>
+
+    <Toast
+      isOpen={toastOpen}
+      onClose={() => setToastOpen(false)}
+      message="操作失败，请重试"
+      type="error"
+    />
+    </>
   )
 }

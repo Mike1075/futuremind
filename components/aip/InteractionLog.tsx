@@ -9,6 +9,7 @@ import { reviewProjectJoinRequest } from '@/lib/aip/api'
 import { triggerUnreadCountRefresh } from '@/lib/aip/useUnreadCount'
 import { PromptDialog } from '@/components/ui/PromptDialog'
 import { Toast } from '@/components/ui/Toast'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 // 检查是否是需要审核的文档通知（未处理的）
 const isFileReviewNotification = (interaction: any): boolean => {
@@ -107,6 +108,15 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     setToastMessage(message)
     setToastType(type)
     setToastOpen(true)
+  }
+
+  // ConfirmDialog 状态
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {})
+
+  const showConfirm = (onConfirm: () => void) => {
+    setConfirmCallback(() => onConfirm)
+    setConfirmOpen(true)
   }
 
   useEffect(() => {
@@ -415,58 +425,57 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
   }
 
   // 批量删除
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedItems.size === 0) return
 
-    const confirmDelete = window.confirm(`确定要删除选中的 ${selectedItems.size} 条记录吗？`)
-    if (!confirmDelete) return
+    showConfirm(async () => {
+      setIsDeleting(true)
+      try {
+        const supabase = createClient()
 
-    setIsDeleting(true)
-    try {
-      const supabase = createClient()
+        // 分类选中项
+        const notificationIds: string[] = []
+        const requestIds: string[] = []
 
-      // 分类选中项
-      const notificationIds: string[] = []
-      const requestIds: string[] = []
+        selectedItems.forEach(id => {
+          const item = interactions.find(i => i.id === id)
+          if (item?.interactionType === 'notification') {
+            notificationIds.push(id)
+          } else if (item?.interactionType === 'project_request' && item.status !== 'pending') {
+            requestIds.push(id)
+          }
+        })
 
-      selectedItems.forEach(id => {
-        const item = interactions.find(i => i.id === id)
-        if (item?.interactionType === 'notification') {
-          notificationIds.push(id)
-        } else if (item?.interactionType === 'project_request' && item.status !== 'pending') {
-          requestIds.push(id)
+        // 删除通知
+        if (notificationIds.length > 0) {
+          const { error } = await supabase
+            .from('notifications')
+            .delete()
+            .in('id', notificationIds)
+          if (error) throw error
         }
-      })
 
-      // 删除通知
-      if (notificationIds.length > 0) {
-        const { error } = await supabase
-          .from('notifications')
-          .delete()
-          .in('id', notificationIds)
-        if (error) throw error
+        // 删除已处理的项目申请
+        if (requestIds.length > 0) {
+          const { error } = await supabase
+            .from('project_join_requests')
+            .delete()
+            .in('id', requestIds)
+          if (error) throw error
+        }
+
+        // 更新状态
+        setInteractions(prev => prev.filter(i => !selectedItems.has(i.id)))
+        setSelectedItems(new Set())
+        setIsManageMode(false)
+        triggerUnreadCountRefresh()
+      } catch (error) {
+        console.error('批量删除失败:', error)
+        showToast('删除失败，请重试', 'error')
+      } finally {
+        setIsDeleting(false)
       }
-
-      // 删除已处理的项目申请
-      if (requestIds.length > 0) {
-        const { error } = await supabase
-          .from('project_join_requests')
-          .delete()
-          .in('id', requestIds)
-        if (error) throw error
-      }
-
-      // 更新状态
-      setInteractions(prev => prev.filter(i => !selectedItems.has(i.id)))
-      setSelectedItems(new Set())
-      setIsManageMode(false)
-      triggerUnreadCountRefresh()
-    } catch (error) {
-      console.error('批量删除失败:', error)
-      showToast('删除失败，请重试', 'error')
-    } finally {
-      setIsDeleting(false)
-    }
+    })
   }
 
   // 退出管理模式
@@ -1161,6 +1170,18 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
         onClose={() => setToastOpen(false)}
         message={toastMessage}
         type={toastType}
+      />
+
+      {/* ConfirmDialog 确认对话框 */}
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          confirmCallback()
+          setConfirmOpen(false)
+        }}
+        title="删除确认"
+        message={`确定要删除选中的 ${selectedItems.size} 条记录吗？`}
       />
     </div>
   )

@@ -6,6 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Plus, Save, Upload, FileVideo, Trash2, ChevronRight, BookOpen, Edit, Users, UsersRound } from 'lucide-react'
+import { Toast } from '@/components/ui/Toast'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { PromptDialog } from '@/components/ui/PromptDialog'
 
 interface EarthStage {
   id: string
@@ -46,6 +49,45 @@ export default function EarthCoursePage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [earthSystemId, setEarthSystemId] = useState<string | null>(null)
+
+  // Toast 状态
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('success')
+
+  // ConfirmDialog 状态
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmMessage, setConfirmMessage] = useState('')
+  const [confirmTitle, setConfirmTitle] = useState('')
+  const [confirmCallback, setConfirmCallback] = useState<(() => void) | null>(null)
+
+  // PromptDialog 状态
+  const [promptOpen, setPromptOpen] = useState(false)
+  const [promptTitle, setPromptTitle] = useState('')
+  const [promptMessage, setPromptMessage] = useState('')
+  const [promptDefaultValue, setPromptDefaultValue] = useState('')
+  const [promptCallback, setPromptCallback] = useState<((value: string) => void) | null>(null)
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmTitle(title)
+    setConfirmMessage(message)
+    setConfirmCallback(() => onConfirm)
+    setConfirmOpen(true)
+  }
+
+  const showPrompt = (title: string, message: string, defaultValue: string, onConfirm: (value: string) => void) => {
+    setPromptTitle(title)
+    setPromptMessage(message)
+    setPromptDefaultValue(defaultValue)
+    setPromptCallback(() => onConfirm)
+    setPromptOpen(true)
+  }
 
   // 项目编辑状态
   const [showProjectEditor, setShowProjectEditor] = useState(false)
@@ -204,11 +246,11 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      alert('保存成功！')
+      showToast('保存成功！', 'success')
       await loadStages()
     } catch (error) {
       console.error('保存失败:', error)
-      alert('保存失败，请重试')
+      showToast('保存失败，请重试', 'error')
     } finally {
       setSaving(false)
     }
@@ -217,55 +259,56 @@ export default function EarthCoursePage() {
   const handleAddExternalVideo = async () => {
     if (!selectedStage) return
 
-    const url = prompt('📺 请输入补充视频URL（YouTube/Bilibili）:\n\n注意：这是补充资源，不是主纪录片。')
-    if (!url) return
+    showPrompt('添加补充视频', '请输入补充视频URL（YouTube/Bilibili）\n\n注意：这是补充资源，不是主纪录片。', '', async (url) => {
+      if (!url) return
 
-    const description = prompt('📝 请输入视频描述（例如：相关资料片段、延伸阅读）:')
+      showPrompt('视频描述', '请输入视频描述（例如：相关资料片段、延伸阅读）:', '', async (description) => {
+        try {
+          const supabase = createClient()
+          const { error } = await supabase
+            .from('media_resources')
+            .insert({
+              course_content_id: selectedStage.id,
+              file_name: description || '补充视频',
+              file_url: url,
+              external_url: url,
+              file_type: 'video/external',
+              resource_type: 'video',
+              description: description
+            })
 
-    try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('media_resources')
-        .insert({
-          course_content_id: selectedStage.id,
-          file_name: description || '补充视频',
-          file_url: url,
-          external_url: url,
-          file_type: 'video/external',
-          resource_type: 'video',
-          description: description
-        })
+          if (error) throw error
 
-      if (error) throw error
-
-      alert('补充视频添加成功！')
-      await loadMediaResources(selectedStage.id)
-    } catch (error) {
-      console.error('添加视频失败:', error)
-      alert('添加视频失败，请重试')
-    }
+          showToast('补充视频添加成功！', 'success')
+          await loadMediaResources(selectedStage.id)
+        } catch (error) {
+          console.error('添加视频失败:', error)
+          showToast('添加视频失败，请重试', 'error')
+        }
+      })
+    })
   }
 
   const handleDeleteMedia = async (mediaId: string) => {
-    if (!confirm('确定要删除这个资源吗？')) return
+    showConfirm('删除确认', '确定要删除这个资源吗？', async () => {
+      try {
+        const supabase = createClient()
+        const { error } = await supabase
+          .from('media_resources')
+          .delete()
+          .eq('id', mediaId)
 
-    try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('media_resources')
-        .delete()
-        .eq('id', mediaId)
+        if (error) throw error
 
-      if (error) throw error
-
-      alert('删除成功！')
-      if (selectedStage) {
-        await loadMediaResources(selectedStage.id)
+        showToast('删除成功！', 'success')
+        if (selectedStage) {
+          await loadMediaResources(selectedStage.id)
+        }
+      } catch (error) {
+        console.error('删除失败:', error)
+        showToast('删除失败，请重试', 'error')
       }
-    } catch (error) {
-      console.error('删除失败:', error)
-      alert('删除失败，请重试')
-    }
+    })
   }
 
   const handleAddNewStage = async () => {
@@ -301,85 +344,86 @@ export default function EarthCoursePage() {
 
       if (error) throw error
 
-      alert('新增成功！')
+      showToast('新增成功！', 'success')
       await loadStages()
       setSelectedStage(data)
     } catch (error) {
       console.error('新增失败:', error)
-      alert('新增失败，请重试')
+      showToast('新增失败，请重试', 'error')
     }
   }
 
   const handleDeleteStage = async (stageId: string, sequenceNumber: number) => {
     // 保护前6个阶段的固定内容
     if (sequenceNumber <= 6) {
-      alert('前6个阶段是固定内容，不能删除，只能修改。')
+      showToast('前6个阶段是固定内容，不能删除，只能修改。', 'warning')
       return
     }
 
-    if (!confirm(`确定要删除第 ${sequenceNumber} 阶段吗？删除后将无法恢复。`)) return
+    showConfirm('删除确认', `确定要删除第 ${sequenceNumber} 阶段吗？删除后将无法恢复。`, async () => {
+      try {
+        const supabase = createClient()
 
-    try {
-      const supabase = createClient()
+        // 先删除关联的媒体资源
+        const { error: mediaError } = await supabase
+          .from('media_resources')
+          .delete()
+          .eq('course_content_id', stageId)
 
-      // 先删除关联的媒体资源
-      const { error: mediaError } = await supabase
-        .from('media_resources')
-        .delete()
-        .eq('course_content_id', stageId)
+        if (mediaError) throw mediaError
 
-      if (mediaError) throw mediaError
+        // 删除阶段内容
+        const { error } = await supabase
+          .from('course_contents')
+          .delete()
+          .eq('id', stageId)
 
-      // 删除阶段内容
-      const { error } = await supabase
-        .from('course_contents')
-        .delete()
-        .eq('id', stageId)
+        if (error) throw error
 
-      if (error) throw error
+        showToast('删除成功！', 'success')
 
-      alert('删除成功！')
+        // 如果删除的是当前选中的阶段，清空选中状态
+        if (selectedStage?.id === stageId) {
+          setSelectedStage(null)
+        }
 
-      // 如果删除的是当前选中的阶段，清空选中状态
-      if (selectedStage?.id === stageId) {
-        setSelectedStage(null)
+        await loadStages()
+      } catch (error) {
+        console.error('删除失败:', error)
+        showToast('删除失败，请重试', 'error')
       }
-
-      await loadStages()
-    } catch (error) {
-      console.error('删除失败:', error)
-      alert('删除失败，请重试')
-    }
+    })
   }
 
   const handleEditVideoUrl = async (mediaId: string, currentUrl: string | null, currentName: string | null) => {
-    const newUrl = prompt('📺 请输入新的补充视频URL:', currentUrl || '')
-    if (!newUrl || newUrl === currentUrl) return
+    showPrompt('编辑视频', '请输入新的补充视频URL:', currentUrl || '', async (newUrl) => {
+      if (!newUrl || newUrl === currentUrl) return
 
-    const newName = prompt('📝 请输入新的视频描述:', currentName || '')
+      showPrompt('视频描述', '请输入新的视频描述:', currentName || '', async (newName) => {
+        try {
+          const supabase = createClient()
+          const { error } = await supabase
+            .from('media_resources')
+            .update({
+              file_url: newUrl,
+              external_url: newUrl,
+              file_name: newName || currentName || undefined,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', mediaId)
 
-    try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('media_resources')
-        .update({
-          file_url: newUrl,
-          external_url: newUrl,
-          file_name: newName || currentName || undefined,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', mediaId)
+          if (error) throw error
 
-      if (error) throw error
-
-      alert('修改成功！')
-      if (selectedStage) {
-        await loadMediaResources(selectedStage.id)
-      }
-    } catch (error) {
-      console.error('修改失败:', error)
-      alert('修改失败，请重试')
-    }
+          showToast('修改成功！', 'success')
+          if (selectedStage) {
+            await loadMediaResources(selectedStage.id)
+          }
+        } catch (error) {
+          console.error('修改失败:', error)
+          showToast('修改失败，请重试', 'error')
+        }
+      })
+    })
   }
 
   const openProjectEditor = (index: number | null = null) => {
@@ -445,12 +489,12 @@ export default function EarthCoursePage() {
   }
 
   const handleDeleteProject = (index: number) => {
-    if (!confirm('确定要删除这个项目吗？')) return
-
-    const newProjects = formData.explorer_projects.filter((_, i) => i !== index)
-    setFormData({
-      ...formData,
-      explorer_projects: newProjects
+    showConfirm('删除确认', '确定要删除这个项目吗？', () => {
+      const newProjects = formData.explorer_projects.filter((_, i) => i !== index)
+      setFormData({
+        ...formData,
+        explorer_projects: newProjects
+      })
     })
   }
 
@@ -1071,6 +1115,39 @@ export default function EarthCoursePage() {
           </div>
         </div>
       )}
+
+      {/* Toast */}
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
+      />
+
+      {/* ConfirmDialog */}
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          if (confirmCallback) confirmCallback()
+          setConfirmOpen(false)
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
+      />
+
+      {/* PromptDialog */}
+      <PromptDialog
+        isOpen={promptOpen}
+        onClose={() => setPromptOpen(false)}
+        onConfirm={(value) => {
+          if (promptCallback) promptCallback(value)
+          setPromptOpen(false)
+        }}
+        title={promptTitle}
+        message={promptMessage}
+        defaultValue={promptDefaultValue}
+      />
     </div>
   )
 }

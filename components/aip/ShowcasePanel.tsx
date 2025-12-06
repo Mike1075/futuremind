@@ -4,6 +4,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Heart, Trash2, Image as ImageIcon, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { Toast } from '@/components/ui/Toast'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 interface Showcase {
   id: string
@@ -34,6 +36,26 @@ export function ShowcasePanel({ projectId, isMember = false }: ShowcasePanelProp
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<{ url: string; allUrls: string[]; index: number } | null>(null)
+
+  // Toast 状态
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('success')
+
+  // ConfirmDialog 状态
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmCallback, setConfirmCallback] = useState<(() => void) | null>(null)
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
+
+  const showConfirmDelete = (onConfirm: () => void) => {
+    setConfirmCallback(() => onConfirm)
+    setConfirmOpen(true)
+  }
 
   useEffect(() => {
     loadShowcases()
@@ -140,23 +162,24 @@ export function ShowcasePanel({ projectId, isMember = false }: ShowcasePanelProp
   }
 
   const handleDelete = async (showcaseId: string) => {
-    if (!confirm('确定要删除这个成果吗？')) return
+    showConfirmDelete(async () => {
+      const supabase = createClient()
 
-    const supabase = createClient()
+      try {
+        const { error } = await supabase
+          .from('project_showcases')
+          .delete()
+          .eq('id', showcaseId)
 
-    try {
-      const { error } = await supabase
-        .from('project_showcases')
-        .delete()
-        .eq('id', showcaseId)
+        if (error) throw error
 
-      if (error) throw error
-
-      setShowcases(prev => prev.filter(s => s.id !== showcaseId))
-    } catch (err) {
-      console.error('删除失败:', err)
-      alert('删除失败')
-    }
+        setShowcases(prev => prev.filter(s => s.id !== showcaseId))
+        showToast('删除成功', 'success')
+      } catch (err) {
+        console.error('删除失败:', err)
+        showToast('删除失败', 'error')
+      }
+    })
   }
 
   const formatDate = (dateString: string | null) => {
@@ -318,6 +341,26 @@ export function ShowcasePanel({ projectId, isMember = false }: ShowcasePanelProp
           onClose={() => setSelectedImage(null)}
         />
       )}
+
+      {/* Toast */}
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
+      />
+
+      {/* ConfirmDialog */}
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          if (confirmCallback) confirmCallback()
+          setConfirmOpen(false)
+        }}
+        title="删除确认"
+        message="确定要删除这个成果吗？"
+      />
     </div>
   )
 }
@@ -340,24 +383,35 @@ function CreateShowcaseModal({
   const [submitting, setSubmitting] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
+  // Toast 状态
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('warning')
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'warning') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     // 重置 input 值，允许再次选择相同的文件
     e.target.value = ''
 
     if (files.length + images.length > 9) {
-      alert('最多上传9张图片')
+      showToast('最多上传9张图片', 'warning')
       return
     }
 
     // 验证文件类型和大小
     const validFiles = files.filter(file => {
       if (!file.type.startsWith('image/')) {
-        alert(`${file.name} 不是图片文件`)
+        showToast(`${file.name} 不是图片文件`, 'warning')
         return false
       }
       if (file.size > 10 * 1024 * 1024) {
-        alert(`${file.name} 超过10MB限制`)
+        showToast(`${file.name} 超过10MB限制`, 'warning')
         return false
       }
       return true
@@ -382,7 +436,7 @@ function CreateShowcaseModal({
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      alert('请输入标题')
+      showToast('请输入标题', 'warning')
       return
     }
 
@@ -435,7 +489,7 @@ function CreateShowcaseModal({
       onSuccess()
     } catch (err) {
       console.error('发布失败:', err)
-      alert('发布失败: ' + (err instanceof Error ? err.message : '未知错误'))
+      showToast('发布失败: ' + (err instanceof Error ? err.message : '未知错误'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -593,6 +647,14 @@ function CreateShowcaseModal({
           </div>
         </div>
       </div>
+
+      {/* Toast */}
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
+      />
     </div>
   )
 }

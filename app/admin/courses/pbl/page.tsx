@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
+import { PromptDialog } from '@/components/ui/PromptDialog'
 
 interface PBLProject {
   id: string
@@ -79,6 +80,10 @@ export default function IcarusAdminPage() {
   const [editMode, setEditMode] = useState(false)
   const [saving, setSaving] = useState(false)
   const [icarusSystemId, setIcarusSystemId] = useState<string | null>(null)
+
+  // PromptDialog 状态
+  const [promptOpen, setPromptOpen] = useState(false)
+  const [promptDefaultValue, setPromptDefaultValue] = useState('')
 
   // 表单状态 - 使用结构化数据
   const [formData, setFormData] = useState<{
@@ -212,11 +217,15 @@ export default function IcarusAdminPage() {
     return modules
   }
 
-  const handleAddModule = async () => {
+  const handleAddModule = () => {
     if (!icarusSystemId) return
+    setPromptDefaultValue(`模块${getAllModules().length + 1}`)
+    setPromptOpen(true)
+  }
 
-    const moduleName = prompt('请输入新模块名称:', `模块${getAllModules().length + 1}`)
-    if (!moduleName) return
+  const handleConfirmAddModule = async (moduleName: string) => {
+    setPromptOpen(false)
+    if (!moduleName || !icarusSystemId) return
 
     try {
       const supabase = createClient()
@@ -946,6 +955,19 @@ export default function IcarusAdminPage() {
           </div>
         )}
       </div>
+
+      <PromptDialog
+        isOpen={promptOpen}
+        onClose={() => setPromptOpen(false)}
+        onConfirm={handleConfirmAddModule}
+        title="新增模块"
+        message="请输入新模块名称"
+        placeholder="模块名称"
+        defaultValue={promptDefaultValue}
+        confirmText="确认"
+        cancelText="取消"
+        required
+      />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { Toast } from '@/components/ui/Toast'
 
 interface Submission {
   id: string
@@ -33,6 +34,15 @@ export default function SubmissionHistory({
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('success')
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
 
   const supabase = createClient()
 
@@ -100,7 +110,7 @@ export default function SubmissionHistory({
         onVisibilityChanged()
       }
     } catch (err) {
-      alert(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
+      showToast(`操作失败：${err instanceof Error ? err.message : '请重试'}`, 'error')
     } finally {
       setTogglingId(null)
     }
@@ -145,7 +155,7 @@ export default function SubmissionHistory({
       }
     } catch (err) {
       console.error('删除提交失败:', err)
-      alert('删除失败，请重试')
+      showToast('删除失败，请重试', 'error')
     } finally {
       setDeletingId(null)
     }
@@ -373,6 +383,13 @@ export default function SubmissionHistory({
           </button>
         </div>
       </div>
+
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
+      />
     </div>
   )
 }

@@ -17,6 +17,8 @@ import Link from 'next/link'
 import { Settings, UserPlus, Upload, ArrowLeft, Trash2, CheckCircle, XCircle, Pencil } from 'lucide-react'
 import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
 import UserProfileModal from '@/components/UserProfileModal'
+import { Toast } from '@/components/ui/Toast'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params)
@@ -42,6 +44,30 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const [newDocTitle, setNewDocTitle] = useState('')
   const [showInteractionLog, setShowInteractionLog] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
+
+  // Toast 提示
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('success')
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
+
+  // ConfirmDialog 状态
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmTitle, setConfirmTitle] = useState('')
+  const [confirmMessage, setConfirmMessage] = useState('')
+  const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {})
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmTitle(title)
+    setConfirmMessage(message)
+    setConfirmCallback(() => onConfirm)
+    setConfirmOpen(true)
+  }
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -162,10 +188,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
       setShowRenameDialog(null)
       setNewDocTitle('')
-      alert('文档已重命名')
+      showToast('文档已重命名', 'success')
     } catch (error) {
       console.error('重命名失败:', error)
-      alert('重命名失败: ' + (error instanceof Error ? error.message : '未知错误'))
+      showToast('重命名失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error')
     }
   }
 
@@ -193,10 +219,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       setRejectComment('')
       // 先刷新数据，确保用户看到更新后的状态
       await refreshDocuments()
-      alert(action === 'approve' ? '文档已通过审核' : '文档已拒绝')
+      showToast(action === 'approve' ? '文档已通过审核' : '文档已拒绝', 'success')
     } catch (error) {
       console.error('审核文档失败:', error)
-      alert('审核失败: ' + (error instanceof Error ? error.message : '未知错误'))
+      showToast('审核失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error')
     } finally {
       setReviewingDocId(null)
     }
@@ -238,70 +264,68 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     }
   }
 
-  const handleBatchDelete = async () => {
+  const handleBatchDelete = () => {
     if (selectedDocuments.size === 0) return
 
     const deleteCount = selectedDocuments.size
-    if (!confirm(`确定要删除选中的 ${deleteCount} 份文档吗？此操作不可撤销。`)) {
-      return
-    }
+    showConfirm('删除确认', `确定要删除选中的 ${deleteCount} 份文档吗？此操作不可撤销。`, async () => {
+      setIsDeleting(true)
+      const supabase = createClient()
 
-    setIsDeleting(true)
-    const supabase = createClient()
+      try {
+        const idsToDelete = Array.from(selectedDocuments)
 
-    try {
-      const idsToDelete = Array.from(selectedDocuments)
+        // 1. 获取要删除的文件的标题（用于删除对应的分块）
+        const filesToDelete = documents.filter(doc => idsToDelete.includes(doc.id))
+        const titlesToDelete = filesToDelete.map(doc => doc.title)
 
-      // 1. 获取要删除的文件的标题（用于删除对应的分块）
-      const filesToDelete = documents.filter(doc => idsToDelete.includes(doc.id))
-      const titlesToDelete = filesToDelete.map(doc => doc.title)
-
-      // 2. 删除 project_files 记录
-      const { error: fileError } = await supabase
-        .from('project_files')
-        .delete()
-        .in('id', idsToDelete)
-
-      if (fileError) throw fileError
-
-      // 3. 删除对应的 documents 分块（通过 title 和 project_id 匹配）
-      // 使用 metadata->>'title' 匹配，因为 N8N 存储在 metadata 里
-      for (const title of titlesToDelete) {
-        await supabase
-          .from('documents')
+        // 2. 删除 project_files 记录
+        const { error: fileError } = await supabase
+          .from('project_files')
           .delete()
-          .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
-          .or(`title.eq.${title},metadata->>title.eq.${title}`)
+          .in('id', idsToDelete)
+
+        if (fileError) throw fileError
+
+        // 3. 删除对应的 documents 分块（通过 title 和 project_id 匹配）
+        // 使用 metadata->>'title' 匹配，因为 N8N 存储在 metadata 里
+        for (const title of titlesToDelete) {
+          await supabase
+            .from('documents')
+            .delete()
+            .or(`project_id.eq.${projectId},metadata->>project_id.eq.${projectId}`)
+            .or(`title.eq.${title},metadata->>title.eq.${title}`)
+        }
+
+        // 先清空选择和退出管理模式
+        setSelectedDocuments(new Set())
+        setIsManageMode(false)
+
+        // 重新加载文档列表
+        const { data, count, error: loadError } = await supabase
+          .from('project_files')
+          .select(`
+            *,
+            uploader:profiles!project_files_user_id_fkey(full_name)
+          `, { count: 'exact' })
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false })
+
+        if (loadError) throw loadError
+
+        // 更新状态
+        setDocuments(data || [])
+        setDocumentsCount(count || 0)
+
+        // 最后显示成功提示
+        showToast(`成功删除 ${deleteCount} 份文档`, 'success')
+      } catch (error) {
+        console.error('批量删除失败:', error)
+        showToast('删除失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error')
+      } finally {
+        setIsDeleting(false)
       }
-
-      // 先清空选择和退出管理模式
-      setSelectedDocuments(new Set())
-      setIsManageMode(false)
-
-      // 重新加载文档列表
-      const { data, count, error: loadError } = await supabase
-        .from('project_files')
-        .select(`
-          *,
-          uploader:profiles!project_files_user_id_fkey(full_name)
-        `, { count: 'exact' })
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-
-      if (loadError) throw loadError
-
-      // 更新状态
-      setDocuments(data || [])
-      setDocumentsCount(count || 0)
-
-      // 最后显示成功提示
-      alert(`成功删除 ${deleteCount} 份文档`)
-    } catch (error) {
-      console.error('批量删除失败:', error)
-      alert('删除失败: ' + (error instanceof Error ? error.message : '未知错误'))
-    } finally {
-      setIsDeleting(false)
-    }
+    })
   }
 
   if (projectLoading) {
@@ -751,34 +775,35 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                             </button>
                             {/* 删除按钮 */}
                             <button
-                              onClick={async () => {
-                                if (!confirm(`确定要删除文档"${doc.title}"吗？此操作不可撤销。`)) return
-                                const supabase = createClient()
-                                try {
-                                  await supabase.from('project_files').delete().eq('id', doc.id)
-                                  // 刷新文档列表
-                                  const { data, count } = await supabase
-                                    .from('project_files')
-                                    .select('*', { count: 'exact' })
-                                    .eq('project_id', projectId)
-                                    .order('created_at', { ascending: false })
-                                  if (data) {
-                                    const userIds = [...new Set(data.map(d => d.user_id))]
-                                    const { data: profiles } = await supabase
-                                      .from('profiles')
-                                      .select('id, full_name')
-                                      .in('id', userIds)
-                                    setDocuments(data.map(d => ({
-                                      ...d,
-                                      uploader: profiles?.find(p => p.id === d.user_id) || null
-                                    })))
+                              onClick={() => {
+                                showConfirm('删除确认', `确定要删除文档"${doc.title}"吗？此操作不可撤销。`, async () => {
+                                  const supabase = createClient()
+                                  try {
+                                    await supabase.from('project_files').delete().eq('id', doc.id)
+                                    // 刷新文档列表
+                                    const { data, count } = await supabase
+                                      .from('project_files')
+                                      .select('*', { count: 'exact' })
+                                      .eq('project_id', projectId)
+                                      .order('created_at', { ascending: false })
+                                    if (data) {
+                                      const userIds = [...new Set(data.map(d => d.user_id))]
+                                      const { data: profiles } = await supabase
+                                        .from('profiles')
+                                        .select('id, full_name')
+                                        .in('id', userIds)
+                                      setDocuments(data.map(d => ({
+                                        ...d,
+                                        uploader: profiles?.find(p => p.id === d.user_id) || null
+                                      })))
+                                    }
+                                    setDocumentsCount(count || 0)
+                                    showToast('文档已删除', 'success')
+                                  } catch (err) {
+                                    console.error('删除失败:', err)
+                                    showToast('删除失败', 'error')
                                   }
-                                  setDocumentsCount(count || 0)
-                                  alert('文档已删除')
-                                } catch (err) {
-                                  console.error('删除失败:', err)
-                                  alert('删除失败')
-                                }
+                                })
                               }}
                               className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-zinc-400 hover:text-red-400"
                               title="删除文档"
@@ -1034,6 +1059,26 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       <UserProfileModal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
+      />
+
+      {/* Toast 提示 */}
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
+      />
+
+      {/* ConfirmDialog 确认对话框 */}
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          confirmCallback()
+          setConfirmOpen(false)
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
       />
     </div>
   )

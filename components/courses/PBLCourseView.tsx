@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation'
 import { IcarusTriangleView } from './IcarusTriangleView'
 import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
 import UserProfileModal from '@/components/UserProfileModal'
+import { Toast } from '@/components/ui/Toast'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 interface Project {
   id: string
@@ -65,6 +67,22 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
   const [activeTab, setActiveTab] = useState<'my' | 'explore'>('explore')
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
+
+  // Toast 状态
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('error')
+
+  // ConfirmDialog 状态
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {})
+  const [pendingCancelId, setPendingCancelId] = useState<string>('')
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'error') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
 
   useEffect(() => {
     loadData()
@@ -157,30 +175,31 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
     }
   }
 
-  const handleCancelProject = async (selectionId: string) => {
-    // Note: This is removed as it uses window.confirm which should be replaced
-    // The component doesn't have access to useConfirm hook yet
-    return
-
-    try {
-      const response = await fetch('/api/pbl/update-status', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          selectionId,
-          status: 'cancelled'
+  const handleCancelProject = (selectionId: string) => {
+    setPendingCancelId(selectionId)
+    setConfirmCallback(() => async () => {
+      try {
+        const response = await fetch('/api/pbl/update-status', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            selectionId,
+            status: 'cancelled'
+          })
         })
-      })
 
-      if (response.ok) {
-        await loadData()
-      } else {
-        alert('取消项目失败')
+        if (response.ok) {
+          await loadData()
+          showToast('项目已取消', 'success')
+        } else {
+          showToast('取消项目失败', 'error')
+        }
+      } catch (error) {
+        console.error('Failed to cancel project:', error)
+        showToast('取消项目失败，请重试', 'error')
       }
-    } catch (error) {
-      console.error('Failed to cancel project:', error)
-      alert('取消项目失败，请重试')
-    }
+    })
+    setConfirmOpen(true)
   }
 
   // 获取伊卡洛斯系统的11个项目（通过subtitle中的年龄段识别）
@@ -221,5 +240,27 @@ export function PBLCourseView({ courseSystem }: PBLCourseViewProps) {
   ]
 
   // 直接渲染伊卡洛斯三角形视图，数据在后台加载
-  return <IcarusTriangleView modules={MODULES} />
+  return (
+    <>
+      <IcarusTriangleView modules={MODULES} />
+
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          confirmCallback()
+          setConfirmOpen(false)
+        }}
+        title="确认取消"
+        message="确定要取消参与这个项目吗？此操作不可撤销。"
+      />
+    </>
+  )
 }

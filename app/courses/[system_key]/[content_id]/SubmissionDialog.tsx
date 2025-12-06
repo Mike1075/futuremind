@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { Toast } from '@/components/ui/Toast'
 
 interface EvaluationResult {
   evaluation?: {
@@ -47,6 +48,15 @@ export default function SubmissionDialog({
   const [result, setResult] = useState<EvaluationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(false) // 作业是否公开（默认私密）
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('warning')
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'warning') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
 
   const supabase = createClient()
 
@@ -58,7 +68,7 @@ export default function SubmissionDialog({
 
     // 检查字数是否达到最低要求
     if (submissionContent.length < 10) {
-      alert('提交失败：作业内容至少需要10个字才能提交')
+      showToast('提交失败：作业内容至少需要10个字才能提交', 'warning')
       return
     }
 
@@ -394,6 +404,13 @@ export default function SubmissionDialog({
           )}
         </div>
       </div>
+
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
+      />
     </div>
   )
 }

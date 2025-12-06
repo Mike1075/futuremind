@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Heart, MessageCircle, Trash2, User } from 'lucide-react'
 import { CommentForm } from './CommentForm'
+import { Toast } from '@/components/ui/Toast'
 
 interface Profile {
   id: string
@@ -46,6 +47,7 @@ export function DiscussionCard({
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
   const [localLikesCount, setLocalLikesCount] = useState(discussion.likes_count)
+  const [toastOpen, setToastOpen] = useState(false)
 
   const isOwnComment = currentUserId === discussion.user_id
 
@@ -72,7 +74,7 @@ export function DiscussionCard({
 
   const handleLikeToggle = async () => {
     if (!currentUserId) {
-      alert('请先登录')
+      setToastOpen(true)
       return
     }
 
@@ -227,6 +229,13 @@ export function DiscussionCard({
           ))}
         </div>
       )}
+
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message="请先登录"
+        type="warning"
+      />
     </div>
   )
 }

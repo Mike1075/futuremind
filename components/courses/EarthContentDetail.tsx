@@ -20,6 +20,7 @@ import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
 import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
 import UserProfileModal from '@/components/UserProfileModal'
 import { globalToast } from '@/components/ui/ToastProvider'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 interface SocraticQuestions {
   pre_watch?: string[]
@@ -93,6 +94,10 @@ export function EarthContentDetail({
 
   // 公开作业刷新机制
   const [publicSubmissionsRefreshKey, setPublicSubmissionsRefreshKey] = useState(0)
+
+  // 删除确认对话框
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deletingSubmissionId, setDeletingSubmissionId] = useState<string | null>(null)
 
   // 文件输入ref（用于重置以允许重复选择同一文件）
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -293,22 +298,28 @@ export function EarthContentDetail({
     }
   }
 
-  // 删除提交记录
-  const handleDeleteSubmission = async (submissionId: string) => {
-    if (!confirm('确定要删除这条提交记录吗？')) return
+  // 删除提交记录 - 打开确认对话框
+  const handleDeleteSubmission = (submissionId: string) => {
+    setDeletingSubmissionId(submissionId)
+    setDeleteConfirmOpen(true)
+  }
+
+  // 确认删除提交记录
+  const confirmDeleteSubmission = async () => {
+    if (!deletingSubmissionId) return
 
     // 先记录被删除的作业是否是公开的（用于后续刷新）
-    const deletedSubmission = submissionsHistory.find(s => s.id === submissionId)
+    const deletedSubmission = submissionsHistory.find(s => s.id === deletingSubmissionId)
     const wasPublic = deletedSubmission?.is_public && deletedSubmission?.score >= 90
 
     try {
-      const response = await fetch(`/api/submissions?id=${submissionId}`, {
+      const response = await fetch(`/api/submissions?id=${deletingSubmissionId}`, {
         method: 'DELETE'
       })
 
       if (response.ok) {
         // 立即从本地状态中移除
-        setSubmissionsHistory(prev => prev.filter(s => s.id !== submissionId))
+        setSubmissionsHistory(prev => prev.filter(s => s.id !== deletingSubmissionId))
         globalToast.success('删除成功')
 
         // 如果删除的是公开作业，刷新优秀作业展示
@@ -321,6 +332,9 @@ export function EarthContentDetail({
       }
     } catch (error) {
       globalToast.error('删除失败，请重试')
+    } finally {
+      setDeleteConfirmOpen(false)
+      setDeletingSubmissionId(null)
     }
   }
 
@@ -1494,6 +1508,18 @@ export function EarthContentDetail({
       <UserProfileModal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
+      />
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false)
+          setDeletingSubmissionId(null)
+        }}
+        onConfirm={confirmDeleteSubmission}
+        title="删除确认"
+        message="确定要删除这条提交记录吗？"
       />
     </div>
   )

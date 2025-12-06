@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ExplorerProjectCard } from '@/components/courses/ExplorerProjectCard'
 import type { ExplorerProject } from '@/lib/supabase/database.types'
 import { createClient } from '@/lib/supabase/client'
+import { Toast } from '@/components/ui/Toast'
 
 interface Project {
   id: string
@@ -57,6 +58,17 @@ export function ExplorerAlliance() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [myProjectIds, setMyProjectIds] = useState<Set<string>>(new Set())
+
+  // Toast 状态
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('error')
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'error') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
 
   useEffect(() => {
     loadAllProjects()
@@ -227,11 +239,11 @@ export function ExplorerAlliance() {
         await loadAllProjects()
       } else {
         const error = await response.json()
-        alert(error.error || '选择项目失败')
+        showToast(error.error || '选择项目失败', 'error')
       }
     } catch (error) {
       console.error('Failed to select project:', error)
-      alert('选择项目失败，请重试')
+      showToast('选择项目失败，请重试', 'error')
     }
   }
 
@@ -607,6 +619,13 @@ export function ExplorerAlliance() {
           </div>
         )}
       </div>
+
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
+      />
     </div>
   )
 }

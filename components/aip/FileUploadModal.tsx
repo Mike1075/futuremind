@@ -4,6 +4,8 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Upload, File, X, CheckCircle, AlertCircle, FileText, Trash2, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { Toast } from '@/components/ui/Toast'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 interface FileUploadModalProps {
   projectId: string
@@ -46,6 +48,30 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
   const [loading, setLoading] = useState(true)
   const [isManager, setIsManager] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+
+  // Toast 状态
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('success')
+
+  // ConfirmDialog 状态
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmTitle, setConfirmTitle] = useState('')
+  const [confirmMessage, setConfirmMessage] = useState('')
+  const [confirmCallback, setConfirmCallback] = useState<(() => void) | null>(null)
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmTitle(title)
+    setConfirmMessage(message)
+    setConfirmCallback(() => onConfirm)
+    setConfirmOpen(true)
+  }
 
   useEffect(() => {
     loadUserData()
@@ -243,7 +269,7 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
 
     // 权限检查：必须登录，且是项目经理或文档创建者才能删除
     if (!userId) {
-      alert('请先登录')
+      showToast('请先登录', 'warning')
       return
     }
 
@@ -251,78 +277,76 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
     const canDelete = isManager || isOwnDocument
 
     if (!canDelete) {
-      alert('您没有权限删除此文档')
+      showToast('您没有权限删除此文档', 'warning')
       return
     }
 
-    if (!confirm(`确定要删除文档"${docTitle}"吗？此操作不可撤销。`)) {
-      return
-    }
+    showConfirm('删除确认', `确定要删除文档"${docTitle}"吗？此操作不可撤销。`, async () => {
+      try {
+        const supabase = createClient()
 
-    try {
-      const supabase = createClient()
-
-      // 1. 删除 project_files 记录
-      const { error: fileError, count } = await supabase
-        .from('project_files')
-        .delete()
-        .eq('id', doc.id)
-        .select()
-
-      if (fileError) throw fileError
-
-      // 检查是否真的删除了数据（RLS 可能静默阻止删除）
-      if (count === 0) {
-        throw new Error('删除失败：可能没有权限删除此文档')
-      }
-
-      // 2. 删除对应的 document_chunks（知识库分块）
-      // 使用 RPC 调用来执行复杂的删除逻辑
-      // 注意：RPC 返回 void，即使成功也可能有 error 对象，需要检查具体错误
-      const { error: chunksError } = await supabase.rpc('delete_document_chunks_by_title', {
-        p_title: docTitle,
-        p_project_id: projectId
-      })
-
-      // 只有当 chunksError 真的是错误时才处理
-      if (chunksError && chunksError.code && chunksError.code !== 'PGRST116') {
-        console.warn('RPC 删除 document_chunks 警告:', chunksError)
-        // 备用方案：直接删除
-        const { error: fallbackError } = await supabase
-          .from('document_chunks')
+        // 1. 删除 project_files 记录
+        const { error: fileError, count } = await supabase
+          .from('project_files')
           .delete()
-          .eq('metadata->>title', docTitle)
+          .eq('id', doc.id)
+          .select()
+
+        if (fileError) throw fileError
+
+        // 检查是否真的删除了数据（RLS 可能静默阻止删除）
+        if (count === 0) {
+          throw new Error('删除失败：可能没有权限删除此文档')
+        }
+
+        // 2. 删除对应的 document_chunks（知识库分块）
+        // 使用 RPC 调用来执行复杂的删除逻辑
+        // 注意：RPC 返回 void，即使成功也可能有 error 对象，需要检查具体错误
+        const { error: chunksError } = await supabase.rpc('delete_document_chunks_by_title', {
+          p_title: docTitle,
+          p_project_id: projectId
+        })
+
+        // 只有当 chunksError 真的是错误时才处理
+        if (chunksError && chunksError.code && chunksError.code !== 'PGRST116') {
+          console.warn('RPC 删除 document_chunks 警告:', chunksError)
+          // 备用方案：直接删除
+          const { error: fallbackError } = await supabase
+            .from('document_chunks')
+            .delete()
+            .eq('metadata->>title', docTitle)
+            .eq('project_id', projectId)
+
+          if (fallbackError) {
+            console.warn('备用删除 document_chunks 警告:', fallbackError)
+          }
+        }
+
+        // 3. 删除对应的 documents（父文档）- 使用更简单的查询
+        const { error: docsError } = await supabase
+          .from('documents')
+          .delete()
+          .eq('title', docTitle)
           .eq('project_id', projectId)
 
-        if (fallbackError) {
-          console.warn('备用删除 document_chunks 警告:', fallbackError)
+        if (docsError && docsError.code !== 'PGRST116') {
+          console.warn('删除 documents 警告:', docsError)
         }
+
+        showToast('文档删除成功', 'success')
+        loadDocuments()
+        // 通知父页面刷新文档列表
+        onSuccess()
+      } catch (error) {
+        console.error('删除文档失败:', error)
+        showToast('删除文档失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error')
       }
-
-      // 3. 删除对应的 documents（父文档）- 使用更简单的查询
-      const { error: docsError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('title', docTitle)
-        .eq('project_id', projectId)
-
-      if (docsError && docsError.code !== 'PGRST116') {
-        console.warn('删除 documents 警告:', docsError)
-      }
-
-      alert('文档删除成功')
-      loadDocuments()
-      // 通知父页面刷新文档列表
-      onSuccess()
-    } catch (error) {
-      console.error('删除文档失败:', error)
-      alert('删除文档失败: ' + (error instanceof Error ? error.message : '未知错误'))
-    }
+    })
   }
 
   // 下载功能暂不可用（project_files 只存储元数据，原文件已被处理为知识库分块）
   const handleDownloadDocument = async (doc: ProjectFile) => {
-    alert('下载功能暂不可用。文档已被处理为知识库内容，原文件不再保留。')
+    showToast('下载功能暂不可用。文档已被处理为知识库内容，原文件不再保留。', 'info')
   }
 
   // 获取审核状态标签
@@ -601,6 +625,26 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
           )}
         </div>
       </div>
+
+      {/* Toast */}
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
+      />
+
+      {/* ConfirmDialog */}
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          if (confirmCallback) confirmCallback()
+          setConfirmOpen(false)
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
+      />
     </div>
   )
 }

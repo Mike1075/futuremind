@@ -1,8 +1,10 @@
 // @ts-nocheck
 'use client'
 
+import { useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { CollapsibleSection } from './CollapsibleSection'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 interface DuringWatchThinkingProps {
   questions: string[]
@@ -10,6 +12,14 @@ interface DuringWatchThinkingProps {
 }
 
 export function DuringWatchThinking({ questions, contentId }: DuringWatchThinkingProps) {
+  // 确认对话框状态
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingDiscussion, setPendingDiscussion] = useState<{
+    conversationId: string
+    messageIndex: number
+    messageCount: number
+  } | null>(null)
+
   // 点击问题，打开盖亚（先检查是否已讨论过）
   const handleClickQuestion = async (question: string) => {
     if (typeof window === 'undefined') return
@@ -24,18 +34,12 @@ export function DuringWatchThinking({ questions, contentId }: DuringWatchThinkin
       if (response.ok) {
         const data = await response.json()
         if (data.discussed) {
-          const shouldContinue = window.confirm(
-            '💡 这个问题我们之前探讨过哦！\n\n要不要回顾一下之前的思考，继续深入呢？'
-          )
-          if (shouldContinue) {
-            window.dispatchEvent(new CustomEvent('scrollToDiscussion', {
-              detail: {
-                conversationId: data.conversationId,
-                messageIndex: data.messageIndex,
-                totalMessages: data.messageCount
-              }
-            }))
-          }
+          setPendingDiscussion({
+            conversationId: data.conversationId,
+            messageIndex: data.messageIndex,
+            messageCount: data.messageCount
+          })
+          setConfirmOpen(true)
           return
         }
       }
@@ -50,41 +54,70 @@ export function DuringWatchThinking({ questions, contentId }: DuringWatchThinkin
     }
   }
 
+  const handleConfirmContinue = () => {
+    if (pendingDiscussion) {
+      window.dispatchEvent(new CustomEvent('scrollToDiscussion', {
+        detail: {
+          conversationId: pendingDiscussion.conversationId,
+          messageIndex: pendingDiscussion.messageIndex,
+          totalMessages: pendingDiscussion.messageCount
+        }
+      }))
+    }
+    setConfirmOpen(false)
+    setPendingDiscussion(null)
+  }
+
   if (!questions || questions.length === 0) {
     return null
   }
 
   return (
-    <CollapsibleSection
-      title="观看中思考 During-Watch"
-      subtitle="观看视频时，带着这些问题去思考"
-      icon="💭"
-      iconBgClass=""
-    >
-      <div className="space-y-4">
-        {questions.map((question, index) => (
-          <div
-            key={index}
-            className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 hover:border-purple-500/50 transition-all"
-          >
-            <div className="flex items-start gap-3">
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-r from-purple-500/30 to-violet-500/30 text-purple-400 border border-purple-500/30 text-sm font-bold flex-shrink-0 mt-0.5">
-                {index + 1}
-              </span>
-              <div className="flex-1">
-                <p className="text-gray-200 leading-relaxed mb-4">{question}</p>
-                <button
-                  onClick={() => handleClickQuestion(question)}
-                  className="btn-stardust flex items-center gap-2 px-4 py-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  与盖亚深入探讨
-                </button>
+    <>
+      <CollapsibleSection
+        title="观看中思考 During-Watch"
+        subtitle="观看视频时，带着这些问题去思考"
+        icon="💭"
+        iconBgClass=""
+      >
+        <div className="space-y-4">
+          {questions.map((question, index) => (
+            <div
+              key={index}
+              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 hover:border-purple-500/50 transition-all"
+            >
+              <div className="flex items-start gap-3">
+                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-r from-purple-500/30 to-violet-500/30 text-purple-400 border border-purple-500/30 text-sm font-bold flex-shrink-0 mt-0.5">
+                  {index + 1}
+                </span>
+                <div className="flex-1">
+                  <p className="text-gray-200 leading-relaxed mb-4">{question}</p>
+                  <button
+                    onClick={() => handleClickQuestion(question)}
+                    className="btn-stardust flex items-center gap-2 px-4 py-2"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    与盖亚深入探讨
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </CollapsibleSection>
+          ))}
+        </div>
+      </CollapsibleSection>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => {
+          setConfirmOpen(false)
+          setPendingDiscussion(null)
+        }}
+        onConfirm={handleConfirmContinue}
+        title="💡 之前探讨过"
+        message="这个问题我们之前探讨过哦！要不要回顾一下之前的思考，继续深入呢？"
+        confirmText="回顾讨论"
+        cancelText="取消"
+      />
+    </>
   )
 }

@@ -181,15 +181,21 @@ export default function OrganizationDashboardPage() {
     router.push(`/explorer-alliance/projects/${project.id}`)
   }
 
-  const handleDeleteProject = async (projectId: string, projectName: string) => {
-    if (!confirm(`确定要删除项目"${projectName}"吗？此操作不可恢复。`)) return
+  const handleDeleteProject = (projectId: string, projectName: string) => {
+    setDeletingProject({ id: projectId, name: projectName })
+    setDeleteConfirmOpen(true)
+  }
 
+  const confirmDeleteProject = async () => {
+    if (!deletingProject) return
+
+    setDeleteLoading(true)
     try {
       const supabase = createClient()
       const { error } = await supabase
         .from('projects')
         .delete()
-        .eq('id', projectId)
+        .eq('id', deletingProject.id)
 
       if (error) throw error
 
@@ -198,6 +204,10 @@ export default function OrganizationDashboardPage() {
     } catch (err) {
       console.error('删除项目失败:', err)
       showToast('删除项目失败', 'error')
+    } finally {
+      setDeleteLoading(false)
+      setDeleteConfirmOpen(false)
+      setDeletingProject(null)
     }
   }
 
@@ -663,6 +673,19 @@ export default function OrganizationDashboardPage() {
         onClose={() => setToastOpen(false)}
         message={toastMessage}
         type={toastType}
+      />
+
+      {/* 删除项目确认对话框 */}
+      <ConfirmDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false)
+          setDeletingProject(null)
+        }}
+        onConfirm={confirmDeleteProject}
+        title="删除确认"
+        message={`确定要删除项目"${deletingProject?.name}"吗？此操作不可恢复。`}
+        loading={deleteLoading}
       />
     </div>
   )

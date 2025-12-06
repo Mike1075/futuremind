@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { Send, Loader2 } from 'lucide-react'
+import { Toast } from '@/components/ui/Toast'
 
 interface CommentFormProps {
   onSubmit: (content: string) => Promise<void>
@@ -21,6 +22,13 @@ export function CommentForm({
 }: CommentFormProps) {
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+
+  const showToast = (message: string) => {
+    setToastMessage(message)
+    setToastOpen(true)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,12 +36,12 @@ export function CommentForm({
     if (!content.trim() || submitting) return
 
     if (content.trim().length < 5) {
-      alert('评论内容至少需要5个字符')
+      showToast('评论内容至少需要5个字符')
       return
     }
 
     if (content.trim().length > 2000) {
-      alert('评论内容不能超过2000个字符')
+      showToast('评论内容不能超过2000个字符')
       return
     }
 
@@ -97,6 +105,13 @@ export function CommentForm({
           </button>
         </div>
       </div>
+
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type="warning"
+      />
     </form>
   )
 }
