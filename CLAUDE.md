@@ -955,6 +955,10 @@ Webhook → 1-Parse-Input-Parameters → 生成向量 (HTTP Request)
       - `app/explorer-alliance/organizations/[organizationId]/page.tsx` - 使用 PromptDialog
       - `components/portal/PortalClient.tsx` - 添加消息盒子入口和红色铃铛
     - **消息盒子功能同步**：Portal 和探索者联盟的消息盒子完全同步，共享同一个通知系统
+    - **快捷操作按钮**（2025-12-06 补充）：
+      - 邀请/申请/审核类通知在卡片上直接显示"接受/拒绝"按钮
+      - 无需展开即可快速响应
+      - 按钮显示条件：通知状态为待处理（unread/pending）
 
 ### AI批改话术设计规范
 

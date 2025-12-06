@@ -834,6 +834,85 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                           </button>
                         )}
 
+                        {/* 邀请快捷按钮 - 直接显示在卡片上，无需展开 */}
+                        {isPendingInvite && interaction.metadata?.invitation_id && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleInvitationResponse(interaction.id, interaction.metadata.invitation_id, 'accept')
+                              }}
+                              disabled={processing === interaction.id}
+                              className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {processing === interaction.id ? '...' : '接受'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleInvitationResponse(interaction.id, interaction.metadata.invitation_id, 'reject')
+                              }}
+                              disabled={processing === interaction.id}
+                              className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {processing === interaction.id ? '...' : '拒绝'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* 项目申请快捷按钮 */}
+                        {interaction.interactionType === 'project_request' && interaction.status === 'pending' && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRequest(interaction.id, 'approve')
+                              }}
+                              disabled={processing === interaction.id}
+                              className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {processing === interaction.id ? '...' : '批准'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRequest(interaction.id, 'reject')
+                              }}
+                              disabled={processing === interaction.id}
+                              className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {processing === interaction.id ? '...' : '拒绝'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* 文档审核快捷按钮 */}
+                        {isPendingReview && interaction.metadata?.file_id && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleFileReview(interaction.id, interaction.metadata.file_id, 'approve')
+                              }}
+                              disabled={processing === interaction.id}
+                              className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {processing === interaction.id ? '...' : '通过'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setRejectingFile({ interactionId: interaction.id, fileId: interaction.metadata.file_id })
+                                setRejectDialogOpen(true)
+                              }}
+                              disabled={processing === interaction.id}
+                              className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {processing === interaction.id ? '...' : '拒绝'}
+                            </button>
+                          </div>
+                        )}
+
                         <span className="text-xs text-zinc-500">
                           {formatDate(interaction.created_at)}
                         </span>
