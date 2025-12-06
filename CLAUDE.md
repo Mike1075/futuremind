@@ -162,23 +162,28 @@ import { AudioPlayer } from '@/components/courses/AudioPlayer'
 
 **设计规范**：
 
-**标题区域**：
+**标题区域**（与首页"第一季：声音的交响"风格统一）：
 ```tsx
-<h2 className="text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-200">
+<h2 className="font-sacred text-2xl md:text-3xl text-white tracking-wide mb-3">
   欢迎回来
 </h2>
-<p className="text-gray-300/80 text-sm tracking-wide">
+<p className="text-starlight-dim text-sm">
   登录以继续你的意识觉醒之旅
 </p>
 ```
 
 **输入框**：
 ```tsx
-className="w-full bg-white/5 border border-amber-500/30 rounded-xl py-3 px-4 pl-12
+className="w-full bg-white/5 border border-amber-500/30 rounded-xl py-3 pl-12 pr-4
   text-white placeholder-white/40
   focus:border-purple-500/70 focus:ring-2 focus:ring-purple-500/40
   focus:shadow-[0_0_15px_rgba(168,85,247,0.3)]
   transition-all backdrop-blur-sm"
+```
+
+**输入框图标**：
+```tsx
+<Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400 z-10" />
 ```
 
 **按钮**：使用 `btn-stardust w-full py-3`
