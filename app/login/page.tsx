@@ -4,7 +4,7 @@
 import { useState, useEffect, Suspense, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
-import { Sparkles, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 function LoginForm() {
@@ -162,18 +162,8 @@ function LoginForm() {
         className="card-aurora w-full max-w-md mx-4 relative z-10"
       >
         <div className="card-aurora-inner p-8">
-          {/* Logo - 炫彩星光图标 */}
+          {/* 标题区域 */}
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-5">
-              <div className="relative">
-                {/* 炫彩边框层 */}
-                <div className="absolute -inset-[2px] rounded-xl bg-gradient-to-r from-amber-400 via-purple-500 to-cyan-400 opacity-75 blur-[3px]"></div>
-                {/* 图标容器 */}
-                <div className="relative w-14 h-14 bg-black rounded-xl flex items-center justify-center">
-                  <Sparkles className="w-7 h-7 text-amber-400" />
-                </div>
-              </div>
-            </div>
             <h1 className="text-2xl font-bold text-white mb-2">
               {isForgotPassword ? '重置密码' : (isLogin ? '欢迎回来' : '创建账户')}
             </h1>
@@ -197,7 +187,7 @@ function LoginForm() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 text-white placeholder-white/40 rounded-xl py-3 px-4 pl-12 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all backdrop-blur-sm"
+                  className="w-full bg-white/5 border border-amber-500/30 text-white placeholder-white/40 rounded-xl py-3 px-4 pl-12 focus:outline-none focus:border-purple-500/70 focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                   placeholder="请输入注册时使用的邮箱"
                   required
                 />
@@ -249,7 +239,7 @@ function LoginForm() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 text-white placeholder-white/40 rounded-xl py-3 px-4 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all backdrop-blur-sm"
+                  className="w-full bg-white/5 border border-amber-500/30 text-white placeholder-white/40 rounded-xl py-3 px-4 focus:outline-none focus:border-purple-500/70 focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                   placeholder="请输入您的姓名"
                   required={!isLogin}
                 />
@@ -267,7 +257,7 @@ function LoginForm() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white/5 border border-white/20 text-white placeholder-white/40 rounded-xl py-3 px-4 pl-12 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all backdrop-blur-sm"
+                className="w-full bg-white/5 border border-amber-500/30 text-white placeholder-white/40 rounded-xl py-3 px-4 pl-12 focus:outline-none focus:border-purple-500/70 focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                 placeholder="请输入您的邮箱"
                 required
               />
@@ -284,7 +274,7 @@ function LoginForm() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/20 text-white placeholder-white/40 rounded-xl py-3 px-4 pl-12 pr-12 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all backdrop-blur-sm"
+                className="w-full bg-white/5 border border-amber-500/30 text-white placeholder-white/40 rounded-xl py-3 px-4 pl-12 pr-12 focus:outline-none focus:border-purple-500/70 focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                 placeholder="请输入您的密码"
                 required
               />
@@ -339,7 +329,7 @@ function LoginForm() {
                 setIsLogin(!isLogin)
                 setMessage('')
               }}
-              className="text-sm text-gray-400 hover:text-white transition-colors"
+              className="text-sm text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-purple-400 to-cyan-400 hover:from-amber-300 hover:via-purple-300 hover:to-cyan-300 transition-all font-medium"
             >
               {isLogin ? '还没有账号？立即注册' : '已有账户？点击登录'}
             </button>
@@ -351,7 +341,7 @@ function LoginForm() {
         <div className="mt-4 text-center">
           <button
             onClick={() => router.push('/')}
-            className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+            className="text-sm text-purple-400/70 hover:text-purple-300 transition-colors"
           >
             返回首页
           </button>

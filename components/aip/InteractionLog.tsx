@@ -162,7 +162,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
 
       const allInteractions: UnifiedInteraction[] = []
 
-      // 1. 加载notifications
+      // 1. 加载notifications（排除项目申请类通知，因为会从 project_join_requests 单独加载）
       const { data: notifications, error: notifError } = await supabase
         .from('notifications')
         .select('*')
@@ -171,6 +171,11 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
 
       if (!notifError && notifications) {
         notifications.forEach((notif: Notification) => {
+          // 跳过项目申请相关的通知，因为 project_join_requests 表已经有完整数据
+          // 避免同一条申请显示两次
+          if (notif.type === 'project_request_received' || notif.type === 'join_request_received') {
+            return
+          }
           allInteractions.push({
             id: notif.id,
             interactionType: 'notification',
@@ -881,31 +886,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                           </div>
                         )}
 
-                        {/* 项目申请快捷按钮 */}
-                        {interaction.interactionType === 'project_request' && interaction.status === 'pending' && (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRequest(interaction.id, 'approve')
-                              }}
-                              disabled={processing === interaction.id}
-                              className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs hover:bg-green-500/30 transition-colors disabled:opacity-50"
-                            >
-                              {processing === interaction.id ? '...' : '批准'}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRequest(interaction.id, 'reject')
-                              }}
-                              disabled={processing === interaction.id}
-                              className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs hover:bg-red-500/30 transition-colors disabled:opacity-50"
-                            >
-                              {processing === interaction.id ? '...' : '拒绝'}
-                            </button>
-                          </div>
-                        )}
+                        {/* 项目申请按钮已移至展开详情中显示 */}
 
                         {/* 文档审核快捷按钮 */}
                         {isPendingReview && interaction.metadata?.file_id && (
