@@ -153,6 +153,9 @@ export function UnifiedNavbar({
 
                 {/* 菜单项 */}
                 <div className="py-2">
+                  {/* DEBUG: 消息盒子菜单渲染检查 */}
+                  {console.log('[UnifiedNavbar] 菜单渲染中, unreadCount:', unreadCount, 'unreadLoading:', unreadLoading)}
+
                   {/* 个人资料 */}
                   <button
                     onClick={() => {
@@ -182,8 +185,10 @@ export function UnifiedNavbar({
                   </button>
 
                   {/* 消息盒子 */}
+                  {console.log('[UnifiedNavbar] 消息盒子按钮即将渲染')}
                   <button
                     onClick={() => {
+                      console.log('[UnifiedNavbar] 消息盒子按钮被点击')
                       setIsUserMenuOpen(false)
                       setIsMessageBoxOpen(true)
                     }}
