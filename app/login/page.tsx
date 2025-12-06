@@ -162,12 +162,12 @@ function LoginForm() {
         className="card-aurora w-full max-w-md mx-4 relative z-10"
       >
         <div className="card-aurora-inner p-8">
-          {/* 标题区域 - v2 无星星图标 */}
+          {/* 标题区域 */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">
+            <h1 className="text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-200">
               {isForgotPassword ? '重置密码' : (isLogin ? '欢迎回来' : '创建账户')}
             </h1>
-            <p className="text-sm text-gray-400">
+            <p className="text-gray-300/80 text-sm tracking-wide">
               {isForgotPassword
                 ? '输入邮箱地址，我们将发送重置链接'
                 : (isLogin ? '登录以继续你的意识觉醒之旅' : '开启你的意识探索之旅')}

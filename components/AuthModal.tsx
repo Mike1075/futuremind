@@ -136,10 +136,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
               {/* 标题 */}
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-white mb-2">
+                <h2 className="text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-200">
                   {mode === 'login' ? '欢迎回来' : mode === 'register' ? '加入我们' : '重置密码'}
                 </h2>
-                <p className="text-gray-400">
+                <p className="text-gray-300/80 text-sm tracking-wide">
                   {mode === 'login'
                     ? '登录以继续你的意识觉醒之旅'
                     : mode === 'register'
