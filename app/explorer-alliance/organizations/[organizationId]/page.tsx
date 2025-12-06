@@ -18,6 +18,7 @@ import { NotificationBadge } from '@/components/aip/NotificationBadge'
 import { InteractionLog } from '@/components/aip/InteractionLog'
 import { PromptDialog } from '@/components/ui/PromptDialog'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Toast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/client'
 import type { Organization, Project, Task } from '@/lib/aip/types'
 
@@ -51,6 +52,17 @@ export default function OrganizationDashboardPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deletingProject, setDeletingProject] = useState<{ id: string; name: string } | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+
+  // Toast 提示
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('success')
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
 
   const { projects, loading: projectsLoading, reload: reloadProjects } = useOrganizationProjects(organizationId)
 
@@ -181,11 +193,11 @@ export default function OrganizationDashboardPage() {
 
       if (error) throw error
 
-      alert('项目已删除')
+      showToast('项目已删除', 'success')
       reloadProjects()
     } catch (err) {
       console.error('删除项目失败:', err)
-      alert('删除项目失败')
+      showToast('删除项目失败', 'error')
     }
   }
 
@@ -209,13 +221,13 @@ export default function OrganizationDashboardPage() {
 
       if (error) throw error
 
-      alert('项目信息已更新')
+      showToast('项目信息已更新', 'success')
       setShowEditDescription(false)
       setEditingProject(null)
       reloadProjects()
     } catch (err) {
       console.error('更新项目信息失败:', err)
-      alert('更新项目信息失败')
+      showToast('更新项目信息失败', 'error')
     }
   }
 
@@ -232,7 +244,7 @@ export default function OrganizationDashboardPage() {
       reloadProjects()
     } catch (err) {
       console.error('更新可见性失败:', err)
-      alert('更新可见性失败')
+      showToast('更新可见性失败', 'error')
     }
   }
 
@@ -249,14 +261,14 @@ export default function OrganizationDashboardPage() {
       reloadProjects()
     } catch (err) {
       console.error('更新招募状态失败:', err)
-      alert('更新招募状态失败')
+      showToast('更新招募状态失败', 'error')
     }
   }
 
   // 打开申请对话框
   const handleApplyToJoin = (projectId: string, projectName: string) => {
     if (!userId) {
-      alert('请先登录')
+      showToast('请先登录', 'warning')
       return
     }
     setApplyingProject({ id: projectId, name: projectName })
@@ -291,7 +303,7 @@ export default function OrganizationDashboardPage() {
       if (error) {
         // 处理重复申请错误
         if (error.code === '23505') {
-          alert('您已经申请过此项目，请等待审核结果')
+          showToast('您已经申请过此项目，请等待审核结果', 'warning')
           setApplyDialogOpen(false)
           setApplyingProject(null)
           setApplyLoading(false)
@@ -329,12 +341,12 @@ export default function OrganizationDashboardPage() {
           .insert(notifications)
       }
 
-      alert('申请已提交，等待项目管理员审核')
+      showToast('申请已提交，等待项目管理员审核', 'success')
       setApplyDialogOpen(false)
       setApplyingProject(null)
     } catch (err) {
       console.error('提交申请失败:', err)
-      alert('提交申请失败，请重试')
+      showToast('提交申请失败，请重试', 'error')
     } finally {
       setApplyLoading(false)
     }
@@ -643,6 +655,14 @@ export default function OrganizationDashboardPage() {
         cancelText="取消"
         multiline={true}
         loading={applyLoading}
+      />
+
+      {/* Toast 提示 */}
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
       />
     </div>
   )

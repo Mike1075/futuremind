@@ -8,6 +8,7 @@ import { InvitationCard } from './InvitationCard'
 import { reviewProjectJoinRequest } from '@/lib/aip/api'
 import { triggerUnreadCountRefresh } from '@/lib/aip/useUnreadCount'
 import { PromptDialog } from '@/components/ui/PromptDialog'
+import { Toast } from '@/components/ui/Toast'
 
 // 检查是否是需要审核的文档通知（未处理的）
 const isFileReviewNotification = (interaction: any): boolean => {
@@ -96,6 +97,17 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
   // 文档拒绝原因对话框状态
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [rejectingFile, setRejectingFile] = useState<{ interactionId: string; fileId: string } | null>(null)
+
+  // Toast 提示
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('success')
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastOpen(true)
+  }
 
   useEffect(() => {
     loadInteractions()
@@ -228,11 +240,11 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
         throw new Error(result.error)
       }
 
-      alert(action === 'approve' ? '申请已批准' : '申请已拒绝')
+      showToast(action === 'approve' ? '申请已批准' : '申请已拒绝', 'success')
       await loadInteractions()
     } catch (error: any) {
       console.error('处理申请失败:', error)
-      alert(`操作失败：${error.message || '请重试'}`)
+      showToast(`操作失败：${error.message || '请重试'}`, 'error')
     } finally {
       setProcessing(null)
     }
@@ -264,12 +276,12 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
         .update({ is_read: true })
         .eq('id', notificationId)
 
-      alert(action === 'accept' ? '已接受邀请，您已加入项目' : '已拒绝邀请')
+      showToast(action === 'accept' ? '已接受邀请，您已加入项目' : '已拒绝邀请', 'success')
       await loadInteractions()
       triggerUnreadCountRefresh()
     } catch (error: any) {
       console.error('响应邀请失败:', error)
-      alert(`操作失败：${error.message || '请重试'}`)
+      showToast(`操作失败：${error.message || '请重试'}`, 'error')
     } finally {
       setProcessing(null)
     }
@@ -302,12 +314,12 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
         .update({ is_read: true })
         .eq('id', notificationId)
 
-      alert(action === 'approve' ? '文档已通过审核' : '文档已拒绝')
+      showToast(action === 'approve' ? '文档已通过审核' : '文档已拒绝', 'success')
       await loadInteractions()
       triggerUnreadCountRefresh()
     } catch (error: any) {
       console.error('审核文档失败:', error)
-      alert(`操作失败：${error.message || '请重试'}`)
+      showToast(`操作失败：${error.message || '请重试'}`, 'error')
     } finally {
       setProcessing(null)
     }
@@ -348,7 +360,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
 
         if (error) {
           console.error('删除通知失败:', error)
-          alert('删除失败: ' + error.message)
+          showToast('删除失败: ' + error.message, 'error')
           return
         }
 
@@ -357,7 +369,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
       }
     } catch (error: any) {
       console.error('删除通知失败:', error)
-      alert('删除失败: ' + (error?.message || '未知错误'))
+      showToast('删除失败: ' + (error?.message || '未知错误'), 'error')
     }
   }
 
@@ -451,7 +463,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
       triggerUnreadCountRefresh()
     } catch (error) {
       console.error('批量删除失败:', error)
-      alert('删除失败，请重试')
+      showToast('删除失败，请重试', 'error')
     } finally {
       setIsDeleting(false)
     }
@@ -1141,6 +1153,14 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
         confirmText="确认拒绝"
         cancelText="取消"
         multiline={true}
+      />
+
+      {/* Toast 提示 */}
+      <Toast
+        isOpen={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
       />
     </div>
   )
