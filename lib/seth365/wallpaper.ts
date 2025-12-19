@@ -79,6 +79,20 @@ export function isDateUnlocked(date: Date): boolean {
   return checkDate >= LAUNCH_DATE && checkDate <= today
 }
 
+// 获取最新已解锁的日期（今天或启动日期，取较小者）
+export function getLatestUnlockedDate(): Date | null {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  // 如果还没到启动日期，返回 null
+  if (today < LAUNCH_DATE) {
+    return null
+  }
+
+  // 返回今天
+  return today
+}
+
 // 检查是否已启动
 export function isLaunched(): boolean {
   const today = new Date()

@@ -27,11 +27,12 @@ import {
 interface WallpaperCarouselProps {
   date: Date
   onOpenPosterEditor: (wallpaper: Wallpaper) => void
+  onOpenBatchDownload: () => void
 }
 
 type FilterType = 'all' | 'chinese' | 'english' | 'portrait' | 'landscape'
 
-export function WallpaperCarousel({ date, onOpenPosterEditor }: WallpaperCarouselProps) {
+export function WallpaperCarousel({ date, onOpenPosterEditor, onOpenBatchDownload }: WallpaperCarouselProps) {
   const allWallpapers = getWallpapersForDate(date)
   const [filter, setFilter] = useState<FilterType>('all')
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -266,11 +267,11 @@ export function WallpaperCarousel({ date, onOpenPosterEditor }: WallpaperCarouse
             下载当前
           </button>
           <button
-            onClick={handleDownloadAll}
+            onClick={onOpenBatchDownload}
             className="btn-stardust px-6 py-2 flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
-            下载全部 ({wallpapers.length}张)
+            批量下载
           </button>
           <button
             onClick={() => onOpenPosterEditor(currentWallpaper)}

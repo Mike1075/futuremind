@@ -10,11 +10,11 @@ interface PosterEditorProps {
   onClose: () => void
 }
 
-// 二维码默认位置和大小（右下角）
+// 二维码默认位置和大小（右下角底部）
 const DEFAULT_QR_POSITION = {
-  x: 0.85, // 相对于图片宽度的比例
-  y: 0.85, // 相对于图片高度的比例
-  size: 0.12 // 相对于图片宽度的比例
+  x: 0.88, // 相对于图片宽度的比例
+  y: 0.92, // 相对于图片高度的比例，更靠近底部
+  size: 0.10 // 相对于图片宽度的比例
 }
 
 export function PosterEditor({ wallpaper, onClose }: PosterEditorProps) {
@@ -107,10 +107,13 @@ export function PosterEditor({ wallpaper, onClose }: PosterEditorProps) {
     const x = ((e.clientX - rect.left) * scaleX) / canvasRef.current.width
     const y = ((e.clientY - rect.top) * scaleY) / canvasRef.current.height
 
+    // 允许拖动到更边缘的位置，特别是底部
+    // 考虑二维码大小，防止完全超出边界
+    const halfSize = qrPosition.size / 2
     setQrPosition((prev) => ({
       ...prev,
-      x: Math.max(0.1, Math.min(0.9, x)),
-      y: Math.max(0.1, Math.min(0.9, y))
+      x: Math.max(halfSize, Math.min(1 - halfSize, x)),
+      y: Math.max(halfSize, Math.min(1 - halfSize, y))
     }))
   }
 
@@ -122,7 +125,7 @@ export function PosterEditor({ wallpaper, onClose }: PosterEditorProps) {
   const adjustSize = (delta: number) => {
     setQrPosition((prev) => ({
       ...prev,
-      size: Math.max(0.05, Math.min(0.3, prev.size + delta))
+      size: Math.max(0.03, Math.min(0.25, prev.size + delta))
     }))
   }
 

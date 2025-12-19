@@ -2,16 +2,15 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Lock, Calendar } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Lock, Calendar, Clock } from 'lucide-react'
 import { getDaysInMonth, isDateUnlocked, LAUNCH_DATE } from '@/lib/seth365/wallpaper'
 
 interface CalendarViewProps {
   onSelectDate: (date: Date) => void
   selectedDate: Date | null
-  testMode?: boolean  // 测试模式下允许选择启动日期之后的日期
 }
 
-export function CalendarView({ onSelectDate, selectedDate, testMode = false }: CalendarViewProps) {
+export function CalendarView({ onSelectDate, selectedDate }: CalendarViewProps) {
   const today = new Date()
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
@@ -56,19 +55,26 @@ export function CalendarView({ onSelectDate, selectedDate, testMode = false }: C
     )
   }
 
-  // 测试模式下：启动日期之后的日期都可选
+  // 检查日期是否在启动日期范围内（>=启动日期）
+  const isInLaunchRange = (date: Date) => {
+    const checkDate = new Date(date)
+    checkDate.setHours(0, 0, 0, 0)
+    return checkDate >= LAUNCH_DATE
+  }
+
+  // 检查日期是否已解锁（可以点击查看）
   const isDateAvailable = (date: Date) => {
-    if (testMode) {
-      // 测试模式：只要 >= 启动日期就可选
-      const checkDate = new Date(date)
-      checkDate.setHours(0, 0, 0, 0)
-      return checkDate >= LAUNCH_DATE
-    }
     return isDateUnlocked(date)
   }
 
+  // 检查日期是否是未来日期（在启动范围内但还没解锁）
+  const isFutureDate = (date: Date) => {
+    return isInLaunchRange(date) && !isDateUnlocked(date)
+  }
+
   const handleDateClick = (date: Date) => {
-    if (isDateAvailable(date)) {
+    // 启动日期范围内的日期都可以点击
+    if (isInLaunchRange(date)) {
       onSelectDate(date)
     }
   }
@@ -131,26 +137,32 @@ export function CalendarView({ onSelectDate, selectedDate, testMode = false }: C
         {/* 日期 */}
         {days.map((date) => {
           const available = isDateAvailable(date)
+          const future = isFutureDate(date)
+          const inRange = isInLaunchRange(date)
           const todayDate = isToday(date)
           const selected = isSelected(date)
 
           return (
             <motion.button
               key={date.getDate()}
-              whileHover={available ? { scale: 1.1 } : {}}
-              whileTap={available ? { scale: 0.95 } : {}}
+              whileHover={inRange ? { scale: 1.1 } : {}}
+              whileTap={inRange ? { scale: 0.95 } : {}}
               onClick={() => handleDateClick(date)}
-              disabled={!available}
+              disabled={!inRange}
               className={`
                 aspect-square rounded-xl flex flex-col items-center justify-center
                 transition-all duration-200 relative
-                ${available
+                ${inRange
                   ? 'hover:bg-purple-500/30 cursor-pointer'
-                  : 'opacity-40 cursor-not-allowed'
+                  : 'opacity-30 cursor-not-allowed'
                 }
                 ${todayDate
                   ? 'bg-purple-600/40 border-2 border-purple-400'
-                  : 'bg-white/5'
+                  : future
+                    ? 'bg-amber-600/20 border border-amber-500/30'
+                    : available
+                      ? 'bg-white/5'
+                      : 'bg-white/5'
                 }
                 ${selected && !todayDate
                   ? 'bg-blue-600/40 border-2 border-blue-400'
@@ -160,14 +172,19 @@ export function CalendarView({ onSelectDate, selectedDate, testMode = false }: C
             >
               <span
                 className={`text-lg font-medium ${
-                  todayDate ? 'text-purple-200' : 'text-white'
+                  todayDate ? 'text-purple-200' : future ? 'text-amber-300' : 'text-white'
                 }`}
               >
                 {date.getDate()}
               </span>
 
-              {/* 锁定图标 */}
-              {!available && (
+              {/* 未来日期图标 */}
+              {future && !todayDate && (
+                <Clock className="w-3 h-3 text-amber-400 absolute bottom-1" />
+              )}
+
+              {/* 锁定图标（启动前日期） */}
+              {!inRange && (
                 <Lock className="w-3 h-3 text-gray-500 absolute bottom-1" />
               )}
 
