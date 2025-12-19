@@ -11,8 +11,8 @@ export interface Wallpaper {
   index: 1 | 2
 }
 
-// 项目启动日期
-export const LAUNCH_DATE = new Date('2025-12-21')
+// 项目启动日期（使用本地时间避免时区问题）
+export const LAUNCH_DATE = new Date(2025, 11, 21) // 月份从0开始，11表示12月
 
 // 生成文件名：25.12.21.CS1.webp
 export function getFileName(wallpaper: Wallpaper): string {

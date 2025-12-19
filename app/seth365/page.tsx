@@ -21,7 +21,7 @@ export default function Seth365Page() {
 
   // 默认选中今天（测试模式下选12月21日）
   const today = new Date()
-  const defaultDate = launched ? today : new Date('2025-12-21')
+  const defaultDate = launched ? today : new Date(2025, 11, 21) // 使用本地时间避免时区问题
   const [selectedDate, setSelectedDate] = useState<Date>(defaultDate)
   const [showCalendar, setShowCalendar] = useState(false)
   const [editingWallpaper, setEditingWallpaper] = useState<Wallpaper | null>(null)
