@@ -148,11 +148,12 @@ public/seth365/
 **组件结构**:
 | 组件 | 文件 | 功能 |
 |------|------|------|
-| 倒计时卡片 | `CountdownCard.tsx` | 启动前显示倒计时 |
 | 日历视图 | `CalendarView.tsx` | 日期选择+解锁状态 |
 | 壁纸轮播 | `WallpaperCarousel.tsx` | 轮播+筛选+下载 |
 | 下载区 | `DownloadSection.tsx` | 多平台下载+说明 |
 | 海报编辑器 | `PosterEditor.tsx` | 替换二维码 |
+| 批量下载 | `BatchDownloadModal.tsx` | 选择日期范围批量下载 |
+| 锁定提示 | `LockedDateModal.tsx` | 未来日期友好提示 |
 
 **数据模型**: `lib/seth365/wallpaper.ts`
 
@@ -211,12 +212,15 @@ npx supabase functions deploy evaluate-pbl-task --no-verify-jwt
 - ✅ **赛斯365功能（2025-12-19）**：
   - 首页 + Portal 导航栏添加入口按钮
   - 创建 `/seth365` 页面（日历+轮播+下载）
-  - 倒计时卡片（启动前显示）+ 测试模式预览
   - 壁纸轮播组件（筛选、全屏、自动播放）
   - 多平台下载区（Android/Windows/iOS 说明）
   - 海报编辑器（替换二维码功能）
   - 复制 704 张壁纸资源 + APK 下载文件（Git LFS）
   - 修复时区问题：使用 `new Date(year, month, day)` 避免 UTC 转换
+  - 移除倒计时页面，直接显示壁纸界面
+  - 未来日期点击显示友好等待弹窗（含鼓励话术）
+  - 批量下载选择器（今天/本周/本月/自定义月份）
+  - 修复二维码拖动范围，支持拖到图片底部
 
 ---
 
