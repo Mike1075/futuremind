@@ -8,9 +8,10 @@ import { getDaysInMonth, isDateUnlocked, LAUNCH_DATE } from '@/lib/seth365/wallp
 interface CalendarViewProps {
   onSelectDate: (date: Date) => void
   selectedDate: Date | null
+  testMode?: boolean  // 测试模式下允许选择启动日期之后的日期
 }
 
-export function CalendarView({ onSelectDate, selectedDate }: CalendarViewProps) {
+export function CalendarView({ onSelectDate, selectedDate, testMode = false }: CalendarViewProps) {
   const today = new Date()
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
@@ -55,8 +56,19 @@ export function CalendarView({ onSelectDate, selectedDate }: CalendarViewProps) 
     )
   }
 
+  // 测试模式下：启动日期之后的日期都可选
+  const isDateAvailable = (date: Date) => {
+    if (testMode) {
+      // 测试模式：只要 >= 启动日期就可选
+      const checkDate = new Date(date)
+      checkDate.setHours(0, 0, 0, 0)
+      return checkDate >= LAUNCH_DATE
+    }
+    return isDateUnlocked(date)
+  }
+
   const handleDateClick = (date: Date) => {
-    if (isDateUnlocked(date)) {
+    if (isDateAvailable(date)) {
       onSelectDate(date)
     }
   }
@@ -118,21 +130,21 @@ export function CalendarView({ onSelectDate, selectedDate }: CalendarViewProps) 
 
         {/* 日期 */}
         {days.map((date) => {
-          const unlocked = isDateUnlocked(date)
+          const available = isDateAvailable(date)
           const todayDate = isToday(date)
           const selected = isSelected(date)
 
           return (
             <motion.button
               key={date.getDate()}
-              whileHover={unlocked ? { scale: 1.1 } : {}}
-              whileTap={unlocked ? { scale: 0.95 } : {}}
+              whileHover={available ? { scale: 1.1 } : {}}
+              whileTap={available ? { scale: 0.95 } : {}}
               onClick={() => handleDateClick(date)}
-              disabled={!unlocked}
+              disabled={!available}
               className={`
                 aspect-square rounded-xl flex flex-col items-center justify-center
                 transition-all duration-200 relative
-                ${unlocked
+                ${available
                   ? 'hover:bg-purple-500/30 cursor-pointer'
                   : 'opacity-40 cursor-not-allowed'
                 }
@@ -155,7 +167,7 @@ export function CalendarView({ onSelectDate, selectedDate }: CalendarViewProps) 
               </span>
 
               {/* 锁定图标 */}
-              {!unlocked && (
+              {!available && (
                 <Lock className="w-3 h-3 text-gray-500 absolute bottom-1" />
               )}
 

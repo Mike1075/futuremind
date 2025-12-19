@@ -26,14 +26,13 @@ interface DownloadInfo {
   features: string[]
 }
 
-// TODO: 将 APK/EXE 上传到 Supabase Storage 或 GitHub Releases 后更新链接
 const downloads: DownloadInfo[] = [
   {
     platform: 'android',
     title: 'Android 版',
     icon: Smartphone,
-    downloadUrl: null, // APK 超过 GitHub 100MB 限制，需外部托管
-    description: '支持自动切换壁纸和锁屏，每日灵感触手可及（即将上线）',
+    downloadUrl: '/seth365/downloads/Seth365.apk',
+    description: '支持自动切换壁纸和锁屏，每日灵感触手可及',
     features: [
       '自动切换桌面壁纸',
       '自动切换锁屏壁纸',
