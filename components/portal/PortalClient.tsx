@@ -21,7 +21,8 @@ import {
   ChevronDown,
   Key,
   Bell,
-  Inbox
+  Inbox,
+  Calendar
 } from 'lucide-react'
 import { usePortalCourses } from '@/lib/hooks/usePortalCourses'
 import { ConsciousnessTreeView } from '@/components/consciousness/ConsciousnessTreeView'
@@ -265,16 +266,30 @@ export function PortalClient({
               )}
             </div>
 
-            {/* 右侧：返回首页 */}
-            <button
-              onClick={() => (window.location.href = '/')}
-              className="flex items-center space-x-2 text-orange-300 hover:text-orange-200 transition-colors duration-300 group"
-            >
-              <span className="font-medium">返回首页</span>
-              <div className="w-8 h-8 bg-orange-600/20 rounded-full flex items-center justify-center group-hover:bg-orange-600/40 transition-colors duration-300">
-                <Home className="w-5 h-5 text-orange-400" />
-              </div>
-            </button>
+            {/* 右侧：赛斯365 + 返回首页 */}
+            <div className="flex items-center space-x-4">
+              {/* 赛斯365入口 */}
+              <button
+                onClick={() => router.push('/seth365')}
+                className="flex items-center space-x-2 text-purple-300 hover:text-purple-200 transition-colors duration-300 group"
+              >
+                <div className="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/40 transition-colors duration-300">
+                  <Calendar className="w-5 h-5 text-purple-400" />
+                </div>
+                <span className="font-medium">赛斯365</span>
+              </button>
+
+              {/* 返回首页 */}
+              <button
+                onClick={() => (window.location.href = '/')}
+                className="flex items-center space-x-2 text-orange-300 hover:text-orange-200 transition-colors duration-300 group"
+              >
+                <span className="font-medium">返回首页</span>
+                <div className="w-8 h-8 bg-orange-600/20 rounded-full flex items-center justify-center group-hover:bg-orange-600/40 transition-colors duration-300">
+                  <Home className="w-5 h-5 text-orange-400" />
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </motion.nav>
