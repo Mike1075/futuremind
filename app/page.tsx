@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { MessageCircle, TreePine, Users, Shield, User, ChevronDown, LogOut, Key, Settings, Bell, Inbox } from 'lucide-react'
+import { MessageCircle, TreePine, Users, Shield, User, ChevronDown, LogOut, Key, Settings, Bell, Inbox, Calendar } from 'lucide-react'
 import { useUnreadCount } from '@/lib/aip/useUnreadCount'
 import { InteractionLog } from '@/components/aip/InteractionLog'
 
@@ -403,6 +403,20 @@ export default function Home() {
             <span className="relative z-10 flex items-center gap-2">
               <TreePine className="w-5 h-5" />
               个人门户
+            </span>
+          </motion.button>
+
+          {/* 赛斯365 */}
+          <motion.button
+            onClick={() => window.location.href = '/seth365'}
+            className="btn-stardust group"
+            style={{ borderColor: 'rgba(147, 51, 234, 0.5)' }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              赛斯365
             </span>
           </motion.button>
 
