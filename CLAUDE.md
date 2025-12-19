@@ -122,7 +122,9 @@ docs/                  # 详细文档
 
 **启动日期**: 2025年12月21日
 
-**页面入口**: `/seth365`（Portal 导航栏有按钮）
+**页面入口**: `/seth365`（首页 + Portal 导航栏都有按钮）
+
+**测试模式**: 启动前可点击"预览壁纸"按钮查看壁纸内容
 
 **壁纸规格**:
 - 每天8张壁纸：中英文×竖横×2张
@@ -207,13 +209,14 @@ npx supabase functions deploy evaluate-pbl-task --no-verify-jwt
   - 删除废弃 PBL Gaia 组件（GaiaChat、FloatingGaia、MarkdownRenderer）
   - 修复 mock 数据服务 bug（MainDashboard、MyProjectsPage）
 - ✅ **赛斯365功能（2025-12-19）**：
-  - Portal 导航栏添加入口按钮
+  - 首页 + Portal 导航栏添加入口按钮
   - 创建 `/seth365` 页面（日历+轮播+下载）
-  - 倒计时卡片（启动前显示）
+  - 倒计时卡片（启动前显示）+ 测试模式预览
   - 壁纸轮播组件（筛选、全屏、自动播放）
   - 多平台下载区（Android/Windows/iOS 说明）
   - 海报编辑器（替换二维码功能）
-  - 复制 704 张壁纸资源 + APK 下载文件
+  - 复制 704 张壁纸资源 + APK 下载文件（Git LFS）
+  - 修复时区问题：使用 `new Date(year, month, day)` 避免 UTC 转换
 
 ---
 
