@@ -31,7 +31,7 @@ const downloads: DownloadInfo[] = [
     platform: 'android',
     title: 'Android 版',
     icon: Smartphone,
-    downloadUrl: '/seth365/downloads/Seth365.apk',
+    downloadUrl: 'https://pub-810d6e0711de44d396071ecfc5ae9c2a.r2.dev/apk/app-release.apk',
     description: '支持自动切换壁纸和锁屏，每日灵感触手可及',
     features: [
       '自动切换桌面壁纸',
@@ -47,7 +47,7 @@ const downloads: DownloadInfo[] = [
     platform: 'windows',
     title: 'Windows 版',
     icon: Monitor,
-    downloadUrl: '/seth365/downloads/Seth365_Setup.exe',
+    downloadUrl: 'https://pub-810d6e0711de44d396071ecfc5ae9c2a.r2.dev/windows/Seth365.exe',
     description: 'Windows 桌面客户端，让每日灵感装点你的电脑',
     features: [
       '自动切换桌面壁纸',
