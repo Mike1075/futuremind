@@ -136,14 +136,16 @@ docs/                  # 详细文档
 
 **资源位置**:
 ```
-public/seth365/
-├── wallpapers/           # 壁纸图片
-│   ├── 25/12/           # 2025年12月
-│   └── 26/01/           # 2026年1月
-└── downloads/           # 客户端下载
-    ├── Seth365.apk      # Android 版
-    └── Seth365_Setup.exe # Windows 版（待构建）
+public/seth365/wallpapers/    # 壁纸图片（704张）
+├── 25/12/                    # 2025年12月
+└── 26/01/                    # 2026年1月
 ```
+
+**下载链接管理**:
+- 数据库表：`app_downloads`（存储各平台下载链接）
+- 管理入口：`/admin/seth365-downloads`（仅校长可访问）
+- API：`/api/seth365/downloads`
+- 支持平台：Android、Windows、macOS、iOS
 
 **组件结构**:
 | 组件 | 文件 | 功能 |
@@ -221,6 +223,9 @@ npx supabase functions deploy evaluate-pbl-task --no-verify-jwt
   - 未来日期点击显示友好等待弹窗（含鼓励话术）
   - 批量下载选择器（今天/本周/本月/自定义月份）
   - 修复二维码拖动范围，支持拖到图片底部
+  - 下载链接动态管理系统（`app_downloads` 表 + `/admin/seth365-downloads` 管理后台）
+  - R2 云存储托管客户端安装包（APK/EXE）
+  - 管理后台校长入口卡片
 
 ---
 
