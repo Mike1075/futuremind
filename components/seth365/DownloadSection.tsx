@@ -1,37 +1,46 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Smartphone,
   Monitor,
   Apple,
+  Laptop,
   Download,
   ChevronDown,
   ChevronUp,
   Info,
   CheckCircle2,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  RefreshCw
 } from 'lucide-react'
 
-type Platform = 'android' | 'windows' | 'ios'
+type Platform = 'android' | 'windows' | 'ios' | 'macos'
 
-interface DownloadInfo {
+interface DownloadData {
+  platform: string
+  version: string
+  download_url: string | null
+  release_notes: string | null
+  updated_at: string
+}
+
+interface PlatformConfig {
   platform: Platform
   title: string
   icon: React.ComponentType<{ className?: string }>
-  downloadUrl: string | null
   description: string
   features: string[]
+  comingSoonText?: string
 }
 
-const downloads: DownloadInfo[] = [
+const platformConfigs: PlatformConfig[] = [
   {
     platform: 'android',
     title: 'Android 版',
     icon: Smartphone,
-    downloadUrl: 'https://pub-810d6e0711de44d396071ecfc5ae9c2a.r2.dev/apk/app-release.apk',
     description: '支持自动切换壁纸和锁屏，每日灵感触手可及',
     features: [
       '自动切换桌面壁纸',
@@ -40,14 +49,14 @@ const downloads: DownloadInfo[] = [
       '支持中英文壁纸筛选',
       '支持竖版/横版壁纸筛选',
       '海报编辑器（替换二维码）',
-      '完全离线使用，无需网络'
+      '完全离线使用，无需网络',
+      '点击应用内"检查更新"获取最新版本'
     ]
   },
   {
     platform: 'windows',
     title: 'Windows 版',
     icon: Monitor,
-    downloadUrl: 'https://pub-810d6e0711de44d396071ecfc5ae9c2a.r2.dev/windows/Seth365.exe',
     description: 'Windows 桌面客户端，让每日灵感装点你的电脑',
     features: [
       '自动切换桌面壁纸',
@@ -55,14 +64,29 @@ const downloads: DownloadInfo[] = [
       '定时自动切换',
       '系统托盘常驻',
       '支持中英文壁纸筛选',
-      '完全离线使用，无需网络'
+      '完全离线使用，无需网络',
+      '点击应用内"检查更新"获取最新版本'
     ]
+  },
+  {
+    platform: 'macos',
+    title: 'macOS 版',
+    icon: Laptop,
+    description: 'Mac 桌面客户端，让每日灵感装点你的 Mac',
+    features: [
+      '自动切换桌面壁纸',
+      '多种显示模式',
+      '定时自动切换',
+      '菜单栏常驻',
+      '支持中英文壁纸筛选',
+      '完全离线使用，无需网络'
+    ],
+    comingSoonText: '即将推出，敬请期待'
   },
   {
     platform: 'ios',
     title: 'iOS 版',
     icon: Apple,
-    downloadUrl: 'https://apps.apple.com/app/seth365',
     description: '在 App Store 搜索"Seth365"下载',
     features: [
       '打开 App Store，搜索"Seth365"',
@@ -94,7 +118,15 @@ const androidInstructions = {
       ]
     },
     {
-      title: '3. 不同手机品牌特殊设置',
+      title: '3. 检查更新',
+      steps: [
+        '打开应用后，点击右上角菜单',
+        '选择"检查更新"',
+        '如有新版本会提示下载更新'
+      ]
+    },
+    {
+      title: '4. 不同手机品牌特殊设置',
       brands: [
         {
           name: '小米/Redmi (MIUI)',
@@ -149,7 +181,7 @@ const windowsInstructions = {
       title: '1. 下载安装',
       steps: [
         '点击上方"下载"按钮下载安装程序',
-        '运行 Seth365_Setup.exe 开始安装',
+        '运行下载的 .exe 文件开始安装',
         '如果 Windows Defender 提示拦截，点击"更多信息"→"仍要运行"',
         '按照安装向导完成安装'
       ]
@@ -164,7 +196,15 @@ const windowsInstructions = {
       ]
     },
     {
-      title: '3. 显示模式说明',
+      title: '3. 检查更新',
+      steps: [
+        '点击托盘图标，选择"检查更新"',
+        '如有新版本会提示下载更新',
+        '也可以随时回到本页面下载最新版本'
+      ]
+    },
+    {
+      title: '4. 显示模式说明',
       modes: [
         { name: '模糊背景（推荐）', desc: '完整显示壁纸，空白区域用模糊效果填充' },
         { name: '裁切填充', desc: '放大壁纸填满屏幕，超出部分裁切' },
@@ -178,11 +218,56 @@ const windowsInstructions = {
 }
 
 export function DownloadSection() {
+  const [downloads, setDownloads] = useState<Record<string, DownloadData>>({})
+  const [loading, setLoading] = useState(true)
   const [expandedPlatform, setExpandedPlatform] = useState<Platform | null>(null)
   const [showInstructions, setShowInstructions] = useState<'android' | 'windows' | null>(null)
 
+  // 从 API 获取下载信息
+  useEffect(() => {
+    const fetchDownloads = async () => {
+      try {
+        const res = await fetch('/api/seth365/downloads')
+        const data = await res.json()
+
+        if (Array.isArray(data)) {
+          const downloadsMap: Record<string, DownloadData> = {}
+          data.forEach((item: DownloadData) => {
+            downloadsMap[item.platform] = item
+          })
+          setDownloads(downloadsMap)
+        }
+      } catch (error) {
+        console.error('Failed to fetch downloads:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDownloads()
+  }, [])
+
   const toggleExpand = (platform: Platform) => {
     setExpandedPlatform(expandedPlatform === platform ? null : platform)
+  }
+
+  const getDownloadUrl = (platform: Platform): string | null => {
+    const data = downloads[platform]
+    if (!data?.download_url) return null
+    // iOS 的 appstore:// 链接需要特殊处理
+    if (platform === 'ios' && data.download_url.startsWith('appstore://')) {
+      return null // 不提供直接下载，显示说明
+    }
+    return data.download_url
+  }
+
+  const getVersion = (platform: Platform): string | null => {
+    return downloads[platform]?.version || null
+  }
+
+  const isAvailable = (platform: Platform): boolean => {
+    const data = downloads[platform]
+    return !!data?.download_url
   }
 
   return (
@@ -191,119 +276,167 @@ export function DownloadSection() {
       animate={{ opacity: 1, y: 0 }}
       className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/20 p-6"
     >
-      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+      <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
         <Download className="w-6 h-6 text-purple-400" />
         多平台客户端下载
       </h3>
+      <p className="text-sm text-gray-400 mb-6">
+        下载客户端可自动切换壁纸，应用内可检查更新
+      </p>
 
-      <div className="space-y-4">
-        {downloads.map((item) => {
-          const Icon = item.icon
-          const isExpanded = expandedPlatform === item.platform
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <RefreshCw className="w-6 h-6 text-purple-400 animate-spin" />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {platformConfigs.map((item) => {
+            const Icon = item.icon
+            const isExpanded = expandedPlatform === item.platform
+            const downloadUrl = getDownloadUrl(item.platform)
+            const version = getVersion(item.platform)
+            const available = isAvailable(item.platform)
 
-          return (
-            <div
-              key={item.platform}
-              className="bg-white/5 rounded-xl border border-white/10 overflow-hidden"
-            >
-              {/* 平台头部 */}
+            return (
               <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors"
-                onClick={() => toggleExpand(item.platform)}
+                key={item.platform}
+                className="bg-white/5 rounded-xl border border-white/10 overflow-hidden"
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-purple-300" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-white">{item.title}</h4>
-                    <p className="text-sm text-gray-400">{item.description}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {item.downloadUrl ? (
-                    <a
-                      href={item.downloadUrl}
-                      download
-                      onClick={(e) => e.stopPropagation()}
-                      className="btn-stardust px-4 py-2 text-sm flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      下载
-                    </a>
-                  ) : (
-                    <span className="text-sm text-gray-500 px-4 py-2">
-                      暂无下载
-                    </span>
-                  )}
-                  {isExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
-                  )}
-                </div>
-              </div>
-
-              {/* 展开内容 */}
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="px-4 pb-4 border-t border-white/10 pt-4">
-                      {/* 功能特性 */}
-                      <div className="mb-4">
-                        <h5 className="text-sm font-medium text-gray-300 mb-2">
-                          功能特性
-                        </h5>
-                        <ul className="space-y-1.5">
-                          {item.features.map((feature, index) => (
-                            <li
-                              key={index}
-                              className="flex items-center gap-2 text-sm text-gray-400"
-                            >
-                              <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* 使用说明链接 */}
-                      {item.platform !== 'ios' && (
-                        <button
-                          onClick={() => setShowInstructions(item.platform as 'android' | 'windows')}
-                          className="flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
-                        >
-                          <Info className="w-4 h-4" />
-                          查看详细使用说明
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
-                      )}
-
-                      {/* iOS 特殊提示 */}
-                      {item.platform === 'ios' && (
-                        <div className="flex items-start gap-2 text-sm text-amber-400 bg-amber-500/10 rounded-lg p-3">
-                          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                          <span>
-                            由于 iOS 系统限制，无法像 Android 一样自动切换壁纸。
-                            建议使用本网站下载壁纸后手动设置。
-                          </span>
-                        </div>
-                      )}
+                {/* 平台头部 */}
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors"
+                  onClick={() => toggleExpand(item.platform)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-purple-300" />
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )
-        })}
-      </div>
+                    <div>
+                      <h4 className="font-semibold text-white flex items-center gap-2">
+                        {item.title}
+                        {version && (
+                          <span className="text-xs text-gray-500 font-normal">
+                            v{version}
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-sm text-gray-400">{item.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {available ? (
+                      downloadUrl ? (
+                        <a
+                          href={downloadUrl}
+                          download
+                          onClick={(e) => e.stopPropagation()}
+                          className="btn-stardust px-4 py-2 text-sm flex items-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          下载
+                        </a>
+                      ) : item.platform === 'ios' ? (
+                        <span className="text-sm text-purple-400 px-4 py-2">
+                          App Store
+                        </span>
+                      ) : null
+                    ) : (
+                      <span className="text-sm text-gray-500 px-4 py-2">
+                        {item.comingSoonText || '即将推出'}
+                      </span>
+                    )}
+                    {isExpanded ? (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+
+                {/* 展开内容 */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 border-t border-white/10 pt-4">
+                        {/* 功能特性 */}
+                        <div className="mb-4">
+                          <h5 className="text-sm font-medium text-gray-300 mb-2">
+                            功能特性
+                          </h5>
+                          <ul className="space-y-1.5">
+                            {item.features.map((feature, index) => (
+                              <li
+                                key={index}
+                                className="flex items-center gap-2 text-sm text-gray-400"
+                              >
+                                <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                                {feature}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* 更新说明 */}
+                        {downloads[item.platform]?.release_notes && (
+                          <div className="mb-4 bg-purple-500/10 rounded-lg p-3">
+                            <h5 className="text-sm font-medium text-purple-300 mb-1">
+                              更新说明 (v{version})
+                            </h5>
+                            <p className="text-sm text-gray-400">
+                              {downloads[item.platform].release_notes}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* 使用说明链接 */}
+                        {(item.platform === 'android' || item.platform === 'windows') && (
+                          <button
+                            onClick={() => setShowInstructions(item.platform as 'android' | 'windows')}
+                            className="flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                          >
+                            <Info className="w-4 h-4" />
+                            查看详细使用说明
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
+                        )}
+
+                        {/* iOS 特殊提示 */}
+                        {item.platform === 'ios' && (
+                          <div className="flex items-start gap-2 text-sm text-amber-400 bg-amber-500/10 rounded-lg p-3">
+                            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            <span>
+                              由于 iOS 系统限制，无法像 Android 一样自动切换壁纸。
+                              建议使用本网站下载壁纸后手动设置。
+                            </span>
+                          </div>
+                        )}
+
+                        {/* macOS 即将推出提示 */}
+                        {item.platform === 'macos' && !available && (
+                          <div className="flex items-start gap-2 text-sm text-blue-400 bg-blue-500/10 rounded-lg p-3">
+                            <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            <span>
+                              macOS 版本正在开发中，敬请期待。
+                              目前可以使用本网站下载壁纸后手动设置。
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* 使用说明弹窗 */}
       <AnimatePresence>
