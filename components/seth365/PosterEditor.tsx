@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { X, Upload, Download, RotateCcw, Move, ZoomIn, ZoomOut } from 'lucide-react'
+import { X, Upload, Download, RotateCcw, Move, ZoomIn, ZoomOut, Trash2, HelpCircle, ExternalLink } from 'lucide-react'
 import { Wallpaper, getWallpaperUrl, getDisplayName, formatDate } from '@/lib/seth365/wallpaper'
 
 interface PosterEditorProps {
@@ -25,6 +25,8 @@ export function PosterEditor({ wallpaper, onClose }: PosterEditorProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showHelp, setShowHelp] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 加载海报图片
   useEffect(() => {
@@ -89,6 +91,24 @@ export function PosterEditor({ wallpaper, onClose }: PosterEditorProps) {
       img.src = event.target?.result as string
     }
     reader.readAsDataURL(file)
+    // 清空 input 以便重新上传同一文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  // 删除二维码
+  const handleDeleteQr = () => {
+    setQrImage(null)
+    setQrPosition(DEFAULT_QR_POSITION)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  // 更换二维码
+  const handleChangeQr = () => {
+    fileInputRef.current?.click()
   }
 
   // 处理拖动
@@ -197,36 +217,98 @@ export function PosterEditor({ wallpaper, onClose }: PosterEditorProps) {
 
           {/* 右侧：控制面板 */}
           <div className="w-full md:w-72 p-4 border-t md:border-t-0 md:border-l border-white/10 space-y-4">
-            {/* 上传二维码 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+            {/* 上传二维码标题 + 帮助按钮 */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-300">
                 上传你的二维码
               </label>
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-purple-500/50 transition-colors">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleQrUpload}
-                  className="hidden"
-                />
-                {qrImage ? (
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-2 bg-white rounded-lg overflow-hidden">
+              <button
+                onClick={() => setShowHelp(!showHelp)}
+                className="text-purple-400 hover:text-purple-300 transition-colors"
+                title="如何获取二维码"
+              >
+                <HelpCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 帮助说明（可展开） */}
+            {showHelp && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-3 text-sm"
+              >
+                <h4 className="text-purple-300 font-medium mb-2">如何获取心灵家园推广二维码？</h4>
+                <ol className="text-gray-400 space-y-2 list-decimal list-inside">
+                  <li>打开<span className="text-white">「心灵家园」</span>微信小程序</li>
+                  <li>点击<span className="text-white">「我的」</span>→<span className="text-white">「邀请好友」</span></li>
+                  <li>长按保存你的专属推广二维码</li>
+                  <li>在此上传该二维码图片</li>
+                </ol>
+                <p className="text-gray-500 mt-2 text-xs">
+                  好友扫码关注后，你将获得推广奖励积分
+                </p>
+              </motion.div>
+            )}
+
+            {/* 上传区域 */}
+            <div>
+              {/* 隐藏的文件输入 */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleQrUpload}
+                className="hidden"
+              />
+
+              {qrImage ? (
+                // 已上传二维码：显示预览和操作按钮
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                    <div className="w-16 h-16 bg-white rounded-lg overflow-hidden flex-shrink-0">
                       <img
                         src={qrImage.src}
                         alt="二维码"
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    <span className="text-sm text-gray-400">点击更换</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white truncate">已上传二维码</p>
+                      <p className="text-xs text-gray-500">拖动画布调整位置</p>
+                    </div>
                   </div>
-                ) : (
-                  <div className="text-center">
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <span className="text-sm text-gray-400">点击上传二维码图片</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleChangeQr}
+                      className="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 text-sm flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Upload className="w-4 h-4" />
+                      更换
+                    </button>
+                    <button
+                      onClick={handleDeleteQr}
+                      className="flex-1 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      删除
+                    </button>
                   </div>
-                )}
-              </label>
+                </div>
+              ) : (
+                // 未上传：显示上传区域
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-purple-500/50 transition-colors">
+                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-400">点击上传二维码图片</span>
+                  <span className="text-xs text-gray-500 mt-1">支持 JPG、PNG 格式</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleQrUpload}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
 
             {/* 位置调整 */}
@@ -290,8 +372,8 @@ export function PosterEditor({ wallpaper, onClose }: PosterEditorProps) {
             {/* 提示 */}
             <p className="text-xs text-gray-500 text-center">
               {qrImage
-                ? '你可以拖动二维码调整位置，然后点击下载'
-                : '上传你的二维码后，可以替换海报中的二维码'}
+                ? '拖动画布中的二维码调整位置，满意后点击下载'
+                : '点击右上角 ? 查看如何获取心灵家园推广二维码'}
             </p>
           </div>
         </div>
