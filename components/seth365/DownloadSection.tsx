@@ -62,13 +62,13 @@ const downloads: DownloadInfo[] = [
     platform: 'ios',
     title: 'iOS 版',
     icon: Apple,
-    downloadUrl: null,
-    description: 'iOS 暂无客户端，可通过以下方式使用',
+    downloadUrl: 'https://apps.apple.com/app/seth365',
+    description: '在 App Store 搜索"Seth365"下载',
     features: [
-      '在本网站浏览和下载壁纸',
-      '保存到相册后手动设置壁纸',
-      '使用 iOS 快捷指令实现自动化',
-      '未来可能推出 iOS 客户端'
+      '打开 App Store，搜索"Seth365"',
+      '找到应用后点击下载安装',
+      '若搜不到，说明正在审核中，请过几天再试',
+      '支持自动切换壁纸和锁屏'
     ]
   }
 ]
