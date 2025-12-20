@@ -9,7 +9,8 @@ import {
   Users,
   BookOpen,
   UserCheck,
-  Brain
+  Brain,
+  Download
 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
@@ -100,6 +101,14 @@ export default function AdminDashboardClient() {
         href: '/admin/users',
         icon: Users,
         gradient: 'from-emerald-500 via-teal-500 to-cyan-500'
+      })
+      // 校长专属：赛斯365下载管理
+      cards.push({
+        title: '赛斯365下载',
+        description: '管理各平台客户端下载链接和版本',
+        href: '/admin/seth365-downloads',
+        icon: Download,
+        gradient: 'from-amber-500 via-orange-500 to-red-500'
       })
     }
 
