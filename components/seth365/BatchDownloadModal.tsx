@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { X, Download, Calendar, ChevronLeft, ChevronRight, Check, Loader2 } from 'lucide-react'
+import { X, Download, Calendar, ChevronLeft, ChevronRight, Check, Loader2, Info, Lock } from 'lucide-react'
 import {
   getWallpapersForDate,
   getWallpaperUrl,
@@ -10,6 +10,7 @@ import {
   isDateUnlocked,
   LAUNCH_DATE,
   formatDate,
+  getDaysInMonth,
   Language,
   Orientation
 } from '@/lib/seth365/wallpaper'
@@ -22,16 +23,34 @@ type DownloadRange = 'today' | 'week' | 'month' | 'custom'
 type FilterLanguage = 'all' | 'C' | 'E'
 type FilterOrientation = 'all' | 'S' | 'H'
 
+// 日期转字符串key（用于Set比较）
+const dateToKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+const keyToDate = (key: string) => {
+  const [year, month, day] = key.split('-').map(Number)
+  return new Date(year, month, day)
+}
+
 export function BatchDownloadModal({ onClose }: BatchDownloadModalProps) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
   const [range, setRange] = useState<DownloadRange>('today')
   const [customMonth, setCustomMonth] = useState({ year: today.getFullYear(), month: today.getMonth() })
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set())
   const [filterLanguage, setFilterLanguage] = useState<FilterLanguage>('all')
   const [filterOrientation, setFilterOrientation] = useState<FilterOrientation>('all')
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState(0)
+
+  // 获取当前月份的所有日期信息
+  const monthDates = useMemo(() => {
+    return getDaysInMonth(customMonth.year, customMonth.month)
+  }, [customMonth])
+
+  // 获取当前月份的第一天是星期几
+  const firstDayOfWeek = useMemo(() => {
+    return new Date(customMonth.year, customMonth.month, 1).getDay()
+  }, [customMonth])
 
   // 计算日期范围内的已解锁日期
   const getUnlockedDatesInRange = useMemo(() => {
@@ -62,20 +81,74 @@ export function BatchDownloadModal({ onClose }: BatchDownloadModalProps) {
         }
       }
     } else if (range === 'custom') {
-      // 获取自定义月份
-      const firstDay = new Date(customMonth.year, customMonth.month, 1)
-      const lastDay = new Date(customMonth.year, customMonth.month + 1, 0)
-      const endDate = lastDay < today ? lastDay : today
+      // 如果有选中的日期，使用选中的日期
+      if (selectedDates.size > 0) {
+        for (const key of selectedDates) {
+          const date = keyToDate(key)
+          if (isDateUnlocked(date)) {
+            dates.push(date)
+          }
+        }
+        // 按日期排序
+        dates.sort((a, b) => a.getTime() - b.getTime())
+      } else {
+        // 没有选中日期时，获取整个月份的已解锁日期
+        const firstDay = new Date(customMonth.year, customMonth.month, 1)
+        const lastDay = new Date(customMonth.year, customMonth.month + 1, 0)
+        const endDate = lastDay < today ? lastDay : today
 
-      for (let d = new Date(firstDay); d <= endDate; d.setDate(d.getDate() + 1)) {
-        if (isDateUnlocked(d)) {
-          dates.push(new Date(d))
+        for (let d = new Date(firstDay); d <= endDate; d.setDate(d.getDate() + 1)) {
+          if (isDateUnlocked(d)) {
+            dates.push(new Date(d))
+          }
         }
       }
     }
 
     return dates
-  }, [range, customMonth, today])
+  }, [range, customMonth, selectedDates, today])
+
+  // 切换日期选中状态
+  const toggleDateSelection = (date: Date) => {
+    if (!isDateUnlocked(date)) return
+
+    const key = dateToKey(date)
+    setSelectedDates(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(key)) {
+        newSet.delete(key)
+      } else {
+        newSet.add(key)
+      }
+      return newSet
+    })
+  }
+
+  // 全选/取消全选当月已解锁日期
+  const toggleSelectAll = () => {
+    const unlockedDates = monthDates.filter(d => isDateUnlocked(d))
+
+    // 检查是否已全选
+    const allSelected = unlockedDates.every(d => selectedDates.has(dateToKey(d)))
+
+    if (allSelected) {
+      // 取消全选
+      setSelectedDates(new Set())
+    } else {
+      // 全选
+      const newSet = new Set<string>()
+      unlockedDates.forEach(d => newSet.add(dateToKey(d)))
+      setSelectedDates(newSet)
+    }
+  }
+
+  // 检查是否有选中日期
+  const hasSelectedDates = selectedDates.size > 0
+
+  // 获取当月已解锁日期数量
+  const unlockedCountInMonth = useMemo(() => {
+    return monthDates.filter(d => isDateUnlocked(d)).length
+  }, [monthDates])
 
   // 计算要下载的壁纸数量
   const wallpaperCount = useMemo(() => {
@@ -194,6 +267,15 @@ export function BatchDownloadModal({ onClose }: BatchDownloadModalProps) {
         </div>
 
         <div className="p-6 space-y-6">
+          {/* 提示说明 */}
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-200">
+              <p>仅可下载<span className="text-white font-medium">已解锁</span>的壁纸（今天及之前的日期）。</p>
+              <p className="text-blue-300/70 mt-1">未来日期的壁纸会在当天自动解锁。</p>
+            </div>
+          </div>
+
           {/* 日期范围选择 */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-3">
@@ -203,7 +285,13 @@ export function BatchDownloadModal({ onClose }: BatchDownloadModalProps) {
               {rangeOptions.map((option) => (
                 <button
                   key={option.key}
-                  onClick={() => setRange(option.key)}
+                  onClick={() => {
+                    setRange(option.key)
+                    // 切换到非custom模式时清空选中日期
+                    if (option.key !== 'custom') {
+                      setSelectedDates(new Set())
+                    }
+                  }}
                   className={`p-3 rounded-xl border transition-all text-left ${
                     range === option.key
                       ? 'bg-purple-600/30 border-purple-500 text-white'
@@ -220,12 +308,16 @@ export function BatchDownloadModal({ onClose }: BatchDownloadModalProps) {
             </div>
           </div>
 
-          {/* 自定义月份选择器 */}
+          {/* 自定义月份选择器 + 日期网格 */}
           {range === 'custom' && (
-            <div className="bg-white/5 rounded-xl p-4">
+            <div className="bg-white/5 rounded-xl p-4 space-y-4">
+              {/* 月份导航 */}
               <div className="flex items-center justify-between">
                 <button
-                  onClick={() => changeCustomMonth(-1)}
+                  onClick={() => {
+                    changeCustomMonth(-1)
+                    setSelectedDates(new Set()) // 切换月份时清空选择
+                  }}
                   className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                 >
                   <ChevronLeft className="w-5 h-5 text-white" />
@@ -239,12 +331,88 @@ export function BatchDownloadModal({ onClose }: BatchDownloadModalProps) {
                   </div>
                 </div>
                 <button
-                  onClick={() => changeCustomMonth(1)}
+                  onClick={() => {
+                    changeCustomMonth(1)
+                    setSelectedDates(new Set()) // 切换月份时清空选择
+                  }}
                   className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                 >
                   <ChevronRight className="w-5 h-5 text-white" />
                 </button>
               </div>
+
+              {/* 全选按钮 */}
+              {unlockedCountInMonth > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-400">
+                    点击日期可单选/多选，已选 <span className="text-purple-400 font-medium">{selectedDates.size}</span> 天
+                  </span>
+                  <button
+                    onClick={toggleSelectAll}
+                    className="text-sm text-purple-400 hover:text-purple-300"
+                  >
+                    {selectedDates.size === unlockedCountInMonth ? '取消全选' : '全选本月'}
+                  </button>
+                </div>
+              )}
+
+              {/* 星期标题 */}
+              <div className="grid grid-cols-7 gap-1">
+                {['日', '一', '二', '三', '四', '五', '六'].map((day) => (
+                  <div key={day} className="text-center text-xs text-gray-500 py-1">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* 日期网格 */}
+              <div className="grid grid-cols-7 gap-1">
+                {/* 月初空白 */}
+                {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+                  <div key={`empty-${i}`} className="aspect-square" />
+                ))}
+
+                {/* 日期按钮 */}
+                {monthDates.map((date) => {
+                  const unlocked = isDateUnlocked(date)
+                  const selected = selectedDates.has(dateToKey(date))
+                  const isToday = date.toDateString() === today.toDateString()
+
+                  return (
+                    <button
+                      key={date.getDate()}
+                      onClick={() => toggleDateSelection(date)}
+                      disabled={!unlocked}
+                      className={`
+                        aspect-square rounded-lg flex items-center justify-center text-sm
+                        transition-all duration-150 relative
+                        ${unlocked
+                          ? selected
+                            ? 'bg-purple-600 text-white ring-2 ring-purple-400'
+                            : 'bg-white/10 text-white hover:bg-white/20 cursor-pointer'
+                          : 'bg-white/5 text-gray-600 cursor-not-allowed'
+                        }
+                        ${isToday && !selected ? 'ring-1 ring-amber-400' : ''}
+                      `}
+                    >
+                      {date.getDate()}
+                      {!unlocked && (
+                        <Lock className="w-2.5 h-2.5 absolute bottom-0.5 right-0.5 text-gray-600" />
+                      )}
+                      {selected && (
+                        <Check className="w-3 h-3 absolute top-0.5 right-0.5 text-white" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* 选择提示 */}
+              <p className="text-xs text-gray-500 text-center">
+                {hasSelectedDates
+                  ? `已选择 ${selectedDates.size} 天，将下载这些天的壁纸`
+                  : '未选择日期时，将下载整月已解锁的壁纸'}
+              </p>
             </div>
           )}
 
