@@ -75,13 +75,12 @@ const platformConfigs: PlatformConfig[] = [
     description: 'Mac 桌面客户端，让每日灵感装点你的 Mac',
     features: [
       '自动切换桌面壁纸',
-      '多种显示模式',
-      '定时自动切换',
+      '6种显示模式（模糊背景、裁切填充等）',
+      '定时自动切换 + 后台切换',
       '菜单栏常驻',
       '支持中英文壁纸筛选',
       '完全离线使用，无需网络'
-    ],
-    comingSoonText: '即将推出，敬请期待'
+    ]
   },
   {
     platform: 'ios',
@@ -180,16 +179,16 @@ const windowsInstructions = {
     {
       title: '1. 下载安装',
       steps: [
-        '点击上方"下载"按钮下载安装程序',
-        '运行下载的 .exe 文件开始安装',
-        '如果 Windows Defender 提示拦截，点击"更多信息"→"仍要运行"',
-        '按照安装向导完成安装'
+        '点击上方"下载"按钮下载 ZIP 压缩包',
+        '解压缩后，双击 Seth365.exe 运行程序',
+        '如果浏览器提示"不常见的下载"，点击保留即可',
+        '如果 Windows 提示"已阻止"，点击"更多信息"→"仍要运行"'
       ]
     },
     {
       title: '2. 使用方法',
       steps: [
-        '安装完成后，应用会在系统托盘显示图标',
+        '运行后，应用会在系统托盘显示图标',
         '点击托盘图标打开主界面',
         '选择日期查看壁纸，点击壁纸可设置为桌面',
         '开启自动切换后，会按设定间隔自动更换壁纸'
@@ -217,11 +216,54 @@ const windowsInstructions = {
   ]
 }
 
+const macosInstructions = {
+  title: 'macOS 安装使用说明',
+  sections: [
+    {
+      title: '1. 下载安装',
+      steps: [
+        '点击上方"下载"按钮下载 DMG 文件',
+        '双击 DMG 文件打开',
+        '将 Seth365Mac 拖入"应用程序"文件夹'
+      ]
+    },
+    {
+      title: '2. 首次打开（重要）',
+      steps: [
+        '首次打开可能提示"无法打开"，这是正常的安全提示',
+        '方法一：右键点击应用 → 选择"打开" → 点击"打开"',
+        '方法二：系统设置 → 隐私与安全性 → 找到"已阻止" → 点击"仍要打开"',
+        '后续打开无需重复此步骤'
+      ]
+    },
+    {
+      title: '3. 使用方法',
+      steps: [
+        '运行后，应用会在菜单栏显示图标',
+        '点击菜单栏图标打开主界面',
+        '选择日期查看壁纸，点击壁纸可设置为桌面',
+        '开启"后台切换"可在关闭窗口后继续自动切换'
+      ]
+    },
+    {
+      title: '4. 显示模式说明',
+      modes: [
+        { name: '模糊背景（推荐）', desc: '完整显示壁纸，空白区域用模糊效果填充' },
+        { name: '裁切填充', desc: '放大壁纸填满屏幕，超出部分裁切' },
+        { name: '裁切顶部对齐', desc: '裁切填充，但保留顶部内容' },
+        { name: '拉伸填充', desc: '拉伸壁纸填满屏幕，可能变形' },
+        { name: '适配黑边', desc: '完整显示壁纸，空白区域用黑色填充' },
+        { name: '适配白边', desc: '完整显示壁纸，空白区域用白色填充' }
+      ]
+    }
+  ]
+}
+
 export function DownloadSection() {
   const [downloads, setDownloads] = useState<Record<string, DownloadData>>({})
   const [loading, setLoading] = useState(true)
   const [expandedPlatform, setExpandedPlatform] = useState<Platform | null>(null)
-  const [showInstructions, setShowInstructions] = useState<'android' | 'windows' | null>(null)
+  const [showInstructions, setShowInstructions] = useState<'android' | 'windows' | 'macos' | null>(null)
 
   // 从 API 获取下载信息
   useEffect(() => {
@@ -396,9 +438,9 @@ export function DownloadSection() {
                         )}
 
                         {/* 使用说明链接 */}
-                        {(item.platform === 'android' || item.platform === 'windows') && (
+                        {(item.platform === 'android' || item.platform === 'windows' || item.platform === 'macos') && (
                           <button
-                            onClick={() => setShowInstructions(item.platform as 'android' | 'windows')}
+                            onClick={() => setShowInstructions(item.platform as 'android' | 'windows' | 'macos')}
                             className="flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
                           >
                             <Info className="w-4 h-4" />
@@ -418,16 +460,6 @@ export function DownloadSection() {
                           </div>
                         )}
 
-                        {/* macOS 即将推出提示 */}
-                        {item.platform === 'macos' && !available && (
-                          <div className="flex items-start gap-2 text-sm text-blue-400 bg-blue-500/10 rounded-lg p-3">
-                            <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                            <span>
-                              macOS 版本正在开发中，敬请期待。
-                              目前可以使用本网站下载壁纸后手动设置。
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </motion.div>
                   )}
@@ -459,7 +491,9 @@ export function DownloadSection() {
                 <h3 className="text-xl font-bold text-white">
                   {showInstructions === 'android'
                     ? androidInstructions.title
-                    : windowsInstructions.title}
+                    : showInstructions === 'windows'
+                      ? windowsInstructions.title
+                      : macosInstructions.title}
                 </h3>
                 <button
                   onClick={() => setShowInstructions(null)}
@@ -502,9 +536,37 @@ export function DownloadSection() {
                       )}
                     </div>
                   ))
-                ) : (
+                ) : showInstructions === 'windows' ? (
                   // Windows 说明
                   windowsInstructions.sections.map((section, index) => (
+                    <div key={index}>
+                      <h4 className="text-lg font-semibold text-purple-300 mb-3">
+                        {section.title}
+                      </h4>
+                      {section.steps && (
+                        <ol className="list-decimal list-inside space-y-2 text-gray-300">
+                          {section.steps.map((step, i) => (
+                            <li key={i}>{step}</li>
+                          ))}
+                        </ol>
+                      )}
+                      {section.modes && (
+                        <div className="space-y-2">
+                          {section.modes.map((mode, i) => (
+                            <div key={i} className="flex gap-2 text-sm">
+                              <span className="text-purple-300 font-medium">
+                                {mode.name}：
+                              </span>
+                              <span className="text-gray-400">{mode.desc}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  // macOS 说明
+                  macosInstructions.sections.map((section, index) => (
                     <div key={index}>
                       <h4 className="text-lg font-semibold text-purple-300 mb-3">
                         {section.title}
