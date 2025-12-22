@@ -14,8 +14,17 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
-  RefreshCw
+  RefreshCw,
+  Copy,
+  Check
 } from 'lucide-react'
+
+// 检测是否在微信浏览器中
+const isWeChatBrowser = () => {
+  if (typeof window === 'undefined') return false
+  const ua = navigator.userAgent.toLowerCase()
+  return ua.includes('micromessenger')
+}
 
 type Platform = 'android' | 'windows' | 'ios' | 'macos'
 
@@ -179,8 +188,9 @@ const windowsInstructions = {
     {
       title: '1. 下载安装',
       steps: [
-        '点击上方"下载"按钮下载 EXE 安装程序',
-        '双击运行 Seth365.exe',
+        '点击上方"下载"按钮下载 ZIP 压缩包',
+        '解压到任意文件夹（如桌面或 D 盘）',
+        '双击 Seth365.exe 运行',
         '如果浏览器提示"不常见的下载"，点击保留即可',
         '如果 Windows 提示"已阻止"，点击"更多信息"→"仍要运行"'
       ]
@@ -264,6 +274,35 @@ export function DownloadSection() {
   const [loading, setLoading] = useState(true)
   const [expandedPlatform, setExpandedPlatform] = useState<Platform | null>(null)
   const [showInstructions, setShowInstructions] = useState<'android' | 'windows' | 'macos' | null>(null)
+  const [isWeChat, setIsWeChat] = useState(false)
+  const [copiedPlatform, setCopiedPlatform] = useState<Platform | null>(null)
+  const [showWeChatTip, setShowWeChatTip] = useState(false)
+
+  // 检测微信浏览器
+  useEffect(() => {
+    setIsWeChat(isWeChatBrowser())
+  }, [])
+
+  // 复制下载链接
+  const copyDownloadUrl = async (platform: Platform, url: string) => {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopiedPlatform(platform)
+      setTimeout(() => setCopiedPlatform(null), 2000)
+    } catch (err) {
+      console.error('复制失败:', err)
+    }
+  }
+
+  // 处理下载点击
+  const handleDownloadClick = (e: React.MouseEvent, platform: Platform, url: string) => {
+    if (isWeChat) {
+      e.preventDefault()
+      setShowWeChatTip(true)
+      // 同时复制链接
+      copyDownloadUrl(platform, url)
+    }
+  }
 
   // 从 API 获取下载信息
   useEffect(() => {
@@ -366,18 +405,45 @@ export function DownloadSection() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {available ? (
                       downloadUrl ? (
-                        <a
-                          href={downloadUrl}
-                          download
-                          onClick={(e) => e.stopPropagation()}
-                          className="btn-stardust px-4 py-2 text-sm flex items-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          下载
-                        </a>
+                        <>
+                          {/* 复制链接按钮 */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              copyDownloadUrl(item.platform, downloadUrl)
+                            }}
+                            className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 text-sm flex items-center gap-1.5 transition-colors"
+                            title="复制下载链接"
+                          >
+                            {copiedPlatform === item.platform ? (
+                              <>
+                                <Check className="w-4 h-4 text-green-400" />
+                                <span className="text-green-400">已复制</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-4 h-4" />
+                                <span className="hidden sm:inline">复制链接</span>
+                              </>
+                            )}
+                          </button>
+                          {/* 下载按钮 */}
+                          <a
+                            href={downloadUrl}
+                            download
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDownloadClick(e, item.platform, downloadUrl)
+                            }}
+                            className="btn-stardust px-4 py-2 text-sm flex items-center gap-2"
+                          >
+                            <Download className="w-4 h-4" />
+                            下载
+                          </a>
+                        </>
                       ) : item.platform === 'ios' ? (
                         <span className="text-sm text-purple-400 px-4 py-2">
                           App Store
@@ -594,6 +660,54 @@ export function DownloadSection() {
                   ))
                 )}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 微信浏览器提示弹窗 */}
+      <AnimatePresence>
+        {showWeChatTip && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
+            onClick={() => setShowWeChatTip(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 rounded-2xl border border-white/20 p-6 max-w-sm w-full text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-amber-400" />
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-2">
+                请在浏览器中打开
+              </h3>
+
+              <p className="text-gray-400 text-sm mb-4">
+                微信内无法直接下载文件，下载链接已复制到剪贴板
+              </p>
+
+              <div className="bg-white/5 rounded-lg p-3 mb-4">
+                <p className="text-sm text-gray-300">
+                  请点击右上角 <span className="text-purple-400">···</span> 按钮
+                  <br />
+                  选择 <span className="text-purple-400">"在浏览器中打开"</span>
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowWeChatTip(false)}
+                className="w-full btn-stardust py-3"
+              >
+                我知道了
+              </button>
             </motion.div>
           </motion.div>
         )}

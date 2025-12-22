@@ -192,7 +192,6 @@ npx supabase functions deploy evaluate-pbl-task --no-verify-jwt
 - [ ] Rerank 优化（Cohere Reranker）
 - [ ] @ts-nocheck 逐步移除（227 个文件）
 - [ ] 大型组件拆分（PBLProjectDetail、InteractionLog）
-- [ ] Seth365 Windows 安装包构建（需在 Windows 项目中执行 PyInstaller）
 
 ### 已完成摘要（2025-12）
 - ✅ 盖亚聊天系统统一（删除旧 GaiaDialog）
@@ -211,20 +210,22 @@ npx supabase functions deploy evaluate-pbl-task --no-verify-jwt
   - 调试日志清理（5 个文件，20+ 处）
   - 删除废弃 PBL Gaia 组件（GaiaChat、FloatingGaia、MarkdownRenderer）
   - 修复 mock 数据服务 bug（MainDashboard、MyProjectsPage）
-- ✅ **赛斯365功能（2025-12-19）**：
+- ✅ **赛斯365功能（2025-12-19~22）**：
   - 首页 + Portal 导航栏添加入口按钮
   - 创建 `/seth365` 页面（日历+轮播+下载）
   - 壁纸轮播组件（筛选、全屏、自动播放）
-  - 多平台下载区（Android/Windows/iOS 说明）
-  - 海报编辑器（替换二维码功能）
+  - 多平台下载区（Android/Windows/macOS/iOS 说明）
+  - 海报编辑器：替换二维码 + 删除/更换按钮 + 帮助弹窗
   - 复制 704 张壁纸资源 + APK 下载文件（Git LFS）
   - 修复时区问题：使用 `new Date(year, month, day)` 避免 UTC 转换
   - 移除倒计时页面，直接显示壁纸界面
   - 未来日期点击显示友好等待弹窗（含鼓励话术）
-  - 批量下载选择器（今天/本周/本月/自定义月份）
-  - 修复二维码拖动范围，支持拖到图片底部
+  - 日历月份导航限制：只能导航到已解锁月份，未解锁月份显示鼓励弹窗
+  - 批量下载：日期多选网格 + 解锁说明提示
   - 下载链接动态管理系统（`app_downloads` 表 + `/admin/seth365-downloads` 管理后台）
-  - R2 云存储托管客户端安装包（APK/EXE）
+  - R2 云存储托管客户端安装包（APK/ZIP/DMG）
+  - 微信浏览器检测：自动复制链接 + 提示在浏览器打开
+  - 复制下载链接按钮：各平台下载区都有复制链接功能
   - 管理后台校长入口卡片
 
 ---
