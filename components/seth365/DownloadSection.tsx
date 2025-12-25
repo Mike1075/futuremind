@@ -524,11 +524,10 @@ export function DownloadSection() {
 
                         {/* iOS 特殊提示 */}
                         {item.platform === 'ios' && (
-                          <div className="flex items-start gap-2 text-sm text-amber-400 bg-amber-500/10 rounded-lg p-3">
-                            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                          <div className="flex items-start gap-2 text-sm text-purple-300 bg-purple-500/10 rounded-lg p-3">
+                            <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
                             <span>
-                              由于 iOS 系统限制，无法像 Android 一样自动切换壁纸。
-                              建议使用本网站下载壁纸后手动设置。
+                              💡 支持通过 iOS「快捷指令」实现每天自动换壁纸，详见 App 内「设置 → 自动换壁纸」指南
                             </span>
                           </div>
                         )}
