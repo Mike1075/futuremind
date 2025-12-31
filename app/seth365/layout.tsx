@@ -11,7 +11,8 @@ export default function Seth365Layout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
+      {/* 背景由全局 CosmicBackground/VortexBackground 提供 */}
       {children}
     </div>
   )

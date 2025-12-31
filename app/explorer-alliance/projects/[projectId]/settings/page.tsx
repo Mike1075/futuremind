@@ -205,7 +205,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
 
   if (projectLoading) {
     return (
-      <div className="min-h-screen bg-cosmic-void text-starlight flex items-center justify-center">
+      <div className="min-h-screen text-starlight flex items-center justify-center">
         <div className="loader-ethereal"></div>
       </div>
     )
@@ -216,7 +216,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
   }
 
   return (
-    <div className="min-h-screen bg-cosmic-void text-starlight">
+    <div className="min-h-screen text-starlight">
       {/* Header */}
       <div className="nav-ethereal sticky top-0 z-10">
         <div className="container mx-auto px-6 py-6">

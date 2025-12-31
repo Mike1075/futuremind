@@ -1,7 +1,10 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
+import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { validateFileMagicBytes } from '@/lib/file-validation'
 
 // 配置API路由以支持更大的请求体
 export const config = {
@@ -16,12 +19,21 @@ export const config = {
 export const maxDuration = 60 // 最大执行时间60秒
 export const dynamic = 'force-dynamic'
 
+// 创建上传速率限制器
+const uploadLimiter = rateLimit(rateLimitConfigs.upload)
+
 /**
  * POST /api/submissions/upload
  * 专门用于学生提交作业时上传附件（图片、文档等）
  * 返回格式：{ fileUrl, fileName }
  */
 export async function POST(request: NextRequest) {
+  // 检查速率限制
+  const limitResult = await uploadLimiter(request)
+  if (limitResult instanceof NextResponse) {
+    return limitResult
+  }
+
   try {
     const supabase = await createClient()
 
@@ -38,11 +50,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // 验证文件类型：只允许图片
+    // 验证文件类型：只允许图片（MIME 类型检查）
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
     if (!file.type.startsWith('image/') || !allowedImageTypes.includes(file.type)) {
       return NextResponse.json(
         { error: `不支持的文件格式。只支持图片格式: JPG, PNG, GIF, WEBP` },
+        { status: 400 }
+      )
+    }
+
+    // Magic bytes 验证（防止 MIME 类型欺骗）
+    const magicBytesResult = await validateFileMagicBytes(file, file.type)
+    if (!magicBytesResult.valid) {
+      logger.warn('[提交上传] Magic bytes 验证失败', {
+        declaredType: file.type,
+        detectedType: magicBytesResult.detectedType,
+        message: magicBytesResult.message
+      })
+      return NextResponse.json(
+        { error: magicBytesResult.message || '文件类型验证失败，请确保上传真实的图片文件' },
         { status: 400 }
       )
     }
@@ -56,9 +82,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 生成唯一文件名
+    // 生成密码学安全的唯一文件名
     const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
+    const fileName = `${randomBytes(16).toString('hex')}.${fileExt}`
     const filePath = `submissions/${user.id}/${fileName}`
 
     logger.debug('[提交上传] 上传文件到Supabase Storage', { filePath })

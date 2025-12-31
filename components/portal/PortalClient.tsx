@@ -124,29 +124,7 @@ export function PortalClient({
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background particles - 减少数量提升性能 */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30"
-            animate={{
-              x: [0, Math.random() * 100 - 50],
-              y: [0, Math.random() * 100 - 50],
-              opacity: [0.3, 0.8, 0.3],
-            }}
-            transition={{
-              duration: Math.random() * 3 + 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-          />
-        ))}
-      </div>
+      {/* 背景由全局 CosmicBackground/VortexBackground 提供 */}
 
       {/* 顶部导航栏 - 与首页位置一致 */}
       <motion.nav

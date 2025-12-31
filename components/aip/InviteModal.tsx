@@ -108,17 +108,19 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
           setSelectedProject(managedProjects[0].id)
         }
 
-        // 获取各项目的成员ID（用于排除）
-        const memberIdsMap = new Map<string, Set<string>>()
-        for (const project of managedProjects) {
-          const { data: members } = await supabase
-            .from('project_members')
-            .select('user_id')
-            .eq('project_id', project.id)
+        // 获取各项目的成员ID（用于排除）- 批量查询优化（N+1 → 1）
+        const projectIds = managedProjects.map(p => p.id)
+        const { data: allMembers } = await supabase
+          .from('project_members')
+          .select('project_id, user_id')
+          .in('project_id', projectIds)
 
-          const memberIds = new Set<string>(members?.map(m => m.user_id) || [])
-          memberIdsMap.set(project.id, memberIds)
-        }
+        // 在内存中按项目分组
+        const memberIdsMap = new Map<string, Set<string>>()
+        projectIds.forEach(pid => memberIdsMap.set(pid, new Set()))
+        allMembers?.forEach(m => {
+          memberIdsMap.get(m.project_id)?.add(m.user_id)
+        })
         setProjectMemberIds(memberIdsMap)
 
         // 获取愿意参与项目的用户（排除当前用户）
@@ -538,7 +540,7 @@ export function InviteModal({ onClose, projectId }: InviteModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors border border-zinc-700"
+              className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors focus:outline-none focus:ring-0"
               disabled={isLoading}
             >
               取消

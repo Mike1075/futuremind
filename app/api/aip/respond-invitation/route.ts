@@ -1,9 +1,17 @@
 // @ts-nocheck
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
+import { validateCsrf } from '@/lib/api-utils'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // CSRF 保护
+    const csrfResult = validateCsrf(request)
+    if (!csrfResult.valid) {
+      return csrfResult.response
+    }
+
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -54,7 +62,7 @@ export async function POST(request: Request) {
       .eq('id', invitation_id)
 
     if (updateError) {
-      console.error('更新邀请状态失败:', updateError)
+      logger.error('[respond-invitation] 更新邀请状态失败:', updateError)
       return NextResponse.json({ error: '更新失败' }, { status: 500 })
     }
 
@@ -79,7 +87,7 @@ export async function POST(request: Request) {
           })
 
         if (memberError) {
-          console.error('添加项目成员失败:', memberError)
+          logger.error('[respond-invitation] 添加项目成员失败:', memberError)
           // 不影响整体响应，只记录错误
         }
       }
@@ -124,7 +132,7 @@ export async function POST(request: Request) {
       message: action === 'accept' ? '已接受邀请' : '已拒绝邀请'
     })
   } catch (error) {
-    console.error('响应邀请失败:', error)
+    logger.error('[respond-invitation] 响应邀请失败:', error)
     return NextResponse.json({ error: '服务器错误' }, { status: 500 })
   }
 }

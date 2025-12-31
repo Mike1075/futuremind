@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // 系统组织名称（不可删除/修改）
 const SYSTEM_ORG_NAMES = ['社区项目', '我的项目', '系统']
@@ -36,7 +37,7 @@ export async function GET(
 
     return NextResponse.json({ data: org })
   } catch (error) {
-    console.error('[organization] GET 错误:', error)
+    logger.error('[organization] GET 错误:', error)
     return NextResponse.json({ error: '服务器错误' }, { status: 500 })
   }
 }
@@ -110,13 +111,13 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      console.error('[organization] 更新失败:', updateError)
+      logger.error('[organization] 更新失败:', updateError)
       return NextResponse.json({ error: '更新组织失败' }, { status: 500 })
     }
 
     return NextResponse.json({ data: updatedOrg })
   } catch (error) {
-    console.error('[organization] PATCH 错误:', error)
+    logger.error('[organization] PATCH 错误:', error)
     return NextResponse.json({ error: '服务器错误' }, { status: 500 })
   }
 }
@@ -192,13 +193,13 @@ export async function DELETE(
       .eq('id', id)
 
     if (deleteError) {
-      console.error('[organization] 删除失败:', deleteError)
+      logger.error('[organization] 删除失败:', deleteError)
       return NextResponse.json({ error: '删除组织失败' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[organization] DELETE 错误:', error)
+    logger.error('[organization] DELETE 错误:', error)
     return NextResponse.json({ error: '服务器错误' }, { status: 500 })
   }
 }

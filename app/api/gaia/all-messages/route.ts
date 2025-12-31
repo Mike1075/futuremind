@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
+import { safeParseInt } from '@/lib/env'
 
 /**
  * GET /api/gaia/all-messages?limit=100&offset=0
@@ -18,8 +19,8 @@ export async function GET(request: NextRequest) {
 
     // 获取分页参数
     const searchParams = request.nextUrl.searchParams
-    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 500) // 最大500条
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const limit = safeParseInt(searchParams.get('limit'), 100, { min: 1, max: 500 })
+    const offset = safeParseInt(searchParams.get('offset'), 0, { min: 0, max: 10000 })
 
     // 获取用户的所有对话（限制最近20个对话以防止内存问题）
     const { data: conversations, error } = await supabase

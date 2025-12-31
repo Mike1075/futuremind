@@ -10,6 +10,8 @@ import aipChatAPI from '@/lib/api/aip-chat'
 import { playNotificationSound, isNotificationSoundEnabled } from '@/lib/utils/notificationSound'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
+import { aipDebug } from '@/lib/debug'
+import { getCachedData, invalidateCache } from '@/lib/cache'
 
 interface FloatingChatBotProps {
   organization?: Organization
@@ -55,7 +57,7 @@ export function FloatingChatBot({
   // 初始化时预选当前项目
   useEffect(() => {
     if (currentProject) {
-      console.log('[FloatingChatBot] 自动勾选项目:', currentProject.id, currentProject.name)
+      aipDebug.log('[FloatingChatBot] 自动勾选项目:', currentProject.id, currentProject.name)
       setSelectedProjects([currentProject.id])
     }
   }, [currentProject])
@@ -119,16 +121,22 @@ export function FloatingChatBot({
 
         if (!user || !isMounted) return
 
-        // 加载项目列表
-        const projectsResult = await supabase
-          .from('project_members')
-          .select('*, project:projects(*)')
-          .eq('user_id', user.id)
+        // 使用缓存加载项目列表（5分钟有效期，后台自动刷新）
+        const projects = await getCachedData(
+          `user_projects:${user.id}`,
+          async () => {
+            aipDebug.debug('从数据库加载项目列表')
+            const projectsResult = await supabase
+              .from('project_members')
+              .select('*, project:projects(*)')
+              .eq('user_id', user.id)
+            return projectsResult.data?.map(pm => pm.project).filter(Boolean) || []
+          },
+          { ttl: 5 * 60 * 1000, backgroundRefresh: true }
+        )
 
         if (!isMounted) return
 
-        // 处理项目数据
-        const projects = projectsResult.data?.map(pm => pm.project).filter(Boolean) || []
         setUserProjects(projects as Project[])
 
         // 只在需要时加载聊天历史（避免覆盖当前会话）
@@ -189,7 +197,7 @@ export function FloatingChatBot({
       if (!user) throw new Error('未登录')
 
       // 构建project_id参数（完全尊重用户的勾选选择）
-      console.log('[FloatingChatBot] 发送消息时 selectedProjects:', selectedProjects, 'currentProject:', currentProject?.id)
+      aipDebug.log('[FloatingChatBot] 发送消息时 selectedProjects:', selectedProjects, 'currentProject:', currentProject?.id)
       const projectIdValue = selectedProjects.length === 1 ? selectedProjects[0] : selectedProjects
 
       // 获取organization_id：多层兜底逻辑
@@ -228,7 +236,7 @@ export function FloatingChatBot({
       }
 
       // 调用流式API
-      console.log('[FloatingChatBot] 🚀 发送请求:', JSON.stringify(requestBody, null, 2))
+      aipDebug.log('[FloatingChatBot] 🚀 发送请求:', JSON.stringify(requestBody, null, 2))
 
       const response = await fetch('/api/aip/chat', {
         method: 'POST',
@@ -237,10 +245,10 @@ export function FloatingChatBot({
       })
 
       // 🔥 详细日志：打印响应信息
-      console.log('[FloatingChatBot] 📥 响应状态:', response.status, response.statusText)
-      console.log('[FloatingChatBot] 📥 响应头:', Object.fromEntries(response.headers.entries()))
-      console.log('[FloatingChatBot] 📥 响应类型:', response.type)
-      console.log('[FloatingChatBot] 📥 响应URL:', response.url)
+      aipDebug.log('[FloatingChatBot] 📥 响应状态:', response.status, response.statusText)
+      aipDebug.log('[FloatingChatBot] 📥 响应头:', Object.fromEntries(response.headers.entries()))
+      aipDebug.log('[FloatingChatBot] 📥 响应类型:', response.type)
+      aipDebug.log('[FloatingChatBot] 📥 响应URL:', response.url)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -313,34 +321,29 @@ export function FloatingChatBot({
           const { done, value } = await reader.read()
           chunkCount++
 
-          console.log(`[FloatingChatBot] 📦 Chunk #${chunkCount}: done=${done}, valueLength=${value?.length || 0}`)
-
           if (done) {
-            console.log('[FloatingChatBot] ✅ Stream done, buffer remaining:', buffer, 'Total chunks:', chunkCount)
+            aipDebug.log('[FloatingChatBot] ✅ Stream done, buffer remaining:', buffer, 'Total chunks:', chunkCount)
             break
           }
 
           const chunk = decoder.decode(value, { stream: true })
           buffer += chunk
 
-          // 🔥 调试日志：显示收到的原始数据（完整显示）
-          console.log(`[FloatingChatBot] 📦 Chunk #${chunkCount} 原始数据:`, chunk)
-
           const lines = buffer.split('\n')
           buffer = lines.pop() || ''
 
-          console.log('[FloatingChatBot] Lines to process:', lines.length, 'Buffer remaining:', buffer.length)
+          aipDebug.log('[FloatingChatBot] Lines to process:', lines.length, 'Buffer remaining:', buffer.length)
 
           for (const line of lines) {
             const trimmedLine = line.trim()
             if (!trimmedLine) continue
 
             // 🔥 调试日志：显示解析的每一行
-            console.log('[FloatingChatBot] Parsing line:', trimmedLine.substring(0, 100))
+            aipDebug.log('[FloatingChatBot] Parsing line:', trimmedLine.substring(0, 100))
 
             try {
               const json = JSON.parse(trimmedLine)
-              console.log('[FloatingChatBot] Parsed JSON:', json.type, json.content?.substring(0, 50))
+              aipDebug.log('[FloatingChatBot] Parsed JSON:', json.type, json.content?.substring(0, 50))
 
               if (json.type === 'chunk') {
                 fullAnswer = json.content

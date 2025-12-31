@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
+import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+
+// 创建上传速率限制器
+const uploadLimiter = rateLimit(rateLimitConfigs.upload)
 
 /**
  * POST /api/aip/upload-document
@@ -9,6 +13,12 @@ import { logger } from '@/lib/logger'
  * 支持审核功能：普通成员上传的文件需要发起人/管理员审核
  */
 export async function POST(request: NextRequest) {
+  // 检查速率限制
+  const limitResult = await uploadLimiter(request)
+  if (limitResult instanceof NextResponse) {
+    return limitResult
+  }
+
   try {
     // 1. 验证用户身份
     const supabase = await createServerSupabase()

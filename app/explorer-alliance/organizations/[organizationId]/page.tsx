@@ -370,29 +370,8 @@ export default function OrganizationDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden bg-black">
-      {/* 星空背景 */}
-      <div className="absolute inset-0 overflow-hidden">
-        {isMounted && particles.map((particle) => (
-          <motion.div
-            key={particle.id}
-            className="absolute w-0.5 h-0.5 bg-white rounded-full"
-            animate={{
-              opacity: [0.2, 1, 0.2],
-              scale: [1, 1.5, 1],
-            }}
-            transition={{
-              duration: particle.duration,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            style={{
-              left: `${particle.left}%`,
-              top: `${particle.top}%`,
-            }}
-          />
-        ))}
-      </div>
+    <div className="min-h-screen text-white relative overflow-hidden">
+      {/* 背景由全局 CosmicBackground/VortexBackground 提供 */}
 
       {/* 统一导航栏 */}
       <UnifiedNavbar
@@ -446,7 +425,7 @@ export default function OrganizationDashboardPage() {
             <div className="flex items-center justify-end gap-3 mb-6">
               <button
                 onClick={() => setShowCreateProject(true)}
-                className="flex items-center gap-2 px-5 py-2.5 text-white rounded-lg transition-all duration-300 text-sm font-medium bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40"
+                className="btn-stardust flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
                 创建项目
@@ -478,7 +457,7 @@ export default function OrganizationDashboardPage() {
                     <p className="text-zinc-400 mb-4">暂无公开项目</p>
                     <button
                       onClick={() => setShowCreateProject(true)}
-                      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                      className="btn-stardust px-6 py-2 rounded-lg"
                     >
                       创建第一个项目
                     </button>
@@ -507,7 +486,7 @@ export default function OrganizationDashboardPage() {
                 <p className="text-zinc-400 mb-4">你还没有参与任何项目</p>
                 <button
                   onClick={() => setShowCreateProject(true)}
-                  className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                  className="btn-stardust px-6 py-2 rounded-lg"
                 >
                   创建第一个项目
                 </button>

@@ -1,39 +1,24 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X, Send, Inbox, Mail, Trash2, Eye, MessageSquare, Check as CheckIcon, XIcon, Users, FolderOpen, Settings2, CheckSquare, Square, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { InvitationCard } from './InvitationCard'
 import { reviewProjectJoinRequest } from '@/lib/aip/api'
 import { triggerUnreadCountRefresh } from '@/lib/aip/useUnreadCount'
+import { useInteractionData } from '@/lib/aip/useInteractionData'
+import {
+  isFileReviewNotification,
+  isPendingFileReview,
+  isInvitationReceivedNotification,
+  isPendingInvitation,
+  canDeleteInteraction,
+  formatRelativeDate,
+  type UnifiedInteraction
+} from '@/lib/aip/notification-helpers'
 import { PromptDialog } from '@/components/ui/PromptDialog'
 import { Toast } from '@/components/ui/Toast'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-
-// 检查是否是需要审核的文档通知（未处理的）
-const isFileReviewNotification = (interaction: any): boolean => {
-  if (interaction.interactionType !== 'notification') return false
-  const notif = interaction.originalRequest
-  return notif?.type === 'file_review_request'
-}
-
-// 检查文档是否待审核（未处理）
-const isPendingFileReview = (interaction: any): boolean => {
-  return isFileReviewNotification(interaction) && interaction.status === 'unread'
-}
-
-// 检查是否是收到的邀请通知
-const isInvitationReceivedNotification = (interaction: any): boolean => {
-  if (interaction.interactionType !== 'notification') return false
-  const notif = interaction.originalRequest
-  return notif?.type === 'invitation_received'
-}
-
-// 检查邀请是否待响应
-const isPendingInvitation = (interaction: any): boolean => {
-  return isInvitationReceivedNotification(interaction) && interaction.status === 'unread'
-}
 
 interface InteractionLogProps {
   onClose: () => void
@@ -41,7 +26,6 @@ interface InteractionLogProps {
 }
 
 type TabType = 'all' | 'received' | 'sent' | 'notifications'
-type InteractionType = 'notification' | 'project_request'
 
 interface Notification {
   id: string
@@ -53,42 +37,18 @@ interface Notification {
   created_at: string
 }
 
-interface ProjectJoinRequest {
-  id: string
-  project_id: string
-  user_id: string
-  message?: string
-  status: 'pending' | 'approved' | 'rejected'
-  created_at: string
-  reviewed_at?: string
-  user?: {
-    id: string
-    full_name?: string
-    email?: string
-  }
-  project?: {
-    name: string
-  }
-}
-
-interface UnifiedInteraction {
-  id: string
-  interactionType: InteractionType
-  title: string
-  message: string
-  status: 'pending' | 'approved' | 'rejected' | 'read' | 'unread'
-  created_at: string
-  metadata?: any
-  applicantName?: string
-  applicantEmail?: string
-  requestMessage?: string
-  originalRequest?: any
-}
-
 export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogProps) {
   const [activeTab, setActiveTab] = useState<TabType>('all')
-  const [interactions, setInteractions] = useState<UnifiedInteraction[]>([])
-  const [loading, setLoading] = useState(true)
+
+  // 使用自定义 hook 加载数据
+  const {
+    interactions,
+    loading,
+    loadInteractions,
+    updateInteraction,
+    removeInteraction,
+    removeInteractions
+  } = useInteractionData()
   const [processing, setProcessing] = useState<string | null>(null)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [isManageMode, setIsManageMode] = useState(false)
@@ -117,133 +77,6 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
   const showConfirm = (onConfirm: () => void) => {
     setConfirmCallback(() => onConfirm)
     setConfirmOpen(true)
-  }
-
-  useEffect(() => {
-    loadInteractions()
-
-    // 实时订阅通知更新
-    const supabase = createClient()
-    const channel = supabase
-      .channel('inbox-updates')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'notifications'
-      }, () => {
-        setTimeout(() => {
-          loadInteractions()
-          triggerUnreadCountRefresh()
-        }, 500)
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'project_join_requests'
-      }, () => {
-        setTimeout(() => {
-          loadInteractions()
-          triggerUnreadCountRefresh()
-        }, 500)
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [])
-
-  const loadInteractions = async () => {
-    setLoading(true)
-    try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const allInteractions: UnifiedInteraction[] = []
-
-      // 1. 加载notifications（排除项目申请类通知，因为会从 project_join_requests 单独加载）
-      const { data: notifications, error: notifError } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (!notifError && notifications) {
-        notifications.forEach((notif: Notification) => {
-          // 跳过项目申请相关的通知，因为 project_join_requests 表已经有完整数据
-          // 避免同一条申请显示两次
-          if (notif.type === 'project_request_received' || notif.type === 'join_request_received') {
-            return
-          }
-          allInteractions.push({
-            id: notif.id,
-            interactionType: 'notification',
-            title: notif.title,
-            message: notif.message,
-            status: notif.is_read ? 'read' : 'unread',
-            created_at: notif.created_at,
-            metadata: notif.metadata,
-            originalRequest: notif
-          })
-        })
-      }
-
-      // 2. 加载用户管理的项目的加入申请
-      const { data: projectMembers } = await supabase
-        .from('project_members')
-        .select('project_id')
-        .eq('user_id', user.id)
-        .in('role_in_project', ['owner', 'manager'])
-
-      const managedProjectIds = projectMembers?.map(pm => pm.project_id) || []
-
-      if (managedProjectIds.length > 0) {
-        const { data: projectRequests, error: reqError } = await supabase
-          .from('project_join_requests')
-          .select(`
-            *,
-            user:user_id(id, full_name, email),
-            project:project_id(name)
-          `)
-          .in('project_id', managedProjectIds)
-          .order('created_at', { ascending: false })
-
-        if (!reqError && projectRequests) {
-          projectRequests.forEach((req: any) => {
-            const applicantName = req.user?.full_name || req.user?.email || '未知用户'
-            const projectName = req.project?.name || '未知项目'
-
-            allInteractions.push({
-              id: req.id,
-              interactionType: 'project_request',
-              title: '加入项目申请',
-              message: `${applicantName} 申请加入项目"${projectName}"`,
-              status: req.status,
-              created_at: req.created_at,
-              metadata: {
-                project_id: req.project_id,
-                project_name: projectName,
-                applicant_id: req.user_id,
-                applicant_name: applicantName
-              },
-              applicantName,
-              applicantEmail: req.user?.email || '',
-              requestMessage: req.message,
-              originalRequest: req
-            })
-          })
-        }
-      }
-
-      // 按时间倒序排列
-      allInteractions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      setInteractions(allInteractions)
-    } catch (error) {
-      console.error('加载交互记录失败:', error)
-    } finally {
-      setLoading(false)
-    }
   }
 
   const handleRequest = async (requestId: string, action: 'approve' | 'reject') => {
@@ -350,9 +183,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
 
       if (error) throw error
 
-      setInteractions(prev =>
-        prev.map(i => i.id === notificationId ? { ...i, status: 'read' as const } : i)
-      )
+      updateInteraction(notificationId, { status: 'read' })
       triggerUnreadCountRefresh()
     } catch (error) {
       console.error('标记已读失败:', error)
@@ -379,7 +210,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
           return
         }
 
-        setInteractions(prev => prev.filter(i => i.id !== interactionId))
+        removeInteraction(interactionId)
         triggerUnreadCountRefresh()
       }
     } catch (error: any) {
@@ -401,26 +232,9 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     })
   }
 
-  // 判断项目是否可删除
-  const canDeleteItem = (interaction: UnifiedInteraction): boolean => {
-    // 待审核的项目申请不可删除
-    if (interaction.interactionType === 'project_request' && interaction.status === 'pending') {
-      return false
-    }
-    // 待审核的文档通知不可删除
-    if (isPendingFileReview(interaction)) {
-      return false
-    }
-    // 待响应的邀请不可删除
-    if (isPendingInvitation(interaction)) {
-      return false
-    }
-    return true
-  }
-
   // 全选/取消全选
   const toggleSelectAll = () => {
-    const deletableItems = filteredInteractions.filter(i => canDeleteItem(i))
+    const deletableItems = filteredInteractions.filter(i => canDeleteInteraction(i))
 
     if (selectedItems.size === deletableItems.length && deletableItems.length > 0) {
       setSelectedItems(new Set())
@@ -470,7 +284,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
         }
 
         // 更新状态
-        setInteractions(prev => prev.filter(i => !selectedItems.has(i.id)))
+        removeInteractions(selectedItems)
         setSelectedItems(new Set())
         setIsManageMode(false)
         triggerUnreadCountRefresh()
@@ -505,25 +319,6 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
     }
 
     setExpandedItems(newExpanded)
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-    const diffMinutes = Math.floor(diffMs / (1000 * 60))
-
-    if (diffDays > 0) {
-      return `${diffDays}天前`
-    } else if (diffHours > 0) {
-      return `${diffHours}小时前`
-    } else if (diffMinutes > 0) {
-      return `${diffMinutes}分钟前`
-    } else {
-      return '刚刚'
-    }
   }
 
   const getStatusBadge = (interaction: UnifiedInteraction) => {
@@ -723,7 +518,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
             >
               <div className="flex items-center justify-center w-5 h-5">
                 {(() => {
-                  const deletableItems = filteredInteractions.filter(i => canDeleteItem(i))
+                  const deletableItems = filteredInteractions.filter(i => canDeleteInteraction(i))
                   const isAllSelected = selectedItems.size === deletableItems.length && deletableItems.length > 0
                   return isAllSelected ? (
                     <CheckSquare className="h-5 w-5 text-blue-500" />
@@ -733,7 +528,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                 })()}
               </div>
               <span className="text-sm text-zinc-400">
-                全选可删除项 ({filteredInteractions.filter(i => canDeleteItem(i)).length})
+                全选可删除项 ({filteredInteractions.filter(i => canDeleteInteraction(i)).length})
               </span>
             </div>
             <p className="text-xs text-zinc-500 mt-1 ml-8">
@@ -765,7 +560,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
             <div className="space-y-2">
               {filteredInteractions.map((interaction) => {
                 const isExpanded = expandedItems.has(interaction.id)
-                const canDelete = canDeleteItem(interaction)
+                const canDelete = canDeleteInteraction(interaction)
                 const isSelected = selectedItems.has(interaction.id)
                 const isFileReview = isFileReviewNotification(interaction)
                 const isPendingReview = isPendingFileReview(interaction)
@@ -916,7 +711,7 @@ export function InteractionLog({ onClose, onUnreadCountChange }: InteractionLogP
                         )}
 
                         <span className="text-xs text-zinc-500">
-                          {formatDate(interaction.created_at)}
+                          {formatRelativeDate(interaction.created_at)}
                         </span>
                         <div className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
                           <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

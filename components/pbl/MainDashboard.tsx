@@ -8,7 +8,8 @@ import { ProjectDetailModal } from './ProjectDetailModal'
 import { MyProjectsPage } from './MyProjectsPage'
 import { CommunityPage } from './CommunityPage'
 import { UserProfile } from './UserProfile'
-import { PBLProject, pblDataService } from '@/lib/pbl-data'
+import { PBLProject } from '@/lib/pbl-data'
+import { pblDataService } from '@/lib/pbl-real-data'
 import { createClient } from '@/lib/supabase/client'
 import {
   Compass,
@@ -147,14 +148,14 @@ export function MainDashboard() {
 
   if (userState.loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex bg-black">
+    <div className="min-h-screen flex">
       {/* 侧边栏 */}
       <div className="w-64 bg-cosmic-800/50 backdrop-blur-sm border-r border-cosmic-700">
         <div className="p-6">

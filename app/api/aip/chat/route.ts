@@ -1,9 +1,11 @@
 // @ts-nocheck
+// TODO: 移除 @ts-nocheck，修复类型错误（见审查报告）
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
+import { isDev } from '@/lib/env'
 
 async function handleChatRequest(request: NextRequest): Promise<Response> {
   const startTime = Date.now()
@@ -170,11 +172,10 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       student_profile: studentProfileText
     }
 
-    // 🔥 打印完整的 Webhook URL（用于调试）
+    // 安全日志：只记录 host，不泄露完整 URL
     logger.info('Calling N8N webhook', {
-      fullUrl: webhookUrl,
-      payloadSize: JSON.stringify(n8nPayload).length,
-      payloadKeys: Object.keys(n8nPayload)
+      host: new URL(webhookUrl).host,
+      payloadSize: JSON.stringify(n8nPayload).length
     })
 
     const n8nStartTime = Date.now()
@@ -322,9 +323,17 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       .replace(/\*/g, '')
       .trim()
 
-    // 🔥 如果没有内容，返回调试信息
+    // 如果没有内容，返回友好的错误消息
     if (!finalReply) {
-      finalReply = `[调试] 解析失败。N8N响应长度: ${responseText.length}, 前200字符: ${responseText.substring(0, 200)}`
+      // 只在开发环境中记录调试信息
+      if (isDev()) {
+        logger.debug('N8N响应解析失败', {
+          responseLength: responseText.length,
+          preview: responseText.substring(0, 200)
+        })
+      }
+      // 生产环境返回友好消息，不暴露内部细节
+      finalReply = '抱歉，我现在无法回应，请稍后再试。'
     }
 
     timings.n8n = n8nDuration

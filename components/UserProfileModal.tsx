@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { X, User, Briefcase, Heart, FileText, Users, Eye, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { validatePassword, getPasswordStrength } from '@/lib/env'
 
 interface UserProfileModalProps {
   isOpen: boolean
@@ -117,15 +118,17 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           setIsSaving(false)
           return
         }
-        if (newPassword.length < 6) {
-          setMessage({ type: 'error', text: '密码长度至少为6位' })
+        // 使用增强的密码验证
+        const passwordError = validatePassword(newPassword)
+        if (passwordError) {
+          setMessage({ type: 'error', text: passwordError })
           setIsSaving(false)
           return
         }
-        const { error: passwordError } = await supabase.auth.updateUser({
+        const { error: updatePasswordError } = await supabase.auth.updateUser({
           password: newPassword
         })
-        if (passwordError) throw passwordError
+        if (updatePasswordError) throw updatePasswordError
       }
 
       setMessage({ type: 'success', text: '保存成功！' })
@@ -462,9 +465,43 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="至少6位"
+                  placeholder="至少8位，需包含大小写字母和数字"
                   className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
+                {/* 密码强度指示器 */}
+                {newPassword && (
+                  <div className="mt-2">
+                    {(() => {
+                      const strength = getPasswordStrength(newPassword)
+                      const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500', 'bg-emerald-500']
+                      return (
+                        <div className="space-y-1">
+                          <div className="flex gap-1">
+                            {[0, 1, 2, 3, 4].map((i) => (
+                              <div
+                                key={i}
+                                className={`h-1 flex-1 rounded ${i <= strength.score ? colors[strength.score] : 'bg-white/10'}`}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className={`text-xs ${
+                              strength.score <= 1 ? 'text-red-400' :
+                              strength.score <= 2 ? 'text-yellow-400' : 'text-green-400'
+                            }`}>
+                              密码强度: {strength.label}
+                            </span>
+                            {strength.suggestions.length > 0 && (
+                              <span className="text-xs text-gray-500">
+                                建议: {strength.suggestions[0]}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -478,6 +515,10 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                   placeholder="再次输入新密码"
                   className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
+                {/* 密码匹配提示 */}
+                {confirmPassword && newPassword !== confirmPassword && (
+                  <p className="mt-1 text-xs text-red-400">两次输入的密码不一致</p>
+                )}
               </div>
             </>
           )}

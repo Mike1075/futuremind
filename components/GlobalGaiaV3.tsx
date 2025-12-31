@@ -1,13 +1,17 @@
 // @ts-nocheck
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { flushSync } from 'react-dom'
-import { MessageCircle, X, Send, Loader2, History, Edit3, Check, Trash2 } from 'lucide-react'
+import { Send, Loader2, History } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AuthModal from '@/components/AuthModal'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
+import { gaiaDebug } from '@/lib/debug'
+import { GaiaFloatingButton } from '@/components/gaia/GaiaFloatingButton'
+import { GaiaHeader } from '@/components/gaia/GaiaHeader'
+import { GaiaMessageItem, isUserMessage, isAssistantMessage } from '@/components/gaia/GaiaMessageItem'
 
 interface Message {
   id?: string
@@ -23,7 +27,7 @@ interface Message {
 
 // 🔥 版本号 - 用于确认部署
 const GAIA_VERSION = 'v2.1.1-2025-12-03'
-console.error('🔥🔥🔥 [GAIA] GlobalGaiaV3 组件加载, 版本:', GAIA_VERSION)
+gaiaDebug.log('GlobalGaiaV3 组件加载, 版本:', GAIA_VERSION)
 
 interface GlobalGaiaV3Props {
   hideFloatingButton?: boolean
@@ -360,15 +364,15 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
 
   // 发送消息
   const handleSend = async () => {
-    console.error('🔥🔥🔥 [GAIA] handleSend 被调用了！')
+    gaiaDebug.debug('handleSend 被调用')
 
     const messageText = input.trim()
     if (!messageText || isLoading) {
-      console.error('🔥🔥🔥 [GAIA] 提前返回:', { messageText: !!messageText, isLoading })
+      gaiaDebug.debug('提前返回:', { messageText: !!messageText, isLoading })
       return
     }
 
-    console.error('🔥🔥🔥 [GAIA] 开始发送消息:', messageText.substring(0, 50))
+    gaiaDebug.debug('开始发送消息:', messageText.substring(0, 50))
 
     // 🔥 使用 flushSync 强制同步清除输入框（避免延迟）
     flushSync(() => {
@@ -398,7 +402,7 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
 
     setMessages(prev => [...prev, userMessage, placeholderMessage])
 
-    console.log('[gaia-chat] 发送消息，占位消息索引:', assistantMessageIndex)
+    gaiaDebug.debug('发送消息，占位消息索引:', assistantMessageIndex)
 
     try {
       // 需要发送当前所有消息的情况：
@@ -406,7 +410,7 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
       // 2. 回复知识点问题（包含知识点问题+用户回答）
       const shouldSendCurrentMessages = messages.length <= 1 || isReplyingToKnowledgePoint
 
-      console.error('🔥🔥🔥 [GAIA] 准备发送 fetch 请求到 /api/gaia/chat')
+      gaiaDebug.debug('准备发送 fetch 请求到 /api/gaia/chat')
 
       const response = await fetch('/api/gaia/chat', {
         method: 'POST',
@@ -419,7 +423,7 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
         })
       })
 
-      console.error('🔥🔥🔥 [GAIA] fetch 响应:', { status: response.status, ok: response.ok })
+      gaiaDebug.debug('fetch 响应:', { status: response.status, ok: response.ok })
 
       if (!response.ok) {
         // 尝试读取错误信息
@@ -437,10 +441,10 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
 
-      console.error('🔥🔥🔥 [GAIA] 开始读取流式响应，reader:', !!reader)
+      gaiaDebug.debug('开始读取流式响应，reader:', !!reader)
 
       if (!reader) {
-        console.error('🔥🔥🔥 [GAIA] 无法获取 reader!')
+        gaiaDebug.error('无法获取 reader!')
         throw new Error('No reader available')
       }
 
@@ -489,19 +493,19 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
 
       try {
         while (true) {
-          console.error('🔥🔥🔥 [GAIA] 等待读取下一个数据块...')
+          gaiaDebug.debug('等待读取下一个数据块...')
           const { done, value } = await reader.read()
-          console.error('🔥🔥🔥 [GAIA] 读取结果:', { done, hasValue: !!value, valueLength: value?.length })
+          gaiaDebug.debug('读取结果:', { done, hasValue: !!value, valueLength: value?.length })
 
           if (done) {
-            console.error('🔥🔥🔥 [GAIA] 流读取完成，fullAnswer长度:', fullAnswer.length)
+            gaiaDebug.debug('流读取完成，fullAnswer长度:', fullAnswer.length)
             break
           }
 
           const chunk = decoder.decode(value, { stream: true })
           buffer += chunk
 
-          console.error('🔥🔥🔥 [GAIA] 收到数据块:', chunk)
+          gaiaDebug.debug('收到数据块:', chunk)
 
           // 🔥 简化处理：按换行符分割
           const lines = buffer.split('\n')
@@ -511,12 +515,12 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
             const trimmedLine = line.trim()
             if (!trimmedLine) continue
 
-            console.error('🔥🔥🔥 [GAIA] 解析行:', trimmedLine)
+            gaiaDebug.debug('解析行:', trimmedLine)
 
             // 🔥 尝试解析JSON，失败则跳过
             try {
               const json = JSON.parse(trimmedLine)
-              console.error('🔥🔥🔥 [GAIA] JSON解析成功:', { type: json.type, contentLength: json.content?.length, content: json.content?.substring(0, 100) })
+              gaiaDebug.debug('JSON解析成功:', { type: json.type, contentLength: json.content?.length })
 
               if (json.type === 'chunk') {
                 // 标记首个内容chunk
@@ -679,32 +683,8 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
     }
   }
 
-  // 判断消息是否是用户消息（兼容新旧格式）
-  const isUserMessage = (message: Message) => {
-    // 优先检查 role 字段（新格式）
-    if (message.role) {
-      return message.role === 'user'
-    }
-    // 旧格式：isGaia === false 表示用户消息
-    if (message.isGaia === false) return true
-    return false
-  }
-
-  // 判断消息是否是AI消息（兼容新旧格式）
-  const isAssistantMessage = (message: Message) => {
-    // 优先检查 role 字段（新格式）
-    if (message.role) {
-      return message.role === 'assistant'
-    }
-    // 旧格式：isGaia === true 表示AI消息
-    if (message.isGaia === true) return true
-    return false
-  }
-
-  // 注：欢迎消息现在也可以被删除了
-
   // 切换消息选中状态
-  const toggleMessageSelection = (index: number) => {
+  const toggleMessageSelection = useCallback((index: number) => {
     setSelectedMessages(prev => {
       const newSet = new Set(prev)
       if (newSet.has(index)) {
@@ -714,22 +694,28 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
       }
       return newSet
     })
-  }
+  }, [])
 
   // 全选/取消全选
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (selectedMessages.size === messages.length) {
       // 已全选，取消全选
       setSelectedMessages(new Set())
     } else {
       // 全选所有消息
       const allIndices = new Set<number>()
-      messages.forEach((message, index) => {
+      messages.forEach((_, index) => {
         allIndices.add(index)
       })
       setSelectedMessages(allIndices)
     }
-  }
+  }, [selectedMessages.size, messages.length])
+
+  // 取消编辑模式
+  const cancelEditMode = useCallback(() => {
+    setIsEditMode(false)
+    setSelectedMessages(new Set())
+  }, [])
 
   // 删除选中的消息
   const deleteSelectedMessages = async () => {
@@ -788,27 +774,15 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
     <>
       {/* 浮动按钮 - 炫彩旋转边框样式（首页隐藏，因为首页有自己的按钮） */}
       {!isOpen && !hideFloatingButton && (
-        <div
+        <GaiaFloatingButton
           onClick={() => {
-            // 检查登录状态
             if (!isLoggedIn) {
               setShowAuthModal(true)
             } else {
               setIsOpen(true)
             }
           }}
-          className="fixed bottom-8 right-8 z-50 cursor-pointer hover:scale-110 transition-transform duration-300"
-          aria-label="打开盖亚对话"
-        >
-          <div className="gaia-icon">
-            <div className="gaia-icon-glow" />
-            <div className="gaia-icon-border" />
-            <div className="gaia-icon-inner" />
-            <div className="gaia-icon-chat">
-              <MessageCircle strokeWidth={2.5} />
-            </div>
-          </div>
-        </div>
+        />
       )}
 
       {/* 侧边栏对话界面 */}
@@ -826,75 +800,17 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
             <div className="w-0.5 h-16 bg-white/30 group-hover:bg-white/60 rounded-full transition-colors" />
           </div>
           {/* 头部 */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-cosmic-void/50">
-            <div className="flex items-center gap-3">
-              <div className="gaia-icon gaia-icon-small">
-                <div className="gaia-icon-glow" />
-                <div className="gaia-icon-border" />
-                <div className="gaia-icon-inner" />
-                <div className="gaia-icon-chat">
-                  <MessageCircle strokeWidth={2.5} />
-                </div>
-              </div>
-              <div>
-                <h2 className="font-semibold text-white">盖亚 Gaia</h2>
-                <p className="text-xs text-gray-400">你的AI学习伙伴</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {isEditMode ? (
-                <>
-                  <button
-                    onClick={toggleSelectAll}
-                    className="px-3 py-2 text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg border border-blue-500/30 flex items-center gap-2"
-                    title="全选/取消全选"
-                  >
-                    <Check className="w-4 h-4" /> {selectedMessages.size === messages.length ? '取消全选' : '全选'}
-                  </button>
-                  <button
-                    onClick={deleteSelectedMessages}
-                    disabled={selectedMessages.size === 0}
-                    className="px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="删除选中的消息"
-                  >
-                    <Trash2 className="w-4 h-4" /> 删除选中 ({selectedMessages.size})
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditMode(false)
-                      setSelectedMessages(new Set())
-                    }}
-                    className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg border border-white/20"
-                  >
-                    取消
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setIsEditMode(true)}
-                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                    title="编辑聊天记录"
-                  >
-                    <Edit3 className="w-5 h-5 text-gray-400" />
-                  </button>
-                  <button
-                    onClick={loadAllHistoryMessages}
-                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                    title="加载历史记录"
-                  >
-                    <History className="w-5 h-5 text-gray-400" />
-                  </button>
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-gray-400" />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+          <GaiaHeader
+            isEditMode={isEditMode}
+            selectedCount={selectedMessages.size}
+            totalCount={messages.length}
+            onToggleEditMode={() => setIsEditMode(true)}
+            onToggleSelectAll={toggleSelectAll}
+            onDeleteSelected={deleteSelectedMessages}
+            onCancelEdit={cancelEditMode}
+            onLoadHistory={loadAllHistoryMessages}
+            onClose={() => setIsOpen(false)}
+          />
 
           {/* 消息列表 */}
             <>
@@ -923,8 +839,7 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
                 )}
 
                 {messages.map((message, index) => {
-                  // 🔥 跳过空的 assistant 消息（当 isLoading 为 false 时）
-                  // 这可以防止多余的盖亚图标出现
+                  // 跳过空的 assistant 消息（当 isLoading 为 false 时）
                   if (isAssistantMessage(message) && message.content === '' && !isLoading) {
                     return null
                   }
@@ -932,112 +847,27 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
                   // 检查是否应该显示这条消息（折叠机制）
                   if (collapsedAfterIndex !== null && !showCollapsed) {
                     if (index > collapsedAfterIndex && index < messages.length - 1) {
-                      // 这条消息被折叠了，跳过
                       return null
                     }
                   }
 
-                  // 检查是否是高亮消息
-                  const isHighlighted = highlightedMessageIndex === index
-
-                  // 🔥 检查是否需要显示盖亚头部（只在第一条 AI 消息或前一条是用户消息时显示）
+                  // 检查是否需要显示盖亚头部
                   const prevMessage = index > 0 ? messages[index - 1] : null
                   const showGaiaHeader = isAssistantMessage(message) && (!prevMessage || isUserMessage(prevMessage))
 
                   return (
-                    <div
+                    <GaiaMessageItem
                       key={`${message.timestamp}-${index}`}
-                      ref={(el) => { messageRefs.current[index] = el }}
-                      className={`flex flex-col ${isUserMessage(message) ? 'items-end' : 'items-start'}`}
-                    >
-                      {/* 🔥 盖亚头部：只在第一条 AI 消息或前一条是用户消息时显示 */}
-                      {showGaiaHeader && (
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="gaia-icon gaia-icon-tiny">
-                            <div className="gaia-icon-glow" />
-                            <div className="gaia-icon-border" />
-                            <div className="gaia-icon-inner" />
-                            <div className="gaia-icon-chat">
-                              <MessageCircle strokeWidth={2.5} />
-                            </div>
-                          </div>
-                          <span className="text-sm text-gray-400">盖亚</span>
-                        </div>
-                      )}
-
-                      {/* 消息行：包含复选框和消息气泡 */}
-                      <div className={`flex gap-3 ${isUserMessage(message) ? 'justify-end' : 'justify-start'} w-full`}>
-                        {/* 编辑模式下显示复选框（左侧-用户消息） */}
-                        {isEditMode && isUserMessage(message) && (
-                          <div className="flex items-center pt-2">
-                            <input
-                              type="checkbox"
-                              id={`checkbox-user-${index}`}
-                              checked={selectedMessages.has(index)}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                toggleMessageSelection(index)
-                              }}
-                              className="gaia-checkbox"
-                            />
-                          </div>
-                        )}
-
-                        <div className={`max-w-[85%] ${
-                          isUserMessage(message)
-                            ? 'bg-indigo-500/20 text-white border border-indigo-400/30'
-                            : 'bg-white/5 text-gray-100 border border-white/10'
-                        } rounded-2xl px-4 py-3 shadow-sm transition-all duration-300 ${
-                          isHighlighted
-                            ? 'ring-4 ring-yellow-400 ring-opacity-75 scale-105 animate-pulse'
-                            : ''
-                        } ${
-                          isEditMode && selectedMessages.has(index)
-                            ? 'ring-2 ring-blue-500'
-                            : ''
-                        }`}>
-                          {/* 如果是占位消息（正在加载的AI回复），显示加载动画 */}
-                          {isAssistantMessage(message) && message.content === '' && isLoading ? (
-                            <div className="flex gap-2 py-1">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                            </div>
-                          ) : (
-                            <>
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                              <p className={`text-xs mt-2 ${
-                                isUserMessage(message) ? 'text-purple-100' : 'text-gray-500'
-                              }`}>
-                                {new Date(message.timestamp).toLocaleDateString('zh-CN', {
-                                  month: '2-digit',
-                                  day: '2-digit'
-                                })} {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </p>
-                            </>
-                          )}
-                        </div>
-
-                        {/* 编辑模式下显示复选框（右侧-AI消息） */}
-                        {isEditMode && isAssistantMessage(message) && (
-                          <div className="flex items-center pt-2">
-                            <input
-                              type="checkbox"
-                              id={`checkbox-assistant-${index}`}
-                              checked={selectedMessages.has(index)}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                toggleMessageSelection(index)
-                              }}
-                              className="gaia-checkbox"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                      message={message}
+                      index={index}
+                      isHighlighted={highlightedMessageIndex === index}
+                      isEditMode={isEditMode}
+                      isSelected={selectedMessages.has(index)}
+                      isLoading={isLoading}
+                      showGaiaHeader={showGaiaHeader}
+                      onToggleSelection={toggleMessageSelection}
+                      messageRef={(el) => { messageRefs.current[index] = el }}
+                    />
                   )
                 })}
 

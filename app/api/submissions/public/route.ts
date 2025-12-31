@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
+import { safeParseInt } from '@/lib/env'
 
 /**
  * GET /api/submissions/public
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
 
     const contentId = searchParams.get('contentId')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = safeParseInt(searchParams.get('limit'), 20, { min: 1, max: 100 })
 
     if (!contentId) {
       return NextResponse.json(

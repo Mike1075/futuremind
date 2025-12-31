@@ -99,11 +99,6 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
   // 🔥 优先从缓存读取数据（同步，避免显示种子）
   const initialCached = typeof window !== 'undefined' ? getCachedTreeData(userId) : null
-  console.log('[ConsciousnessTreeClient] 初始化', {
-    userId,
-    userRole,
-    hasCache: !!initialCached
-  })
 
   const [growthData, setGrowthData] = useState<TreeGrowthData>(initialCached || SEED_STATE)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -117,7 +112,6 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
   // 🔥 所有用户：从数据库加载真实数据（后台更新）
   useEffect(() => {
     const loadTreeData = async () => {
-      console.log('[ConsciousnessTreeClient] 开始加载数据库数据...')
       try {
         const supabase = createClient()
         const { data, error } = await supabase
@@ -130,7 +124,6 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
         if (data?.consciousness_tree_view) {
           const migratedData = migrateOldFormat(data.consciousness_tree_view)
-          console.log('[ConsciousnessTreeClient] 数据库数据加载成功', migratedData)
           setGrowthData(migratedData)
           // 🔥 更新缓存
           setCachedTreeData(userId, migratedData)
@@ -214,7 +207,7 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
   // 非校长用户：显示真实数据视图（带缩放功能）
   if (!isPrincipal) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen text-white">
         {/* 顶部导航 */}
         <motion.nav
           initial={{ opacity: 0, y: -20 }}
@@ -293,7 +286,7 @@ export function ConsciousnessTreeClient({ userId, userRole }: ConsciousnessTreeC
 
   // 校长用户：显示测试工作台
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen text-white">
       {/* 顶部导航 */}
       <motion.nav
         initial={{ opacity: 0, y: -20 }}

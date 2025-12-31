@@ -22,29 +22,18 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
     const audio = audioRef.current
     if (!audio) return
 
-    console.log('[AudioPlayer] 初始化', { src, title })
-
     const updateTime = () => setCurrentTime(audio.currentTime)
 
     const updateDuration = () => {
-      console.log('[AudioPlayer] ✅ 音频已加载', {
-        duration: audio.duration,
-        src: audio.src
-      })
       setDuration(audio.duration)
       setIsLoading(false)
     }
 
     const handleEnded = () => {
-      console.log('[AudioPlayer] 播放结束')
       setIsPlaying(false)
     }
 
     const handleCanPlay = () => {
-      console.log('[AudioPlayer] ✅ 可以播放', {
-        duration: audio.duration,
-        readyState: audio.readyState
-      })
       setIsLoading(false)
     }
 
@@ -64,23 +53,20 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
     }
 
     const handleLoadStart = () => {
-      console.log('[AudioPlayer] 开始加载...', { src })
       setIsLoading(true)
       setError(null)
     }
 
     const handlePlay = () => {
-      console.log('[AudioPlayer] ▶️ 开始播放')
       setIsPlaying(true)
     }
 
     const handlePause = () => {
-      console.log('[AudioPlayer] ⏸️ 暂停')
       setIsPlaying(false)
     }
 
     const handleWaiting = () => {
-      console.log('[AudioPlayer] ⏳ 缓冲中...')
+      // 缓冲中，无需操作
     }
 
     audio.addEventListener('timeupdate', updateTime)
@@ -116,7 +102,6 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
       if (isPlaying) {
         audioRef.current.pause()
       } else {
-        console.log('[AudioPlayer] 尝试播放...')
         await audioRef.current.play()
       }
     } catch (err) {
@@ -130,7 +115,6 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
     const rect = progressRef.current.getBoundingClientRect()
     const percent = (e.clientX - rect.left) / rect.width
     audioRef.current.currentTime = percent * duration
-    console.log('[AudioPlayer] 跳转到:', Math.round(percent * 100) + '%')
   }
 
   const toggleMute = () => {

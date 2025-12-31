@@ -148,7 +148,7 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="loader-ethereal"></div>
       </div>
     )
@@ -167,7 +167,7 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cosmic-void">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="nav-ethereal sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">

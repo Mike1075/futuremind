@@ -609,7 +609,7 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
               }
               onClose()
             }}
-            className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors"
+            className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors focus:outline-none focus:ring-0"
           >
             {allCompleted ? '完成' : '取消'}
           </button>

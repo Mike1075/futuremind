@@ -90,7 +90,7 @@ function ResetPasswordForm() {
   // 加载中状态
   if (isValidSession === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="loader-ethereal mx-auto mb-4"></div>
           <p className="text-starlight-muted text-body">验证重置链接中...</p>
@@ -102,7 +102,7 @@ function ResetPasswordForm() {
   // 无效链接状态
   if (isValidSession === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-cosmic-void px-4">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -127,7 +127,7 @@ function ResetPasswordForm() {
   // 成功状态
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-cosmic-void px-4">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -149,7 +149,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-cosmic-void px-4">
+    <div className="min-h-screen flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

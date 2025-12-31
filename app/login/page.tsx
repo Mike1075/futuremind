@@ -355,7 +355,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="loader-ethereal"></div>
       </div>
     }>

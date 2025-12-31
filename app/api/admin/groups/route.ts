@@ -7,6 +7,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
+import { safeParseInt } from '@/lib/env'
 
 // GET - 获取分组列表
 export async function GET(request: Request) {
@@ -34,8 +35,8 @@ export async function GET(request: Request) {
     // SEC-07: 限制搜索参数长度（防止DoS攻击）
     const searchRaw = searchParams.get('search') || ''
     const search = searchRaw.slice(0, 100)
-    const page = parseInt(searchParams.get('page') || '1')
-    const pageSize = parseInt(searchParams.get('pageSize') || '20')
+    const page = safeParseInt(searchParams.get('page'), 1, { min: 1, max: 1000 })
+    const pageSize = safeParseInt(searchParams.get('pageSize'), 20, { min: 1, max: 100 })
 
     // 3. 构建查询
     let query = supabase

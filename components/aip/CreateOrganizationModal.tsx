@@ -115,7 +115,7 @@ export function CreateOrganizationModal({ onClose, onSuccess }: CreateOrganizati
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors focus:outline-none focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
               取消

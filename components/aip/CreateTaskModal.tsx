@@ -188,7 +188,7 @@ export function CreateTaskModal({ projectId, onClose, onSuccess }: CreateTaskMod
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 btn-stardust text-white font-medium rounded-lg"
+              className="flex-1 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors focus:outline-none focus:ring-0"
             >
               取消
             </button>

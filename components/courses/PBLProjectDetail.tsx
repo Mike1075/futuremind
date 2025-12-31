@@ -1,12 +1,9 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useEffect, useCallback, memo } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import imageCompression from 'browser-image-compression'
 import { PublicSubmissions } from '@/components/courses/PublicSubmissions'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -14,95 +11,9 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Toast } from '@/components/ui/Toast'
 import { UnifiedNavbar } from '@/components/common/UnifiedNavbar'
 import UserProfileModal from '@/components/UserProfileModal'
-import { globalToast } from '@/components/ui/ToastProvider'
-
-// 伊卡洛斯项目模块名称映射（与主界面保持一致）
-const MODULE_NAMES: Record<number, string> = {
-  1: '模块一：无形的纽带',
-  2: '模块一：无形的纽带',
-  3: '模块一：无形的纽带',
-  4: '模块二：无形的地图',
-  5: '模块二：无形的地图',
-  6: '模块二：无形的地图',
-  7: '模块二：无形的地图',
-  8: '模块三：延展的心灵',
-  9: '模块三：延展的心灵',
-  10: '模块三：延展的心灵',
-  11: '模块三：延展的心灵',
-}
-
-// 根据sequence_number获取统一的模块名称
-const getModuleName = (sequenceNumber: number): string => {
-  return MODULE_NAMES[sequenceNumber] || '伊卡洛斯计划'
-}
-
-// 智能文本预处理器：将中文段落标签转换为Markdown格式并添加表情
-function preprocessContentToMarkdown(content: string): string {
-  if (!content) return ''
-
-  let processed = content
-
-  // 步骤1: 移除开头的时长标记并转为醒目提示
-  processed = processed.replace(/^\(任务时长：([^)]+)\)\n?/m, '> ⏱️ **任务时长**: $1\n\n')
-
-  // 步骤2: 将句子结尾的单个换行符转为段落分隔（双换行符）
-  // 匹配中文句号、感叹号、问号、省略号后的单个换行符
-  processed = processed.replace(/([。！？…"」』】])\n(?!\n)/g, '$1\n\n')
-
-  // 步骤3: 主要段落标题（转为三级标题 ###）
-  const mainLabels = [
-    { pattern: /^(任务说明|任务|主要任务|核心任务)[:：]/gm, emoji: '📝', title: '任务' },
-    { pattern: /^(目标|学习目标|本周目标)[:：]/gm, emoji: '🎯', title: '目标' },
-    { pattern: /^(准备材料|所需材料|材料准备)[:：]/gm, emoji: '🛠️', title: '准备材料' },
-    { pattern: /^(思考一下|思考|思考问题)[:：]/gm, emoji: '💭', title: '思考' },
-    { pattern: /^(接受任务|开始任务|任务开始)[:：]/gm, emoji: '✅', title: '接受任务' },
-    { pattern: /^(提交要求|提交|上传)[:：]/gm, emoji: '📤', title: '提交要求' },
-    { pattern: /^(温馨提示|注意事项|重要提示)[:：]/gm, emoji: '⚠️', title: '注意事项' },
-    { pattern: /^(展示你的工具|展示作品|成果展示)[:：]/gm, emoji: '🎨', title: '展示作品' },
-    { pattern: /^(提交你的调查报告|提交报告|上传作业)[:：]/gm, emoji: '📋', title: '提交报告' }
-  ]
-
-  mainLabels.forEach(({ pattern, emoji, title }) => {
-    processed = processed.replace(pattern, `\n### ${emoji} ${title}\n\n`)
-  })
-
-  // 步骤4: 次要段落标题（转为四级标题 ####）
-  const subLabels = [
-    { pattern: /^(步骤|操作步骤|详细步骤)[:：]/gm, emoji: '👣', title: '步骤' },
-    { pattern: /^(选项[A-Z]|方案[A-Z])[:：]/gm, emoji: '🔹', keep: true }, // 保留原标题
-    { pattern: /^(示例|例子|参考示例)[:：]/gm, emoji: '💡', title: '示例' },
-    { pattern: /^(建议|小建议|友情提示)[:：]/gm, emoji: '💫', title: '建议' },
-    { pattern: /^(格式|提交格式|格式要求)[:：]/gm, emoji: '📄', title: '格式' }
-  ]
-
-  subLabels.forEach(({ pattern, emoji, title, keep }) => {
-    if (keep) {
-      processed = processed.replace(pattern, (match) => `\n#### ${emoji} ${match.replace(/[:：]/, '')}\n\n`)
-    } else {
-      processed = processed.replace(pattern, `\n#### ${emoji} ${title}\n\n`)
-    }
-  })
-
-  // 步骤5: 处理项目符号列表 - 检测以"●"、"•"、"○"或数字开头的行
-  processed = processed.replace(/^([●•○])\s+(.+)$/gm, '- $2')
-  processed = processed.replace(/^(\d+[.、])\s+(.+)$/gm, '1. $2')
-
-  // 步骤6: 为特殊内容添加表情（句子开头的关键词）
-  const sentenceEmojis = [
-    { pattern: /^(欢迎|恭喜)/gm, emoji: '🎉 ' },
-    { pattern: /^(重要|注意|警告)/gm, emoji: '⚠️ ' },
-    { pattern: /^(提示|小贴士)/gm, emoji: '💡 ' }
-  ]
-
-  sentenceEmojis.forEach(({ pattern, emoji }) => {
-    processed = processed.replace(pattern, emoji + '$1')
-  })
-
-  // 步骤7: 清理多余的空行（超过2个连续换行符的）
-  processed = processed.replace(/\n{3,}/g, '\n\n')
-
-  return processed.trim()
-}
+import { SubmitTaskDialog } from '@/components/courses/SubmitTaskDialog'
+import { PBLSubmissionsHistory } from '@/components/courses/PBLSubmissionsHistory'
+import { getModuleName, preprocessContentToMarkdown, DIFFICULTY_COLORS } from '@/lib/pbl/utils'
 
 interface Activity {
   sequence: number  // ✨ 新增：用于排序
@@ -153,12 +64,6 @@ interface PBLProjectDetailProps {
   selectionId?: string
 }
 
-const DIFFICULTY_COLORS = {
-  '基础探索': 'from-green-500 to-emerald-600',
-  '进阶挑战': 'from-blue-500 to-cyan-600',
-  '深度研究': 'from-purple-500 to-pink-600',
-  '创新实践': 'from-orange-500 to-red-600'
-}
 
 export function PBLProjectDetail({
   project,
@@ -169,15 +74,10 @@ export function PBLProjectDetail({
 }: PBLProjectDetailProps) {
   const router = useRouter()
   const supabase = createClient()
-  const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set([1])) // 默认展开第1周
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set([1]))
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
-  const [submittingDay, setSubmittingDay] = useState<string | null>(null)
-  const [submissionContent, setSubmissionContent] = useState('')
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
   const [currentDayKey, setCurrentDayKey] = useState<string | null>(null)
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
-  const [uploading, setUploading] = useState(false)
-  const [submissionResult, setSubmissionResult] = useState<any | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
 
   // 项目选择/取消相关状态
@@ -185,28 +85,23 @@ export function PBLProjectDetail({
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [toast, setToast] = useState<{show: boolean, message: string, type: 'success'|'error'|'info'|'warning'}>({
-    show: false,
-    message: '',
-    type: 'success'
+    show: false, message: '', type: 'success'
   })
-  const [showProfileModal, setShowProfileModal] = useState(false) // 个人资料弹窗
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   // 提交记录相关状态
   const [showSubmissionsHistory, setShowSubmissionsHistory] = useState(false)
-  const [submissionsHistory, setSubmissionsHistory] = useState<any[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
-  const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null)
   const [historyDayKey, setHistoryDayKey] = useState<string | null>(null)
-  const [historyDayLabel, setHistoryDayLabel] = useState<string | null>(null) // 存储实际的day标签（如"Day 2-4"）
-  const [isPublic, setIsPublic] = useState(false) // 作业是否公开（默认私密）
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null) // 删除确认弹窗
-  const [togglingId, setTogglingId] = useState<string | null>(null) // 正在切换可见性的作业ID
+  const [historyDayLabel, setHistoryDayLabel] = useState<string | null>(null)
 
   // 公开作业刷新机制
   const [publicSubmissionsRefreshKey, setPublicSubmissionsRefreshKey] = useState(0)
 
   // 未选择项目提示弹窗
   const [showSelectProjectModal, setShowSelectProjectModal] = useState(false)
+
+  // 删除提交记录确认对话框
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   // 获取用户ID
   useEffect(() => {
@@ -353,258 +248,51 @@ export function PBLProjectDetail({
 
   // 打开提交对话框
   const openSubmitDialog = (weekNumber: number, dayNumber: number, dayLabel?: string) => {
-    // 检查是否已选择项目
     if (!isSelected) {
       setShowSelectProjectModal(true)
       return
     }
-
     const dayKey = `project_${project.sequence_number}_week${weekNumber}_day${dayNumber}`
     setCurrentDayKey(dayKey)
-    setHistoryDayLabel(dayLabel || `Day ${dayNumber}`) // 存储day标签用于对话框标题
-    setSubmissionContent('')
-    setUploadedFiles([])
-    setSubmissionResult(null)
-    setIsPublic(false) // 默认私密
+    setHistoryDayLabel(dayLabel || `Day ${dayNumber}`)
     setShowSubmitDialog(true)
   }
 
-  // 处理文件选择（自动压缩图片）
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return
-
-    const filesArray = Array.from(e.target.files)
-    // 重置 input 值，允许再次选择相同的文件
-    e.target.value = ''
-    const processedFiles: File[] = []
-
-    for (const file of filesArray) {
-      // 如果是图片且大于1MB，自动压缩
-      if (file.type.startsWith('image/') && file.size > 1024 * 1024) {
-        try {
-          const options = {
-            maxSizeMB: 1,          // 压缩到最大1MB
-            maxWidthOrHeight: 1920, // 最大宽高1920px
-            useWebWorker: true,
-            fileType: file.type as any
-          }
-
-          const compressedFile = await imageCompression(file, options)
-
-          // 保持原文件名
-          const renamedFile = new File([compressedFile], file.name, { type: compressedFile.type })
-          processedFiles.push(renamedFile)
-        } catch (error) {
-          // 压缩失败，使用原图
-          processedFiles.push(file)
-        }
-      } else {
-        // 不是图片或小于1MB，直接使用
-        processedFiles.push(file)
-      }
+  // 提交成功回调
+  const handleSubmitSuccess = (score: number, isPublic: boolean) => {
+    router.refresh()
+    if (score >= 90 && isPublic) {
+      setPublicSubmissionsRefreshKey(prev => prev + 1)
     }
-
-    setUploadedFiles(prev => [...prev, ...processedFiles])
   }
 
-  // 移除已选择的文件
-  const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
-  }
-
-  // 获取提交记录（根据具体day_key过滤）
-  const fetchSubmissionsHistory = async (dayKey: string) => {
-    setLoadingHistory(true)
-    try {
-      const response = await fetch(`/api/submissions?contentId=${project.id}&dayKey=${encodeURIComponent(dayKey)}`)
-      if (response.ok) {
-        const { submissions } = await response.json()
-        setSubmissionsHistory(submissions || [])
-      }
-    } catch (error) {
-      // 静默处理错误
-    } finally {
-      setLoadingHistory(false)
-    }
+  // 可见性变更回调
+  const handleVisibilityChanged = () => {
+    setPublicSubmissionsRefreshKey(prev => prev + 1)
   }
 
   // 删除提交记录
   const handleDeleteSubmission = async (submissionId: string) => {
-    // 先记录被删除的作业是否是公开的（用于后续刷新）
-    const deletedSubmission = submissionsHistory.find(s => s.id === submissionId)
-    const wasPublic = deletedSubmission?.is_public && deletedSubmission?.score >= 90
-
     try {
-      const response = await fetch(`/api/submissions?id=${submissionId}`, {
-        method: 'DELETE'
+      const { error } = await supabase
+        .from('pbl_submissions')
+        .delete()
+        .eq('id', submissionId)
+
+      if (error) throw error
+
+      setToast({
+        show: true,
+        message: '提交记录已删除',
+        type: 'success'
       })
-
-      if (response.ok) {
-        // 立即从本地状态中移除
-        const newHistory = submissionsHistory.filter(s => s.id !== submissionId)
-        setSubmissionsHistory(newHistory)
-
-        // 如果删除的是公开作业，刷新优秀作业展示
-        if (wasPublic) {
-          setPublicSubmissionsRefreshKey(prev => prev + 1)
-        }
-
-        // 如果删除后没有更多记录，需要清除该天的进度
-        if (newHistory.length === 0 && historyDayKey && selectionId) {
-          try {
-            await fetch('/api/pbl/clear-day-progress', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                selectionId,
-                dayKey: historyDayKey
-              })
-            })
-            // 刷新页面以更新进度状态
-            router.refresh()
-          } catch {
-            // 静默处理，不影响删除成功的提示
-          }
-        }
-
-        globalToast.success('删除成功')
-      } else {
-        const error = await response.json()
-        globalToast.error(`删除失败: ${error.error || '请重试'}`)
-      }
-    } catch (error) {
-      globalToast.error('删除失败，请重试')
-    }
-  }
-
-  // 切换作业可见性
-  const handleToggleVisibility = async (submissionId: string, currentIsPublic: boolean | null) => {
-    setTogglingId(submissionId)
-    try {
-      const isCurrentlyPublic = currentIsPublic ?? false
-
-      const response = await fetch('/api/submissions/toggle-visibility', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          submissionId,
-          isPublic: !isCurrentlyPublic
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || '切换失败')
-      }
-
-      const result = await response.json()
-      const actualIsPublic = result.isPublic
-
-      // 更新本地状态
-      setSubmissionsHistory(prev => prev.map(s =>
-        s.id === submissionId
-          ? { ...s, is_public: actualIsPublic }
-          : s
-      ))
-
-      // 触发公开作业列表刷新
-      setPublicSubmissionsRefreshKey(prev => prev + 1)
-    } catch (err) {
-      globalToast.error(`操作失败：${err instanceof Error ? err.message : '请重试'}`)
-    } finally {
-      setTogglingId(null)
-    }
-  }
-
-  // 提交任务
-  const handleSubmitTask = async () => {
-    if (!currentDayKey || !submissionContent.trim()) {
-      globalToast.warning('请填写提交内容')
-      return
-    }
-
-    if (!userId) {
-      globalToast.warning('请先登录')
-      return
-    }
-
-    try {
-      setSubmittingDay(currentDayKey)
-      setUploading(true)
-
-      // 上传文件（如果有）
-      const attachments: any[] = []
-      if (uploadedFiles.length > 0) {
-        for (const file of uploadedFiles) {
-          const formData = new FormData()
-          formData.append('file', file)
-
-          const uploadResponse = await fetch('/api/submissions/upload', {
-            method: 'POST',
-            body: formData
-          })
-
-          if (uploadResponse.ok) {
-            const { fileUrl, fileName } = await uploadResponse.json()
-
-            attachments.push({
-              type: file.type.startsWith('image/') ? 'image' : 'file',
-              url: fileUrl,
-              name: fileName
-            })
-          }
-        }
-      }
-
-      // 调用边缘函数进行评估
-      console.log('📤 提交作业参数:', {
-        user_id: userId,
-        content_id: project.id,
-        day_key: currentDayKey,
-        is_public: isPublic,
-        attachments_count: attachments.length
-      })
-
-      const { data, error: functionError } = await supabase.functions.invoke('evaluate-pbl-task', {
-        body: {
-          user_id: userId,
-          content_id: project.id,
-          day_key: currentDayKey,
-          submission_content: submissionContent,
-          submission_type: 'project_deliverable',
-          attachments,
-          is_public: isPublic
-        }
-      })
-
-      console.log('📥 边缘函数返回:', data)
-
-      if (functionError) {
-        throw functionError
-      }
-
-      if (data.error) {
-        throw new Error(data.error)
-      }
-
-      // 显示评估结果
-      setSubmissionResult(data)
-
-      // 🔄 立即刷新页面数据，更新进度和解锁状态
       router.refresh()
-
-      // 🔄 如果分数>=90且用户选择了公开，刷新优秀作业列表
-      if (data.evaluation?.score >= 90 && isPublic) {
-        setPublicSubmissionsRefreshKey(prev => prev + 1)
-      }
-
     } catch (error) {
-      globalToast.error('提交失败，请重试')
-    } finally {
-      setSubmittingDay(null)
-      setUploading(false)
+      setToast({
+        show: true,
+        message: '删除失败，请重试',
+        type: 'error'
+      })
     }
   }
 
@@ -1023,510 +711,35 @@ export function PBLProjectDetail({
       </div>
 
       {/* 提交对话框 */}
-      {showSubmitDialog && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl max-w-2xl w-full p-6 my-8 shadow-2xl">
-            <h3 className="text-xl font-bold mb-4">{historyDayLabel ? `${historyDayLabel} - 提交任务` : '提交任务'}</h3>
-
-            {/* 如果没有AI评估结果，显示提交表单 */}
-            {!submissionResult && (
-              <>
-                <textarea
-                  value={submissionContent}
-                  onChange={(e) => setSubmissionContent(e.target.value)}
-                  placeholder="请描述你今天完成的任务和收获..."
-                  className="w-full h-40 bg-gray-800 border border-gray-700 rounded-lg p-4 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-                />
-
-                {/* 文件上传区域 */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-400 mb-2">
-                    上传附件（可选）
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <label className="flex-1 cursor-pointer">
-                      <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 text-center hover:border-blue-500 transition-colors">
-                        <svg className="w-8 h-8 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        <p className="text-sm text-gray-400">点击选择文件或拖拽到此处</p>
-                        <p className="text-xs text-gray-500 mt-1">支持图片、文档等文件</p>
-                      </div>
-                      <input
-                        type="file"
-                        multiple
-                        onChange={handleFileChange}
-                        className="hidden"
-                        disabled={uploading}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                {/* 已选择的文件列表 */}
-                {uploadedFiles.length > 0 && (
-                  <div className="mb-4 space-y-2">
-                    <p className="text-sm font-medium text-gray-400">已选择的文件：</p>
-                    {uploadedFiles.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg p-3"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <svg className="w-5 h-5 text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clipRule="evenodd" />
-                          </svg>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white truncate">{file.name}</p>
-                            <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => removeFile(index)}
-                          className="ml-3 text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
-                          disabled={uploading}
-                        >
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* 上传进度提示 */}
-                {uploading && (
-                  <div className="mb-4 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <svg className="animate-spin h-5 w-5 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <p className="text-sm text-blue-400 font-medium">正在上传文件并等待AI批改...</p>
-                    </div>
-                    <p className="text-xs text-blue-300/80 ml-8">
-                      ⏳ 请耐心等待，不要关闭对话框，大约需要 30 秒左右
-                    </p>
-                  </div>
-                )}
-
-                {/* 公开/私密选项 */}
-                <div className="mb-4 bg-white/5 border border-white/10 rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-starlight mb-1">作业可见性</h4>
-                      <p className="text-xs text-starlight-muted">
-                        {isPublic
-                          ? '你的作业将对其他同学公开展示（需评分≥90分）'
-                          : '你的作业仅自己和老师可见'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsPublic(!isPublic)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
-                        isPublic ? 'bg-emerald-500' : 'bg-white/20'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          isPublic ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className={`px-2 py-0.5 rounded ${
-                      isPublic ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-starlight-muted'
-                    }`}>
-                      {isPublic ? '公开' : '私密'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 隐私警告（仅在选择公开时显示） */}
-                {isPublic && (
-                  <div className="mb-4 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <svg className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                      <div className="flex-1">
-                        <h5 className="text-sm font-semibold text-blue-400 mb-1">隐私提示</h5>
-                        <ul className="text-xs text-gray-300 space-y-1">
-                          <li>• 仅评分达到90分及以上的作业会被公开展示</li>
-                          <li>• 展示内容包括：你的姓名、作业内容和提交时间</li>
-                          <li>• 老师可以隐藏任何不适当的公开作业</li>
-                          <li>• 你可以随时将作业改为私密状态</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleSubmitTask}
-                    disabled={!!submittingDay || !submissionContent.trim() || uploading}
-                    className="btn-stardust flex-1 px-4 py-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {uploading ? '上传中...' : submittingDay ? '提交中...' : '确认提交'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowSubmitDialog(false)
-                      setHistoryDayLabel(null)
-                    }}
-                    disabled={!!submittingDay || uploading}
-                    className="btn-stardust px-4 py-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    取消
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* AI评估结果 */}
-            {submissionResult?.evaluation && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 pb-4 border-b border-gray-800">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-white">提交成功！</h4>
-                    <p className="text-sm text-gray-400">AI助教已完成批改</p>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h5 className="font-semibold text-blue-400">评分</h5>
-                    <span className="text-2xl font-bold text-white">
-                      {submissionResult.evaluation.score || '-'}/100
-                    </span>
-                  </div>
-
-                  {submissionResult.evaluation.feedback && (
-                    <div className="mt-4">
-                      <h5 className="font-semibold text-purple-400 mb-2">反馈意见</h5>
-                      <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                        {submissionResult.evaluation.feedback}
-                      </p>
-                    </div>
-                  )}
-
-                  {submissionResult.evaluation.suggestions && (
-                    <div className="mt-4">
-                      <h5 className="font-semibold text-green-400 mb-2">改进建议</h5>
-                      <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                        {submissionResult.evaluation.suggestions}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => {
-                    setShowSubmitDialog(false)
-                    setSubmissionResult(null)
-                    setSubmissionContent('')
-                    setUploadedFiles([])
-                    setHistoryDayLabel(null)
-                    router.refresh()
-                  }}
-                  className="btn-stardust w-full px-4 py-2 font-medium"
-                >
-                  关闭
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <SubmitTaskDialog
+        isOpen={showSubmitDialog}
+        onClose={() => {
+          setShowSubmitDialog(false)
+          setHistoryDayLabel(null)
+        }}
+        dayLabel={historyDayLabel}
+        projectId={project.id}
+        currentDayKey={currentDayKey}
+        userId={userId}
+        selectionId={selectionId}
+        onSuccess={handleSubmitSuccess}
+        supabase={supabase}
+      />
 
       {/* 提交记录列表弹窗 */}
-      {showSubmissionsHistory && (
-        <div
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => {
-            setShowSubmissionsHistory(false)
-            setSelectedSubmission(null)
-            setHistoryDayLabel(null)
-          }}
-        >
-          <div
-            className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-white">
-                {historyDayLabel ? `${project.title} - ${historyDayLabel} - 提交记录` : '我的提交记录'}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowSubmissionsHistory(false)
-                  setSelectedSubmission(null)
-                  setHistoryDayLabel(null)
-                }}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* 加载状态 */}
-            {loadingHistory && (
-              <div className="flex items-center justify-center py-12">
-                <svg className="animate-spin h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              </div>
-            )}
-
-            {/* 提交记录列表 */}
-            {!loadingHistory && submissionsHistory.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
-                <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p>还没有提交记录</p>
-              </div>
-            )}
-
-            {!loadingHistory && submissionsHistory.length > 0 && (
-              <div className="space-y-4">
-                {submissionsHistory.map((submission) => (
-                  <div
-                    key={submission.id}
-                    className="bg-white/5 border border-white/10 rounded-lg p-4 hover:border-blue-500/30 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          {/* 状态标签 */}
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            submission.status === 'approved'
-                              ? 'bg-green-500/20 text-green-400'
-                              : submission.status === 'rejected'
-                              ? 'bg-red-500/20 text-red-400'
-                              : 'bg-yellow-500/20 text-yellow-400'
-                          }`}>
-                            {submission.status === 'approved' ? '已批改' : submission.status === 'rejected' ? '已拒绝' : '待批改'}
-                          </span>
-
-                          {/* 评分 */}
-                          {submission.score !== null && (
-                            <span className="text-lg font-bold text-white">
-                              {submission.score}/100
-                            </span>
-                          )}
-
-                          {/* 提交时间 */}
-                          <span className="text-sm text-gray-400">
-                            {new Date(submission.created_at).toLocaleString('zh-CN')}
-                          </span>
-                        </div>
-
-                        {/* 提交内容预览 */}
-                        <p className="text-gray-300 text-sm line-clamp-2 mb-2">
-                          {submission.content}
-                        </p>
-
-                        {/* 反馈（如果有） */}
-                        {submission.feedback && (
-                          <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                            <p className="text-sm text-gray-300 line-clamp-3">
-                              <strong className="text-blue-400">反馈：</strong>
-                              {submission.feedback}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 公开/私密切换 - 始终显示 */}
-                    {submission.status === 'approved' && (
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-starlight-muted">作业可见性:</span>
-                          <span className={`text-xs px-2 py-0.5 rounded ${
-                            (submission.is_public ?? false) ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-starlight-muted'
-                          }`}>
-                            {(submission.is_public ?? false) ? '公开' : '私密'}
-                          </span>
-                          {/* 分数不足时显示提示 */}
-                          {(!submission.score || submission.score < 90) && (submission.is_public ?? false) && (
-                            <span className="text-xs text-amber-400/80">
-                              (分数未达90，暂不展示)
-                            </span>
-                          )}
-                        </div>
-                        {/* 始终显示开关，不禁用 */}
-                        <button
-                          onClick={() => handleToggleVisibility(submission.id, submission.is_public)}
-                          disabled={togglingId === submission.id}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 ${
-                            (submission.is_public ?? false) ? 'bg-emerald-500' : 'bg-white/20'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              (submission.is_public ?? false) ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* 操作按钮 */}
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={() => setSelectedSubmission(submission)}
-                        className="btn-stardust flex-1 px-4 py-2 text-sm font-medium"
-                      >
-                        查看详情
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(submission.id)}
-                        className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm font-medium transition-colors text-red-400"
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 提交详情弹窗 */}
-      {selectedSubmission && (
-        <div
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-          onClick={() => setSelectedSubmission(null)}
-        >
-          <div
-            className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-white">提交详情</h3>
-              <button
-                onClick={() => setSelectedSubmission(null)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* 评分和状态 */}
-              <div className="flex items-center gap-4 pb-4 border-b border-gray-800">
-                <div className="flex-1">
-                  <p className="text-sm text-gray-400 mb-1">评分</p>
-                  <p className="text-3xl font-bold text-white">
-                    {selectedSubmission.score !== null ? `${selectedSubmission.score}/100` : '未评分'}
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-400 mb-1">状态</p>
-                  <span className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold ${
-                    selectedSubmission.status === 'approved'
-                      ? 'bg-green-500/20 text-green-400'
-                      : selectedSubmission.status === 'rejected'
-                      ? 'bg-red-500/20 text-red-400'
-                      : 'bg-yellow-500/20 text-yellow-400'
-                  }`}>
-                    {selectedSubmission.status === 'approved' ? '已批改' : selectedSubmission.status === 'rejected' ? '已拒绝' : '待批改'}
-                  </span>
-                </div>
-              </div>
-
-              {/* 提交时间 */}
-              <div>
-                <p className="text-sm text-gray-400 mb-1">提交时间</p>
-                <p className="text-white">{new Date(selectedSubmission.created_at).toLocaleString('zh-CN')}</p>
-              </div>
-
-              {/* 提交内容 */}
-              <div>
-                <p className="text-sm text-gray-400 mb-2">提交内容</p>
-                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                  <p className="text-gray-300 whitespace-pre-wrap">{selectedSubmission.content}</p>
-                </div>
-              </div>
-
-              {/* 附件图片 */}
-              {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
-                <div>
-                  <p className="text-sm text-gray-400 mb-2">附件（{selectedSubmission.attachments.length}）</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {selectedSubmission.attachments.map((attachment: any, index: number) => (
-                      attachment.type === 'image' && (
-                        <div
-                          key={index}
-                          className="relative group overflow-hidden rounded-lg border border-gray-700 hover:border-blue-500/50 transition-colors h-48"
-                        >
-                          <Image
-                            src={attachment.url}
-                            alt={attachment.name || `图片 ${index + 1}`}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 50vw, 25vw"
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="absolute bottom-0 left-0 right-0 p-3">
-                              <p className="text-white text-sm truncate">{attachment.name || `图片 ${index + 1}`}</p>
-                              <a
-                                href={attachment.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-400 text-xs hover:text-blue-300 transition-colors"
-                              >
-                                查看原图 →
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 反馈 */}
-              {selectedSubmission.feedback && (
-                <div>
-                  <p className="text-sm text-gray-400 mb-2">AI反馈</p>
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                    <p className="text-gray-300 whitespace-pre-wrap">{selectedSubmission.feedback}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* 关闭按钮 */}
-              <button
-                onClick={() => setSelectedSubmission(null)}
-                className="btn-stardust w-full px-6 py-3 font-semibold"
-              >
-                关闭
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PBLSubmissionsHistory
+        isOpen={showSubmissionsHistory}
+        onClose={() => {
+          setShowSubmissionsHistory(false)
+          setHistoryDayLabel(null)
+        }}
+        projectId={project.id}
+        projectTitle={project.title}
+        dayKey={historyDayKey}
+        dayLabel={historyDayLabel}
+        selectionId={selectionId}
+        onVisibilityChanged={handleVisibilityChanged}
+      />
 
       {/* 优秀作业展示区域 */}
       <div className="mt-16 mb-12 pt-12 border-t border-gray-800">

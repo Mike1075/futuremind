@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
         .eq('knowledge_point_index', knowledgePointIndex)
 
       if (updateError) {
-        console.error('[Knowledge Questions] 更新分配失败:', updateError)
+        logger.error('[Knowledge Questions] 更新分配失败:', updateError)
       }
     } else {
       // 保存新分配记录
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
         })
 
       if (insertError) {
-        console.error('[Knowledge Questions] 保存分配失败:', insertError)
+        logger.error('[Knowledge Questions] 保存分配失败:', insertError)
       }
     }
 
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[Knowledge Questions] 错误:', error)
+    logger.error('[Knowledge Questions] 错误:', error)
     return NextResponse.json(
       { error: '服务器错误' },
       { status: 500 }
@@ -138,14 +139,14 @@ export async function PATCH(request: NextRequest) {
       .eq('knowledge_point_index', knowledgePointIndex)
 
     if (error) {
-      console.error('[Knowledge Questions] 更新回复状态失败:', error)
+      logger.error('[Knowledge Questions] 更新回复状态失败:', error)
       return NextResponse.json({ error: '更新失败' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('[Knowledge Questions] 错误:', error)
+    logger.error('[Knowledge Questions] 错误:', error)
     return NextResponse.json(
       { error: '服务器错误' },
       { status: 500 }

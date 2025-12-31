@@ -79,33 +79,8 @@ export default function ExplorerAlliancePage() {
 
   return (
     <div className="min-h-screen text-starlight relative overflow-hidden">
-      {/* 半透明渐变覆盖层 - 让星空背景透出 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-cosmic-deep/40 to-mystic-purple/20" />
+      {/* 背景由全局 CosmicBackground/VortexBackground 提供 */}
 
-      {/* Animated star particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {isMounted && particles.map((particle) => (
-          <motion.div
-            key={particle.id}
-            className="absolute w-0.5 h-0.5 rounded-full"
-            style={{
-              left: `${particle.left}%`,
-              top: `${particle.top}%`,
-              background: `radial-gradient(circle, ${['#FFD700', '#9D00FF', '#00FFFF', '#FFFFFF'][particle.id % 4]} 0%, transparent 70%)`,
-              boxShadow: `0 0 4px ${['#FFD700', '#9D00FF', '#00FFFF', '#FFFFFF'][particle.id % 4]}40`,
-            }}
-            animate={{
-              opacity: [0.2, 0.9, 0.2],
-              scale: [1, 1.3, 1],
-            }}
-            transition={{
-              duration: particle.duration,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
       {/* 统一导航栏 */}
       <UnifiedNavbar
         transparent

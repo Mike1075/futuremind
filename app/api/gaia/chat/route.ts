@@ -1,9 +1,11 @@
 // @ts-nocheck
+// TODO: 移除 @ts-nocheck，修复类型错误（见审查报告）
 import { NextRequest } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
+import { isDev } from '@/lib/env'
 import type { GaiaMessage } from '@/lib/supabase/database.types'
 import type { Json } from '@/types/database'
 
@@ -353,12 +355,19 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
       .replace(/\*/g, '')
       .trim()
 
-    // 如果没有内容，返回调试信息
+    // 如果没有内容，返回友好的错误消息
     if (!finalReply) {
-      logger.error('[gaia-chat] No content extracted', {
-        responseLength: responseText.length,
-        responsePreview: responseText.substring(0, 300)
-      })
+      // 只在开发环境中记录详细调试信息
+      if (isDev()) {
+        logger.error('[gaia-chat] No content extracted', {
+          responseLength: responseText.length,
+          responsePreview: responseText.substring(0, 300)
+        })
+      } else {
+        logger.error('[gaia-chat] No content extracted', {
+          responseLength: responseText.length
+        })
+      }
       finalReply = '抱歉，我现在无法回应。请稍后再试。'
     }
 

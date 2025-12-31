@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
+import { safeParseInt } from '@/lib/env'
 
 /**
  * GET /api/gaia/recent-messages?limit=10&offset=0
@@ -20,8 +21,8 @@ export async function GET(request: NextRequest) {
 
     // 获取查询参数
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '10', 10)
-    const offset = parseInt(searchParams.get('offset') || '0', 10)
+    const limit = safeParseInt(searchParams.get('limit'), 10, { min: 1, max: 100 })
+    const offset = safeParseInt(searchParams.get('offset'), 0, { min: 0, max: 10000 })
 
     // 获取用户最近更新的活跃对话（与 GaiaAPI 保持一致，添加 is_active 过滤）
     const { data: conversation, error } = await supabase

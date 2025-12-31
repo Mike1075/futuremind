@@ -98,20 +98,23 @@ export function ShowcasePanel({ projectId, isMember = false }: ShowcasePanelProp
           .in('id', userIds)
 
         // 检查当前用户的点赞状态
-        let likedIds: string[] = []
+        let likedIdsSet = new Set<string>()
         if (user) {
           const { data: likes } = await supabase
             .from('showcase_likes')
             .select('showcase_id')
             .eq('user_id', user.id)
             .in('showcase_id', data.map(s => s.id))
-          likedIds = likes?.map(l => l.showcase_id) || []
+          likedIdsSet = new Set(likes?.map(l => l.showcase_id) || [])
         }
+
+        // 使用 Map 优化 O(n²) → O(n) 查找
+        const profilesMap = new Map(profiles?.map(p => [p.id, p]) || [])
 
         const showcasesWithUsers = data.map(showcase => ({
           ...showcase,
-          user: profiles?.find(p => p.id === showcase.user_id),
-          is_liked: likedIds.includes(showcase.id)
+          user: profilesMap.get(showcase.user_id),
+          is_liked: likedIdsSet.has(showcase.id)
         }))
 
         setShowcases(showcasesWithUsers)
@@ -626,7 +629,7 @@ function CreateShowcaseModal({
             <button
               onClick={onClose}
               disabled={submitting}
-              className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors focus:outline-none focus:ring-0 disabled:opacity-50"
             >
               取消
             </button>

@@ -164,28 +164,23 @@ function migrateOldFormat(dbData: any): TreeGrowthData {
 }
 
 export function ConsciousnessTreeView({ userId, isPreview = false, techParams }: ConsciousnessTreeViewProps) {
-  // 🔥 在初始化时同步检查缓存（避免闪烁）
-  const initialCached = typeof window !== 'undefined' ? getCachedTreeData(userId) : null
-
-  // 🔍 调试日志
-  console.log('[ConsciousnessTreeView] 初始化', {
-    userId,
-    isPreview,
-    hasInitialCache: !!initialCached,
-    initialCachedData: initialCached
-  })
-
-  const [growthData, setGrowthData] = useState<TreeGrowthData>(initialCached || INITIAL_GROWTH_DATA)
-  const [loading, setLoading] = useState(!initialCached) // 有缓存则不显示 loading
+  // 🔥 使用 mounted 状态确保服务端和客户端初始渲染一致
+  const [mounted, setMounted] = useState(false)
+  const [growthData, setGrowthData] = useState<TreeGrowthData>(INITIAL_GROWTH_DATA)
+  const [loading, setLoading] = useState(true) // 始终从 loading 开始，避免 Hydration Error
   const [error, setError] = useState<string | null>(null)
-  const hasCacheRef = useRef(!!initialCached)
+  const hasCacheRef = useRef(false)
 
-  // 🔍 调试：打印初始状态
-  console.log('[ConsciousnessTreeView] 初始状态', {
-    loading: !initialCached,
-    hasCacheRef: !!initialCached,
-    growthDataIsEmpty: !initialCached
-  })
+  // 🔥 客户端挂载后检查缓存
+  useEffect(() => {
+    setMounted(true)
+    const cached = getCachedTreeData(userId)
+    if (cached) {
+      setGrowthData(cached)
+      setLoading(false)
+      hasCacheRef.current = true
+    }
+  }, [userId])
 
   // 后台异步加载最新数据（不影响已显示的缓存）
   useEffect(() => {

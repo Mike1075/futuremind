@@ -138,42 +138,8 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
   const radius = 38 // 扩大半径到38%，让圆圈更大
 
   return (
-    <div className="min-h-screen bg-cosmic-void text-starlight relative overflow-y-auto">
-      {/* 宇宙背景渐变 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cosmic-void via-cosmic-deep to-mystic-purple/10 pointer-events-none" />
-      {/* 星空背景 - 优化性能，减少星星数量 */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(50)].map((_, i) => {
-          // 为每颗星星生成随机彩色
-          const starColors = ['#FF6B9D', '#C44569', '#00D2FF', '#3A7BD5', '#FFA751', '#FFE259', '#A8E6CF', '#DCEDC1', '#FFD3B6', '#FFAAA5']
-          const randomColor = starColors[Math.floor(Math.random() * starColors.length)]
-          const size = Math.random() * 3 + 1 // 1-4px
-
-          return (
-            <motion.div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                width: `${size}px`,
-                height: `${size}px`,
-                backgroundColor: randomColor,
-                boxShadow: `0 0 ${size * 3}px ${size * 2}px ${randomColor}40`,
-              }}
-              animate={{
-                opacity: [0.3, 1, 0.3],
-                scale: [1, 1.5, 1],
-              }}
-              transition={{
-                duration: Math.random() * 3 + 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          )
-        })}
-      </div>
+    <div className="min-h-screen text-starlight relative overflow-y-auto">
+      {/* 背景由全局 CosmicBackground/VortexBackground 提供 */}
 
       {/* 统一导航栏 */}
       <UnifiedNavbar
@@ -634,7 +600,7 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
           })}
         </div>
 
-        {/* 项目简介卡片 */}
+        {/* 项目简介卡片 - 炫彩边框 */}
         <AnimatePresence>
           {selectedProject && (
             <motion.div
@@ -643,45 +609,67 @@ export function IcarusTriangleView({ modules }: IcarusTriangleViewProps) {
               exit={{ opacity: 0, y: 50 }}
               className="fixed bottom-0 left-0 right-0 z-50 p-4"
             >
-              <div className="max-w-3xl mx-auto card-glass border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
-                <div className="p-6">
-                  {/* 关闭按钮 */}
-                  <button
-                    onClick={() => setSelectedProject(null)}
-                    className="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                  >
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+              {/* 炫彩边框容器 */}
+              <div className="max-w-3xl mx-auto relative">
+                {/* 炫彩发光边框 */}
+                <div
+                  className="absolute -inset-[2px] rounded-2xl opacity-75"
+                  style={{
+                    background: 'linear-gradient(90deg, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #00FF88, #FFD700)',
+                    backgroundSize: '300% 100%',
+                    animation: 'border-flow 4s linear infinite',
+                  }}
+                />
+                {/* 外发光效果 */}
+                <div
+                  className="absolute -inset-[4px] rounded-2xl opacity-40 blur-md"
+                  style={{
+                    background: 'linear-gradient(90deg, #FFD700, #FF6B6B, #9D00FF, #00FFFF, #00FF88, #FFD700)',
+                    backgroundSize: '300% 100%',
+                    animation: 'border-flow 4s linear infinite',
+                  }}
+                />
+                {/* 卡片内容 */}
+                <div className="relative card-glass bg-black/80 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden">
+                  <div className="p-6">
+                    {/* 关闭按钮 */}
+                    <button
+                      onClick={() => setSelectedProject(null)}
+                      className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition-colors z-10"
+                    >
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
 
-                  {/* 项目标题 */}
-                  <h3 className="text-2xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent pr-12">
-                    {selectedProject.title}
-                  </h3>
+                    {/* 项目标题 */}
+                    <h3 className="text-2xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent pr-12">
+                      {selectedProject.title}
+                    </h3>
 
-                  {selectedProject.subtitle &&
-                   selectedProject.subtitle !== 'option_a' &&
-                   selectedProject.subtitle !== 'option_b' &&
-                   selectedProject.subtitle !== 'option_c' &&
-                   selectedProject.subtitle !== 'option_d' && (
-                    <p className="text-gray-400 mb-4">{selectedProject.subtitle}</p>
-                  )}
+                    {selectedProject.subtitle &&
+                     selectedProject.subtitle !== 'option_a' &&
+                     selectedProject.subtitle !== 'option_b' &&
+                     selectedProject.subtitle !== 'option_c' &&
+                     selectedProject.subtitle !== 'option_d' && (
+                      <p className="text-gray-400 mb-4">{selectedProject.subtitle}</p>
+                    )}
 
-                  {/* 项目简介 */}
-                  <div className="mb-6">
-                    <p className="text-gray-300 leading-relaxed">
-                      {selectedProject.project_intro || '探索未知的领域，挑战自我的边界。'}
-                    </p>
+                    {/* 项目简介 */}
+                    <div className="mb-6">
+                      <p className="text-gray-300 leading-relaxed">
+                        {selectedProject.project_intro || '探索未知的领域，挑战自我的边界。'}
+                      </p>
+                    </div>
+
+                    {/* 查看详情按钮 - 宽度自适应 */}
+                    <Link
+                      href={`/courses/icarus/${selectedProject.id}`}
+                      className="btn-stardust inline-block px-6 py-2.5 rounded-lg font-medium"
+                    >
+                      查看详情 →
+                    </Link>
                   </div>
-
-                  {/* 查看详情按钮 */}
-                  <Link
-                    href={`/courses/icarus/${selectedProject.id}`}
-                    className="btn-stardust block px-6 py-3 rounded-lg font-medium text-center"
-                  >
-                    查看详情 →
-                  </Link>
                 </div>
               </div>
             </motion.div>

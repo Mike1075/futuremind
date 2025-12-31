@@ -344,3 +344,74 @@ export function validateSortField(
 
   return { valid: true }
 }
+
+/**
+ * CSRF 保护 - 验证请求来源
+ * 检查 Origin/Referer 头是否来自允许的域名
+ */
+export function validateCsrf(req: NextRequest): { valid: boolean; response?: NextResponse } {
+  // 只在生产环境强制验证
+  const isDev = process.env.NODE_ENV === 'development'
+
+  const origin = req.headers.get('origin')
+  const referer = req.headers.get('referer')
+  const host = req.headers.get('host')
+
+  // 允许的域名列表（从环境变量或硬编码）
+  const allowedOrigins = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    `https://${host}`,
+    `http://${host}`, // 开发环境
+  ].filter(Boolean)
+
+  // 开发环境允许 localhost
+  if (isDev) {
+    allowedOrigins.push('http://localhost:3000', 'http://127.0.0.1:3000')
+  }
+
+  // 检查 Origin 或 Referer
+  const requestOrigin = origin || (referer ? new URL(referer).origin : null)
+
+  if (!requestOrigin) {
+    // 某些合法请求可能没有 Origin（如服务端调用），在开发环境允许
+    if (isDev) {
+      return { valid: true }
+    }
+    logger.warn('CSRF validation failed: no origin', { host })
+    return {
+      valid: false,
+      response: NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'CSRF_VALIDATION_FAILED',
+            message: 'Request origin could not be verified'
+          }
+        },
+        { status: 403 }
+      )
+    }
+  }
+
+  if (!allowedOrigins.includes(requestOrigin)) {
+    logger.warn('CSRF validation failed: invalid origin', {
+      requestOrigin,
+      allowedOrigins: allowedOrigins.filter(o => !o?.includes('localhost'))
+    })
+    return {
+      valid: false,
+      response: NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'CSRF_VALIDATION_FAILED',
+            message: 'Request origin not allowed'
+          }
+        },
+        { status: 403 }
+      )
+    }
+  }
+
+  return { valid: true }
+}

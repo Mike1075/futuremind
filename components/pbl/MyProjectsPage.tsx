@@ -6,7 +6,8 @@ import {
   FolderOpen, Plus, Calendar, Users, Clock,
   CheckCircle, BookOpen, Eye, Settings, Mail, Trash2
 } from 'lucide-react'
-import { pblDataService, PBLProject } from '@/lib/pbl-data'
+import { PBLProject } from '@/lib/pbl-data'
+import { pblDataService } from '@/lib/pbl-real-data'
 import { ProjectDetailModal } from './ProjectDetailModal'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'

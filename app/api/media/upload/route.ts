@@ -1,8 +1,10 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { getAdminClient, getClient } from '@/lib/supabase'
 import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
+import { validateFileMagicBytes } from '@/lib/file-validation'
 
 // DB-14: 允许的文件类型白名单
 const ALLOWED_MIME_TYPES = [
@@ -51,16 +53,29 @@ async function handleUpload(request: NextRequest) {
       return NextResponse.json({ error: 'File too large. Maximum size is 50MB.' }, { status: 400 })
     }
 
-    // DB-14: 验证文件类型
+    // DB-14: 验证文件类型（MIME 类型检查）
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return NextResponse.json({
         error: `不支持的文件类型: ${file.type}。允许的类型: 图片、视频、音频、PDF、Office文档`
       }, { status: 400 })
     }
 
-    // Generate unique filename
+    // Magic bytes 验证（防止 MIME 类型欺骗）
+    const magicBytesResult = await validateFileMagicBytes(file, file.type)
+    if (!magicBytesResult.valid) {
+      logger.warn('[Media] Magic bytes 验证失败', {
+        declaredType: file.type,
+        detectedType: magicBytesResult.detectedType,
+        message: magicBytesResult.message
+      })
+      return NextResponse.json({
+        error: magicBytesResult.message || '文件类型验证失败，请确保上传的文件类型正确'
+      }, { status: 400 })
+    }
+
+    // 生成密码学安全的唯一文件名
     const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
+    const fileName = `${randomBytes(16).toString('hex')}.${fileExt}`
     const filePath = `uploads/${fileName}`
 
     // Upload to Supabase Storage with service role (bypass RLS)

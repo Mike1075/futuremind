@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 import { requireRole, errorResponse } from '@/lib/api-utils'
+import { safeParseInt } from '@/lib/env'
 
 // Whitelist of allowed sort columns (SEC-02 fix)
 const ALLOWED_SORT_COLUMNS = [
@@ -41,8 +42,8 @@ async function handleGetStudents(request: NextRequest) {
     const levelFilter = searchParams.get('level') || ''
     const sortByParam = searchParams.get('sortBy') || 'composite_score'
     const sortOrderParam = searchParams.get('sortOrder') || 'desc'
-    const page = parseInt(searchParams.get('page') || '1')
-    const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '20'), 100) // Max 100
+    const page = safeParseInt(searchParams.get('page'), 1, { min: 1, max: 1000 })
+    const pageSize = safeParseInt(searchParams.get('pageSize'), 20, { min: 1, max: 100 })
 
     // SEC-02: Validate sortBy against whitelist
     const sortBy = ALLOWED_SORT_COLUMNS.includes(sortByParam as any)
