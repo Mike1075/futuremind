@@ -16,8 +16,11 @@ import {
   ExternalLink,
   RefreshCw,
   Copy,
-  Check
+  Check,
+  CloudDownload,
+  QrCode
 } from 'lucide-react'
+import Image from 'next/image'
 
 // 检测是否在微信浏览器中
 const isWeChatBrowser = () => {
@@ -541,6 +544,56 @@ export function DownloadSection() {
           })}
         </div>
       )}
+
+      {/* 备用下载通道 - 百度网盘 */}
+      <div className="mt-6 bg-amber-500/10 rounded-xl border border-amber-500/30 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <CloudDownload className="w-5 h-5 text-amber-400" />
+          <h4 className="font-semibold text-amber-300">备用下载通道</h4>
+        </div>
+
+        <p className="text-sm text-gray-400 mb-4">
+          如果上方下载链接无法使用（网络问题、地区限制等），可扫码从百度网盘下载
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
+          {/* 二维码 */}
+          <div className="bg-white p-2 rounded-lg flex-shrink-0">
+            <Image
+              src="/seth365/baidu-pan-qr.png"
+              alt="百度网盘下载二维码"
+              width={120}
+              height={120}
+              className="w-[120px] h-[120px]"
+            />
+          </div>
+
+          {/* 说明文字 */}
+          <div className="flex-1 text-center sm:text-left">
+            <div className="flex items-center gap-2 justify-center sm:justify-start mb-2">
+              <QrCode className="w-4 h-4 text-amber-400" />
+              <span className="text-sm text-gray-300 font-medium">扫码下载</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              网盘内包含所有平台安装包：
+            </p>
+            <ul className="text-xs text-gray-400 space-y-1">
+              <li className="flex items-center gap-2">
+                <Apple className="w-3 h-3 text-gray-500" />
+                Seth365Mac-1.2.27.dmg
+              </li>
+              <li className="flex items-center gap-2">
+                <Monitor className="w-3 h-3 text-gray-500" />
+                Seth365_v1.4.2.zip
+              </li>
+              <li className="flex items-center gap-2">
+                <Smartphone className="w-3 h-3 text-gray-500" />
+                Seth365-v1.2.6.apk
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
 
       {/* 使用说明弹窗 */}
       <AnimatePresence>
