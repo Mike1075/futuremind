@@ -2,6 +2,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import SubmissionDialog from './SubmissionDialog'
 import SubmissionHistory from './SubmissionHistory'
 
@@ -18,6 +19,7 @@ export default function SubmissionButton({
   contentTitle,
   onVisibilityChanged
 }: SubmissionButtonProps) {
+  const router = useRouter()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
 
@@ -25,6 +27,10 @@ export default function SubmissionButton({
     // 如果是公开的高分作业，触发局部刷新
     if (score && score >= 90 && isPublic && onVisibilityChanged) {
       onVisibilityChanged()
+    }
+    // 刷新页面以更新解锁状态（分数>=60时解锁下一课）
+    if (score && score >= 60) {
+      router.refresh()
     }
   }
 

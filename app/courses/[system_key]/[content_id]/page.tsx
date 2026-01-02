@@ -69,17 +69,18 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     'reading'
   )
 
-  // 检查作业分数（用于控制"下一个"按钮）
-  const { data: submission } = await supabase
+  // 检查是否曾经有过>=60分的提交（用于控制"下一个"按钮）
+  // 只要曾经通过，就永久解锁，不会因为后续低分提交而锁回去
+  const { data: passedSubmission } = await supabase
     .from('user_submissions')
     .select('score')
     .eq('user_id', user.id)
     .eq('course_content_id', contentId)
-    .order('created_at', { ascending: false })
+    .gte('score', 60)
     .limit(1)
     .single()
 
-  const hasPassedAssignment = submission?.score ? submission.score >= 60 : false
+  const hasPassedAssignment = !!passedSubmission
 
   // PBL项目使用专属详情页
   if (content.content_type === 'icarus') {
