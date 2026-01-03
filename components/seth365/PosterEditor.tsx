@@ -111,21 +111,16 @@ export function PosterEditor({ wallpaper, onClose }: PosterEditorProps) {
     fileInputRef.current?.click()
   }
 
-  // 处理拖动
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!qrImage) return
-    setIsDragging(true)
-  }
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !canvasRef.current) return
+  // 计算拖动位置的通用函数
+  const updateQrPositionFromCoords = (clientX: number, clientY: number) => {
+    if (!canvasRef.current) return
 
     const rect = canvasRef.current.getBoundingClientRect()
     const scaleX = canvasRef.current.width / rect.width
     const scaleY = canvasRef.current.height / rect.height
 
-    const x = ((e.clientX - rect.left) * scaleX) / canvasRef.current.width
-    const y = ((e.clientY - rect.top) * scaleY) / canvasRef.current.height
+    const x = ((clientX - rect.left) * scaleX) / canvasRef.current.width
+    const y = ((clientY - rect.top) * scaleY) / canvasRef.current.height
 
     // 允许拖动到更边缘的位置，特别是底部
     // 考虑二维码大小，防止完全超出边界
@@ -137,7 +132,38 @@ export function PosterEditor({ wallpaper, onClose }: PosterEditorProps) {
     }))
   }
 
+  // 鼠标事件处理（桌面端）
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!qrImage) return
+    setIsDragging(true)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return
+    updateQrPositionFromCoords(e.clientX, e.clientY)
+  }
+
   const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  // 触摸事件处理（iPad/移动端）
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!qrImage) return
+    e.preventDefault() // 阻止默认滚动行为
+    setIsDragging(true)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return
+    e.preventDefault() // 阻止默认滚动行为
+    const touch = e.touches[0]
+    if (touch) {
+      updateQrPositionFromCoords(touch.clientX, touch.clientY)
+    }
+  }
+
+  const handleTouchEnd = () => {
     setIsDragging(false)
   }
 
@@ -207,10 +233,14 @@ export function PosterEditor({ wallpaper, onClose }: PosterEditorProps) {
               <canvas
                 ref={canvasRef}
                 className="max-w-full max-h-[60vh] cursor-move"
+                style={{ touchAction: 'none' }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               />
             )}
           </div>
