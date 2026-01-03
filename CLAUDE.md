@@ -7,7 +7,7 @@ FutureMind Institute（未来心智研究院）是一个面向青少年的教育
 - **框架**: Next.js 15 (App Router)
 - **UI**: Tailwind CSS + Framer Motion
 - **后端**: Supabase (Auth + Database + Storage)
-- **AI**: OpenAI API, Google GenAI
+- **AI**: xAI Grok (边缘函数), OpenAI API (嵌入), Google GenAI
 - **语言**: TypeScript
 
 ## 项目结构
@@ -236,6 +236,22 @@ npx supabase functions deploy evaluate-pbl-task --no-verify-jwt
   - 问题：分数不足时悬停提示不容易看见
   - 解决：新增 `LockedNextModal` + `LockedNextButton` 组件
   - 点击锁定的"下一个"按钮显示友好弹窗，告知分数差距和改进建议
+- ✅ **边缘函数迁移到 xAI Grok（2026-01-03）**：
+  - 将 10 个边缘函数的聊天 API 从 OpenAI 迁移到 xAI Grok
+  - 模型选择：`grok-3-mini`（性价比最高，智能度57分）
+  - 迁移函数列表：
+    - `evaluate-submission` (v15) - 作业批改
+    - `evaluate-pbl-task` (v25) - PBL任务评估（含视觉用 `grok-2-vision-1212`）
+    - `generate-inspiring-questions` (v8) - 启发性问题生成
+    - `summarize-user-activity` (v17) - 用户行为总结
+    - `evaluate-consciousness-tree` (v9) - 意识树评估
+    - `evaluate-and-grow-tree` (v12) - 意识树生长
+    - `review-user-content` (v6) - 内容审核
+    - `pregenerate-knowledge-questions` (v6) - 知识点问题预生成
+    - `project-wisdom-accumulation` (v9) - 项目智慧提取（混合模式）
+    - `organization-wisdom-accumulation` (v6) - 组织智慧聚合（混合模式）
+  - 保留 OpenAI 的函数：`generate-document-embeddings`（xAI 不提供 Embedding API）
+  - 需要配置 Supabase Secret：`XAI_API_KEY`
 
 ---
 
