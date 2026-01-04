@@ -79,7 +79,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
     try {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-      const redirectUrl = `${baseUrl}/reset-password`
+      // 使用 auth callback 路由处理 PKCE code 交换，然后重定向到 reset-password
+      const redirectUrl = `${baseUrl}/auth/callback?type=recovery`
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,

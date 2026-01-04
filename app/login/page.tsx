@@ -100,8 +100,9 @@ function LoginForm() {
 
     try {
       // 使用环境变量或当前域名构建重定向URL
+      // 通过 auth callback 路由处理 PKCE code 交换，然后重定向到 reset-password
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-      const redirectUrl = `${baseUrl}/reset-password`
+      const redirectUrl = `${baseUrl}/auth/callback?type=recovery`
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
