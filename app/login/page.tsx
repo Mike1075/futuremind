@@ -27,11 +27,6 @@ function LoginForm() {
   // 确保只在客户端渲染
   useEffect(() => {
     setIsMounted(true)
-    // 调试日志：检查小眼睛图标是否正确加载
-    console.log('[Login Debug] 组件已挂载')
-    console.log('[Login Debug] Eye 图标:', Eye)
-    console.log('[Login Debug] EyeOff 图标:', EyeOff)
-    console.log('[Login Debug] showPassword 初始值:', false)
   }, [])
 
   // 生成固定的粒子配置（修复hydration error）
@@ -286,15 +281,15 @@ function LoginForm() {
               />
               <button
                 type="button"
-                onClick={() => {
-                  console.log('[Login Debug] 小眼睛点击，当前 showPassword:', showPassword, '-> 切换为:', !showPassword)
-                  setShowPassword(!showPassword)
-                }}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 z-20 p-2 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
-                style={{ background: 'transparent' }}
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-1.5 rounded-md text-purple-400 hover:text-purple-300 hover:bg-white/10 transition-colors"
                 aria-label={showPassword ? '隐藏密码' : '显示密码'}
               >
-                {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                {showPassword ? (
+                  <Eye className="w-5 h-5" strokeWidth={2} />
+                ) : (
+                  <EyeOff className="w-5 h-5" strokeWidth={2} />
+                )}
               </button>
             </div>
             {/* 忘记密码链接 - 仅在登录模式显示 */}
