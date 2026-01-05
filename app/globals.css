@@ -107,6 +107,24 @@ select:focus {
   outline: none;
 }
 
+/* ========== 输入框 Autofill 样式覆盖 ========== */
+/* 修复浏览器自动填充时的白色/浅色背景问题 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px rgba(0, 0, 0, 0.95) inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: #ffffff;
+}
+
+/* Firefox autofill */
+input:autofill {
+  background-color: transparent !important;
+  color: #ffffff !important;
+}
+
 /* ========== 神圣字体类 ========== */
 .font-sacred {
   font-family: var(--font-sacred);
