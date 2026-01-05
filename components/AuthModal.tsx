@@ -3,8 +3,46 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Mail, Lock, User, ArrowLeft } from 'lucide-react'
+import { X, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+
+// 内联 SVG 图标 - 解决 lucide-react 渲染问题
+const MailIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="20" height="16" x="2" y="4" rx="2" />
+    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+  </svg>
+)
+
+const LockIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+)
+
+const UserIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="5" />
+    <path d="M20 21a8 8 0 1 0-16 0" />
+  </svg>
+)
+
+const EyeIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+)
+
+const EyeOffIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+    <line x1="2" x2="22" y1="2" y2="22" />
+  </svg>
+)
 
 interface AuthModalProps {
   isOpen: boolean
@@ -17,6 +55,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -157,7 +196,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       邮箱
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400 z-10" />
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                        <MailIcon />
+                      </div>
                       <input
                         type="email"
                         value={email}
@@ -219,7 +260,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       姓名
                     </label>
                     <div className="relative">
-                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400 z-10" />
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                        <UserIcon />
+                      </div>
                       <input
                         type="text"
                         value={fullName}
@@ -237,7 +280,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     邮箱
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400 z-10" />
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                      <MailIcon />
+                    </div>
                     <input
                       type="email"
                       value={email}
@@ -254,16 +299,27 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     密码
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400 z-10" />
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                      <LockIcon />
+                    </div>
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={6}
-                      className="w-full pl-12 pr-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
+                      className="w-full pl-12 pr-12 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-white placeholder-white/40 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all backdrop-blur-sm"
                       placeholder="••••••••"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-50 p-1 text-purple-400 hover:text-purple-300"
+                      style={{ background: 'transparent' }}
+                      aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                    >
+                      {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+                    </button>
                   </div>
                   {/* 忘记密码链接 - 仅在登录模式显示 */}
                   {mode === 'login' && (
