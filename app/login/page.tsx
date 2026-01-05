@@ -286,7 +286,7 @@ function LoginForm() {
               邮箱
             </label>
             <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-purple-400">
                 <MailIcon />
               </div>
               <input
@@ -305,7 +305,7 @@ function LoginForm() {
               密码
             </label>
             <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-purple-400">
                 <LockIcon />
               </div>
               <input
@@ -387,7 +387,7 @@ function LoginForm() {
           </button>
         </div>
         {/* 临时版本标记 - 确认部署版本 */}
-        <div className="mt-2 text-center text-xs text-white/30">v11</div>
+        <div className="mt-2 text-center text-xs text-white/30">v12</div>
         </div>
       </motion.div>
     </div>
