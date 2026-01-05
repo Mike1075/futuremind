@@ -183,7 +183,9 @@ function LoginForm() {
                 邮箱
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400" size={20} strokeWidth={2} />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400">
+                  <Mail size={20} strokeWidth={2} />
+                </div>
                 <input
                   type="email"
                   value={email}
@@ -253,7 +255,9 @@ function LoginForm() {
               邮箱
             </label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400" size={20} strokeWidth={2} />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400">
+                <Mail size={20} strokeWidth={2} />
+              </div>
               <input
                 type="email"
                 value={email}
@@ -270,7 +274,9 @@ function LoginForm() {
               密码
             </label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400" size={20} strokeWidth={2} />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400">
+                <Lock size={20} strokeWidth={2} />
+              </div>
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
@@ -354,7 +360,7 @@ function LoginForm() {
           </button>
         </div>
         {/* 临时版本标记 - 确认部署版本 */}
-        <div className="mt-2 text-center text-xs text-white/30">v8</div>
+        <div className="mt-2 text-center text-xs text-white/30">v9</div>
         </div>
       </motion.div>
     </div>
