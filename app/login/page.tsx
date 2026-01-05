@@ -386,8 +386,6 @@ function LoginForm() {
             返回首页
           </button>
         </div>
-        {/* 临时版本标记 - 确认部署版本 */}
-        <div className="mt-2 text-center text-xs text-white/30">v12</div>
         </div>
       </motion.div>
     </div>
