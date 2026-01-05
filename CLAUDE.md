@@ -184,6 +184,64 @@ npx supabase functions deploy evaluate-pbl-task --no-verify-jwt
 
 ---
 
+## 开发工作流程
+
+### 风险修改使用分支
+
+对于可能影响生产环境的修改（如首页组件、核心功能），**必须使用分支开发**：
+
+```bash
+# 1. 创建功能分支
+git checkout -b fix/feature-name
+
+# 2. 修改代码并提交
+git add .
+git commit -m "fix: 描述修改内容"
+
+# 3. 本地构建测试
+npm run build
+
+# 4. 确认无误后，合并到 master
+git checkout master
+git merge fix/feature-name --no-edit
+
+# 5. 推送到远程（触发 Vercel 部署）
+git push origin master
+
+# 6. 删除本地分支
+git branch -d fix/feature-name
+```
+
+**注意**：
+- 分支只在本地使用，不需要推送到 GitHub
+- 合并前必须运行 `npm run build` 确认无错误
+- 如果出问题可以快速 `git revert HEAD` 回滚
+
+### 已知的 lucide-react 图标问题
+
+lucide-react 图标在某些情况下不渲染，解决方案是使用**内联 SVG**：
+
+```jsx
+// ❌ 可能不渲染
+<Mail className="w-5 h-5 text-purple-400" />
+
+// ✅ 可靠方案
+const MailIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+       stroke="#c084fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="20" height="16" x="2" y="4" rx="2" />
+    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+  </svg>
+)
+
+// 使用时包裹 div 并加 z-10
+<div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+  <MailIcon />
+</div>
+```
+
+---
+
 ## 待办事项
 
 ### 未完成
