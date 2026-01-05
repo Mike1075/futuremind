@@ -183,7 +183,7 @@ function LoginForm() {
                 邮箱
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" strokeWidth={2} />
                 <input
                   type="email"
                   value={email}
@@ -253,7 +253,7 @@ function LoginForm() {
               邮箱
             </label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" strokeWidth={2} />
               <input
                 type="email"
                 value={email}
@@ -270,7 +270,7 @@ function LoginForm() {
               密码
             </label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" strokeWidth={2} />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
