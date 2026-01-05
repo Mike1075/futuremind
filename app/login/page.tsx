@@ -282,7 +282,7 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-400/70 hover:text-purple-300 transition-colors"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10 p-1 text-purple-400 hover:text-purple-300 transition-colors"
                 aria-label={showPassword ? '隐藏密码' : '显示密码'}
               >
                 {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
