@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { AnimatePresence } from 'framer-motion'
 import { LockedNextModal } from './LockedNextModal'
 
 interface LockedNextButtonProps {
@@ -23,14 +22,12 @@ export function LockedNextButton({ currentScore }: LockedNextButtonProps) {
         </svg>
       </button>
 
-      <AnimatePresence>
-        {showModal && (
-          <LockedNextModal
-            currentScore={currentScore}
-            onClose={() => setShowModal(false)}
-          />
-        )}
-      </AnimatePresence>
+      {showModal && (
+        <LockedNextModal
+          currentScore={currentScore}
+          onClose={() => setShowModal(false)}
+        />
+      )}
     </>
   )
 }
