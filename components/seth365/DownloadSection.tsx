@@ -102,7 +102,6 @@ const platformConfigs: PlatformConfig[] = [
     features: [
       '打开 App Store，搜索"Seth365"',
       '找到应用后点击下载安装',
-      '若搜不到，说明正在审核中，请过几天再试',
       '支持自动切换壁纸和锁屏'
     ]
   }
