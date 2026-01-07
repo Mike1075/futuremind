@@ -94,9 +94,10 @@ export default function ListeningCoursePage() {
     }
   }
 
-  const loadCourseContents = async () => {
+  const loadCourseContents = async (keepSelection = false) => {
     try {
       const supabase = createClient()
+      const currentSelectedId = selectedContent?.id // 记住当前选中的课程ID
 
       // First, get the listening system ID
       const { data: systemData, error: systemError } = await supabase
@@ -119,8 +120,19 @@ export default function ListeningCoursePage() {
 
       if (error) throw error
       setCourseContents(data || [])
+
       if (data && data.length > 0) {
-        setSelectedContent(data[0])
+        if (keepSelection && currentSelectedId) {
+          // 保持当前选中状态：找到之前选中的课程并重新选中
+          const previouslySelected = data.find(c => c.id === currentSelectedId)
+          if (previouslySelected) {
+            setSelectedContent(previouslySelected)
+          } else {
+            setSelectedContent(data[0])
+          }
+        } else {
+          setSelectedContent(data[0])
+        }
       }
     } catch (error) {
       console.error('加载课程列表失败:', error)
@@ -164,7 +176,7 @@ export default function ListeningCoursePage() {
       if (error) throw error
 
       toast.success('保存成功')
-      await loadCourseContents()
+      await loadCourseContents(true) // 保持当前选中的课程
     } catch (error) {
       console.error('保存失败:', error)
       toast.error('保存失败，请重试')
