@@ -28,8 +28,13 @@ export default function SubmissionButton({
     if (score && score >= 90 && isPublic && onVisibilityChanged) {
       onVisibilityChanged()
     }
-    // 刷新页面以更新解锁状态（分数>=60时解锁下一课）
+    // 分数>=60时，立即通知导航按钮解锁（不等待页面刷新）
     if (score && score >= 60) {
+      // 立即更新客户端的解锁状态
+      if (typeof window !== 'undefined' && (window as any).__unlockNextLesson) {
+        (window as any).__unlockNextLesson(score)
+      }
+      // 同时刷新页面以确保服务端状态同步
       router.refresh()
     }
   }

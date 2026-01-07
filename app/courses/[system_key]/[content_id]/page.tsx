@@ -12,7 +12,7 @@ import { ContentDetailWrapper } from './ContentDetailWrapper'
 import { CollapsibleSection } from '@/components/courses/CollapsibleSection'
 import { formatCourseText } from '@/lib/utils/text-formatter'
 import { AudioPlayer } from '@/components/courses/AudioPlayer'
-import { LockedNextButton } from './LockedNextButton'
+import { NavigationButtons } from './NavigationButtons'
 
 // Resource 类型定义（对应 course_contents.resources 的结构）
 interface Resource {
@@ -487,40 +487,14 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
           contentTitle={content.title}
         />
 
-        {/* 导航按钮 */}
-        <div className="flex justify-between items-center pt-8 border-t border-gray-800">
-          {prevContent ? (
-            <Link
-              href={`/courses/${systemKey}/${prevContent.id}`}
-              className="flex items-center text-gray-400 hover:text-white transition-colors"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              上一个
-            </Link>
-          ) : (
-            <div></div>
-          )}
-
-          {nextContent ? (
-            hasPassedAssignment ? (
-              <Link
-                href={`/courses/${systemKey}/${nextContent.id}`}
-                className="flex items-center text-gray-400 hover:text-white transition-colors"
-              >
-                下一个
-                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            ) : (
-              <LockedNextButton currentScore={currentHighestScore} />
-            )
-          ) : (
-            <div></div>
-          )}
-        </div>
+        {/* 导航按钮 - 使用客户端组件以支持提交作业后立即解锁 */}
+        <NavigationButtons
+          systemKey={systemKey}
+          prevContentId={prevContent?.id || null}
+          nextContentId={nextContent?.id || null}
+          initialUnlocked={hasPassedAssignment}
+          currentHighestScore={currentHighestScore}
+        />
     </ContentDetailWrapper>
   )
 }
