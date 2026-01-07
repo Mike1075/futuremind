@@ -156,9 +156,11 @@ export function formatCourseText(
         }
 
         // === 冥想引导文本（多段落引用，使用预处理的标记）===
+        // 注意：去除斜体和缩进样式，保持与普通段落一致的字体样式
+        // 原因：引号检测容易误判（如段落结尾的 。" 会被错误识别为引用）
         if (quoteFlags[index]) {
           return (
-            <p key={index} className="text-gray-300 italic leading-relaxed pl-4">
+            <p key={index} className="text-gray-300 leading-relaxed">
               {formatInlineText(trimmed)}
             </p>
           )
