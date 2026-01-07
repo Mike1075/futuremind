@@ -37,32 +37,31 @@ export function formatCourseText(
   // 5. 将文本分段（按双换行）
   const paragraphs = formatted.split('\n\n')
 
-  // 6. 预处理：标记哪些段落属于引用区块（冥想引导语）
-  // 检测以"开头到以"结尾的多段落引用
-  let inQuoteBlock = false
-  const quoteFlags: boolean[] = []
+  // 6. 预处理：标记哪些段落属于冥想引导区域
+  // 检测"冥想引导"标签后的所有内容，直到遇到下一个小标题
+  let inMeditationGuide = false
+  const meditationGuideFlags: boolean[] = []
+  const sectionTitlePattern = /^(准备阶段|冥想引导|具体步骤|聆听练习|结束阶段|生活中的小练习|声音的暂停)[:：]?$/
 
   for (let i = 0; i < paragraphs.length; i++) {
     const trimmed = paragraphs[i].trim()
-    const startsWithQuote = trimmed.startsWith('"') || trimmed.startsWith('"') || trimmed.startsWith('「')
-    const endsWithQuote = trimmed.endsWith('"') || trimmed.endsWith('"') || trimmed.endsWith('」')
 
-    if (startsWithQuote && endsWithQuote) {
-      // 单段落完整引用
-      quoteFlags[i] = true
-    } else if (startsWithQuote) {
-      // 引用开始
-      inQuoteBlock = true
-      quoteFlags[i] = true
-    } else if (endsWithQuote && inQuoteBlock) {
-      // 引用结束
-      quoteFlags[i] = true
-      inQuoteBlock = false
-    } else if (inQuoteBlock) {
-      // 引用中间段落
-      quoteFlags[i] = true
-    } else {
-      quoteFlags[i] = false
+    // 检测是否是"冥想引导"标签
+    if (/^冥想引导[:：]?$/.test(trimmed)) {
+      inMeditationGuide = true
+      meditationGuideFlags[i] = false // 标题本身不是斜体
+    }
+    // 检测是否是其他小标题（结束冥想引导区域）
+    else if (sectionTitlePattern.test(trimmed) && inMeditationGuide) {
+      inMeditationGuide = false
+      meditationGuideFlags[i] = false
+    }
+    // 在冥想引导区域内的段落
+    else if (inMeditationGuide) {
+      meditationGuideFlags[i] = true
+    }
+    else {
+      meditationGuideFlags[i] = false
     }
   }
 
@@ -155,12 +154,10 @@ export function formatCourseText(
           )
         }
 
-        // === 冥想引导文本（多段落引用，使用预处理的标记）===
-        // 注意：去除斜体和缩进样式，保持与普通段落一致的字体样式
-        // 原因：引号检测容易误判（如段落结尾的 。" 会被错误识别为引用）
-        if (quoteFlags[index]) {
+        // === 冥想引导文本（"冥想引导"标签后的内容，显示为斜体）===
+        if (meditationGuideFlags[index]) {
           return (
-            <p key={index} className="text-gray-300 leading-relaxed">
+            <p key={index} className="text-gray-300 italic leading-relaxed">
               {formatInlineText(trimmed)}
             </p>
           )
