@@ -310,6 +310,17 @@ const MailIcon = () => (
     - `organization-wisdom-accumulation` (v6) - 组织智慧聚合（混合模式）
   - 保留 OpenAI 的函数：`generate-document-embeddings`（xAI 不提供 Embedding API）
   - 需要配置 Supabase Secret：`XAI_API_KEY`
+- ✅ **倾听课程解锁安全漏洞修复（2026-01-09）**：
+  - 问题：用户可以通过URL直接访问未解锁的课程内容，绕过解锁限制
+  - 修复：
+    - `course.service.ts` - 新增 `checkListeningCourseUnlock()` 链式检查函数
+    - `page.tsx`（课程详情页）- 添加解锁验证，未解锁则重定向
+    - `evaluate-submission` 边缘函数 - 添加解锁验证，未解锁返回403
+    - `ListeningCourseView.tsx` - 使用预计算的 `unlockMap` 进行链式解锁检查
+  - **注意**：边缘函数需要手动部署：`npx supabase functions deploy evaluate-submission --no-verify-jwt`
+- ✅ **盖亚对话移动端穿透修复（2026-01-09）**：
+  - 问题：手机上打开盖亚对话时，首页按钮穿透显示导致文字重叠
+  - 修复：`GlobalGaiaV3.tsx` 添加移动端遮罩层（`bg-black/80 z-40 md:hidden`）
 
 ---
 
