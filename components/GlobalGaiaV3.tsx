@@ -787,11 +787,17 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
 
       {/* 侧边栏对话界面 */}
       {isOpen && (
-        <div
-          ref={sidebarRef}
-          className="fixed inset-y-0 right-0 bg-cosmic-void/95 backdrop-blur-xl shadow-2xl z-50 flex flex-col border-l border-white/10"
-          style={{ width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : `${sidebarWidth}px` }}
-        >
+        <>
+          {/* 🔒 移动端遮罩层 - 防止背后内容穿透 */}
+          <div
+            className="fixed inset-0 bg-black/80 z-40 md:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            ref={sidebarRef}
+            className="fixed inset-y-0 right-0 bg-cosmic-void/95 backdrop-blur-xl shadow-2xl z-50 flex flex-col border-l border-white/10"
+            style={{ width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : `${sidebarWidth}px` }}
+          >
           {/* 拖动手柄 - 仅在桌面端显示，更明显的样式 */}
           <div
             className="hidden md:flex absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:w-3 bg-white/10 hover:bg-purple-500/50 transition-all z-10 items-center justify-center group"
@@ -914,7 +920,8 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
                 <p className="text-xs text-gray-500 mt-2">按 Enter 发送，Shift + Enter 换行</p>
               </div>
             </>
-        </div>
+          </div>
+        </>
       )}
 
       {/* 登录弹窗 */}
