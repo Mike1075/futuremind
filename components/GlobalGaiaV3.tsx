@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { flushSync } from 'react-dom'
+import { flushSync, createPortal } from 'react-dom'
 import { Send, Loader2, History } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AuthModal from '@/components/AuthModal'
@@ -785,17 +785,18 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
         />
       )}
 
-      {/* 侧边栏对话界面 */}
-      {isOpen && (
+      {/* 侧边栏对话界面 - 使用 Portal 渲染到 body 避免层叠上下文问题 */}
+      {isOpen && typeof document !== 'undefined' && createPortal(
         <>
-          {/* 🔒 移动端遮罩层 - 防止背后内容穿透 */}
+          {/* 🔒 遮罩层 - 移动端全屏遮挡，桌面端半透明 */}
           <div
-            className="fixed inset-0 bg-black/80 z-40 md:hidden"
+            className="fixed inset-0 z-[9998] bg-black md:bg-black/50"
             onClick={() => setIsOpen(false)}
           />
           <div
             ref={sidebarRef}
-            className="fixed inset-y-0 right-0 bg-cosmic-void/95 backdrop-blur-xl shadow-2xl z-50 flex flex-col border-l border-white/10"
+            className="fixed inset-y-0 right-0 z-[9999] flex flex-col border-l border-white/10 shadow-2xl
+                       bg-[#0a0a0f] md:bg-cosmic-void/95 md:backdrop-blur-xl"
             style={{ width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : `${sidebarWidth}px` }}
           >
           {/* 拖动手柄 - 仅在桌面端显示，更明显的样式 */}
@@ -921,7 +922,8 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
               </div>
             </>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* 登录弹窗 */}
