@@ -320,7 +320,11 @@ const MailIcon = () => (
   - **注意**：边缘函数需要手动部署：`npx supabase functions deploy evaluate-submission --no-verify-jwt`
 - ✅ **盖亚对话移动端穿透修复（2026-01-09）**：
   - 问题：手机上打开盖亚对话时，首页按钮穿透显示导致文字重叠
-  - 修复：`GlobalGaiaV3.tsx` 添加移动端遮罩层（`bg-black/80 z-40 md:hidden`）
+  - 根因：层叠上下文(Stacking Context)限制，半透明背景导致穿透
+  - 修复：`GlobalGaiaV3.tsx` 使用 React Portal 渲染到 document.body
+    - 超高 z-index (9998/9999) 确保最顶层
+    - 移动端使用完全不透明背景 (`bg-black`, `bg-[#0a0a0f]`)
+    - 桌面端保持半透明毛玻璃效果
 
 ---
 
