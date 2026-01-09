@@ -83,6 +83,22 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
     return path
   }
 
+  // 🔒 预先计算解锁状态映射（链式检查：必须前面所有课程都>=60分）
+  const unlockMap = new Map<string, boolean>()
+  contents.forEach((content, index) => {
+    if (index === 0) {
+      // 第一天永远解锁
+      unlockMap.set(content.id, true)
+    } else {
+      // 检查前一天是否解锁 AND 前一天分数>=60
+      const prevContent = contents[index - 1]
+      const prevUnlocked = unlockMap.get(prevContent.id) === true
+      const prevScore = scoreMap.get(prevContent.id) || 0
+      // 链式解锁：前一天必须已解锁且>=60分
+      unlockMap.set(content.id, prevUnlocked && prevScore >= 60)
+    }
+  })
+
   // 计算进度
   const completedCount = Array.from(completionMap.values()).filter(Boolean).length
   const progressPercentage = Math.round((completedCount / contents.length) * 100)
@@ -157,17 +173,14 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
             {contents.map((content, index) => {
               if (index === 0) return null // 第一个节点前面没有路径
 
-              const isCompleted = completionMap.get(content.id) === true
-              const prevCompleted = completionMap.get(contents[index - 1]?.id) === true
-              // 🔥 修复：路径显示也要检查前一个课程的分数>=60
-              const prevScore = scoreMap.get(contents[index - 1]?.id) || 0
-              const isUnlocked = prevScore >= 60
+              // 使用预计算的解锁状态
+              const isUnlocked = unlockMap.get(content.id) === true
               const point = PATH_POINTS[index]
               const prevPoint = PATH_POINTS[index - 1]
               const color = COURSE_COLORS[index]
               const prevColor = COURSE_COLORS[index - 1]
 
-              // 只要前一个节点得分>=60（当前节点自动解锁），就绘制实线路径
+              // 只有当前节点解锁时才绘制实线路径
               if (!isUnlocked) return null
 
               return (
@@ -208,9 +221,8 @@ export function ListeningCourseView({ courseSystem, contents, completionMap, sco
           <div className="absolute inset-0">
             {contents.map((content, index) => {
               const isCompleted = completionMap.get(content.id) === true
-              // 🔥 修复：解锁条件改为前一个课程的分数>=60
-              const prevScore = index > 0 ? (scoreMap.get(contents[index - 1]?.id) || 0) : 0
-              const isUnlocked = index === 0 || prevScore >= 60
+              // 使用预计算的解锁状态（链式检查）
+              const isUnlocked = unlockMap.get(content.id) === true
               const score = scoreMap.get(content.id) || 0
               const isPassed = score >= 60  // 及格标准
               const point = PATH_POINTS[index]

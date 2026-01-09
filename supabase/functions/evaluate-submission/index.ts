@@ -136,6 +136,22 @@ serve(async (req) => {
 
     console.log(`📝 开始评估：user_id=${user_id}, content_id=${content_id}`)
 
+    // 🔒 安全检查：验证课程解锁状态（防止通过API绕过解锁限制）
+    const unlockCheck = await checkCourseUnlock(user_id, content_id)
+    if (!unlockCheck.isUnlocked) {
+      console.log(`🚫 课程未解锁：${unlockCheck.reason}`)
+      return new Response(
+        JSON.stringify({ error: unlockCheck.reason || '该课程尚未解锁，无法提交作业' }),
+        {
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
+      )
+    }
+
     // 2. 创建提交记录
     const { data: newSubmission, error: insertError } = await supabase
       .from('user_submissions')
@@ -456,4 +472,101 @@ function calculateGrowthPoints(growthImpact: any): number {
   }
 
   return Math.round(points) // 返回整数
+}
+
+// 辅助函数：检查课程解锁状态（链式检查）
+async function checkCourseUnlock(
+  userId: string,
+  contentId: string
+): Promise<{ isUnlocked: boolean; reason?: string }> {
+  try {
+    // 1. 获取当前课程内容及其所属体系
+    const { data: content, error: contentError } = await supabase
+      .from('course_contents')
+      .select('id, sequence_number, system_id')
+      .eq('id', contentId)
+      .single()
+
+    if (contentError || !content) {
+      return { isUnlocked: false, reason: '课程不存在' }
+    }
+
+    // 2. 获取课程体系信息
+    const { data: system, error: systemError } = await supabase
+      .from('course_systems')
+      .select('id, structure_type')
+      .eq('id', content.system_id)
+      .single()
+
+    if (systemError || !system) {
+      return { isUnlocked: false, reason: '课程体系不存在' }
+    }
+
+    // 只对 daily_sequential 类型（倾听课程）进行检查
+    if (system.structure_type !== 'daily_sequential') {
+      return { isUnlocked: true }
+    }
+
+    // 第一天永远解锁
+    if (content.sequence_number === 1) {
+      return { isUnlocked: true }
+    }
+
+    // 3. 获取该课程体系中所有 sequence_number < 当前 的课程
+    const { data: previousContents, error: prevError } = await supabase
+      .from('course_contents')
+      .select('id, sequence_number')
+      .eq('system_id', system.id)
+      .eq('is_published', true)
+      .lt('sequence_number', content.sequence_number)
+      .order('sequence_number', { ascending: true })
+
+    if (prevError || !previousContents) {
+      return { isUnlocked: false, reason: '查询课程失败' }
+    }
+
+    if (previousContents.length === 0) {
+      return { isUnlocked: true }
+    }
+
+    // 4. 获取用户在这些课程中的提交分数
+    const previousContentIds = previousContents.map(c => c.id)
+
+    const { data: submissions, error: subError } = await supabase
+      .from('user_submissions')
+      .select('course_content_id, score')
+      .eq('user_id', userId)
+      .in('course_content_id', previousContentIds)
+      .eq('status', 'approved')
+
+    if (subError) {
+      return { isUnlocked: false, reason: '查询提交记录失败' }
+    }
+
+    // 5. 创建分数映射（取最高分）
+    const scoreMap = new Map<string, number>()
+    submissions?.forEach(sub => {
+      if (!sub.course_content_id) return
+      const existingScore = scoreMap.get(sub.course_content_id) || 0
+      if (sub.score && sub.score > existingScore) {
+        scoreMap.set(sub.course_content_id, sub.score)
+      }
+    })
+
+    // 6. 链式检查：从第1天开始，每一天都必须>=60分
+    for (const prevContent of previousContents) {
+      const score = scoreMap.get(prevContent.id) || 0
+      if (score < 60) {
+        return {
+          isUnlocked: false,
+          reason: `需要先完成第${prevContent.sequence_number}天的课程（获得60分以上）`
+        }
+      }
+    }
+
+    return { isUnlocked: true }
+  } catch (error) {
+    console.error('检查课程解锁状态失败:', error)
+    return { isUnlocked: false, reason: '检查解锁状态失败' }
+  }
 }

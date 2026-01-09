@@ -245,4 +245,92 @@ export class CourseService {
 
     return { isUnlocked: true }
   }
+
+  /**
+   * 检查倾听课程的解锁状态（链式检查）
+   * 必须完成所有前置课程（分数>=60）才能解锁当前课程
+   *
+   * @param userId 用户ID
+   * @param contentId 当前课程内容ID
+   * @returns 是否解锁，以及未解锁时需要完成的课程
+   */
+  static async checkListeningCourseUnlock(
+    userId: string,
+    contentId: string
+  ): Promise<{ isUnlocked: boolean; lockedReason?: string; requiredDay?: number }> {
+    const supabase = await createClient()
+
+    // 1. 获取当前课程内容及其所属体系
+    const contentData = await this.getContentWithSystem(contentId)
+    if (!contentData) {
+      return { isUnlocked: false, lockedReason: '课程不存在' }
+    }
+
+    const { content, system } = contentData
+
+    // 只对倾听课程（daily_sequential）进行检查
+    if (system.structure_type !== 'daily_sequential') {
+      return { isUnlocked: true }
+    }
+
+    // 第一天永远解锁
+    if (content.sequence_number === 1) {
+      return { isUnlocked: true }
+    }
+
+    // 2. 获取该课程体系中所有 sequence_number < 当前 的课程
+    const { data: previousContents, error: contentsError } = await supabase
+      .from('course_contents')
+      .select('id, sequence_number')
+      .eq('system_id', system.id)
+      .eq('is_published', true)
+      .lt('sequence_number', content.sequence_number)
+      .order('sequence_number', { ascending: true })
+
+    if (contentsError || !previousContents) {
+      return { isUnlocked: false, lockedReason: '查询课程失败' }
+    }
+
+    // 3. 获取用户在这些课程中的最高分
+    const previousContentIds = previousContents.map(c => c.id)
+
+    if (previousContentIds.length === 0) {
+      return { isUnlocked: true }
+    }
+
+    const { data: submissions, error: submissionsError } = await supabase
+      .from('user_submissions')
+      .select('course_content_id, score')
+      .eq('user_id', userId)
+      .in('course_content_id', previousContentIds)
+      .eq('status', 'approved')
+
+    if (submissionsError) {
+      return { isUnlocked: false, lockedReason: '查询提交记录失败' }
+    }
+
+    // 4. 创建分数映射（取最高分）
+    const scoreMap = new Map<string, number>()
+    submissions?.forEach(sub => {
+      if (!sub.course_content_id) return
+      const existingScore = scoreMap.get(sub.course_content_id) || 0
+      if (sub.score && sub.score > existingScore) {
+        scoreMap.set(sub.course_content_id, sub.score)
+      }
+    })
+
+    // 5. 链式检查：从第1天开始，每一天都必须>=60分
+    for (const prevContent of previousContents) {
+      const score = scoreMap.get(prevContent.id) || 0
+      if (score < 60) {
+        return {
+          isUnlocked: false,
+          lockedReason: `需要先完成第${prevContent.sequence_number}天的课程（获得60分以上）`,
+          requiredDay: prevContent.sequence_number
+        }
+      }
+    }
+
+    return { isUnlocked: true }
+  }
 }

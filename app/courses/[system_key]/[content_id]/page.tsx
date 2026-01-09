@@ -56,6 +56,15 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     redirect(`/courses/${courseSystem.system_key}/${contentId}`)
   }
 
+  // 🔒 安全检查：验证倾听课程的解锁状态（防止用户通过URL直接访问未解锁课程）
+  if (courseSystem.structure_type === 'daily_sequential') {
+    const unlockStatus = await CourseService.checkListeningCourseUnlock(user.id, contentId)
+    if (!unlockStatus.isUnlocked) {
+      // 未解锁，重定向回课程列表页
+      redirect(`/courses/${systemKey}`)
+    }
+  }
+
   // 获取相邻内容
   const { prev: prevContent, next: nextContent } = await CourseService.getAdjacentContents(
     courseSystem.id,
