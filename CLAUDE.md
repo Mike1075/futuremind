@@ -325,6 +325,10 @@ const MailIcon = () => (
     - 超高 z-index (9998/9999) 确保最顶层
     - 移动端使用完全不透明背景 (`bg-black`, `bg-[#0a0a0f]`)
     - 桌面端保持半透明毛玻璃效果
+- ✅ **忘记密码页面 JS 错误修复（2026-01-10）**：
+  - 问题：点击"忘记密码"后页面报错 "Mail is not defined"
+  - 根因：忘记密码表单使用了 `<Mail>` 图标但未从 lucide-react 导入
+  - 修复：`app/login/page.tsx` 第218行改用已定义的 `<MailIcon />` 内联 SVG 组件
 
 ---
 
