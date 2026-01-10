@@ -214,8 +214,8 @@ function LoginForm() {
                 邮箱
               </label>
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400">
-                  <Mail size={20} strokeWidth={2} />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-purple-400">
+                  <MailIcon />
                 </div>
                 <input
                   type="email"
