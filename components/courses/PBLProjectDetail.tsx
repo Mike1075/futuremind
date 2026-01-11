@@ -138,24 +138,32 @@ export function PBLProjectDetail({
     })
   }
 
-  // 检查某一天是否解锁
-  const isDayUnlocked = (weekNumber: number, dayNumber: number): boolean => {
-    // 第1周第1天总是解锁
-    if (weekNumber === 1 && dayNumber === 1) return true
+  // 检查某个 activity 是否解锁
+  // 参数：weekNumber - 当前周号，activityIndex - 当前 activity 在本周的索引（0起始）
+  const isActivityUnlocked = (weekNumber: number, activityIndex: number, currentWeekActivities: Activity[]): boolean => {
+    // 第1周第1个任务总是解锁
+    if (weekNumber === 1 && activityIndex === 0) return true
 
-    // 检查前一天是否完成
-    let prevWeek = weekNumber
-    let prevDay = dayNumber - 1
-
-    if (prevDay === 0) {
-      // 如果是某周的第1天，检查上周的最后一天
-      prevWeek = weekNumber - 1
-      const prevWeekPlan = project.week_plan?.find(w => w.week === prevWeek)
-      prevDay = prevWeekPlan?.activities?.length || 0
+    // 如果不是本周第一个任务，检查本周前一个任务是否完成
+    if (activityIndex > 0) {
+      const prevActivity = currentWeekActivities[activityIndex - 1]
+      const prevDayRangeStr = prevActivity.day_range || prevActivity.day_label?.match(/\d+/)?.[0] || String(activityIndex)
+      const prevDayNumber = parseInt(prevDayRangeStr.toString().split('-')[0])
+      const prevDayKey = `project_${project.sequence_number}_week${weekNumber}_day${prevDayNumber}`
+      return (userProgress[prevDayKey] || 0) > 0
     }
 
-    const prevDayKey = `project_${project.sequence_number}_week${prevWeek}_day${prevDay}`
-    return (userProgress[prevDayKey] || 0) > 0  // 有得分就算完成
+    // 如果是本周第一个任务（但不是第1周），检查上周最后一个任务是否完成
+    const prevWeek = weekNumber - 1
+    const prevWeekPlan = project.week_plan?.find(w => w.week === prevWeek)
+    if (!prevWeekPlan?.activities?.length) return false
+
+    // 获取上周最后一个 activity 的 dayNumber
+    const lastActivity = prevWeekPlan.activities[prevWeekPlan.activities.length - 1]
+    const lastDayRangeStr = lastActivity.day_range || lastActivity.day_label?.match(/\d+/)?.[0] || String(prevWeekPlan.activities.length)
+    const lastDayNumber = parseInt(lastDayRangeStr.toString().split('-')[0])
+    const prevDayKey = `project_${project.sequence_number}_week${prevWeek}_day${lastDayNumber}`
+    return (userProgress[prevDayKey] || 0) > 0
   }
 
   // PF-02: 使用useCallback优化handleToggleSelection
@@ -424,13 +432,14 @@ export function PBLProjectDetail({
                   // 判断该周是否解锁：第1周始终解锁，其他周需要前一周有任务完成
                   const isWeekUnlocked = week.week === 1 || (() => {
                     const prevWeekPlan = project.week_plan?.find(w => w.week === week.week - 1)
-                    if (!prevWeekPlan) return false
-                    // 检查前一周是否有任何任务完成
-                    return prevWeekPlan.activities?.some((_, idx) => {
-                      const dayNumber = idx + 1
+                    if (!prevWeekPlan?.activities?.length) return false
+                    // 检查前一周是否有任何任务完成（使用正确的 day_range）
+                    return prevWeekPlan.activities.some((activity, idx) => {
+                      const dayRangeStr = activity.day_range || activity.day || String(idx + 1)
+                      const dayNumber = parseInt(dayRangeStr.toString().split('-')[0])
                       const prevDayKey = `project_${project.sequence_number}_week${week.week - 1}_day${dayNumber}`
                       return (userProgress[prevDayKey] || 0) > 0
-                    }) || false
+                    })
                   })()
 
                   return (
@@ -490,19 +499,19 @@ export function PBLProjectDetail({
                 )}
 
                 {/* 每日任务列表 */}
-                {isWeekExpanded && week.activities && (
+                {isWeekExpanded && week.activities && (() => {
+                  // ✨ 先排序，保存引用以便传给解锁检查函数
+                  const sortedActivities = [...week.activities].sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
+                  return (
                   <div className="p-4 space-y-3">
-                    {/* ✨ 按sequence字段排序activities */}
-                    {[...week.activities]
-                      .sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
-                      .map((activity, index) => {
+                    {sortedActivities.map((activity, index) => {
                         // ✨ 优先使用新字段day_range，向后兼容旧的day字段
                         const dayRangeStr = activity.day_range || activity.day || String(index + 1)
                         // 从day_range提取第一个数字作为dayNumber（如"2-4" -> 2）
                         const dayNumber = parseInt(dayRangeStr.toString().split('-')[0])
                         const dayKey = `project_${project.sequence_number}_week${week.week}_day${dayNumber}`
                         const isCompleted = (userProgress[dayKey] || 0) > 0  // 有得分就算完成
-                        const isUnlocked = isDayUnlocked(week.week, dayNumber)
+                        const isUnlocked = isActivityUnlocked(week.week, index, sortedActivities)
                         const isDayExpanded = expandedDays.has(dayKey)
 
                         // ✨ 使用新字段，向后兼容
@@ -703,7 +712,8 @@ export function PBLProjectDetail({
                       )
                     })}
                   </div>
-                )}
+                  )
+                })()}
               </div>
             )
           })}

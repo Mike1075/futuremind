@@ -329,6 +329,17 @@ const MailIcon = () => (
   - 问题：点击"忘记密码"后页面报错 "Mail is not defined"
   - 根因：忘记密码表单使用了 `<Mail>` 图标但未从 lucide-react 导入
   - 修复：`app/login/page.tsx` 第218行改用已定义的 `<MailIcon />` 内联 SVG 组件
+- ✅ **伊卡洛斯项目解锁逻辑 bug 修复（2026-01-11）**：
+  - 问题：用户完成 Day 1-3 后（75分或85分），Day 4-7 仍显示锁定无法点击
+  - 根因：解锁逻辑用 `dayNumber - 1` 计算前一天的 key，但实际数据是范围（Day 1-3, Day 4-7）
+    - Day 4-7 检查时计算 `prevDay = 4 - 1 = 3`，生成 key `day3`
+    - 但用户提交 Day 1-3 时存储的 key 是 `day1`（范围第一个数字）
+    - `day3` 不存在，返回 false，导致 Day 4-7 永远锁定
+  - 修复：`PBLProjectDetail.tsx`
+    - 新函数 `isActivityUnlocked(weekNumber, activityIndex, sortedActivities)` 替代 `isDayUnlocked`
+    - 使用 activity 数组索引找前一个任务，而非简单 `dayNumber - 1`
+    - 正确解析 `day_range` 字段获取实际的 dayKey
+    - 同步修复周级别解锁检查（第437-442行）
 
 ---
 
