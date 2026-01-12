@@ -580,21 +580,21 @@ export function DownloadSection() {
               <li className="flex items-center gap-2">
                 <Apple className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
                 <span>
-                  <span className="text-gray-300">Seth365Mac-1.2.27.dmg</span>
+                  <span className="text-gray-300">Seth365Mac_v1.3.0.dmg</span>
                   <span className="text-gray-500 ml-1">- 苹果电脑 Mac</span>
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <Monitor className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
                 <span>
-                  <span className="text-gray-300">Seth365_v1.4.2.zip</span>
+                  <span className="text-gray-300">Seth365_v1.5.0.zip</span>
                   <span className="text-gray-500 ml-1">- Windows 电脑</span>
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <Smartphone className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
                 <span>
-                  <span className="text-gray-300">Seth365-v1.2.6.apk</span>
+                  <span className="text-gray-300">Seth365-v1.3.1.apk</span>
                   <span className="text-gray-500 ml-1">- 安卓手机</span>
                 </span>
               </li>
