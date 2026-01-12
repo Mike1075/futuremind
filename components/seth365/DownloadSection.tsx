@@ -414,10 +414,23 @@ export function DownloadSection() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
                     {available ? (
                       downloadUrl ? (
                         <>
+                          {/* 下载按钮 - 移动端优先显示 */}
+                          <a
+                            href={downloadUrl}
+                            download
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDownloadClick(e, item.platform, downloadUrl)
+                            }}
+                            className="btn-stardust px-4 py-2 text-sm flex items-center gap-2 order-first sm:order-last"
+                          >
+                            <Download className="w-4 h-4" />
+                            下载
+                          </a>
                           {/* 复制链接按钮 */}
                           <button
                             onClick={(e) => {
@@ -439,19 +452,6 @@ export function DownloadSection() {
                               </>
                             )}
                           </button>
-                          {/* 下载按钮 */}
-                          <a
-                            href={downloadUrl}
-                            download
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDownloadClick(e, item.platform, downloadUrl)
-                            }}
-                            className="btn-stardust px-4 py-2 text-sm flex items-center gap-2"
-                          >
-                            <Download className="w-4 h-4" />
-                            下载
-                          </a>
                         </>
                       ) : item.platform === 'ios' ? (
                         <span className="text-sm text-purple-400 px-4 py-2">
