@@ -371,7 +371,7 @@ export function DownloadSection() {
         多平台客户端下载
       </h3>
       <p className="text-sm text-gray-400 mb-6">
-        下载客户端可自动切换壁纸，应用内可检查更新
+        客户端可自动切换壁纸。下载失败？点"复制链接"后粘贴到浏览器打开
       </p>
 
       {loading ? (
@@ -397,13 +397,13 @@ export function DownloadSection() {
                   className="p-4 cursor-pointer hover:bg-white/5 transition-colors"
                   onClick={() => toggleExpand(item.platform)}
                 >
-                  {/* 上部：图标、标题、展开箭头 */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-300" />
-                      </div>
-                      <div className="flex-1 min-w-0">
+                  {/* 第一行：图标、标题版本、展开箭头 */}
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-300" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
                         <h4 className="font-semibold text-white flex items-center gap-2">
                           {item.title}
                           {version && (
@@ -412,74 +412,21 @@ export function DownloadSection() {
                             </span>
                           )}
                         </h4>
-                        <p className="text-sm text-gray-400 line-clamp-2">{item.description}</p>
+                        <div className="flex items-center">
+                          {isExpanded ? (
+                            <ChevronUp className="w-5 h-5 text-gray-400" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-gray-400" />
+                          )}
+                        </div>
                       </div>
-                    </div>
-
-                    {/* 桌面端：按钮显示在右侧 */}
-                    <div className="hidden sm:flex items-center gap-2 ml-4 flex-shrink-0">
-                      {available ? (
-                        downloadUrl ? (
-                          <>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                copyDownloadUrl(item.platform, downloadUrl)
-                              }}
-                              className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 text-sm flex items-center gap-1.5 transition-colors"
-                              title="复制下载链接"
-                            >
-                              {copiedPlatform === item.platform ? (
-                                <>
-                                  <Check className="w-4 h-4 text-green-400" />
-                                  <span className="text-green-400">已复制</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-4 h-4" />
-                                  <span>复制链接</span>
-                                </>
-                              )}
-                            </button>
-                            <a
-                              href={downloadUrl}
-                              download
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDownloadClick(e, item.platform, downloadUrl)
-                              }}
-                              className="btn-stardust px-4 py-2 text-sm flex items-center gap-2"
-                            >
-                              <Download className="w-4 h-4" />
-                              下载
-                            </a>
-                          </>
-                        ) : item.platform === 'ios' ? (
-                          <span className="text-sm text-purple-400 px-4 py-2">App Store</span>
-                        ) : null
-                      ) : (
-                        <span className="text-sm text-gray-500 px-4 py-2">{item.comingSoonText || '即将推出'}</span>
-                      )}
-                      {isExpanded ? (
-                        <ChevronUp className="w-5 h-5 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-gray-400" />
-                      )}
-                    </div>
-
-                    {/* 移动端：只显示展开箭头 */}
-                    <div className="sm:hidden flex-shrink-0 ml-2">
-                      {isExpanded ? (
-                        <ChevronUp className="w-5 h-5 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-gray-400" />
-                      )}
+                      <p className="text-sm text-gray-400 mt-0.5">{item.description}</p>
                     </div>
                   </div>
 
-                  {/* 移动端：按钮单独一行 */}
+                  {/* 第二行：操作按钮 */}
                   {available && downloadUrl && (
-                    <div className="sm:hidden flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
                       <a
                         href={downloadUrl}
                         download
@@ -487,7 +434,7 @@ export function DownloadSection() {
                           e.stopPropagation()
                           handleDownloadClick(e, item.platform, downloadUrl)
                         }}
-                        className="btn-stardust flex-1 py-2.5 text-sm flex items-center justify-center gap-2"
+                        className="btn-stardust flex-1 sm:flex-none px-6 py-2.5 text-sm flex items-center justify-center gap-2"
                       >
                         <Download className="w-4 h-4" />
                         下载安装包
@@ -501,20 +448,26 @@ export function DownloadSection() {
                         title="复制下载链接"
                       >
                         {copiedPlatform === item.platform ? (
-                          <Check className="w-4 h-4 text-green-400" />
+                          <>
+                            <Check className="w-4 h-4 text-green-400" />
+                            <span className="hidden sm:inline text-green-400">已复制</span>
+                          </>
                         ) : (
-                          <Copy className="w-4 h-4" />
+                          <>
+                            <Copy className="w-4 h-4" />
+                            <span className="hidden sm:inline">复制链接</span>
+                          </>
                         )}
                       </button>
                     </div>
                   )}
                   {available && !downloadUrl && item.platform === 'ios' && (
-                    <div className="sm:hidden mt-3 pt-3 border-t border-white/10">
+                    <div className="mt-3 pt-3 border-t border-white/10">
                       <span className="text-sm text-purple-400">在 App Store 搜索 "Seth365" 下载</span>
                     </div>
                   )}
                   {!available && (
-                    <div className="sm:hidden mt-3 pt-3 border-t border-white/10">
+                    <div className="mt-3 pt-3 border-t border-white/10">
                       <span className="text-sm text-gray-500">{item.comingSoonText || '即将推出'}</span>
                     </div>
                   )}
