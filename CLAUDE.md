@@ -340,6 +340,14 @@ const MailIcon = () => (
     - 使用 activity 数组索引找前一个任务，而非简单 `dayNumber - 1`
     - 正确解析 `day_range` 字段获取实际的 dayKey
     - 同步修复周级别解锁检查（第437-442行）
+- ✅ **微信浏览器作业提交失败修复（2026-01-23）**：
+  - 问题：iPad/微信浏览器提交作业时报错 "Failed to send a request to the Edge Function"
+  - 根因：微信内置浏览器对 Supabase 边缘函数的跨域调用有限制，请求无法发出
+  - 修复：创建 API Route 作为代理，客户端调用同域 API，服务端调用边缘函数
+    - 新增 `/api/submissions/evaluate/route.ts` - API 代理
+    - 修改 `SubmissionDialog.tsx` - 使用 API Route 替代直接调用边缘函数
+    - 增加重试机制（最多重试2次）和 60秒超时
+    - 改进错误消息，提供更友好的提示
 
 ---
 

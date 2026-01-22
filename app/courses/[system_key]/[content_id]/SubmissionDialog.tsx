@@ -76,19 +76,24 @@ export default function SubmissionDialog({
     setError(null)
 
     try {
-      // 调用边缘函数进行评估
-      const { data, error: functionError } = await supabase.functions.invoke('evaluate-submission', {
-        body: {
-          user_id: userId,
+      // 通过 API Route 代理调用边缘函数（解决微信浏览器等环境的兼容性问题）
+      const response = await fetch('/api/submissions/evaluate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           content_id: contentId,
           submission_content: submissionContent,
           submission_type: submissionType,
           is_public: isPublic // 传递作业可见性设置
-        }
+        })
       })
 
-      if (functionError) {
-        throw functionError
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '提交失败，请重试')
       }
 
       if (data.error) {
