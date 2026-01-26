@@ -348,6 +348,13 @@ const MailIcon = () => (
     - 修改 `SubmissionDialog.tsx` - 使用 API Route 替代直接调用边缘函数
     - 增加重试机制（最多重试2次）和 60秒超时
     - 改进错误消息，提供更友好的提示
+- ✅ **密码重置流程修复（2026-01-26）**：
+  - 问题：用户点击邮件中的重置密码链接后，显示登录页面而非重置密码页面
+  - 根因：Supabase 默认使用 implicit flow，token 放在 URL hash fragment 中，服务端路由无法获取
+  - 修复：
+    - 新增 `/auth/confirm/route.ts` - 处理 `token_hash` 参数验证
+    - 修改 `login/page.tsx` - 更新重定向 URL 为 `/auth/confirm`
+    - Supabase Dashboard 邮件模板需配置使用 `{{ .TokenHash }}` 而非 `{{ .ConfirmationURL }}`
 
 ---
 
