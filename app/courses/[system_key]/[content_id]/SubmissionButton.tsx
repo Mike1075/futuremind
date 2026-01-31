@@ -25,7 +25,7 @@ export default function SubmissionButton({
 
   const handleSuccess = (score?: number, isPublic?: boolean) => {
     // 如果是公开的高分作业，触发局部刷新
-    if (score && score >= 90 && isPublic && onVisibilityChanged) {
+    if (score && score >= 85 && isPublic && onVisibilityChanged) {
       onVisibilityChanged()
     }
     // 分数>=60时，立即通知导航按钮解锁（不等待页面刷新）

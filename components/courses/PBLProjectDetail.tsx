@@ -269,7 +269,7 @@ export function PBLProjectDetail({
   // 提交成功回调
   const handleSubmitSuccess = (score: number, isPublic: boolean) => {
     router.refresh()
-    if (score >= 90 && isPublic) {
+    if (score >= 85 && isPublic) {
       setPublicSubmissionsRefreshKey(prev => prev + 1)
     }
   }

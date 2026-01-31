@@ -123,7 +123,7 @@ export default function SubmissionHistory({
       const deletedSubmission = submissions.find(s => s.id === submissionId)
       const wasPublicSubmission = deletedSubmission &&
         deletedSubmission.is_public &&
-        (deletedSubmission.score ?? 0) >= 90
+        (deletedSubmission.score ?? 0) >= 85
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-submission`,
@@ -324,9 +324,9 @@ export default function SubmissionHistory({
                             />
                           </button>
                           {/* 分数不足时显示提示 */}
-                          {(!submission.score || submission.score < 90) && (submission.is_public ?? false) && (
+                          {(!submission.score || submission.score < 85) && (submission.is_public ?? false) && (
                             <span className="text-xs text-amber-400/80">
-                              (分数未达90，暂不展示)
+                              (分数未达85，暂不展示)
                             </span>
                           )}
                         </div>

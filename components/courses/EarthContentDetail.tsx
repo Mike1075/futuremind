@@ -1016,7 +1016,7 @@ export function EarthContentDetail({
                     <button
                       onClick={() => {
                         // 如果是公开的高分作业，刷新优秀作业展示
-                        if (isPublic && submissionResult?.evaluation?.score >= 90) {
+                        if (isPublic && submissionResult?.evaluation?.score >= 85) {
                           setPublicSubmissionsRefreshKey(prev => prev + 1)
                         }
                         setShowSubmitDialog(false)

@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       .eq('course_content_id', contentId)
       .eq('is_public', true)
       .eq('hidden_by_teacher', false)
-      .gte('score', 90)
+      .gte('score', 85)
       .order('score', { ascending: false })
       .order('submitted_at', { ascending: false })
       .limit(limit)

@@ -61,7 +61,7 @@ export function PBLSubmissionsHistory({
   // 删除提交记录
   const handleDelete = async (submissionId: string) => {
     const deletedSubmission = submissions.find(s => s.id === submissionId)
-    const wasPublic = deletedSubmission?.is_public && deletedSubmission?.score >= 90
+    const wasPublic = deletedSubmission?.is_public && deletedSubmission?.score >= 85
 
     try {
       const response = await fetch(`/api/submissions?id=${submissionId}`, {
@@ -244,9 +244,9 @@ export function PBLSubmissionsHistory({
                         }`}>
                           {(submission.is_public ?? false) ? '公开' : '私密'}
                         </span>
-                        {(!submission.score || submission.score < 90) && (submission.is_public ?? false) && (
+                        {(!submission.score || submission.score < 85) && (submission.is_public ?? false) && (
                           <span className="text-xs text-amber-400/80">
-                            (分数未达90，暂不展示)
+                            (分数未达85，暂不展示)
                           </span>
                         )}
                       </div>

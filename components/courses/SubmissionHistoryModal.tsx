@@ -59,7 +59,7 @@ export const SubmissionHistoryModal = memo(function SubmissionHistoryModal({
     if (!deletingSubmissionId) return
 
     const submission = submissions.find(s => s.id === deletingSubmissionId)
-    const wasPublic = submission?.is_public && submission?.score !== null && submission.score >= 90
+    const wasPublic = submission?.is_public && submission?.score !== null && submission.score >= 85
 
     try {
       await onDelete(deletingSubmissionId, wasPublic || false)
