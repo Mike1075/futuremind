@@ -6,7 +6,7 @@ import { safeParseInt } from '@/lib/env'
 
 /**
  * GET /api/submissions/public
- * 获取公开的优秀作业（评分≥90分且未被隐藏）
+ * 获取公开的优秀作业（评分≥85分且未被隐藏）
  * Query参数：
  * - contentId: 课程内容ID（必需）
  * - limit: 返回数量限制（可选，默认20）

@@ -106,7 +106,7 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         <p className="text-starlight-muted text-h3">暂无公开的优秀作业</p>
-        <p className="text-starlight-dim text-small mt-2">评分≥90分的作业将在这里展示</p>
+        <p className="text-starlight-dim text-small mt-2">评分≥85分的作业将在这里展示</p>
       </div>
     )
   }
@@ -126,7 +126,7 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
         </div>
         <div className="text-center">
           <h3 className="text-lg font-bold text-starlight">优秀作业展示</h3>
-          <p className="text-xs text-starlight-muted">来自同学们的优秀作品（评分≥90分）</p>
+          <p className="text-xs text-starlight-muted">来自同学们的优秀作品（评分≥85分）</p>
         </div>
       </div>
 

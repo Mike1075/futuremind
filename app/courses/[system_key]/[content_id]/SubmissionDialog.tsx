@@ -230,7 +230,7 @@ export default function SubmissionDialog({
                     <h4 className="text-small font-semibold text-starlight mb-1">作业可见性</h4>
                     <p className="text-xs text-starlight-muted">
                       {isPublic
-                        ? '你的作业将对其他同学公开展示（需评分≥90分）'
+                        ? '你的作业将对其他同学公开展示（需评分≥85分）'
                         : '你的作业仅自己和老师可见'}
                     </p>
                   </div>
@@ -267,7 +267,7 @@ export default function SubmissionDialog({
                     <div className="flex-1">
                       <h5 className="text-sm font-semibold text-blue-400 mb-1">隐私提示</h5>
                       <ul className="text-xs text-gray-300 space-y-1">
-                        <li>• 仅评分达到90分及以上的作业会被公开展示</li>
+                        <li>• 仅评分达到85分及以上的作业会被公开展示</li>
                         <li>• 展示内容包括：你的姓名、作业内容和提交时间</li>
                         <li>• 老师可以隐藏任何不适当的公开作业</li>
                         <li>• 你可以随时将作业改为私密状态</li>
