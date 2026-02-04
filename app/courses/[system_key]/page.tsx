@@ -115,13 +115,18 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
       )
     }
 
-    // 破晓觉醒课程使用日出视图
+    // 破晓觉醒课程使用日历视图
+    // 管理员账号可以跳过日期限制
+    const adminEmails = ['3368327@qq.com']
+    const bypassDateCheck = adminEmails.includes(user.email || '')
+
     return (
       <DawnAwakeningView
         courseSystem={courseSystem}
         contents={contents}
         completionMap={completionMap}
         scoreMap={scoreMap}
+        bypassDateCheck={bypassDateCheck}
       />
     )
   }

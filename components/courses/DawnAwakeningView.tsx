@@ -13,6 +13,7 @@ interface DawnAwakeningViewProps {
   contents: CourseContent[]
   completionMap: Map<string, boolean>
   scoreMap: Map<string, number>
+  bypassDateCheck?: boolean  // 管理员特权：跳过日期限制
 }
 
 // 课程开始日期：2026年2月6日
@@ -48,7 +49,7 @@ const COURSE_COLORS = [
 // 星期几的中文名称
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 
-export function DawnAwakeningView({ courseSystem, contents, completionMap, scoreMap }: DawnAwakeningViewProps) {
+export function DawnAwakeningView({ courseSystem, contents, completionMap, scoreMap, bypassDateCheck = false }: DawnAwakeningViewProps) {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [hoveredDay, setHoveredDay] = useState<number | null>(null)
 
@@ -100,14 +101,15 @@ export function DawnAwakeningView({ courseSystem, contents, completionMap, score
   }, [contents])
 
   // 预先计算解锁状态映射
-  // 解锁条件：1. 日期已到 2. 前一天分数>=60（第一天无需分数条件）
+  // 解锁条件：1. 日期已到（管理员可跳过） 2. 前一天分数>=60（第一天无需分数条件）
   const unlockMap = useMemo(() => {
     const map = new Map<string, boolean>()
 
     contents.forEach((content, index) => {
       // 计算该课程的日期
       const courseDate = new Date(2026, 1, 6 + index) // 2月6日 + index天
-      const dateReached = today >= courseDate
+      // 管理员可以跳过日期限制
+      const dateReached = bypassDateCheck || today >= courseDate
 
       if (index === 0) {
         // 第一天只需要日期到了就解锁
@@ -122,7 +124,7 @@ export function DawnAwakeningView({ courseSystem, contents, completionMap, score
     })
 
     return map
-  }, [contents, scoreMap, today])
+  }, [contents, scoreMap, today, bypassDateCheck])
 
   // 计算进度
   const completedCount = Array.from(completionMap.values()).filter(Boolean).length
