@@ -303,6 +303,35 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     )
   }
 
+  // 获取媒体资源（用于破晓觉醒课程的音频）
+  const { data: mediaResources } = await supabase
+    .from('media_resources')
+    .select('*')
+    .eq('course_content_id', contentId)
+    .order('created_at', { ascending: true })
+
+  // 渲染媒体资源（从 media_resources 表获取的音频等）
+  const renderMediaResources = () => {
+    if (!mediaResources || mediaResources.length === 0) return null
+
+    return (
+      <section className="mb-6 space-y-4">
+        {mediaResources.map((media: any) => {
+          if (media.resource_type === 'audio' || media.file_type?.startsWith('audio/')) {
+            return (
+              <AudioPlayer
+                key={media.id}
+                src={media.file_url}
+                title={media.file_name || '冥想音频'}
+              />
+            )
+          }
+          return null
+        })}
+      </section>
+    )
+  }
+
   // 根据课程类型渲染不同的内容
   const renderContent = () => {
     const structureType = courseSystem.structure_type
@@ -311,7 +340,10 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     if (systemKey === 'dawn_awakening') {
       return (
         <div className="space-y-4">
-          {/* 课程资源 */}
+          {/* 媒体资源（从 media_resources 表获取） */}
+          {renderMediaResources()}
+
+          {/* 课程资源（从 content.resources JSON 获取） */}
           {renderResources()}
 
           {content.original_text && (
