@@ -187,9 +187,12 @@ serve(async (req) => {
     console.log('🔍 搜集上下文信息...')
 
     // 3.1 获取课程内容（作业要求）
+    // 注意：不同课程的作业要求字段不同
+    // - 聆听课程/通用课程: goals, main_content
+    // - 破晓觉醒课程: life_practice（生活实践）, meditation_guide（冥想练习）
     const { data: courseContent } = await supabase
       .from('course_contents')
-      .select('title, subtitle, original_text, main_content, goals, system_id')
+      .select('title, subtitle, original_text, main_content, goals, life_practice, meditation_guide, system_id')
       .eq('id', content_id)
       .single()
 
@@ -234,10 +237,26 @@ serve(async (req) => {
 课程描述：${courseSystem.description}`
       : '暂无课程信息'
 
+    // 构建作业要求，优先级：
+    // 1. life_practice（生活实践） - 破晓觉醒课程的主要作业
+    // 2. goals（今日目标） - 通用课程
+    // 3. main_content（主要内容） - 备选
+    // 4. original_text（原文） - 最后备选
+    const assignmentText = courseContent?.life_practice
+      || courseContent?.goals
+      || courseContent?.main_content
+      || courseContent?.original_text
+      || '无'
+
+    // 如果有冥想练习指南，也加入作业上下文
+    const meditationContext = courseContent?.meditation_guide
+      ? `\n冥想练习指南：${courseContent.meditation_guide}`
+      : ''
+
     const assignmentRequirements = courseContent
       ? `作业标题：${courseContent.title}
 副标题：${courseContent.subtitle || '无'}
-作业要求：${courseContent.goals || courseContent.main_content || courseContent.original_text || '无'}`
+作业要求：${assignmentText}${meditationContext}`
       : '暂无作业要求'
 
     const recentHistory = recentSubmissions && recentSubmissions.length > 0
