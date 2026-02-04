@@ -31,8 +31,16 @@ export function formatCourseText(
   // 3. 清理首尾空白
   formatted = formatted.trim()
 
-  // 4. 移除第一行如果是重复的标题（🧘 冥想练习:xxx 或 🌱 生活实践:xxx）
+  // 4. 移除第一行如果是重复的标题（🧘 冥想练习:xxx 或 🌱 生活实践:xxx 或 【生活实修...】）
   formatted = formatted.replace(/^[🧘🌱🔍📖]\s*[^:：\n]+[:：][^\n]*\n\n?/, '')
+  formatted = formatted.replace(/^【生活实修[^】]*】\s*\n?/, '')  // 移除【生活实修:xxx】格式的标题
+
+  // 5. 处理 *(建议时长：xxx)* 格式 - 移除星号，只保留括号内容
+  formatted = formatted.replace(/\*\(([^)]+)\)\*/g, '($1)')
+
+  // 6. 处理生活实践的分行格式：* **练习：** xxx * **行动：** xxx
+  // 将 * **标签：** 转换为换行 + 加粗标签
+  formatted = formatted.replace(/\*\s*\*\*([^*:：]+)[:：]\*\*\s*/g, '\n**$1：**')
 
   // 5. 将文本分段（按双换行）
   const paragraphs = formatted.split('\n\n')
