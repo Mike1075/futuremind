@@ -559,7 +559,7 @@ export default function DawnAwakeningCoursePage() {
         {/* 右侧栏 - 内容编辑器 */}
         <div className="flex-1 overflow-y-auto">
           {selectedContent ? (
-            <div className="w-full max-w-none p-8">
+            <div className="w-full max-w-none p-8 pb-32">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-h2 font-bold text-starlight">第 {selectedContent.sequence_number} 天</h2>
                 <button
