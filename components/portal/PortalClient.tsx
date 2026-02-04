@@ -22,7 +22,8 @@ import {
   Key,
   Bell,
   Inbox,
-  Calendar
+  Calendar,
+  Sunrise
 } from 'lucide-react'
 import { usePortalCourses } from '@/lib/hooks/usePortalCourses'
 import { ConsciousnessTreeView } from '@/components/consciousness/ConsciousnessTreeView'
@@ -88,6 +89,8 @@ export function PortalClient({
       case 'icarus':
       case 'pbl':
         return Atom  // 原子图标代表科学探索和实验精神
+      case 'dawn_awakening':
+        return Sunrise  // 日出图标代表破晓觉醒
       default:
         return BookOpen
     }
@@ -102,6 +105,8 @@ export function PortalClient({
       case 'icarus':
       case 'pbl':
         return 'from-orange-500/20 to-red-500/20 border-orange-400/30'
+      case 'dawn_awakening':
+        return 'from-amber-500/20 to-orange-500/20 border-amber-400/30'
       default:
         return 'from-gray-500/20 to-gray-600/20 border-gray-400/30'
     }
@@ -117,6 +122,8 @@ export function PortalClient({
       case 'icarus':
       case 'pbl':
         return 'rgba(249, 115, 22, 0.4)' // 橙色
+      case 'dawn_awakening':
+        return 'rgba(251, 191, 36, 0.4)' // 金色（破晓）
       default:
         return 'rgba(156, 163, 175, 0.3)' // 灰色
     }

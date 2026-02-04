@@ -8,6 +8,7 @@ import { ProgressService } from '@/lib/services/progress.service'
 import { PBLCourseView } from '@/components/courses/PBLCourseView'
 import { EarthCourseView } from '@/components/courses/EarthCourseView'
 import { ListeningCourseView } from '@/components/courses/ListeningCourseView'
+import { DawnAwakeningView } from '@/components/courses/DawnAwakeningView'
 import type { CourseContent } from '@/lib/supabase/database.types'
 
 // ✅ 性能优化：启用30秒缓存，大幅提升页面加载速度
@@ -81,8 +82,8 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     )
   }
 
-  // 聆听课程使用曲线路径专属视图
-  if (systemKey === 'listening') {
+  // 聆听课程和破晓觉醒课程都需要分数映射（链式解锁）
+  if (systemKey === 'listening' || systemKey === 'dawn_awakening') {
     // 获取用户的作业分数
     const { data: submissions } = await supabase
       .from('user_submissions')
@@ -102,8 +103,21 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
       }
     })
 
+    // 聆听课程使用曲线路径视图
+    if (systemKey === 'listening') {
+      return (
+        <ListeningCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+        />
+      )
+    }
+
+    // 破晓觉醒课程使用日出视图
     return (
-      <ListeningCourseView
+      <DawnAwakeningView
         courseSystem={courseSystem}
         contents={contents}
         completionMap={completionMap}

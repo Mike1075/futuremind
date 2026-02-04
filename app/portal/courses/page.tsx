@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BookOpen, CheckCircle, Plus, Loader2, Ear, Globe, Rocket } from 'lucide-react'
+import { ArrowLeft, BookOpen, CheckCircle, Plus, Loader2, Ear, Globe, Rocket, Sunrise } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 
 interface Course {
@@ -126,6 +126,8 @@ export default function CoursesPage() {
       case 'icarus':
       case 'pbl':
         return Rocket
+      case 'dawn_awakening':
+        return Sunrise
       default:
         return BookOpen
     }
@@ -141,6 +143,8 @@ export default function CoursesPage() {
       case 'icarus':
       case 'pbl':
         return 'rgba(251, 146, 60, 0.25)' // 橙色
+      case 'dawn_awakening':
+        return 'rgba(251, 191, 36, 0.25)' // 金色（破晓）
       default:
         return 'rgba(156, 163, 175, 0.25)' // 灰色
     }
