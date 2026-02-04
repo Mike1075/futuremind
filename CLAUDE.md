@@ -29,8 +29,9 @@ docs/                  # 详细文档
 1. **地球课程 (Earth)** - 基础课程，PBL 项目制学习
 2. **伊卡洛斯三角 (Icarus Triangle)** - 进阶课程
 3. **倾听课程 (Listening)** - 14天音频课程
-4. **盖亚对话 (Gaia Dialog)** - AI 对话系统
-5. **赛斯365 (Seth365)** - 每日灵感壁纸系统
+4. **破晓觉醒 (Dawn Awakening)** - 23天晨间冥想课程
+5. **盖亚对话 (Gaia Dialog)** - AI 对话系统
+6. **赛斯365 (Seth365)** - 每日灵感壁纸系统
 
 ## 用户角色
 - `student` - 学生
@@ -355,6 +356,15 @@ const MailIcon = () => (
     - 新增 `/auth/confirm/route.ts` - 处理 `token_hash` 参数验证
     - 修改 `login/page.tsx` - 更新重定向 URL 为 `/auth/confirm`
     - Supabase Dashboard 邮件模板需配置使用 `{{ .TokenHash }}` 而非 `{{ .ConfirmationURL }}`
+- ✅ **破晓觉醒课程（2026-02-04）**：
+  - 新增23天晨间冥想课程（2月6日-28日），内容源自「二月份完整的早课文档」
+  - 每天内容：Mike老师晨间寄语 + 深度冥想引导(15-30分钟) + 生活实修
+  - 管理后台：`/admin/courses/dawn-awakening`（内容编辑 + 音频上传）
+  - 学员管理：`/admin/courses/dawn-awakening/students`
+  - 前端组件：`DawnAwakeningView.tsx`（日出主题，从深夜到黎明的色彩渐变）
+  - 链式解锁机制：需>=60分解锁下一天（与自在聆听课程相同）
+  - 数据库：`course_systems` system_key=`dawn_awakening`
+  - 学员可在「我的课程」页面选修此课程
 
 ---
 
