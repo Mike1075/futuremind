@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { CourseSystem, CourseContent } from '@/lib/supabase/database.types'
@@ -14,6 +14,9 @@ interface DawnAwakeningViewProps {
   completionMap: Map<string, boolean>
   scoreMap: Map<string, number>
 }
+
+// 课程开始日期：2026年2月6日
+const COURSE_START_DATE = new Date(2026, 1, 6) // 月份从0开始，1=2月
 
 // 23天课程的色彩配置（从深夜紫蓝到金色黎明的渐变）
 const COURSE_COLORS = [
@@ -42,89 +45,93 @@ const COURSE_COLORS = [
   { from: '#dc2626', to: '#f59e0b' },      // Day 23 - 重生
 ]
 
-// 凤凰简笔画路径 - 23个节点沿着凤凰轮廓分布
-// 象征"凤凰重生"与"破晓觉醒"的主题
-// 从左翼尖开始，经过头部，到右翼，再到尾羽
-const PATH_POINTS = [
-  // 左翼 - 从翼尖向上
-  { x: 8, y: 55 },    // Day 1 - 左翼尖端
-  { x: 15, y: 42 },   // Day 2 - 左翼上缘
-  { x: 24, y: 32 },   // Day 3 - 左翼内侧
-  { x: 33, y: 25 },   // Day 4 - 左肩
-
-  // 头部 - 凤凰仰首向上
-  { x: 42, y: 18 },   // Day 5 - 左颈
-  { x: 48, y: 10 },   // Day 6 - 头顶左侧
-  { x: 52, y: 8 },    // Day 7 - 头顶（最高点）
-  { x: 56, y: 10 },   // Day 8 - 头顶右侧
-  { x: 62, y: 18 },   // Day 9 - 右颈
-
-  // 右翼 - 向下延伸
-  { x: 70, y: 25 },   // Day 10 - 右肩
-  { x: 78, y: 32 },   // Day 11 - 右翼内侧
-  { x: 86, y: 42 },   // Day 12 - 右翼上缘
-  { x: 92, y: 55 },   // Day 13 - 右翼尖端
-
-  // 右侧身体 - 向下
-  { x: 82, y: 58 },   // Day 14 - 右翼下缘
-  { x: 72, y: 62 },   // Day 15 - 右身侧
-  { x: 65, y: 68 },   // Day 16 - 右腰
-
-  // 尾羽 - 向下流动
-  { x: 58, y: 75 },   // Day 17 - 尾羽开始
-  { x: 52, y: 82 },   // Day 18 - 尾羽中段
-  { x: 48, y: 88 },   // Day 19 - 尾羽尖端
-
-  // 左侧身体 - 向上回到起点
-  { x: 42, y: 82 },   // Day 20 - 尾羽左侧
-  { x: 35, y: 75 },   // Day 21 - 左身下
-  { x: 28, y: 68 },   // Day 22 - 左腰
-  { x: 18, y: 60 },   // Day 23 - 回归（重生）
-]
+// 星期几的中文名称
+const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 
 export function DawnAwakeningView({ courseSystem, contents, completionMap, scoreMap }: DawnAwakeningViewProps) {
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [hoveredDay, setHoveredDay] = useState<number | null>(null)
 
-  // 生成SVG曲线路径（使用Catmull-Rom样条算法，确保平滑曲线）
-  const generatePath = () => {
-    if (PATH_POINTS.length < 2) return ''
+  // 获取今天的日期（只比较年月日）
+  const today = useMemo(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  }, [])
 
-    let path = `M ${PATH_POINTS[0].x} ${PATH_POINTS[0].y}`
+  // 生成日历数据
+  const calendarData = useMemo(() => {
+    const year = 2026
+    const month = 1 // 2月（0-indexed）
 
-    for (let i = 0; i < PATH_POINTS.length - 1; i++) {
-      const p0 = i > 0 ? PATH_POINTS[i - 1] : PATH_POINTS[i]
-      const p1 = PATH_POINTS[i]
-      const p2 = PATH_POINTS[i + 1]
-      const p3 = i < PATH_POINTS.length - 2 ? PATH_POINTS[i + 2] : PATH_POINTS[i + 1]
+    // 2月1日是星期几
+    const firstDayOfMonth = new Date(year, month, 1).getDay()
 
-      // Catmull-Rom转贝塞尔曲线控制点
-      const controlX1 = p1.x + (p2.x - p0.x) / 6
-      const controlY1 = p1.y + (p2.y - p0.y) / 6
-      const controlX2 = p2.x - (p3.x - p1.x) / 6
-      const controlY2 = p2.y - (p3.y - p1.y) / 6
+    // 2月有多少天（2026年不是闰年，2月有28天）
+    const daysInMonth = 28
 
-      path += ` C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${p2.x} ${p2.y}`
+    // 生成日历格子
+    const calendar: Array<{
+      date: number | null
+      dayIndex: number | null // 课程第几天（0-indexed），null表示非课程日
+      content: CourseContent | null
+    }> = []
+
+    // 填充月初空白
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      calendar.push({ date: null, dayIndex: null, content: null })
     }
 
-    return path
-  }
-
-  // 预先计算解锁状态映射（链式检查：必须前面所有课程都>=60分）
-  const unlockMap = new Map<string, boolean>()
-  contents.forEach((content, index) => {
-    if (index === 0) {
-      unlockMap.set(content.id, true)
-    } else {
-      const prevContent = contents[index - 1]
-      const prevUnlocked = unlockMap.get(prevContent.id) === true
-      const prevScore = scoreMap.get(prevContent.id) || 0
-      unlockMap.set(content.id, prevUnlocked && prevScore >= 60)
+    // 填充日期
+    for (let date = 1; date <= daysInMonth; date++) {
+      // 课程从6日开始，6日是Day 1（index 0）
+      if (date >= 6 && date <= 28) {
+        const dayIndex = date - 6 // 6日=0, 7日=1, ...
+        calendar.push({
+          date,
+          dayIndex,
+          content: contents[dayIndex] || null
+        })
+      } else {
+        calendar.push({ date, dayIndex: null, content: null })
+      }
     }
-  })
+
+    return calendar
+  }, [contents])
+
+  // 预先计算解锁状态映射
+  // 解锁条件：1. 日期已到 2. 前一天分数>=60（第一天无需分数条件）
+  const unlockMap = useMemo(() => {
+    const map = new Map<string, boolean>()
+
+    contents.forEach((content, index) => {
+      // 计算该课程的日期
+      const courseDate = new Date(2026, 1, 6 + index) // 2月6日 + index天
+      const dateReached = today >= courseDate
+
+      if (index === 0) {
+        // 第一天只需要日期到了就解锁
+        map.set(content.id, dateReached)
+      } else {
+        // 后续天需要：日期到了 + 前一天分数>=60
+        const prevContent = contents[index - 1]
+        const prevUnlocked = map.get(prevContent.id) === true
+        const prevScore = scoreMap.get(prevContent.id) || 0
+        map.set(content.id, dateReached && prevUnlocked && prevScore >= 60)
+      }
+    })
+
+    return map
+  }, [contents, scoreMap, today])
 
   // 计算进度
   const completedCount = Array.from(completionMap.values()).filter(Boolean).length
   const progressPercentage = Math.round((completedCount / contents.length) * 100)
+
+  // 获取悬停日期的详情
+  const hoveredContent = hoveredDay !== null && calendarData[hoveredDay]?.content
+    ? calendarData[hoveredDay]
+    : null
 
   return (
     <div className="min-h-screen text-starlight relative overflow-hidden">
@@ -141,9 +148,9 @@ export function DawnAwakeningView({ courseSystem, contents, completionMap, score
         }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
+      <div className="max-w-4xl mx-auto px-4 py-8 relative z-10">
         {/* 课程头部 */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400 bg-clip-text text-transparent">
             {courseSystem.title}
           </h1>
@@ -162,180 +169,214 @@ export function DawnAwakeningView({ courseSystem, contents, completionMap, score
           </div>
         </div>
 
-        {/* 凤凰路径地图 - 与 ListeningCourseView 相同的布局 */}
-        <div className="relative mx-auto" style={{
-          width: 'min(100%, calc(100vh - 280px))',
-          maxWidth: '700px',
-          aspectRatio: '1 / 1'
-        }}>
-          {/* SVG路径 */}
-          <svg
-            className="w-full h-full"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="xMidYMid meet"
-          >
-            {/* 背景路径（灰色虚线） */}
-            <path
-              d={generatePath()}
-              fill="none"
-              stroke="rgba(75, 85, 99, 0.4)"
-              strokeWidth="0.4"
-              strokeDasharray="2 2"
-              strokeLinecap="round"
-            />
+        {/* 日历 */}
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-2xl">
+          {/* 月份标题 */}
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-white">2026年2月</h2>
+            <p className="text-gray-400 text-sm mt-1">23天晨间冥想之旅</p>
+          </div>
 
-            {/* 渐变定义 */}
-            <defs>
-              <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#F59E0B" />
-                <stop offset="50%" stopColor="#EF4444" />
-                <stop offset="100%" stopColor="#8B5CF6" />
-              </linearGradient>
-            </defs>
+          {/* 星期标题 */}
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {WEEKDAYS.map((day, index) => (
+              <div
+                key={day}
+                className={`text-center text-sm font-medium py-2 ${
+                  index === 0 || index === 6 ? 'text-amber-400/70' : 'text-gray-400'
+                }`}
+              >
+                {day}
+              </div>
+            ))}
+          </div>
 
-            {/* 已解锁路径（渐变色） */}
-            {contents.map((content, index) => {
-              if (index === 0) return null
-              const isUnlocked = unlockMap.get(content.id) === true
-              if (!isUnlocked) return null
+          {/* 日历格子 */}
+          <div className="grid grid-cols-7 gap-2">
+            {calendarData.map((cell, index) => {
+              if (cell.date === null) {
+                // 空白格子
+                return <div key={index} className="aspect-square" />
+              }
 
-              const point = PATH_POINTS[index]
-              const prevPoint = PATH_POINTS[index - 1]
-              const color = COURSE_COLORS[index]
-              const prevColor = COURSE_COLORS[index - 1]
+              const isCourseDay = cell.dayIndex !== null && cell.content
+              const content = cell.content
+              const dayIndex = cell.dayIndex ?? 0
+              const color = COURSE_COLORS[dayIndex] || COURSE_COLORS[0]
 
-              return (
-                <g key={`path-${index}`}>
-                  <defs>
-                    <linearGradient id={`grad-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor={prevColor.to} />
-                      <stop offset="100%" stopColor={color.from} />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d={(() => {
-                      const p0 = index > 1 ? PATH_POINTS[index - 2] : PATH_POINTS[index - 1]
-                      const p1 = prevPoint
-                      const p2 = point
-                      const p3 = index < PATH_POINTS.length - 1 ? PATH_POINTS[index + 1] : point
-
-                      const cx1 = p1.x + (p2.x - p0.x) / 6
-                      const cy1 = p1.y + (p2.y - p0.y) / 6
-                      const cx2 = p2.x - (p3.x - p1.x) / 6
-                      const cy2 = p2.y - (p3.y - p1.y) / 6
-
-                      return `M ${p1.x} ${p1.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${p2.x} ${p2.y}`
-                    })()}
-                    fill="none"
-                    stroke={`url(#grad-${index})`}
-                    strokeWidth="0.8"
-                    strokeLinecap="round"
-                  />
-                </g>
-              )
-            })}
-          </svg>
-
-          {/* 节点 */}
-          <div className="absolute inset-0">
-            {contents.map((content, index) => {
-              const isCompleted = completionMap.get(content.id) === true
-              const isUnlocked = unlockMap.get(content.id) === true
-              const score = scoreMap.get(content.id) || 0
+              // 是否已解锁
+              const isUnlocked = content ? unlockMap.get(content.id) === true : false
+              // 是否已完成
+              const isCompleted = content ? completionMap.get(content.id) === true : false
+              // 分数
+              const score = content ? scoreMap.get(content.id) || 0 : 0
               const isPassed = score >= 60
-              const point = PATH_POINTS[index]
-              const color = COURSE_COLORS[index]
-              const dayNumber = index + 1
 
+              // 是否是今天
+              const cellDate = new Date(2026, 1, cell.date)
+              const isToday = cellDate.getTime() === today.getTime()
+
+              // 是否是未来日期
+              const isFuture = cellDate > today
+
+              if (!isCourseDay) {
+                // 非课程日（1-5日）
+                return (
+                  <div
+                    key={index}
+                    className="aspect-square flex items-center justify-center text-gray-600 text-sm"
+                  >
+                    {cell.date}
+                  </div>
+                )
+              }
+
+              // 课程日（6-28日）
               return (
                 <motion.div
-                  key={content.id}
-                  initial={{ scale: 0, opacity: 0 }}
+                  key={index}
+                  initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: index * 0.1, type: 'spring' }}
-                  style={{
-                    position: 'absolute',
-                    left: `${point.x}%`,
-                    top: `${point.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    width: 'auto',
-                    height: 'auto',
-                  }}
+                  transition={{ delay: dayIndex * 0.02, type: 'spring' }}
+                  className="aspect-square relative"
+                  onMouseEnter={() => setHoveredDay(index)}
+                  onMouseLeave={() => setHoveredDay(null)}
                 >
                   {isUnlocked ? (
-                    <Link href={`/courses/dawn_awakening/${content.id}`} className="block">
+                    <Link
+                      href={`/courses/dawn_awakening/${content!.id}`}
+                      className="block w-full h-full"
+                    >
                       <motion.div
-                        whileHover={{ scale: 1.15 }}
+                        whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
-                        className="relative cursor-pointer flex items-center justify-center group/node"
+                        className={`w-full h-full rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all relative overflow-hidden group ${
+                          isToday ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-transparent' : ''
+                        }`}
+                        style={{
+                          background: isCompleted
+                            ? `linear-gradient(135deg, ${color.from}, ${color.to})`
+                            : `linear-gradient(135deg, ${color.from}80, ${color.to}80)`,
+                          border: isPassed
+                            ? '2px solid rgba(255,255,255,0.5)'
+                            : '2px solid rgba(255,255,255,0.15)',
+                          boxShadow: isCompleted ? `0 0 20px ${color.from}40` : 'none',
+                        }}
                       >
-                        {/* 光晕效果 - 默认隐藏，悬停时显示旋转动画 */}
+                        {/* 光晕效果 - 悬停时显示 */}
                         <motion.div
-                          className="absolute rounded-full pointer-events-none opacity-0 group-hover/node:opacity-80 transition-opacity duration-300"
+                          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                           style={{
-                            width: '140%',
-                            height: '140%',
-                            background: `conic-gradient(from 0deg, ${color.from}, ${color.to}, ${COURSE_COLORS[(index + 1) % COURSE_COLORS.length].from}, ${color.from})`,
-                            filter: 'blur(3px)',
-                          }}
-                          animate={{ rotate: 360 }}
-                          transition={{
-                            rotate: { duration: 3, repeat: Infinity, ease: "linear" },
+                            background: `radial-gradient(circle at center, ${color.to}40, transparent 70%)`,
                           }}
                         />
 
-                        {/* 主节点 */}
-                        <div
-                          className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center text-sm sm:text-base md:text-lg font-bold text-white shadow-2xl transition-all"
-                          style={{
-                            background: isCompleted
-                              ? `linear-gradient(135deg, ${color.from}, ${color.to})`
-                              : `linear-gradient(135deg, ${color.from}AA, ${color.to}AA)`,
-                            border: isPassed
-                              ? '2px solid rgba(255,255,255,0.5)'
-                              : isCompleted
-                                ? '2px solid rgba(255,255,255,0.3)'
-                                : '2px solid rgba(255,255,255,0.1)',
-                            boxShadow: `0 0 15px ${color.from}40`,
-                          }}
-                        >
-                          <span>{dayNumber}</span>
-                        </div>
+                        {/* 日期数字 */}
+                        <span className="text-lg sm:text-xl font-bold text-white relative z-10">
+                          {cell.date}
+                        </span>
 
-                        {/* 标题悬停提示 */}
-                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap z-50 pointer-events-none">
-                          <div className="bg-gray-900/95 backdrop-blur-md border border-gray-600 rounded-lg px-3 py-1.5 text-sm font-medium opacity-0 group-hover/node:opacity-100 transition-opacity duration-200 shadow-2xl">
-                            {content.title}
-                            {isPassed && <span className="ml-2 text-green-400">✓ {score}分</span>}
+                        {/* 课程天数标签 */}
+                        <span className="text-[10px] sm:text-xs text-white/70 relative z-10">
+                          Day {dayIndex + 1}
+                        </span>
+
+                        {/* 完成标记 */}
+                        {isCompleted && (
+                          <div className="absolute top-1 right-1">
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
                           </div>
-                        </div>
+                        )}
                       </motion.div>
                     </Link>
                   ) : (
-                    <div className="flex items-center justify-center">
-                      {/* 未解锁节点 - 锁图标 */}
-                      <div
-                        className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center font-bold text-gray-600 shadow-lg"
-                        style={{
-                          background: 'linear-gradient(135deg, #374151, #1F2937)',
-                          border: '2px solid rgba(75, 85, 99, 0.3)',
-                        }}
-                      >
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-5 md:h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                    // 未解锁的课程日
+                    <div
+                      className={`w-full h-full rounded-xl flex flex-col items-center justify-center transition-all ${
+                        isFuture
+                          ? 'bg-gray-800/30 border border-gray-700/30'
+                          : 'bg-gray-800/50 border border-gray-700/50'
+                      } ${isToday ? 'ring-2 ring-amber-400/50 ring-offset-2 ring-offset-transparent' : ''}`}
+                    >
+                      {/* 日期数字 */}
+                      <span className="text-lg sm:text-xl font-bold text-gray-500">
+                        {cell.date}
+                      </span>
+
+                      {/* 锁定图标或等待图标 */}
+                      {isFuture ? (
+                        <span className="text-[10px] sm:text-xs text-gray-600 mt-0.5">
+                          未到
+                        </span>
+                      ) : (
+                        <svg className="w-3 h-3 text-gray-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
-                      </div>
+                      )}
                     </div>
                   )}
                 </motion.div>
               )
             })}
           </div>
+
+          {/* 悬停详情 */}
+          {hoveredContent && hoveredContent.content && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-4 bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-xl"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-amber-400 text-sm font-medium">
+                    2月{hoveredContent.date}日 · 第{hoveredContent.dayIndex! + 1}天
+                  </p>
+                  <p className="text-white font-bold mt-1">{hoveredContent.content.title}</p>
+                </div>
+                {scoreMap.get(hoveredContent.content.id) !== undefined && (
+                  <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    scoreMap.get(hoveredContent.content.id)! >= 60
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {scoreMap.get(hoveredContent.content.id)} 分
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* 图例说明 */}
+        <div className="mt-6 flex flex-wrap justify-center gap-6 text-sm text-gray-400">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gradient-to-br from-purple-600 to-purple-400 border border-white/30"></div>
+            <span>已完成</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gradient-to-br from-purple-600/50 to-purple-400/50 border border-white/15"></div>
+            <span>可进入</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gray-800/50 border border-gray-700/50 flex items-center justify-center">
+              <svg className="w-2 h-2 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <span>需完成前一天</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gray-800/30 border border-gray-700/30"></div>
+            <span>日期未到</span>
+          </div>
         </div>
 
         {/* 底部说明 */}
-        <div className="text-center mt-16 text-gray-400 text-sm">
-          <p>🔥 依次完成每天的练习，开启凤凰重生之旅</p>
+        <div className="text-center mt-8 text-gray-400 text-sm">
+          <p>🌅 每天完成冥想练习并获得60分以上，解锁下一天的内容</p>
         </div>
       </div>
 
