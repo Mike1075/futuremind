@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, ChevronRight, Users, Sunrise } from 'lucide-react'
+import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, ChevronRight, Users, Sunrise, Pencil, RefreshCw } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 
@@ -47,6 +47,9 @@ export default function DawnAwakeningCoursePage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [systemId, setSystemId] = useState<string | null>(null)
+  const [editingMediaId, setEditingMediaId] = useState<string | null>(null)
+  const [editingMediaName, setEditingMediaName] = useState('')
+  const [replacingMediaId, setReplacingMediaId] = useState<string | null>(null)
 
   // 表单状态
   const [formData, setFormData] = useState({
@@ -252,6 +255,84 @@ export default function DawnAwakeningCoursePage() {
     } catch (error) {
       console.error('删除失败:', error)
       toast.error('删除失败，请重试')
+    }
+  }
+
+  // 编辑媒体文件名
+  const handleEditMediaName = async (mediaId: string) => {
+    if (!editingMediaName.trim()) {
+      toast.error('文件名不能为空')
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('media_resources')
+        .update({ file_name: editingMediaName.trim() })
+        .eq('id', mediaId)
+
+      if (error) throw error
+
+      toast.success('文件名已更新')
+      setEditingMediaId(null)
+      setEditingMediaName('')
+      if (selectedContent) {
+        await loadMediaResources(selectedContent.id)
+      }
+    } catch (error) {
+      console.error('更新失败:', error)
+      toast.error('更新失败，请重试')
+    }
+  }
+
+  // 替换媒体文件
+  const handleReplaceMedia = async (mediaId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedContent || !event.target.files || event.target.files.length === 0) return
+
+    const file = event.target.files[0]
+    setUploading(true)
+
+    try {
+      const supabase = createClient()
+
+      // 上传新文件
+      const fileExt = file.name.split('.').pop()
+      const fileName = `day_${selectedContent.sequence_number}_${Date.now()}.${fileExt}`
+      const filePath = `dawn-awakening/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // 获取公开URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath)
+
+      // 更新数据库记录
+      const { error: dbError } = await supabase
+        .from('media_resources')
+        .update({
+          file_name: file.name,
+          file_url: publicUrl,
+          file_type: file.type,
+          file_size: file.size,
+        })
+        .eq('id', mediaId)
+
+      if (dbError) throw dbError
+
+      toast.success('文件替换成功')
+      setReplacingMediaId(null)
+      await loadMediaResources(selectedContent.id)
+    } catch (error) {
+      console.error('文件替换失败:', error)
+      toast.error('文件替换失败，请重试')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -576,32 +657,97 @@ export default function DawnAwakeningCoursePage() {
                     mediaResources.map((media) => (
                       <div
                         key={media.id}
-                        className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all"
+                        className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all"
                       >
-                        <div className="flex items-center gap-3">
-                          <FileAudio className="w-6 h-6 text-amber-400" />
-                          <div>
-                            <p className="text-starlight font-medium">{media.file_name || '未命名文件'}</p>
-                            <p className="text-starlight-muted text-small">
-                              {media.file_size ? (media.file_size / 1024 / 1024).toFixed(2) : '0.00'} MB
-                            </p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <FileAudio className="w-6 h-6 text-amber-400 flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              {editingMediaId === media.id ? (
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={editingMediaName}
+                                    onChange={(e) => setEditingMediaName(e.target.value)}
+                                    className="input-ethereal flex-1 py-1 text-sm"
+                                    placeholder="输入文件名..."
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleEditMediaName(media.id)
+                                      if (e.key === 'Escape') {
+                                        setEditingMediaId(null)
+                                        setEditingMediaName('')
+                                      }
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => handleEditMediaName(media.id)}
+                                    className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-small"
+                                  >
+                                    保存
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingMediaId(null)
+                                      setEditingMediaName('')
+                                    }}
+                                    className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-small"
+                                  >
+                                    取消
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="text-starlight font-medium truncate">{media.file_name || '未命名文件'}</p>
+                                  <p className="text-starlight-muted text-small">
+                                    {media.file_size ? (media.file_size / 1024 / 1024).toFixed(2) : '0.00'} MB
+                                  </p>
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={media.file_url || '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-1 bg-white/10 hover:bg-white/20 text-starlight rounded text-small transition-all"
-                          >
-                            播放
-                          </a>
-                          <button
-                            onClick={() => handleDeleteMedia(media.id)}
-                            className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {editingMediaId !== media.id && (
+                            <div className="flex items-center gap-2 ml-4">
+                              <a
+                                href={media.file_url || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-starlight rounded text-small transition-all"
+                              >
+                                播放
+                              </a>
+                              <button
+                                onClick={() => {
+                                  setEditingMediaId(media.id)
+                                  setEditingMediaName(media.file_name || '')
+                                }}
+                                className="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded transition-all"
+                                title="编辑文件名"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <label
+                                className="p-2 bg-amber-600/20 hover:bg-amber-600/40 text-amber-400 rounded transition-all cursor-pointer"
+                                title="替换文件"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                                <input
+                                  type="file"
+                                  onChange={(e) => handleReplaceMedia(media.id, e)}
+                                  accept="audio/*"
+                                  className="hidden"
+                                  disabled={uploading}
+                                />
+                              </label>
+                              <button
+                                onClick={() => handleDeleteMedia(media.id)}
+                                className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
+                                title="删除文件"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))
