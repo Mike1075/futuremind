@@ -177,14 +177,54 @@ export function formatCourseText(
 /**
  * 处理行内格式
  * - 增强emoji显示
+ * - 支持 Markdown **text** 加粗语法
  */
 function formatInlineText(text: string): React.ReactNode {
-  // 扩展的emoji正则表达式
+  // 先处理 Markdown 加粗语法 **text** 或 *text*（双星号或单星号）
+  // 使用更精确的正则：匹配 **内容** 或 *内容*，内容不能以空格开始或结束
+  const parts: React.ReactNode[] = []
+  let lastIndex = 0
+
+  // 匹配 **内容** 双星号加粗
+  const boldRegex = /\*\*([^*\s][^*]*[^*\s]|[^*\s])\*\*/g
+  let match
+
+  while ((match = boldRegex.exec(text)) !== null) {
+    // 添加匹配前的普通文本
+    if (match.index > lastIndex) {
+      parts.push(formatEmojis(text.slice(lastIndex, match.index), parts.length))
+    }
+    // 添加加粗文本
+    parts.push(
+      <strong key={`bold-${parts.length}`} className="font-bold text-amber-200">
+        {match[1]}
+      </strong>
+    )
+    lastIndex = match.index + match[0].length
+  }
+
+  // 添加剩余的普通文本
+  if (lastIndex < text.length) {
+    parts.push(formatEmojis(text.slice(lastIndex), parts.length))
+  }
+
+  // 如果没有找到任何加粗，直接处理emoji
+  if (parts.length === 0) {
+    return formatEmojis(text, 0)
+  }
+
+  return <span>{parts}</span>
+}
+
+/**
+ * 处理emoji显示
+ */
+function formatEmojis(text: string, keyPrefix: number): React.ReactNode {
   const emojiRegex = /([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2B50}]|[\u{231A}-\u{231B}]|[\u{23E9}-\u{23EC}]|[\u{25AA}-\u{25AB}]|[\u{25B6}]|[\u{25C0}]|[\u{25FB}-\u{25FE}]|[\u{2934}-\u{2935}]|[\u{2B05}-\u{2B07}]|[\u{3030}]|[\u{303D}]|[\u{3297}]|[\u{3299}])/gu
   const segments = text.split(emojiRegex)
 
   return (
-    <span>
+    <span key={`emoji-group-${keyPrefix}`}>
       {segments.map((segment, i) => {
         const testRegex = /([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2B50}]|[\u{231A}-\u{231B}]|[\u{23E9}-\u{23EC}]|[\u{25AA}-\u{25AB}]|[\u{25B6}]|[\u{25C0}]|[\u{25FB}-\u{25FE}]|[\u{2934}-\u{2935}]|[\u{2B05}-\u{2B07}]|[\u{3030}]|[\u{303D}]|[\u{3297}]|[\u{3299}])/gu
         if (testRegex.test(segment)) {

@@ -307,6 +307,49 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
   const renderContent = () => {
     const structureType = courseSystem.structure_type
 
+    // 破晓觉醒课程 - 3个部分：Mike晨间寄语、冥想练习、生活实践
+    if (systemKey === 'dawn_awakening') {
+      return (
+        <div className="space-y-4">
+          {/* 课程资源 */}
+          {renderResources()}
+
+          {content.original_text && (
+            <CollapsibleSection
+              title="🌅 Mike晨间寄语"
+              bgColor="bg-amber-500/10"
+              borderColor="border-amber-500/30"
+              defaultOpen={false}
+            >
+              {formatCourseText(content.original_text)}
+            </CollapsibleSection>
+          )}
+
+          {content.meditation_guide && (
+            <CollapsibleSection
+              title="🧘 冥想练习"
+              bgColor="bg-orange-500/10"
+              borderColor="border-orange-500/30"
+              defaultOpen={false}
+            >
+              {formatCourseText(content.meditation_guide)}
+            </CollapsibleSection>
+          )}
+
+          {content.life_practice && (
+            <CollapsibleSection
+              title="🌱 生活实践"
+              bgColor="bg-yellow-500/10"
+              borderColor="border-yellow-500/30"
+              defaultOpen={false}
+            >
+              {formatCourseText(content.life_practice)}
+            </CollapsibleSection>
+          )}
+        </div>
+      )
+    }
+
     // Listening课程
     if (structureType === 'daily_sequential' && content.deep_interpretation) {
       return (
