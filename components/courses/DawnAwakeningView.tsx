@@ -101,15 +101,21 @@ export function DawnAwakeningView({ courseSystem, contents, completionMap, score
   }, [contents])
 
   // 预先计算解锁状态映射
-  // 解锁条件：1. 日期已到（管理员可跳过） 2. 前一天分数>=60（第一天无需分数条件）
+  // 解锁条件：1. 日期已到 2. 前一天分数>=60（第一天无需分数条件）
+  // 管理员可以跳过所有限制
   const unlockMap = useMemo(() => {
     const map = new Map<string, boolean>()
 
     contents.forEach((content, index) => {
+      // 管理员直接解锁所有课程
+      if (bypassDateCheck) {
+        map.set(content.id, true)
+        return
+      }
+
       // 计算该课程的日期
       const courseDate = new Date(2026, 1, 6 + index) // 2月6日 + index天
-      // 管理员可以跳过日期限制
-      const dateReached = bypassDateCheck || today >= courseDate
+      const dateReached = today >= courseDate
 
       if (index === 0) {
         // 第一天只需要日期到了就解锁
