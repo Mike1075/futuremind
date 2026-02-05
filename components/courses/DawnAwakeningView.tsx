@@ -324,32 +324,34 @@ export function DawnAwakeningView({ courseSystem, contents, completionMap, score
             })}
           </div>
 
-          {/* 悬停详情 */}
-          {hoveredContent && hoveredContent.content && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6 p-4 bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-xl"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-amber-400 text-sm font-medium">
-                    2月{hoveredContent.date}日 · 第{hoveredContent.dayIndex! + 1}天
-                  </p>
-                  <p className="text-white font-bold mt-1">{hoveredContent.content.title}</p>
-                </div>
-                {scoreMap.get(hoveredContent.content.id) !== undefined && (
-                  <div className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    scoreMap.get(hoveredContent.content.id)! >= 60
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-red-500/20 text-red-400'
-                  }`}>
-                    {scoreMap.get(hoveredContent.content.id)} 分
+          {/* 悬停详情 - 固定高度容器防止页面闪动 */}
+          <div className="mt-6 h-[72px]">
+            {hoveredContent && hoveredContent.content ? (
+              <div className="p-4 bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-amber-400 text-sm font-medium">
+                      2月{hoveredContent.date}日 · 第{hoveredContent.dayIndex! + 1}天
+                    </p>
+                    <p className="text-white font-bold mt-1">{hoveredContent.content.title}</p>
                   </div>
-                )}
+                  {scoreMap.get(hoveredContent.content.id) !== undefined && (
+                    <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      scoreMap.get(hoveredContent.content.id)! >= 60
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {scoreMap.get(hoveredContent.content.id)} 分
+                    </div>
+                  )}
+                </div>
               </div>
-            </motion.div>
-          )}
+            ) : (
+              <div className="p-4 border border-transparent rounded-xl">
+                <p className="text-gray-500 text-sm text-center">悬停日期查看详情</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 图例说明 */}
