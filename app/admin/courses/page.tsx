@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2, Brain, Sunrise } from 'lucide-react'
+import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2, Brain, Sunrise, Heart } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 
@@ -68,7 +68,7 @@ export default function CoursesPage() {
 
   const deleteCourse = async (courseId: string, courseTitle: string, systemKey: string) => {
     // 检查是否是原始课程
-    const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening']
+    const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening', 'dependency_freedom']
     if (protectedCourses.includes(systemKey)) {
       toast.warning('原始课程不可删除\n\n「' + courseTitle + '」是系统预设课程，不能删除。\n只有新增的课程可以删除。')
       return
@@ -161,6 +161,11 @@ export default function CoursesPage() {
           icon: Sunrise,
           gradient: 'from-amber-500 via-orange-500 to-yellow-500'
         }
+      case 'dependency_freedom':
+        return {
+          icon: Heart,
+          gradient: 'from-rose-500 via-purple-500 to-indigo-500'
+        }
       default:
         return {
           icon: BookOpen,
@@ -245,11 +250,12 @@ export default function CoursesPage() {
               if (course.system_key === 'earth') return '/admin/courses/earth'
               if (course.system_key === 'icarus' || course.system_key === 'pbl') return '/admin/courses/pbl'
               if (course.system_key === 'dawn_awakening') return '/admin/courses/dawn-awakening'
+              if (course.system_key === 'dependency_freedom') return '/admin/courses/dependency-freedom'
               return `/admin/courses/${course.id}`
             }
 
             // 检查是否是原始课程（不可删除）
-            const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening']
+            const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening', 'dependency_freedom']
             const isDeletable = !protectedCourses.includes(course.system_key)
 
             return (

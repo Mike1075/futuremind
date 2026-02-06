@@ -9,6 +9,7 @@ import { PBLCourseView } from '@/components/courses/PBLCourseView'
 import { EarthCourseView } from '@/components/courses/EarthCourseView'
 import { ListeningCourseView } from '@/components/courses/ListeningCourseView'
 import { DawnAwakeningView } from '@/components/courses/DawnAwakeningView'
+import { MarchCourseView } from '@/components/courses/MarchCourseView'
 import type { CourseContent } from '@/lib/supabase/database.types'
 
 // ✅ 性能优化：启用30秒缓存，大幅提升页面加载速度
@@ -82,8 +83,8 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     )
   }
 
-  // 聆听课程和破晓觉醒课程都需要分数映射（链式解锁）
-  if (systemKey === 'listening' || systemKey === 'dawn_awakening') {
+  // 聆听课程、破晓觉醒课程、依赖与自由课程都需要分数映射（链式解锁）
+  if (systemKey === 'listening' || systemKey === 'dawn_awakening' || systemKey === 'dependency_freedom') {
     // 获取用户的作业分数
     const { data: submissions } = await supabase
       .from('user_submissions')
@@ -120,15 +121,30 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     const adminEmails = ['3368327@qq.com', 'onestnet@gmail.com']
     const bypassDateCheck = adminEmails.includes(user.email || '')
 
-    return (
-      <DawnAwakeningView
-        courseSystem={courseSystem}
-        contents={contents}
-        completionMap={completionMap}
-        scoreMap={scoreMap}
-        bypassDateCheck={bypassDateCheck}
-      />
-    )
+    if (systemKey === 'dawn_awakening') {
+      return (
+        <DawnAwakeningView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassDateCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    // 依赖与自由课程使用九宫格视图
+    if (systemKey === 'dependency_freedom') {
+      return (
+        <MarchCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
   }
 
   // 继续使用已经获取的progressMap和completionMap处理每日课程
