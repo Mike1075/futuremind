@@ -101,7 +101,7 @@ export default function DependencyFreedomCoursePage() {
       const supabase = createClient()
       const currentSelectedId = selectedContent?.id
 
-      // 获取无惧：直面恐惧课程体系ID
+      // 获取3月：无惧：直面恐惧课程体系ID
       const { data: systemData, error: systemError } = await supabase
         .from('course_systems')
         .select('id')
@@ -109,7 +109,7 @@ export default function DependencyFreedomCoursePage() {
         .maybeSingle()
 
       if (systemError) throw systemError
-      if (!systemData) throw new Error('未找到无惧：直面恐惧课程体系')
+      if (!systemData) throw new Error('未找到3月：无惧：直面恐惧课程体系')
 
       setSystemId(systemData.id)
 
@@ -471,7 +471,7 @@ export default function DependencyFreedomCoursePage() {
             </button>
             <BookOpen className="w-8 h-8 text-purple-400" />
             <div>
-              <h1 className="text-h2 font-bold text-starlight">无惧：直面恐惧</h1>
+              <h1 className="text-h2 font-bold text-starlight">3月：无惧：直面恐惧</h1>
               <p className="text-small text-purple-300 mt-1">克里希那穆提《生命之书》三月主题</p>
             </div>
           </div>

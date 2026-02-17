@@ -16,7 +16,7 @@ interface Student {
 }
 
 const SYSTEM_KEY = 'wisdom_awakening'
-const COURSE_TITLE = '智慧：智力升华'
+const COURSE_TITLE = '5月：智慧：智力升华'
 const ADMIN_PATH = '/admin/courses/wisdom-awakening'
 
 export default function WisdomAwakeningStudentsPage() {

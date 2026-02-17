@@ -102,7 +102,7 @@ export default function DawnAwakeningCoursePage() {
       const supabase = createClient()
       const currentSelectedId = selectedContent?.id
 
-      // 获取无为：打破模式课程体系ID
+      // 获取2月：无为：打破模式课程体系ID
       const { data: systemData, error: systemError } = await supabase
         .from('course_systems')
         .select('id')
@@ -110,7 +110,7 @@ export default function DawnAwakeningCoursePage() {
         .maybeSingle()
 
       if (systemError) throw systemError
-      if (!systemData) throw new Error('未找到无为：打破模式课程体系')
+      if (!systemData) throw new Error('未找到2月：无为：打破模式课程体系')
 
       setSystemId(systemData.id)
 
@@ -479,7 +479,7 @@ export default function DawnAwakeningCoursePage() {
             </button>
             <Sunrise className="w-8 h-8 text-amber-400" />
             <div>
-              <h1 className="text-h2 font-bold text-starlight">无为：打破模式</h1>
+              <h1 className="text-h2 font-bold text-starlight">2月：无为：打破模式</h1>
               <p className="text-small text-amber-300 mt-1">克里希那穆提《生命之书》二月主题</p>
             </div>
           </div>

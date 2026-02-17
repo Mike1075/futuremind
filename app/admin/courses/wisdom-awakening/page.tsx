@@ -36,7 +36,7 @@ interface MediaResource {
 }
 
 const SYSTEM_KEY = 'wisdom_awakening'
-const COURSE_TITLE = '智慧：智力升华'
+const COURSE_TITLE = '5月：智慧：智力升华'
 const COURSE_SUBTITLE = '克里希那穆提《生命之书》五月主题 · 31天智慧升华之旅'
 const THEME_COLOR = 'indigo'
 const STORAGE_PATH = 'wisdom-awakening'

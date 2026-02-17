@@ -107,7 +107,7 @@ export default function ListeningCoursePage() {
         .maybeSingle()
 
       if (systemError) throw systemError
-      if (!systemData) throw new Error('未找到觉察：唤醒感官课程体系')
+      if (!systemData) throw new Error('未找到1月：觉察：唤醒感官课程体系')
 
       setListeningSystemId(systemData.id)
 
@@ -399,7 +399,7 @@ export default function ListeningCoursePage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-h2 font-bold text-starlight">觉察：唤醒感官</h1>
+              <h1 className="text-h2 font-bold text-starlight">1月：觉察：唤醒感官</h1>
               <p className="text-small text-purple-300 mt-1">克里希那穆提《生命之书》一月主题</p>
             </div>
           </div>

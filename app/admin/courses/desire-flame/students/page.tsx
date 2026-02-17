@@ -16,7 +16,7 @@ interface Student {
 }
 
 const SYSTEM_KEY = 'desire_flame'
-const COURSE_TITLE = '热情：转化欲望'
+const COURSE_TITLE = '4月：热情：转化欲望'
 const ADMIN_PATH = '/admin/courses/desire-flame'
 
 export default function DesireFlameStudentsPage() {

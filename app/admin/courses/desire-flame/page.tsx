@@ -36,7 +36,7 @@ interface MediaResource {
 }
 
 const SYSTEM_KEY = 'desire_flame'
-const COURSE_TITLE = '热情：转化欲望'
+const COURSE_TITLE = '4月：热情：转化欲望'
 const COURSE_SUBTITLE = '克里希那穆提《生命之书》四月主题 · 30天热情转化之旅'
 const THEME_COLOR = 'orange'
 const STORAGE_PATH = 'desire-flame'
