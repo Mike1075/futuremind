@@ -41,9 +41,15 @@ export function formatCourseText(
   // 5. 处理 *(建议时长：xxx)* 格式 - 移除星号，只保留括号内容
   formatted = formatted.replace(/\*\(([^)]+)\)\*/g, '($1)')
 
-  // 6. 处理生活实践的分行格式：* **练习：** xxx * **行动：** xxx
-  // 将 * **标签：** 转换为换行 + 加粗标签
-  formatted = formatted.replace(/\*\s*\*\*([^*:：]+)[:：]\*\*\s*/g, '\n**$1：**')
+  // 6. 处理冥想主题标题：**【冥想主题：xxx】** → 独立段落标题
+  formatted = formatted.replace(/\*\*【冥想主题[：:]([^】]+)】\*\*/g, '\n\n【冥想主题：$1】\n\n')
+
+  // 7. 处理 **准备阶段：** 和 **引导语：** 等标签 → 独立段落
+  formatted = formatted.replace(/\*\*(准备阶段|引导语|建议时长)[：:]\*\*\s*/g, '\n\n**$1：**')
+
+  // 8. 处理生活实践的分行格式：* **练习：** xxx * **行动：** xxx
+  // 将 * **标签：** 转换为换行换行 + 加粗标签（形成独立段落）
+  formatted = formatted.replace(/\*\s*\*\*([^*:：]+)[:：]\*\*\s*/g, '\n\n**$1：**')
 
   // 5. 将文本分段（按双换行）
   const paragraphs = formatted.split('\n\n')
@@ -87,6 +93,16 @@ export function formatCourseText(
           return (
             <h3 key={index} className="text-xl font-bold text-purple-300 mb-4">
               {trimmed}
+            </h3>
+          )
+        }
+
+        // === 冥想主题标题（【冥想主题：xxx】）===
+        const meditationThemeMatch = trimmed.match(/^【冥想主题[：:](.+?)】$/)
+        if (meditationThemeMatch) {
+          return (
+            <h3 key={index} className="text-xl font-bold text-amber-300 mt-6 mb-3">
+              【冥想主题：{meditationThemeMatch[1]}】
             </h3>
           )
         }

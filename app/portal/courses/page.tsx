@@ -102,7 +102,6 @@ export default function CoursesPage() {
         .insert({
           student_id: userId,
           course_system_id: courseId,
-          assigned_by: userId,
           status: 'active'
         })
 
