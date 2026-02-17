@@ -22,8 +22,11 @@ export function formatCourseText(
 ): React.ReactNode {
   if (!text) return null
 
+  // 0. 将字面量 \n 转换为真正的换行符（数据库中部分数据存储的是转义字符串）
+  let formatted = text.replace(/\\n/g, '\n')
+
   // 1. 移除 --- 分隔符
-  let formatted = text.replace(/\s*---+\s*/g, '\n\n')
+  formatted = formatted.replace(/\s*---+\s*/g, '\n\n')
 
   // 2. 移除多余的空行
   formatted = formatted.replace(/\n{3,}/g, '\n\n')

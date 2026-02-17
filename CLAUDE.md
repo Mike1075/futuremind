@@ -33,8 +33,9 @@ docs/                  # 详细文档
 5. **无惧：直面恐惧 (dependency_freedom)** - 克里希那穆提三月主题，31天探索
 6. **热情：转化欲望 (desire_flame)** - 克里希那穆提四月主题，30天探索
 7. **智慧：智力升华 (wisdom_awakening)** - 克里希那穆提五月主题，31天探索
-8. **盖亚对话 (Gaia Dialog)** - AI 对话系统
-9. **赛斯365 (Seth365)** - 每日灵感壁纸系统
+8. **放下：驾驭能量 (energy_alchemy)** - 克里希那穆提六月主题，30天探索
+9. **盖亚对话 (Gaia Dialog)** - AI 对话系统
+10. **赛斯365 (Seth365)** - 每日灵感壁纸系统
 
 ## 用户角色
 - `student` - 学生
@@ -390,6 +391,12 @@ const MailIcon = () => (
   - 四月：欲望的火焰 → 热情：转化欲望
   - 五月：智慧的苏醒 → 智慧：智力升华
   - 共用组件：`MeditationCalendarView.tsx`（三/四/五月共用日历视图）
+- ✅ **放下：驾驭能量（六月课程）（2026-02-17）**：
+  - 新增30天六月课程，源自克里希那穆提《生命之书》六月主题：能量、注意力与暴力
+  - 前端组件：`JuneCourseView.tsx`（能量主题，蓝-绿-金渐变）
+  - 管理后台：`/admin/courses/energy-alchemy`
+  - 数据库：`course_systems` system_key=`energy_alchemy`
+  - 课程名称添加月份前缀（1月-6月）
 
 ---
 
