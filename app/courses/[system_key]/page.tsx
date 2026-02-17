@@ -12,6 +12,7 @@ import { DawnAwakeningView } from '@/components/courses/DawnAwakeningView'
 import { MarchCourseView } from '@/components/courses/MarchCourseView'
 import { AprilCourseView } from '@/components/courses/AprilCourseView'
 import { MayCourseView } from '@/components/courses/MayCourseView'
+import { JuneCourseView } from '@/components/courses/JuneCourseView'
 import type { CourseContent } from '@/lib/supabase/database.types'
 
 // ✅ 性能优化：启用30秒缓存，大幅提升页面加载速度
@@ -86,7 +87,7 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
   }
 
   // 聆听课程、破晓觉醒课程、依赖与自由课程都需要分数映射（链式解锁）
-  if (systemKey === 'listening' || systemKey === 'dawn_awakening' || systemKey === 'dependency_freedom' || systemKey === 'desire_flame' || systemKey === 'wisdom_awakening') {
+  if (systemKey === 'listening' || systemKey === 'dawn_awakening' || systemKey === 'dependency_freedom' || systemKey === 'desire_flame' || systemKey === 'wisdom_awakening' || systemKey === 'energy_alchemy') {
     // 获取用户的作业分数
     const { data: submissions } = await supabase
       .from('user_submissions')
@@ -165,6 +166,19 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     if (systemKey === 'wisdom_awakening') {
       return (
         <MayCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    // 能量炼金课程使用日历视图
+    if (systemKey === 'energy_alchemy') {
+      return (
+        <JuneCourseView
           courseSystem={courseSystem}
           contents={contents}
           completionMap={completionMap}

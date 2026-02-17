@@ -23,7 +23,11 @@ import {
   Bell,
   Inbox,
   Calendar,
-  Sunrise
+  Sunrise,
+  Heart,
+  Flame,
+  Lightbulb,
+  Zap
 } from 'lucide-react'
 import { usePortalCourses } from '@/lib/hooks/usePortalCourses'
 import { ConsciousnessTreeView } from '@/components/consciousness/ConsciousnessTreeView'
@@ -90,7 +94,15 @@ export function PortalClient({
       case 'pbl':
         return Atom  // 原子图标代表科学探索和实验精神
       case 'dawn_awakening':
-        return Sunrise  // 日出图标代表破晓觉醒
+        return Sunrise
+      case 'dependency_freedom':
+        return Heart
+      case 'desire_flame':
+        return Flame
+      case 'wisdom_awakening':
+        return Lightbulb
+      case 'energy_alchemy':
+        return Zap
       default:
         return BookOpen
     }
@@ -107,6 +119,14 @@ export function PortalClient({
         return 'from-orange-500/20 to-red-500/20 border-orange-400/30'
       case 'dawn_awakening':
         return 'from-amber-500/20 to-orange-500/20 border-amber-400/30'
+      case 'dependency_freedom':
+        return 'from-rose-500/20 to-purple-500/20 border-rose-400/30'
+      case 'desire_flame':
+        return 'from-red-500/20 to-orange-500/20 border-red-400/30'
+      case 'wisdom_awakening':
+        return 'from-indigo-500/20 to-blue-500/20 border-indigo-400/30'
+      case 'energy_alchemy':
+        return 'from-teal-500/20 to-cyan-500/20 border-teal-400/30'
       default:
         return 'from-gray-500/20 to-gray-600/20 border-gray-400/30'
     }
@@ -123,7 +143,15 @@ export function PortalClient({
       case 'pbl':
         return 'rgba(249, 115, 22, 0.4)' // 橙色
       case 'dawn_awakening':
-        return 'rgba(251, 191, 36, 0.4)' // 金色（破晓）
+        return 'rgba(251, 191, 36, 0.4)' // 金色
+      case 'dependency_freedom':
+        return 'rgba(244, 63, 94, 0.4)' // 玫红
+      case 'desire_flame':
+        return 'rgba(239, 68, 68, 0.4)' // 红色
+      case 'wisdom_awakening':
+        return 'rgba(99, 102, 241, 0.4)' // 靛蓝
+      case 'energy_alchemy':
+        return 'rgba(20, 184, 166, 0.4)' // 青色
       default:
         return 'rgba(156, 163, 175, 0.3)' // 灰色
     }

@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2, Brain, Sunrise, Heart, Flame, Lightbulb } from 'lucide-react'
+import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2, Brain, Sunrise, Heart, Flame, Lightbulb, Zap } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 
@@ -68,7 +68,7 @@ export default function CoursesPage() {
 
   const deleteCourse = async (courseId: string, courseTitle: string, systemKey: string) => {
     // 检查是否是原始课程
-    const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening', 'dependency_freedom', 'desire_flame', 'wisdom_awakening']
+    const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening', 'dependency_freedom', 'desire_flame', 'wisdom_awakening', 'energy_alchemy']
     if (protectedCourses.includes(systemKey)) {
       toast.warning('原始课程不可删除\n\n「' + courseTitle + '」是系统预设课程，不能删除。\n只有新增的课程可以删除。')
       return
@@ -176,6 +176,11 @@ export default function CoursesPage() {
           icon: Lightbulb,
           gradient: 'from-indigo-500 via-blue-500 to-emerald-500'
         }
+      case 'energy_alchemy':
+        return {
+          icon: Zap,
+          gradient: 'from-teal-500 via-cyan-500 to-blue-500'
+        }
       default:
         return {
           icon: BookOpen,
@@ -263,11 +268,12 @@ export default function CoursesPage() {
               if (course.system_key === 'dependency_freedom') return '/admin/courses/dependency-freedom'
               if (course.system_key === 'desire_flame') return '/admin/courses/desire-flame'
               if (course.system_key === 'wisdom_awakening') return '/admin/courses/wisdom-awakening'
+              if (course.system_key === 'energy_alchemy') return '/admin/courses/energy-alchemy'
               return `/admin/courses/${course.id}`
             }
 
             // 检查是否是原始课程（不可删除）
-            const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening', 'dependency_freedom', 'desire_flame', 'wisdom_awakening']
+            const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening', 'dependency_freedom', 'desire_flame', 'wisdom_awakening', 'energy_alchemy']
             const isDeletable = !protectedCourses.includes(course.system_key)
 
             return (
