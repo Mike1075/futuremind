@@ -54,7 +54,7 @@ export default function DependencyFreedomStudentsPage() {
     try {
       const supabase = createClient()
 
-      // 获取依赖与自由课程 system_id
+      // 获取无惧：直面恐惧课程 system_id
       const { data: systemData, error: systemError } = await supabase
         .from('course_systems')
         .select('id')
@@ -62,7 +62,7 @@ export default function DependencyFreedomStudentsPage() {
         .maybeSingle()
 
       if (systemError) throw systemError
-      if (!systemData) throw new Error('未找到依赖与自由课程体系')
+      if (!systemData) throw new Error('未找到无惧：直面恐惧课程体系')
       setSystemId(systemData.id)
 
       // 获取选课学员
@@ -196,7 +196,7 @@ export default function DependencyFreedomStudentsPage() {
               </button>
               <BookOpen className="w-6 h-6 text-purple-400" />
               <div>
-                <h1 className="text-h2 font-bold text-starlight">依赖与自由 - 选课学员</h1>
+                <h1 className="text-h2 font-bold text-starlight">无惧：直面恐惧 - 选课学员</h1>
                 <p className="text-small text-purple-300 mt-1">管理课程学员</p>
               </div>
             </div>

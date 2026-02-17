@@ -62,7 +62,7 @@ export default function ListeningStudentsPage() {
         .maybeSingle()
 
       if (systemError) throw systemError
-      if (!systemData) throw new Error('未找到自在聆听课程体系')
+      if (!systemData) throw new Error('未找到觉察：唤醒感官课程体系')
       setListeningSystemId(systemData.id)
 
       // 获取选课学员
@@ -195,7 +195,7 @@ export default function ListeningStudentsPage() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-h2 font-bold text-starlight">自在聆听 - 选课学员</h1>
+                <h1 className="text-h2 font-bold text-starlight">觉察：唤醒感官 - 选课学员</h1>
                 <p className="text-small text-purple-300 mt-1">管理课程学员</p>
               </div>
             </div>

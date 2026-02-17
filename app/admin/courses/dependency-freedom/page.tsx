@@ -101,7 +101,7 @@ export default function DependencyFreedomCoursePage() {
       const supabase = createClient()
       const currentSelectedId = selectedContent?.id
 
-      // 获取依赖与自由课程体系ID
+      // 获取无惧：直面恐惧课程体系ID
       const { data: systemData, error: systemError } = await supabase
         .from('course_systems')
         .select('id')
@@ -109,7 +109,7 @@ export default function DependencyFreedomCoursePage() {
         .maybeSingle()
 
       if (systemError) throw systemError
-      if (!systemData) throw new Error('未找到依赖与自由课程体系')
+      if (!systemData) throw new Error('未找到无惧：直面恐惧课程体系')
 
       setSystemId(systemData.id)
 
@@ -371,12 +371,6 @@ export default function DependencyFreedomCoursePage() {
   }
 
   const handleDeleteCourse = async (contentId: string, sequenceNumber: number) => {
-    // 保护前9天的固定课程
-    if (sequenceNumber <= 9) {
-      toast.warning('前9天的课程是固定内容，不能删除，只能修改。')
-      return
-    }
-
     if (!await confirm({
       title: '确认操作',
       message: `确定要删除第 ${sequenceNumber} 天的课程吗？删除后将无法恢复。`,
@@ -477,8 +471,8 @@ export default function DependencyFreedomCoursePage() {
             </button>
             <BookOpen className="w-8 h-8 text-purple-400" />
             <div>
-              <h1 className="text-h2 font-bold text-starlight">依赖与自由</h1>
-              <p className="text-small text-purple-300 mt-1">克里希那穆提 · 三月 · 9天探索之旅</p>
+              <h1 className="text-h2 font-bold text-starlight">无惧：直面恐惧</h1>
+              <p className="text-small text-purple-300 mt-1">克里希那穆提《生命之书》三月主题</p>
             </div>
           </div>
         </div>
@@ -526,7 +520,7 @@ export default function DependencyFreedomCoursePage() {
                 >
                   <button
                     onClick={() => setSelectedContent(content)}
-                    className={`w-full text-left px-4 py-3 ${content.sequence_number > 9 ? 'pr-20' : ''}`}
+                    className="w-full text-left px-4 py-3 pr-20"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -535,9 +529,7 @@ export default function DependencyFreedomCoursePage() {
                       </div>
                     </div>
                   </button>
-                  {/* 只显示第10天及以后的删除按钮 */}
-                  {content.sequence_number > 9 && (
-                    <button
+                  <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDeleteCourse(content.id, content.sequence_number)
@@ -547,7 +539,6 @@ export default function DependencyFreedomCoursePage() {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  )}
                 </div>
               ))}
             </div>

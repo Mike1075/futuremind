@@ -10,6 +10,8 @@ import { EarthCourseView } from '@/components/courses/EarthCourseView'
 import { ListeningCourseView } from '@/components/courses/ListeningCourseView'
 import { DawnAwakeningView } from '@/components/courses/DawnAwakeningView'
 import { MarchCourseView } from '@/components/courses/MarchCourseView'
+import { AprilCourseView } from '@/components/courses/AprilCourseView'
+import { MayCourseView } from '@/components/courses/MayCourseView'
 import type { CourseContent } from '@/lib/supabase/database.types'
 
 // ✅ 性能优化：启用30秒缓存，大幅提升页面加载速度
@@ -84,7 +86,7 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
   }
 
   // 聆听课程、破晓觉醒课程、依赖与自由课程都需要分数映射（链式解锁）
-  if (systemKey === 'listening' || systemKey === 'dawn_awakening' || systemKey === 'dependency_freedom') {
+  if (systemKey === 'listening' || systemKey === 'dawn_awakening' || systemKey === 'dependency_freedom' || systemKey === 'desire_flame' || systemKey === 'wisdom_awakening') {
     // 获取用户的作业分数
     const { data: submissions } = await supabase
       .from('user_submissions')
@@ -133,10 +135,36 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
       )
     }
 
-    // 依赖与自由课程使用九宫格视图
+    // 依赖与自由课程使用日历视图
     if (systemKey === 'dependency_freedom') {
       return (
         <MarchCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    // 欲望的火焰课程使用日历视图
+    if (systemKey === 'desire_flame') {
+      return (
+        <AprilCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    // 智慧的苏醒课程使用日历视图
+    if (systemKey === 'wisdom_awakening') {
+      return (
+        <MayCourseView
           courseSystem={courseSystem}
           contents={contents}
           completionMap={completionMap}

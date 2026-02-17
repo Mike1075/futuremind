@@ -54,7 +54,7 @@ export default function DawnAwakeningStudentsPage() {
     try {
       const supabase = createClient()
 
-      // 获取破晓觉醒课程 system_id
+      // 获取无为：打破模式课程 system_id
       const { data: systemData, error: systemError } = await supabase
         .from('course_systems')
         .select('id')
@@ -62,7 +62,7 @@ export default function DawnAwakeningStudentsPage() {
         .maybeSingle()
 
       if (systemError) throw systemError
-      if (!systemData) throw new Error('未找到破晓觉醒课程体系')
+      if (!systemData) throw new Error('未找到无为：打破模式课程体系')
       setSystemId(systemData.id)
 
       // 获取选课学员
@@ -196,7 +196,7 @@ export default function DawnAwakeningStudentsPage() {
               </button>
               <Sunrise className="w-6 h-6 text-amber-400" />
               <div>
-                <h1 className="text-h2 font-bold text-starlight">破晓觉醒 - 选课学员</h1>
+                <h1 className="text-h2 font-bold text-starlight">无为：打破模式 - 选课学员</h1>
                 <p className="text-small text-amber-300 mt-1">管理课程学员</p>
               </div>
             </div>
