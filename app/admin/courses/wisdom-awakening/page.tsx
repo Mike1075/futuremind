@@ -7,14 +7,11 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, Users, Pencil, RefreshCw } from 'lucide-react'
 
-// 5月：智慧 - 闪耀星辰图标（智慧/洞察/升华）
-const SparklesIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-    <path d="M5 3v4" />
-    <path d="M19 17v4" />
-    <path d="M3 5h4" />
-    <path d="M17 19h4" />
+// 5月：智慧 - 莲花图标（智慧觉醒/升华）
+const LotusIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2C12 2 8.5 7 8.5 12c0 2.5 1.5 4 3.5 4s3.5-1.5 3.5-4C15.5 7 12 2 12 2z" />
+    <path d="M12 16c-2 0-6-1-7.5-5C3 11 2 13.5 4 16c1.5 1.9 4.5 3 8 3s6.5-1.1 8-3c2-2.5 1-5-.5-5-1.5 4-5.5 5-7.5 5z" />
   </svg>
 )
 import { useToast } from '@/components/ui/ToastProvider'
@@ -337,7 +334,7 @@ export default function WisdomAwakeningCoursePage() {
             <button onClick={() => router.push('/admin/courses')} className="p-2 bg-white/10 hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <SparklesIcon />
+            <LotusIcon />
             <div>
               <h1 className="text-h2 font-bold text-starlight">{COURSE_TITLE}</h1>
               <p className="text-small text-indigo-300 mt-1">{COURSE_SUBTITLE}</p>

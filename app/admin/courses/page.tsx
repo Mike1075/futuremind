@@ -60,14 +60,11 @@ const FlameIcon = ({ className = '' }: { className?: string }) => (
   </svg>
 )
 
-// 5月：智慧 - 闪耀星辰图标（智慧/洞察/升华）
-const SparklesIcon = ({ className = '' }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-    <path d="M5 3v4" />
-    <path d="M19 17v4" />
-    <path d="M3 5h4" />
-    <path d="M17 19h4" />
+// 5月：智慧 - 莲花图标（智慧觉醒/升华）
+const LotusIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2C12 2 8.5 7 8.5 12c0 2.5 1.5 4 3.5 4s3.5-1.5 3.5-4C15.5 7 12 2 12 2z" />
+    <path d="M12 16c-2 0-6-1-7.5-5C3 11 2 13.5 4 16c1.5 1.9 4.5 3 8 3s6.5-1.1 8-3c2-2.5 1-5-.5-5-1.5 4-5.5 5-7.5 5z" />
   </svg>
 )
 
@@ -244,7 +241,7 @@ export default function CoursesPage() {
         }
       case 'wisdom_awakening':
         return {
-          icon: SparklesIcon,
+          icon: LotusIcon,
           gradient: 'from-indigo-500 via-blue-500 to-emerald-500'
         }
       case 'energy_alchemy':
