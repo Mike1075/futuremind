@@ -5,7 +5,15 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, Users, BookOpen, Pencil, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, Users, Pencil, RefreshCw } from 'lucide-react'
+
+// 3月：无惧 - 盾牌图标（勇气/直面恐惧）
+const ShieldIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <path d="M9.5 12l2 2 4-4" />
+  </svg>
+)
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 
@@ -469,7 +477,7 @@ export default function DependencyFreedomCoursePage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <BookOpen className="w-8 h-8 text-purple-400" />
+            <ShieldIcon />
             <div>
               <h1 className="text-h2 font-bold text-starlight">3月：无惧：直面恐惧</h1>
               <p className="text-small text-purple-300 mt-1">克里希那穆提《生命之书》三月主题</p>

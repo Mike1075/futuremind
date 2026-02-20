@@ -5,7 +5,14 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, Users, BookOpen, Pencil, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, Users, Pencil, RefreshCw } from 'lucide-react'
+
+// 4月：热情 - 火焰图标（热情/欲望转化）
+const FlameIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fb923c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+  </svg>
+)
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 
@@ -326,7 +333,7 @@ export default function DesireFlameCoursePage() {
             <button onClick={() => router.push('/admin/courses')} className="p-2 bg-white/10 hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <BookOpen className="w-8 h-8 text-orange-400" />
+            <FlameIcon />
             <div>
               <h1 className="text-h2 font-bold text-starlight">{COURSE_TITLE}</h1>
               <p className="text-small text-orange-300 mt-1">{COURSE_SUBTITLE}</p>

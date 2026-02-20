@@ -5,7 +5,78 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2, Brain, Sunrise, Heart, Flame, Lightbulb, Zap } from 'lucide-react'
+import { BookOpen, ArrowLeft, Plus, Trash2, Brain } from 'lucide-react'
+
+// 内联 SVG 图标组件（避免 lucide-react 渲染问题）
+const EarIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0" />
+    <path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 0 0 4 0" />
+  </svg>
+)
+
+const GlobeIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+    <path d="M2 12h20" />
+  </svg>
+)
+
+const RocketIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+  </svg>
+)
+
+const SunriseIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2v8" />
+    <path d="m4.93 10.93 1.41 1.41" />
+    <path d="M2 18h2" />
+    <path d="M20 18h2" />
+    <path d="m19.07 10.93-1.41 1.41" />
+    <path d="M22 22H2" />
+    <path d="m8 6 4-4 4 4" />
+    <path d="M16 18a4 4 0 0 0-8 0" />
+  </svg>
+)
+
+// 3月：无惧 - 盾牌图标（勇气/直面恐惧）
+const ShieldIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <path d="M9.5 12l2 2 4-4" />
+  </svg>
+)
+
+// 4月：热情 - 火焰图标（热情/欲望转化）
+const FlameIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+  </svg>
+)
+
+// 5月：智慧 - 闪耀星辰图标（智慧/洞察/升华）
+const SparklesIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+    <path d="M5 3v4" />
+    <path d="M19 17v4" />
+    <path d="M3 5h4" />
+    <path d="M17 19h4" />
+  </svg>
+)
+
+// 6月：放下 - 闪电能量图标（驾驭能量）
+const ZapIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+)
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 
@@ -137,48 +208,48 @@ export default function CoursesPage() {
     }))
   }, [isMounted])
 
-  // Icon mapping
+  // Icon mapping - 使用内联 SVG 避免 lucide-react 渲染问题
   const getIconAndGradient = (systemKey: string) => {
     switch (systemKey) {
       case 'listening':
         return {
-          icon: Ear,
+          icon: EarIcon,
           gradient: 'from-purple-500 via-indigo-500 to-blue-500'
         }
       case 'earth':
         return {
-          icon: Globe,
+          icon: GlobeIcon,
           gradient: 'from-cyan-500 via-teal-500 to-green-500'
         }
       case 'icarus':
       case 'pbl':
         return {
-          icon: Rocket,
+          icon: RocketIcon,
           gradient: 'from-orange-500 via-red-500 to-pink-500'
         }
       case 'dawn_awakening':
         return {
-          icon: Sunrise,
+          icon: SunriseIcon,
           gradient: 'from-amber-500 via-orange-500 to-yellow-500'
         }
       case 'dependency_freedom':
         return {
-          icon: Heart,
+          icon: ShieldIcon,
           gradient: 'from-rose-500 via-purple-500 to-indigo-500'
         }
       case 'desire_flame':
         return {
-          icon: Flame,
+          icon: FlameIcon,
           gradient: 'from-red-500 via-orange-500 to-yellow-500'
         }
       case 'wisdom_awakening':
         return {
-          icon: Lightbulb,
+          icon: SparklesIcon,
           gradient: 'from-indigo-500 via-blue-500 to-emerald-500'
         }
       case 'energy_alchemy':
         return {
-          icon: Zap,
+          icon: ZapIcon,
           gradient: 'from-teal-500 via-cyan-500 to-blue-500'
         }
       default:

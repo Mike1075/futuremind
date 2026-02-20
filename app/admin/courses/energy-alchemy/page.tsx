@@ -5,7 +5,14 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, Users, BookOpen, Pencil, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, Users, Pencil, RefreshCw } from 'lucide-react'
+
+// 6月：放下 - 闪电能量图标（驾驭能量）
+const ZapIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+)
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 
@@ -326,7 +333,7 @@ export default function EnergyAlchemyCoursePage() {
             <button onClick={() => router.push('/admin/courses')} className="p-2 bg-white/10 hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <BookOpen className="w-8 h-8 text-teal-400" />
+            <ZapIcon />
             <div>
               <h1 className="text-h2 font-bold text-starlight">{COURSE_TITLE}</h1>
               <p className="text-small text-teal-300 mt-1">{COURSE_SUBTITLE}</p>
