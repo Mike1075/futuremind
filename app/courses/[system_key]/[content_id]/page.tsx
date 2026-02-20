@@ -34,10 +34,18 @@ interface ContentPageProps {
 }
 
 async function ContentDetail({ systemKey, contentId }: { systemKey: string, contentId: string }) {
-  const supabase = await createClient()
+  let supabase: any
+  let user: any
 
-  // 验证用户登录
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    supabase = await createClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    user = authUser
+  } catch (e: any) {
+    // 认证失败直接抛出，让 error boundary 处理
+    throw new Error(`认证服务异常: ${e?.message || '未知错误'}`)
+  }
+
   if (!user) {
     redirect('/login')
   }
@@ -90,6 +98,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 
   // 检查是否曾经有过>=60分的提交（用于控制"下一个"按钮）
   // 只要曾经通过，就永久解锁，不会因为后续低分提交而锁回去
+  // 使用 maybeSingle() 避免无匹配行时产生错误对象
   const { data: passedSubmission } = await supabase
     .from('user_submissions')
     .select('score')
@@ -97,7 +106,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     .eq('course_content_id', contentId)
     .gte('score', 60)
     .limit(1)
-    .single()
+    .maybeSingle()
 
   const hasPassedAssignment = !!passedSubmission
 
@@ -109,7 +118,7 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     .eq('course_content_id', contentId)
     .order('score', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
   const currentHighestScore = highestSubmission?.score || 0
 
@@ -391,11 +400,14 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
       )
     }
 
-    // Listening课程
+    // Listening课程（含3-6月冥想课程）
     if (structureType === 'daily_sequential' && content.deep_interpretation) {
       return (
         <div className="space-y-4">
-          {/* 课程资源 */}
+          {/* 媒体资源（从 media_resources 表获取） */}
+          {renderMediaResources()}
+
+          {/* 课程资源（从 content.resources JSON 获取） */}
           {renderResources()}
 
           {content.original_text && (
