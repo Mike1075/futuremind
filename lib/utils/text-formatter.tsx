@@ -51,6 +51,14 @@ export function formatCourseText(
   // 将 * **标签：** 转换为换行换行 + 加粗标签（形成独立段落）
   formatted = formatted.replace(/\*\s*\*\*([^*:：]+)[:：]\*\*\s*/g, '\n\n**$1：**')
 
+  // 9. 确保编号列表项（1. 2. 3. 等）前有段落分隔符
+  // 修复：标签（如 做法：）后跟编号列表时，编号项之间只有单 \n，被当成一段处理
+  // 将 \n + 数字. 升级为 \n\n + 数字.，使每个编号项成为独立段落
+  formatted = formatted.replace(/\n(\d+\.\s)/g, '\n\n$1')
+
+  // 10. 再次清理可能产生的多余空行
+  formatted = formatted.replace(/\n{3,}/g, '\n\n')
+
   // 5. 将文本分段（按双换行）
   const paragraphs = formatted.split('\n\n')
 
@@ -135,9 +143,12 @@ export function formatCourseText(
           return (
             <div key={index} className="space-y-2">
               {lines.map((line, i) => {
-                const stepMatch = line.match(/^(\d+)\.\s*([^：:]+)[:：]\s*(.*)$/)
+                const lineTrimmed = line.trim()
+                const stepMatch = lineTrimmed.match(/^(\d+)\.\s*([^：:]+)[:：]\s*(.*)$/)
                 if (stepMatch) {
-                  const [, num, stepTitle, stepContent] = stepMatch
+                  const [, num, rawStepTitle, stepContent] = stepMatch
+                  // 去除 Markdown **加粗** 标记，避免显示为文字
+                  const stepTitle = rawStepTitle.replace(/\*\*/g, '')
                   return (
                     <p key={i} className="text-gray-300 leading-relaxed">
                       <span className="text-purple-300 font-semibold">{num}. </span>
@@ -146,10 +157,18 @@ export function formatCourseText(
                     </p>
                   )
                 }
+                // 子项（以 - 或 • 开头）
+                if (lineTrimmed.startsWith('-') || lineTrimmed.startsWith('•')) {
+                  return (
+                    <p key={i} className="text-gray-300 leading-relaxed ml-6">
+                      {formatInlineText(lineTrimmed)}
+                    </p>
+                  )
+                }
                 // 普通行
                 return (
                   <p key={i} className="text-gray-300 leading-relaxed ml-4">
-                    {formatInlineText(line)}
+                    {formatInlineText(lineTrimmed)}
                   </p>
                 )
               })}
@@ -160,7 +179,9 @@ export function formatCourseText(
         // === 单行步骤（1. 停止：xxx）===
         const singleStepMatch = trimmed.match(/^(\d+)\.\s*([^：:]+)[:：]\s*(.*)$/)
         if (singleStepMatch && !trimmed.includes('\n')) {
-          const [, num, stepTitle, stepContent] = singleStepMatch
+          const [, num, rawStepTitle, stepContent] = singleStepMatch
+          // 去除 Markdown **加粗** 标记
+          const stepTitle = rawStepTitle.replace(/\*\*/g, '')
           return (
             <p key={index} className="text-gray-300 leading-relaxed">
               <span className="text-purple-300 font-semibold">{num}. </span>
