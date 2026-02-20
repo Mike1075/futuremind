@@ -47,9 +47,10 @@ export function formatCourseText(
   // 7. 处理 **准备阶段：** 和 **引导语：** 等标签 → 独立段落
   formatted = formatted.replace(/\*\*(准备阶段|引导语|建议时长)[：:]\*\*\s*/g, '\n\n**$1：**')
 
-  // 8. 处理生活实践的分行格式：* **练习：** xxx * **行动：** xxx
-  // 将 * **标签：** 转换为换行换行 + 加粗标签（形成独立段落）
-  formatted = formatted.replace(/\*\s*\*\*([^*:：]+)[:：]\*\*\s*/g, '\n\n**$1：**')
+  // 8. 处理生活实践的分行格式：
+  // Variant A: * **标签：** content (冒号在**内)
+  // Variant B: * **标签**：content (冒号在**外)
+  formatted = formatted.replace(/\*\s*\*\*([^*:：]+)(?:[:：]\*\*|\*\*[:：])\s*/g, '\n\n**$1：**')
 
   // 9. 确保编号列表项（1. 2. 3. 等）前有段落分隔符
   // 修复：标签（如 做法：）后跟编号列表时，编号项之间只有单 \n，被当成一段处理
@@ -208,6 +209,32 @@ export function formatCourseText(
             <p key={index} className="text-gray-300 italic leading-relaxed">
               {formatInlineText(trimmed)}
             </p>
+          )
+        }
+
+        // === 多行段落（含换行的文本，逐行渲染）===
+        if (trimmed.includes('\n')) {
+          const lines = trimmed.split('\n').filter(line => line.trim())
+          return (
+            <div key={index} className="space-y-2">
+              {lines.map((line, i) => {
+                const lineTrimmed = line.trim()
+                // 子项（以 * 或 - 或 • 开头，后跟空格）
+                if (/^[*\-•]\s/.test(lineTrimmed)) {
+                  const content = lineTrimmed.replace(/^[*\-•]\s*/, '')
+                  return (
+                    <p key={i} className="text-gray-300 leading-relaxed ml-6">
+                      {formatInlineText(content)}
+                    </p>
+                  )
+                }
+                return (
+                  <p key={i} className="text-gray-300 leading-relaxed">
+                    {formatInlineText(lineTrimmed)}
+                  </p>
+                )
+              })}
+            </div>
           )
         }
 
