@@ -333,4 +333,49 @@ export class CourseService {
 
     return { isUnlocked: true }
   }
+
+  /**
+   * 检查冥想课程的日期是否已到达（防止通过URL直接访问未来日期的课程）
+   *
+   * 每个月份课程有固定的年/月映射：
+   * - dawn_awakening: 2026年2月，从2月6日开始
+   * - dependency_freedom: 2026年3月
+   * - desire_flame: 2026年4月
+   * - wisdom_awakening: 2026年5月
+   * - energy_alchemy: 2026年6月
+   */
+  static isCourseDateReached(systemKey: string, sequenceNumber: number): boolean {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+    let courseDate: Date
+
+    switch (systemKey) {
+      case 'dawn_awakening':
+        // 2月课程从2月6日开始，第1天=2月6日，第N天=2月(5+N)日
+        courseDate = new Date(2026, 1, 5 + sequenceNumber)
+        break
+      case 'dependency_freedom':
+        // 3月课程，第N天=3月N日
+        courseDate = new Date(2026, 2, sequenceNumber)
+        break
+      case 'desire_flame':
+        // 4月课程，第N天=4月N日
+        courseDate = new Date(2026, 3, sequenceNumber)
+        break
+      case 'wisdom_awakening':
+        // 5月课程，第N天=5月N日
+        courseDate = new Date(2026, 4, sequenceNumber)
+        break
+      case 'energy_alchemy':
+        // 6月课程，第N天=6月N日
+        courseDate = new Date(2026, 5, sequenceNumber)
+        break
+      default:
+        // 其他课程不做日期限制
+        return true
+    }
+
+    return today >= courseDate
+  }
 }

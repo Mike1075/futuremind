@@ -56,15 +56,20 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     redirect(`/courses/${courseSystem.system_key}/${contentId}`)
   }
 
-  // 🔒 安全检查：验证倾听课程的解锁状态（防止用户通过URL直接访问未解锁课程）
+  // 🔒 安全检查：验证课程的解锁状态（防止用户通过URL直接访问未解锁课程）
   // 管理员账号可以跳过解锁检查
   const adminEmails = ['3368327@qq.com', 'onestnet@gmail.com']
   const isAdmin = adminEmails.includes(user.email || '')
 
   if (courseSystem.structure_type === 'daily_sequential' && !isAdmin) {
+    // 检查1：日期是否已到达（防止访问未来日期的冥想课程）
+    if (!CourseService.isCourseDateReached(systemKey, content.sequence_number)) {
+      redirect(`/courses/${systemKey}`)
+    }
+
+    // 检查2：分数链式解锁（前一天必须>=60分）
     const unlockStatus = await CourseService.checkListeningCourseUnlock(user.id, contentId)
     if (!unlockStatus.isUnlocked) {
-      // 未解锁，重定向回课程列表页
       redirect(`/courses/${systemKey}`)
     }
   }
