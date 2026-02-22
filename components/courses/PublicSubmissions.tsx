@@ -231,14 +231,14 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4"
             onClick={() => setSelectedSubmission(null)}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-[#0a0a1f]/95 backdrop-blur-xl border border-white/20 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* 弹窗头部 */}
@@ -298,7 +298,7 @@ export function PublicSubmissions({ contentId, limit = 20, refreshKey }: PublicS
                     </svg>
                     作业内容
                   </h4>
-                  <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <div className="bg-white/10 border border-white/10 rounded-lg p-4">
                     <p className="text-starlight whitespace-pre-wrap leading-relaxed">
                       {selectedSubmission.content}
                     </p>
