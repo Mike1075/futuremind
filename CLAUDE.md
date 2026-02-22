@@ -397,6 +397,13 @@ const MailIcon = () => (
   - 管理后台：`/admin/courses/energy-alchemy`
   - 数据库：`course_systems` system_key=`energy_alchemy`
   - 课程名称添加月份前缀（1月-6月）
+- ✅ **冥想音频自动修复系统（2026-02-23）**：
+  - 自动检测音频中缺失的文本内容（拼音级 diff 对比，忽略同音字差异）
+  - 用豆包TTS（鸡汤女音色）生成缺失语句，精确拼接到原始音频正确位置
+  - 三步定位法：段级转录做gap检测 → 段级线性粗定位 → 局部Whisper精转录精定位
+  - 修复范围：3-6月共80天、120处缺失，全部修复并上传到Supabase Storage
+  - 工具位置：`scripts/meditation-audit/fix_audio.py`
+  - 关键经验：word_timestamps对中文不可靠；长段落(>10s)必须局部精转录定位
 
 ---
 
