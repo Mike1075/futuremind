@@ -37,12 +37,16 @@ export function formatCourseText(
   // 4. 移除第一行如果是重复的标题（🧘 冥想练习:xxx 或 🌱 生活实践:xxx 或 【生活实修...】）
   formatted = formatted.replace(/^[🧘🌱🔍📖]\s*[^:：\n]+[:：][^\n]*\n\n?/, '')
   formatted = formatted.replace(/^【生活实修[^】]*】\s*\n?/, '')  // 移除【生活实修:xxx】格式的标题
+  formatted = formatted.replace(/^第三部分[：:][^\n]*\*{0,2}\s*\n\n?/, '')  // 移除 energy_alchemy 的"第三部分：生活中的小练习**"
 
   // 5. 处理 *(建议时长：xxx)* 格式 - 移除星号，只保留括号内容
   formatted = formatted.replace(/\*\(([^)]+)\)\*/g, '($1)')
 
-  // 6. 处理冥想主题标题：**【冥想主题：xxx】** → 独立段落标题
+  // 6a. 处理冥想主题标题：**【冥想主题：xxx】** → 独立段落标题
   formatted = formatted.replace(/\*\*【冥想主题[：:]([^】]+)】\*\*/g, '\n\n【冥想主题：$1】\n\n')
+
+  // 6b. 处理练习名称标题：**【练习名称：xxx】** → 独立段落标题
+  formatted = formatted.replace(/\*\*【练习名称[：:]([^】]+)】\*\*/g, '\n\n【练习名称：$1】\n\n')
 
   // 7. 处理 **准备阶段：** 和 **引导语：** 等标签 → 独立段落
   formatted = formatted.replace(/\*\*(准备阶段|引导语|建议时长)[：:]\*\*\s*/g, '\n\n**$1：**')
@@ -112,6 +116,16 @@ export function formatCourseText(
           return (
             <h3 key={index} className="text-xl font-bold text-amber-300 mt-6 mb-3">
               【冥想主题：{meditationThemeMatch[1]}】
+            </h3>
+          )
+        }
+
+        // === 练习名称标题（【练习名称：xxx】）===
+        const practiceNameMatch = trimmed.match(/^【练习名称[：:](.+?)】$/)
+        if (practiceNameMatch) {
+          return (
+            <h3 key={index} className="text-xl font-bold text-emerald-300 mt-2 mb-3">
+              【练习名称：{practiceNameMatch[1]}】
             </h3>
           )
         }
