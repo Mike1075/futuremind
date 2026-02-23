@@ -12,48 +12,46 @@ interface MarchCourseViewProps {
   bypassScoreCheck?: boolean
 }
 
-// 31天课程的色彩配置（彩虹光谱渐变，与1月课程风格一致）
+// 31天课程的色彩配置（7脉轮鲜艳渐变）
 const MARCH_COLORS = [
-  // 红色系 (Days 1-3) - 勇气的火焰
-  { from: '#EF4444', to: '#F87171' },   // Day 1 - 正红
-  { from: '#DC2626', to: '#EF4444' },   // Day 2 - 深红
-  { from: '#EA580C', to: '#FB923C' },   // Day 3 - 朱红
-  // 橙色系 (Days 4-6) - 觉知的温暖
-  { from: '#F97316', to: '#FB923C' },   // Day 4 - 亮橙
-  { from: '#F59E0B', to: '#FBBF24' },   // Day 5 - 琥珀
-  { from: '#D97706', to: '#FCD34D' },   // Day 6 - 金橙
-  // 黄绿系 (Days 7-9) - 生命的萌芽
-  { from: '#EAB308', to: '#FDE047' },   // Day 7 - 明黄
-  { from: '#65A30D', to: '#A3E635' },   // Day 8 - 青柠
-  { from: '#16A34A', to: '#4ADE80' },   // Day 9 - 翠绿
-  // 绿色系 (Days 10-12) - 心的疗愈
-  { from: '#059669', to: '#34D399' },   // Day 10 - 翡翠
-  { from: '#0D9488', to: '#2DD4BF' },   // Day 11 - 碧绿
-  { from: '#0891B2', to: '#22D3EE' },   // Day 12 - 青瓷
-  // 蓝色系 (Days 13-16) - 深邃的宁静
-  { from: '#0284C7', to: '#38BDF8' },   // Day 13 - 天青
-  { from: '#2563EB', to: '#60A5FA' },   // Day 14 - 天蓝
-  { from: '#4338CA', to: '#818CF8' },   // Day 15 - 宝蓝
-  { from: '#4F46E5', to: '#818CF8' },   // Day 16 - 靛蓝
-  // 紫色系 (Days 17-21) - 智慧的转化
-  { from: '#6D28D9', to: '#A78BFA' },   // Day 17 - 紫蓝
-  { from: '#7C3AED', to: '#A78BFA' },   // Day 18 - 紫晶
-  { from: '#8B5CF6', to: '#C4B5FD' },   // Day 19 - 薰衣草
-  { from: '#9333EA', to: '#C084FC' },   // Day 20 - 深紫
-  { from: '#A855F7', to: '#D8B4FE' },   // Day 21 - 兰花紫
-  // 粉紫系 (Days 22-25) - 爱的慈悲
-  { from: '#C026D3', to: '#E879F9' },   // Day 22 - 洋紫
-  { from: '#D946EF', to: '#F0ABFC' },   // Day 23 - 亮紫
-  { from: '#DB2777', to: '#F472B6' },   // Day 24 - 玫红
-  { from: '#EC4899', to: '#F9A8D4' },   // Day 25 - 粉红
-  // 玫红系 (Days 26-28) - 无惧的力量
-  { from: '#E11D48', to: '#FB7185' },   // Day 26 - 绯红
-  { from: '#F43F5E', to: '#FDA4AF' },   // Day 27 - 玫瑰
-  { from: '#BE123C', to: '#FB7185' },   // Day 28 - 深玫
-  // 金色系 (Days 29-31) - 自由之光
-  { from: '#F59E0B', to: '#FCD34D' },   // Day 29 - 觉醒金
-  { from: '#D97706', to: '#FDE68A' },   // Day 30 - 金辉
-  { from: '#CA8A04', to: '#FEF08A' },   // Day 31 - 纯光
+  // 🔴 海底轮 Root Chakra - 炽红 (Days 1-5)
+  { from: '#FF0000', to: '#FF5555' },   // Day 1 - 纯红
+  { from: '#FF1100', to: '#FF4422' },   // Day 2 - 火焰红
+  { from: '#FF2200', to: '#FF6633' },   // Day 3 - 赤红
+  { from: '#FF3300', to: '#FF7744' },   // Day 4 - 橘红
+  { from: '#FF5500', to: '#FF8833' },   // Day 5 - 红橙
+  // 🟠 脐轮 Sacral Chakra - 明橙 (Days 6-9)
+  { from: '#FF6600', to: '#FF9933' },   // Day 6 - 鲜橙
+  { from: '#FF7700', to: '#FFAA33' },   // Day 7 - 暖橙
+  { from: '#FF8800', to: '#FFBB44' },   // Day 8 - 金橙
+  { from: '#FF9900', to: '#FFCC44' },   // Day 9 - 琥珀
+  // 🟡 太阳轮 Solar Plexus - 金黄 (Days 10-13)
+  { from: '#FFBB00', to: '#FFDD44' },   // Day 10 - 金黄
+  { from: '#FFCC00', to: '#FFEE44' },   // Day 11 - 明黄
+  { from: '#DDDD00', to: '#EEFF44' },   // Day 12 - 柠檬黄
+  { from: '#AADD00', to: '#CCFF44' },   // Day 13 - 黄绿
+  // 🟢 心轮 Heart Chakra - 翠绿 (Days 14-18)
+  { from: '#44DD00', to: '#88FF44' },   // Day 14 - 青翠
+  { from: '#00DD22', to: '#44FF66' },   // Day 15 - 鲜绿
+  { from: '#00CC66', to: '#44FFAA' },   // Day 16 - 碧绿
+  { from: '#00BBAA', to: '#44FFDD' },   // Day 17 - 青绿
+  { from: '#00AADD', to: '#44DDFF' },   // Day 18 - 碧蓝
+  // 🔵 喉轮 Throat Chakra - 宝蓝 (Days 19-22)
+  { from: '#0088FF', to: '#44AAFF' },   // Day 19 - 天蓝
+  { from: '#0055FF', to: '#4488FF' },   // Day 20 - 宝蓝
+  { from: '#0033FF', to: '#4466FF' },   // Day 21 - 皇蓝
+  { from: '#2200FF', to: '#6644FF' },   // Day 22 - 靛蓝
+  // 🟣 眉心轮 Third Eye - 灵紫 (Days 23-26)
+  { from: '#4400FF', to: '#8844FF' },   // Day 23 - 紫蓝
+  { from: '#6600FF', to: '#AA44FF' },   // Day 24 - 深紫
+  { from: '#8800FF', to: '#BB55FF' },   // Day 25 - 亮紫
+  { from: '#AA00FF', to: '#CC55FF' },   // Day 26 - 兰紫
+  // 👑 顶轮 Crown Chakra - 品红 (Days 27-31)
+  { from: '#CC00FF', to: '#DD55FF' },   // Day 27 - 紫罗兰
+  { from: '#EE00DD', to: '#FF55EE' },   // Day 28 - 洋红
+  { from: '#FF00AA', to: '#FF55CC' },   // Day 29 - 品红
+  { from: '#FF0077', to: '#FF55AA' },   // Day 30 - 玫红
+  { from: '#FF0044', to: '#FF5577' },   // Day 31 - 绯红
 ]
 
 export function MarchCourseView({

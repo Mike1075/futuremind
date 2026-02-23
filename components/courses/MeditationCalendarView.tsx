@@ -251,7 +251,7 @@ export function MeditationCalendarView({
                         style={{
                           background: isCompleted
                             ? `linear-gradient(135deg, ${color.from}, ${color.to})`
-                            : `linear-gradient(135deg, ${color.from}80, ${color.to}80)`,
+                            : `linear-gradient(135deg, ${color.from}CC, ${color.to}CC)`,
                           border: isPassed
                             ? '2px solid rgba(255,255,255,0.5)'
                             : '2px solid rgba(255,255,255,0.15)',
@@ -354,7 +354,7 @@ export function MeditationCalendarView({
             <span>已完成</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded" style={{ background: `linear-gradient(135deg, ${colors[0]?.from}80, ${colors[0]?.to}80)` }}></div>
+            <div className="w-4 h-4 rounded" style={{ background: `linear-gradient(135deg, ${colors[0]?.from}CC, ${colors[0]?.to}CC)` }}></div>
             <span>可进入</span>
           </div>
           <div className="flex items-center gap-2">
