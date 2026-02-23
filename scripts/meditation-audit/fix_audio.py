@@ -576,8 +576,251 @@ def format_time(seconds):
 
 
 # ============================================================
+# 6. 全文TTS重录（覆盖率低时使用）
+# ============================================================
+
+def _parse_silence_duration(text):
+    """从括号内容解析静音时长（秒）"""
+    SILENCE_MAP = {
+        "静默片刻": 5, "停顿片刻": 5, "长时间的静默": 10,
+        "长时间静默": 10, "长久的静默": 10,
+    }
+    for key, seconds in SILENCE_MAP.items():
+        if key in text:
+            return seconds
+    m = re.search(r'[停顿静默]\s*(\d+)\s*秒', text)
+    if m:
+        return int(m.group(1))
+    m = re.search(r'(\d+)\s*秒', text)
+    if m:
+        return int(m.group(1))
+    if any(k in text for k in ['停顿', '静默', '静止', '沉默', '安静']):
+        return 5
+    return 0
+
+
+def _generate_silence(duration_sec, output_path):
+    """用ffmpeg生成指定时长的静音mp3"""
+    import subprocess
+    cmd = [
+        "ffmpeg", "-y",
+        "-f", "lavfi", "-i", "anullsrc=r=24000:cl=mono",
+        "-t", str(duration_sec),
+        "-c:a", "libmp3lame", "-b:a", "128k",
+        output_path,
+    ]
+    result = subprocess.run(cmd, capture_output=True, timeout=30)
+    return result.returncode == 0
+
+
+def _extract_guide_text(meditation_guide):
+    """
+    从 meditation_guide 提取引导语部分（用于全文TTS重录）。
+    保留静默指令，去除主题/准备阶段/引导语标签/舞台指示。
+    """
+    text = meditation_guide
+
+    # 去除主题行
+    text = re.sub(r'\*{0,2}【[^】]*】\*{0,2}\s*', '', text)
+    # 去除准备阶段（标题+内容，到引导语或双换行）
+    text = re.sub(r'\*{0,2}准备阶段[：:]?\*{0,2}.*?(?=\*{0,2}引导语|\n\n)', '', text, flags=re.DOTALL)
+    # 去除引导语标签
+    text = re.sub(r'\*{0,2}引导语[：:]?\*{0,2}\s*', '', text)
+    # 去除建议时长
+    text = re.sub(r'（建议时长[^）]*）\s*', '', text)
+    # 去除舞台指示（语速/语调描述），但不删除静默指令
+    text = re.sub(r'（语[速调].*?）\s*', '', text)
+    text = re.sub(r'（[^）]*?语[速调][^）]*?）\s*', '', text)
+    text = re.sub(r'（[^）]*?营造[^）]*?）\s*', '', text)
+    text = re.sub(r'（[^）]*?声音[^）]*?）\s*', '', text)
+    text = re.sub(r'（[^）]*?带有[^）]*?感\s*）\s*', '', text)
+    # 去除 Markdown 加粗
+    text = re.sub(r'\*{2}', '', text)
+    # 统一引号
+    text = text.replace('\u201c', '"').replace('\u201d', '"')
+    text = text.replace('\u2018', "'").replace('\u2019', "'")
+    # 清理多余空行
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = '\n'.join(line.strip() for line in text.split('\n'))
+    return text.strip()
+
+
+def _parse_text_and_silence(guide_text):
+    """
+    将引导语解析成 [("text", 文字), ("silence", 秒数)] 序列。
+    按段落（双换行）分割，段落间插入2秒停顿；
+    遇到显式静默指令（静默N秒）则使用指定时长。
+    """
+    elements = []
+
+    # 先按段落分割
+    paragraphs = re.split(r'\n\n+', guide_text.strip())
+
+    for p_idx, para in enumerate(paragraphs):
+        para = para.strip()
+        if not para:
+            continue
+
+        # 在段落内检查是否有括号内的静默指令
+        parts = re.split(r'(（[^）]*）)', para)
+
+        for part in parts:
+            if not part or not part.strip():
+                continue
+            bracket_match = re.match(r'（(.*)）', part.strip())
+            if bracket_match:
+                inner = bracket_match.group(1)
+                duration = _parse_silence_duration(inner)
+                if duration > 0:
+                    elements.append(("silence", duration))
+            else:
+                text = part.strip()
+                if not text:
+                    continue
+                # 如果文本只有标点（如括号后的"。"），合并到上一个文本元素
+                if not re.search(r'[\u4e00-\u9fffA-Za-z0-9]', text):
+                    for i in range(len(elements) - 1, -1, -1):
+                        if elements[i][0] == "text":
+                            elements[i] = ("text", elements[i][1] + text)
+                            break
+                else:
+                    elements.append(("text", text))
+
+        # 段落之间加2秒停顿（最后一段不加）
+        if p_idx < len(paragraphs) - 1:
+            elements.append(("silence", 2))
+
+    return elements
+
+
+def regenerate_full_tts(system_key, day_num, meditation_guide, audio_url,
+                        do_upload=True):
+    """
+    全文TTS重录：将 meditation_guide 整段重新合成为语音。
+    用于原始音频严重损坏（覆盖率<80%）的情况。
+    """
+    # 提取引导语+解析静默
+    guide_text = _extract_guide_text(meditation_guide)
+    elements = _parse_text_and_silence(guide_text)
+
+    if not elements:
+        print(f"    Day {day_num}: 引导语为空，跳过")
+        return {"status": "empty", "mode": "regen"}
+
+    # 统计
+    text_count = sum(1 for t, v in elements if t == "text")
+    silence_count = sum(1 for t, v in elements if t == "silence")
+    total_chars = sum(len(v) for t, v in elements if t == "text")
+    print(f"    Day {day_num}: 全文TTS重录 ({total_chars}字, {text_count}段文本, {silence_count}段静默)")
+
+    # 工作目录
+    day_tts_dir = FIX_TTS_DIR / system_key / f"day_{day_num}_regen"
+    day_tts_dir.mkdir(parents=True, exist_ok=True)
+
+    all_audio_files = []
+    temp_silence_files = []
+    text_seg_idx = 0
+
+    for elem_type, elem_value in elements:
+        if elem_type == "silence":
+            silence_name = f"silence_{len(all_audio_files)}"
+            silence_path = str(day_tts_dir / f"{silence_name}.mp3")
+            if _generate_silence(elem_value, silence_path):
+                all_audio_files.append(silence_path)
+                temp_silence_files.append(silence_path)
+            else:
+                print(f"      静音生成失败: {elem_value}秒")
+
+        elif elem_type == "text":
+            # 分割长文本
+            segments = _split_text_for_tts(elem_value)
+            for seg in segments:
+                text_seg_idx += 1
+                seg_name = f"seg_{text_seg_idx:03d}"
+                # TTS with retry for transient errors (SSL, network)
+                result = None
+                for attempt in range(3):
+                    try:
+                        result = tts_synthesize(
+                            seg,
+                            filename=seg_name,
+                            speed_ratio=1.0,
+                            output_dir=str(day_tts_dir),
+                        )
+                        if result:
+                            break
+                    except Exception as e:
+                        print(f"      TTS异常(尝试{attempt+1}/3): {e}")
+                        if attempt < 2:
+                            time.sleep(2 * (attempt + 1))
+                if result:
+                    all_audio_files.append(result)
+                else:
+                    print(f"      TTS失败: {seg[:30]}...")
+                    return {"status": "tts_failed", "mode": "regen"}
+                time.sleep(0.3)
+
+    if not all_audio_files:
+        return {"status": "empty", "mode": "regen"}
+
+    # 合并
+    fixed_path = FIX_OUTPUT_DIR / system_key / f"day_{day_num}.mp3"
+    fixed_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"      合并 {len(all_audio_files)} 个片段...")
+    if not _ffmpeg_concat(all_audio_files, str(fixed_path)):
+        return {"status": "merge_failed", "mode": "regen"}
+
+    # 清理临时文件
+    for f in temp_silence_files:
+        if os.path.exists(f):
+            os.remove(f)
+    for f in all_audio_files:
+        if os.path.exists(f) and str(f) != str(fixed_path):
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+
+    fixed_kb = fixed_path.stat().st_size // 1024
+    print(f"      生成: {fixed_kb}KB")
+
+    # 上传
+    if do_upload and audio_url:
+        storage_path = get_storage_path_from_url(audio_url)
+        if storage_path:
+            print(f"      上传: {storage_path}...")
+            result_url = upload_to_supabase(str(fixed_path), storage_path)
+            if result_url:
+                print(f"      上传成功!")
+                return {"status": "regen_done", "mode": "regen"}
+            else:
+                return {"status": "upload_failed", "mode": "regen"}
+    elif not do_upload:
+        print(f"      (跳过上传)")
+    return {"status": "regen_local", "mode": "regen"}
+
+
+def compute_coverage(db_text, transcription):
+    """计算数据库文本与转录文本的覆盖率"""
+    cleaned = clean_db_text(db_text)
+    tr_text = transcription["text"].replace("\n", "")
+    db_chars = flatten_to_chars(cleaned)
+    tr_chars = flatten_to_chars(tr_text)
+    if not db_chars:
+        return 100.0
+    db_py = chars_to_pinyin(db_chars)
+    tr_py = chars_to_pinyin(tr_chars)
+    sm = difflib.SequenceMatcher(None, db_py, tr_py)
+    matched = sum(i2 - i1 for tag, i1, i2, j1, j2 in sm.get_opcodes() if tag == "equal")
+    return matched / len(db_chars) * 100
+
+
+# ============================================================
 # 主流程
 # ============================================================
+
+# 覆盖率阈值：低于此值使用全文TTS重录
+REGEN_THRESHOLD = 80.0
 
 def process_day(system_key, day_num, db_text, transcription, audio_url, do_fix=False, do_upload=True):
     """处理一天的音频修复，返回结果字典"""
@@ -666,6 +909,9 @@ def main():
                         help="指定天数（与 --course 配合使用）")
     parser.add_argument("--no-upload", action="store_true",
                         help="修复但不上传到Supabase")
+    parser.add_argument("--mode", type=str, choices=["patch", "regen", "auto"],
+                        default="auto",
+                        help="修复模式: patch=补丁修复, regen=全文TTS重录, auto=覆盖率自动选择(默认)")
     args = parser.parse_args()
 
     if args.course:
@@ -681,13 +927,14 @@ def main():
     FIX_TTS_DIR.mkdir(parents=True, exist_ok=True)
     FIX_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    total_gaps = 0
-    total_fixed = 0
+    total_patched = 0
+    total_regen = 0
     total_failed = 0
-    days_with_gaps = 0
+    total_ok = 0
 
+    mode_label = {"patch": "补丁修复", "regen": "全文TTS重录", "auto": "自动选择"}
     print(f"\n{'='*60}")
-    print(f"冥想音频修复工具 - {'执行修复' if args.fix else '修复计划预览'}")
+    print(f"冥想音频修复工具 - {'执行修复' if args.fix else '修复计划预览'} (模式: {mode_label[args.mode]})")
     print(f"{'='*60}")
 
     for system_key in course_keys:
@@ -712,32 +959,55 @@ def main():
             with open(cache_file, "r", encoding="utf-8") as f:
                 transcription = json.load(f)
 
-            result = process_day(
-                system_key, day,
-                item["meditation_guide"],
-                transcription,
-                item.get("audio_url"),
-                do_fix=args.fix,
-                do_upload=not args.no_upload,
-            )
+            # 决定使用哪种模式
+            if args.mode == "regen":
+                use_regen = True
+            elif args.mode == "patch":
+                use_regen = False
+            else:  # auto
+                coverage = compute_coverage(item["meditation_guide"], transcription)
+                use_regen = coverage < REGEN_THRESHOLD
+                if use_regen:
+                    print(f"  Day {day}: 覆盖率 {coverage:.0f}% < {REGEN_THRESHOLD:.0f}% → 全文TTS重录")
 
-            if result["gaps"] > 0:
-                total_gaps += result["gaps"]
-                days_with_gaps += 1
-                if result["status"] in ("fixed", "fixed_local"):
-                    total_fixed += result["gaps"]
-                elif result["status"] in ("tts_failed", "upload_failed", "no_audio"):
-                    total_failed += result["gaps"]
+            if use_regen:
+                if not args.fix:
+                    print(f"  Day {day}: [全文TTS重录]")
+                    total_regen += 1
+                else:
+                    result = regenerate_full_tts(
+                        system_key, day,
+                        item["meditation_guide"],
+                        item.get("audio_url"),
+                        do_upload=not args.no_upload,
+                    )
+                    if result["status"] in ("regen_done", "regen_local"):
+                        total_regen += 1
+                    else:
+                        total_failed += 1
+            else:
+                result = process_day(
+                    system_key, day,
+                    item["meditation_guide"],
+                    transcription,
+                    item.get("audio_url"),
+                    do_fix=args.fix,
+                    do_upload=not args.no_upload,
+                )
+                if result["gaps"] > 0:
+                    total_patched += 1
+                    if result["status"] in ("tts_failed", "upload_failed", "no_audio"):
+                        total_failed += 1
+                else:
+                    total_ok += 1
 
     print(f"\n{'='*60}")
-    print(f"汇总: {days_with_gaps} 天有缺失, 共 {total_gaps} 处")
-    if args.fix:
-        print(f"已修复: {total_fixed} 处, 失败: {total_failed} 处")
-    else:
+    print(f"汇总: 无需修改 {total_ok}天, 补丁修复 {total_patched}天, 全文重录 {total_regen}天, 失败 {total_failed}天")
+    if not args.fix:
         print(f"\n运行以下命令执行修复:")
-        print(f"  python fix_audio.py --fix                  # 全部修复+上传")
-        print(f"  python fix_audio.py --fix --no-upload       # 全部修复不上传")
-        print(f"  python fix_audio.py --fix --course <name>   # 指定课程")
+        print(f"  python fix_audio.py --fix                  # 自动模式(推荐)")
+        print(f"  python fix_audio.py --fix --mode regen     # 全部强制重录")
+        print(f"  python fix_audio.py --fix --mode patch     # 全部用补丁")
     print(f"{'='*60}")
 
 
