@@ -639,6 +639,20 @@ def _extract_guide_text(meditation_guide):
     # 统一引号
     text = text.replace('\u201c', '"').replace('\u201d', '"')
     text = text.replace('\u2018', "'").replace('\u2019', "'")
+    # 将剩余的非静默括号内容转为内联文本（避免括号注释被丢弃或放错位置）
+    # 先保护静默指令
+    def _replace_paren(m):
+        inner = m.group(1)
+        # 静默指令保留括号
+        if re.search(r'静默|停顿', inner):
+            return m.group(0)
+        # 其他括号内容：去括号，保留内容
+        return '，' + inner + '，'
+    text = re.sub(r'（([^）]{1,50})）', _replace_paren, text)
+    # 清理多余逗号
+    text = re.sub(r'，{2,}', '，', text)
+    text = re.sub(r'。，', '。', text)
+    text = re.sub(r'，。', '。', text)
     # 清理多余空行
     text = re.sub(r'\n{3,}', '\n\n', text)
     text = '\n'.join(line.strip() for line in text.split('\n'))
