@@ -37,7 +37,8 @@ export function formatCourseText(
   // 4. 移除第一行如果是重复的标题（🧘 冥想练习:xxx 或 🌱 生活实践:xxx 或 【生活实修...】）
   formatted = formatted.replace(/^[🧘🌱🔍📖]\s*[^:：\n]+[:：][^\n]*\n\n?/, '')
   formatted = formatted.replace(/^【生活实修[^】]*】\s*\n?/, '')  // 移除【生活实修:xxx】格式的标题
-  formatted = formatted.replace(/^第三部分[：:][^\n]*\*{0,2}\s*\n\n?/, '')  // 移除 energy_alchemy 的"第三部分：生活中的小练习**"
+  formatted = formatted.replace(/^第[二三]部分[：:][^\n]*\*{0,2}\s*\n\n?/, '')  // 移除结构标题如"第二部分：冥想练习与引导**"
+  formatted = formatted.replace(/\n\n\*\*\s*$/, '')  // 移除末尾孤立的 **
 
   // 5. 处理 *(建议时长：xxx)* 格式 - 移除星号，只保留括号内容
   formatted = formatted.replace(/\*\(([^)]+)\)\*/g, '($1)')
