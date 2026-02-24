@@ -17,7 +17,8 @@ SCRIPT_DIR = Path(__file__).parent
 OUTPUT_PATH = SCRIPT_DIR / "output"
 
 # 最小差异长度（拼音字符数），低于此长度视为用词/标点微调，忽略
-MIN_GAP_PINYIN_LEN = 15  # 大约对应 5-6 个汉字
+# 注意：之前设为15漏掉了4字短语（如"只有声音"=14拼音），降低到8（约3个汉字）
+MIN_GAP_PINYIN_LEN = 8
 
 
 def to_pinyin_str(text: str) -> str:

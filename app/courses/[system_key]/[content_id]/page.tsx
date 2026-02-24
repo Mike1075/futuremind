@@ -82,44 +82,45 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     }
   }
 
-  // 获取相邻内容
-  const { prev: prevContent, next: nextContent } = await CourseService.getAdjacentContents(
-    courseSystem.id,
-    content.sequence_number,
-    false
-  )
-
-  // 获取用户进度
-  const isCompleted = await ProgressService.isCompleted(
-    user.id,
-    contentId,
-    'reading'
-  )
-
-  // 检查是否曾经有过>=60分的提交（用于控制"下一个"按钮）
-  // 只要曾经通过，就永久解锁，不会因为后续低分提交而锁回去
-  // 使用 maybeSingle() 避免无匹配行时产生错误对象
-  const { data: passedSubmission } = await supabase
-    .from('user_submissions')
-    .select('score')
-    .eq('user_id', user.id)
-    .eq('course_content_id', contentId)
-    .gte('score', 60)
-    .limit(1)
-    .maybeSingle()
+  // 并行获取所有独立数据（避免顺序查询导致超时）
+  const [
+    { prev: prevContent, next: nextContent },
+    isCompleted,
+    { data: passedSubmission },
+    { data: highestSubmission },
+    { data: mediaResources },
+  ] = await Promise.all([
+    // 获取相邻内容
+    CourseService.getAdjacentContents(courseSystem.id, content.sequence_number, false),
+    // 获取用户进度
+    ProgressService.isCompleted(user.id, contentId, 'reading'),
+    // 检查是否曾经有过>=60分的提交
+    supabase
+      .from('user_submissions')
+      .select('score')
+      .eq('user_id', user.id)
+      .eq('course_content_id', contentId)
+      .gte('score', 60)
+      .limit(1)
+      .maybeSingle(),
+    // 获取用户当前最高分数
+    supabase
+      .from('user_submissions')
+      .select('score')
+      .eq('user_id', user.id)
+      .eq('course_content_id', contentId)
+      .order('score', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    // 获取媒体资源（音频等）
+    supabase
+      .from('media_resources')
+      .select('*')
+      .eq('course_content_id', contentId)
+      .order('created_at', { ascending: true }),
+  ])
 
   const hasPassedAssignment = !!passedSubmission
-
-  // 获取用户当前最高分数（用于显示在锁定提示弹窗中）
-  const { data: highestSubmission } = await supabase
-    .from('user_submissions')
-    .select('score')
-    .eq('user_id', user.id)
-    .eq('course_content_id', contentId)
-    .order('score', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
   const currentHighestScore = highestSubmission?.score || 0
 
   // PBL项目使用专属详情页
@@ -320,13 +321,6 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
       </section>
     )
   }
-
-  // 获取媒体资源（用于破晓觉醒课程的音频）
-  const { data: mediaResources } = await supabase
-    .from('media_resources')
-    .select('*')
-    .eq('course_content_id', contentId)
-    .order('created_at', { ascending: true })
 
   // 渲染媒体资源（从 media_resources 表获取的音频等）
   const renderMediaResources = () => {

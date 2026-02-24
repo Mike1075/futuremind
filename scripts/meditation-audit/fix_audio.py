@@ -13,6 +13,7 @@ fix_audio.py - 修复冥想音频缺失内容
   python fix_audio.py --fix --course dependency_freedom  # 指定课程
   python fix_audio.py --fix --day 5                      # 指定天数
   python fix_audio.py --fix --no-upload                  # 修复但不上传
+  python fix_audio.py --fix --fresh                      # 重新下载音频+刷新缓存后修复
 """
 
 import json
@@ -32,7 +33,7 @@ sys.path.insert(0, r"D:\CursorWork\doubao\yuyinhecheng")
 from tts import synthesize as tts_synthesize
 
 from config import COURSES, SUPABASE_URL, WHISPER_MODEL, WHISPER_DEVICE, WHISPER_COMPUTE_TYPE
-from main import fetch_course_data, clean_db_text, CACHE_PATH, AUDIO_PATH
+from main import fetch_course_data, clean_db_text, CACHE_PATH, AUDIO_PATH, http_get, transcribe_audio
 from analyze import strip_all, flatten_to_chars, chars_to_pinyin, MIN_GAP_PINYIN_LEN
 
 SCRIPT_DIR = Path(__file__).parent
@@ -926,6 +927,8 @@ def main():
     parser.add_argument("--mode", type=str, choices=["patch", "regen", "auto"],
                         default="auto",
                         help="修复模式: patch=补丁修复, regen=全文TTS重录, auto=覆盖率自动选择(默认)")
+    parser.add_argument("--fresh", action="store_true",
+                        help="强制重新下载音频并刷新转录缓存（用于修复已经打过补丁的音频）")
     args = parser.parse_args()
 
     if args.course:
@@ -966,12 +969,39 @@ def main():
             if not item["meditation_guide"]:
                 continue
 
-            cache_file = CACHE_PATH / system_key / f"day_{day}.json"
-            if not cache_file.exists():
-                continue
+            # 自动下载音频（如果本地不存在或 --fresh 模式）
+            audio_file = AUDIO_PATH / system_key / f"day_{day}.mp3"
+            if item.get("audio_url"):
+                if args.fresh and audio_file.exists():
+                    audio_file.unlink()
+                if not audio_file.exists():
+                    audio_file.parent.mkdir(parents=True, exist_ok=True)
+                    print(f"  Day {day}: 下载音频...")
+                    try:
+                        data = http_get(item["audio_url"])
+                        audio_file.write_bytes(data)
+                    except Exception as e:
+                        print(f"  Day {day}: 下载失败: {e}")
+                        continue
 
-            with open(cache_file, "r", encoding="utf-8") as f:
-                transcription = json.load(f)
+            # 自动转录（如果缓存不存在或 --fresh 模式）
+            cache_file = CACHE_PATH / system_key / f"day_{day}.json"
+            words_cache = CACHE_PATH / system_key / f"day_{day}_words.json"
+            if args.fresh:
+                if cache_file.exists():
+                    cache_file.unlink()
+                if words_cache.exists():
+                    words_cache.unlink()
+            if not cache_file.exists():
+                if audio_file.exists():
+                    print(f"  Day {day}: 转录中...")
+                    transcription = transcribe_audio(audio_file, cache_file)
+                else:
+                    print(f"  Day {day}: 无音频，跳过")
+                    continue
+            else:
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    transcription = json.load(f)
 
             # 决定使用哪种模式
             if args.mode == "regen":

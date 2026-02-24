@@ -62,12 +62,22 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
   // 获取内容ID列表
   const contentIds = contents.map(c => c.id)
 
-  // 批量获取用户进度
-  const progressMap = await ProgressService.getBatchProgress(
-    user.id,
-    contentIds,
-    'reading'
-  )
+  // 冥想课程需要分数映射（链式解锁），与进度一起并行获取
+  const isMeditationCourse = ['listening', 'dawn_awakening', 'dependency_freedom', 'desire_flame', 'wisdom_awakening', 'energy_alchemy'].includes(systemKey)
+
+  // 并行获取进度和分数（避免顺序查询导致超时）
+  const [progressMap, submissionsResult] = await Promise.all([
+    ProgressService.getBatchProgress(user.id, contentIds, 'reading'),
+    isMeditationCourse
+      ? supabase
+          .from('user_submissions')
+          .select('course_content_id, score')
+          .eq('user_id', user.id)
+          .in('course_content_id', contentIds)
+          .eq('status', 'approved')
+          .order('submitted_at', { ascending: false })
+      : Promise.resolve({ data: null }),
+  ])
 
   // 创建完成状态映射
   const completionMap = new Map<string, boolean>()
@@ -87,15 +97,8 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
   }
 
   // 聆听课程、破晓觉醒课程、依赖与自由课程都需要分数映射（链式解锁）
-  if (systemKey === 'listening' || systemKey === 'dawn_awakening' || systemKey === 'dependency_freedom' || systemKey === 'desire_flame' || systemKey === 'wisdom_awakening' || systemKey === 'energy_alchemy') {
-    // 获取用户的作业分数
-    const { data: submissions } = await supabase
-      .from('user_submissions')
-      .select('course_content_id, score')
-      .eq('user_id', user.id)
-      .in('course_content_id', contentIds)
-      .eq('status', 'approved')
-      .order('submitted_at', { ascending: false })
+  if (isMeditationCourse) {
+    const submissions = submissionsResult.data
 
     // 创建分数映射（取最高分）
     const scoreMap = new Map<string, number>()
