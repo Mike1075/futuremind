@@ -43,20 +43,14 @@ export function formatCourseText(
   // 5. 处理 *(建议时长：xxx)* 格式 - 移除星号，只保留括号内容
   formatted = formatted.replace(/\*\(([^)]+)\)\*/g, '($1)')
 
-  // 6a. 移除冥想结构标签（不应显示给学员）
-  // 移除 **【冥想主题：xxx】**
-  formatted = formatted.replace(/\*\*【冥想主题[：:][^】]+】\*\*\s*\n*/g, '')
-  // 移除 **准备阶段：** 及其后面同行的内容
-  formatted = formatted.replace(/\*\*准备阶段[：:]\*\*[^\n]*\n*/g, '')
-  // 移除 **引导语：** 标签
-  formatted = formatted.replace(/\*\*引导语[：:]\*\*\s*\n*/g, '')
-  // 移除 **建议时长：** 标签
-  formatted = formatted.replace(/\*\*建议时长[：:]\*\*\s*\n*/g, '')
-  // 移除引导语后的朗读指导说明（如"（语速缓慢...停顿）"）
-  formatted = formatted.replace(/^（[^）]*(?:停顿|缓慢|坚定|温和)[^）]*）\s*$/gm, '')
+  // 6a. 处理冥想主题标题：**【冥想主题：xxx】** → 独立段落标题
+  formatted = formatted.replace(/\*\*【冥想主题[：:]([^】]+)】\*\*/g, '\n\n【冥想主题：$1】\n\n')
 
   // 6b. 处理练习名称标题：**【练习名称：xxx】** → 独立段落标题
   formatted = formatted.replace(/\*\*【练习名称[：:]([^】]+)】\*\*/g, '\n\n【练习名称：$1】\n\n')
+
+  // 7. 处理 **准备阶段：** 和 **引导语：** 等标签 → 独立段落
+  formatted = formatted.replace(/\*\*(准备阶段|引导语|建议时长)[：:]\*\*\s*/g, '\n\n**$1：**')
 
   // 8. 处理生活实践的分行格式：
   // Variant A: * **标签：** content (冒号在**内)
@@ -113,6 +107,16 @@ export function formatCourseText(
           return (
             <h3 key={index} className="text-xl font-bold text-purple-300 mb-4">
               {trimmed}
+            </h3>
+          )
+        }
+
+        // === 冥想主题标题（【冥想主题：xxx】）===
+        const meditationThemeMatch = trimmed.match(/^【冥想主题[：:](.+?)】$/)
+        if (meditationThemeMatch) {
+          return (
+            <h3 key={index} className="text-xl font-bold text-amber-300 mt-6 mb-3">
+              【冥想主题：{meditationThemeMatch[1]}】
             </h3>
           )
         }
