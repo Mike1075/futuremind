@@ -22,8 +22,11 @@ export function formatCourseText(
 ): React.ReactNode {
   if (!text) return null
 
+  // 0. 将字面量 \n 转换为真正的换行符（数据库中部分数据存储的是转义字符串）
+  let formatted = text.replace(/\\n/g, '\n')
+
   // 1. 移除 --- 分隔符
-  let formatted = text.replace(/\s*---+\s*/g, '\n\n')
+  formatted = formatted.replace(/\s*---+\s*/g, '\n\n')
 
   // 2. 移除多余的空行
   formatted = formatted.replace(/\n{3,}/g, '\n\n')
@@ -34,13 +37,33 @@ export function formatCourseText(
   // 4. 移除第一行如果是重复的标题（🧘 冥想练习:xxx 或 🌱 生活实践:xxx 或 【生活实修...】）
   formatted = formatted.replace(/^[🧘🌱🔍📖]\s*[^:：\n]+[:：][^\n]*\n\n?/, '')
   formatted = formatted.replace(/^【生活实修[^】]*】\s*\n?/, '')  // 移除【生活实修:xxx】格式的标题
+  formatted = formatted.replace(/^第[二三]部分[：:][^\n]*\*{0,2}\s*\n\n?/, '')  // 移除结构标题如"第二部分：冥想练习与引导**"
+  formatted = formatted.replace(/\n\n\*\*\s*$/, '')  // 移除末尾孤立的 **
 
   // 5. 处理 *(建议时长：xxx)* 格式 - 移除星号，只保留括号内容
   formatted = formatted.replace(/\*\(([^)]+)\)\*/g, '($1)')
 
-  // 6. 处理生活实践的分行格式：* **练习：** xxx * **行动：** xxx
-  // 将 * **标签：** 转换为换行 + 加粗标签
-  formatted = formatted.replace(/\*\s*\*\*([^*:：]+)[:：]\*\*\s*/g, '\n**$1：**')
+  // 6a. 处理冥想主题标题：**【冥想主题：xxx】** → 独立段落标题
+  formatted = formatted.replace(/\*\*【冥想主题[：:]([^】]+)】\*\*/g, '\n\n【冥想主题：$1】\n\n')
+
+  // 6b. 处理练习名称标题：**【练习名称：xxx】** → 独立段落标题
+  formatted = formatted.replace(/\*\*【练习名称[：:]([^】]+)】\*\*/g, '\n\n【练习名称：$1】\n\n')
+
+  // 7. 处理 **准备阶段：** 和 **引导语：** 等标签 → 独立段落
+  formatted = formatted.replace(/\*\*(准备阶段|引导语|建议时长)[：:]\*\*\s*/g, '\n\n**$1：**')
+
+  // 8. 处理生活实践的分行格式：
+  // Variant A: * **标签：** content (冒号在**内)
+  // Variant B: * **标签**：content (冒号在**外)
+  formatted = formatted.replace(/\*\s*\*\*([^*:：]+)(?:[:：]\*\*|\*\*[:：])\s*/g, '\n\n**$1：**')
+
+  // 9. 确保编号列表项（1. 2. 3. 等）前有段落分隔符
+  // 修复：标签（如 做法：）后跟编号列表时，编号项之间只有单 \n，被当成一段处理
+  // 将 \n + 数字. 升级为 \n\n + 数字.，使每个编号项成为独立段落
+  formatted = formatted.replace(/\n(\d+\.\s)/g, '\n\n$1')
+
+  // 10. 再次清理可能产生的多余空行
+  formatted = formatted.replace(/\n{3,}/g, '\n\n')
 
   // 5. 将文本分段（按双换行）
   const paragraphs = formatted.split('\n\n')
@@ -88,6 +111,26 @@ export function formatCourseText(
           )
         }
 
+        // === 冥想主题标题（【冥想主题：xxx】）===
+        const meditationThemeMatch = trimmed.match(/^【冥想主题[：:](.+?)】$/)
+        if (meditationThemeMatch) {
+          return (
+            <h3 key={index} className="text-xl font-bold text-amber-300 mt-6 mb-3">
+              【冥想主题：{meditationThemeMatch[1]}】
+            </h3>
+          )
+        }
+
+        // === 练习名称标题（【练习名称：xxx】）===
+        const practiceNameMatch = trimmed.match(/^【练习名称[：:](.+?)】$/)
+        if (practiceNameMatch) {
+          return (
+            <h3 key={index} className="text-xl font-bold text-emerald-300 mt-2 mb-3">
+              【练习名称：{practiceNameMatch[1]}】
+            </h3>
+          )
+        }
+
         // === 独立小标题（准备阶段、冥想引导、具体步骤）===
         const standaloneTitle = trimmed.match(/^(准备阶段|冥想引导|具体步骤|聆听练习|结束阶段)[:：]?$/)
         if (standaloneTitle) {
@@ -116,9 +159,12 @@ export function formatCourseText(
           return (
             <div key={index} className="space-y-2">
               {lines.map((line, i) => {
-                const stepMatch = line.match(/^(\d+)\.\s*([^：:]+)[:：]\s*(.*)$/)
+                const lineTrimmed = line.trim()
+                const stepMatch = lineTrimmed.match(/^(\d+)\.\s*([^：:]+)[:：]\s*(.*)$/)
                 if (stepMatch) {
-                  const [, num, stepTitle, stepContent] = stepMatch
+                  const [, num, rawStepTitle, stepContent] = stepMatch
+                  // 去除 Markdown **加粗** 标记，避免显示为文字
+                  const stepTitle = rawStepTitle.replace(/\*\*/g, '')
                   return (
                     <p key={i} className="text-gray-300 leading-relaxed">
                       <span className="text-purple-300 font-semibold">{num}. </span>
@@ -127,10 +173,18 @@ export function formatCourseText(
                     </p>
                   )
                 }
+                // 子项（以 - 或 • 开头）
+                if (lineTrimmed.startsWith('-') || lineTrimmed.startsWith('•')) {
+                  return (
+                    <p key={i} className="text-gray-300 leading-relaxed ml-6">
+                      {formatInlineText(lineTrimmed)}
+                    </p>
+                  )
+                }
                 // 普通行
                 return (
                   <p key={i} className="text-gray-300 leading-relaxed ml-4">
-                    {formatInlineText(line)}
+                    {formatInlineText(lineTrimmed)}
                   </p>
                 )
               })}
@@ -141,7 +195,9 @@ export function formatCourseText(
         // === 单行步骤（1. 停止：xxx）===
         const singleStepMatch = trimmed.match(/^(\d+)\.\s*([^：:]+)[:：]\s*(.*)$/)
         if (singleStepMatch && !trimmed.includes('\n')) {
-          const [, num, stepTitle, stepContent] = singleStepMatch
+          const [, num, rawStepTitle, stepContent] = singleStepMatch
+          // 去除 Markdown **加粗** 标记
+          const stepTitle = rawStepTitle.replace(/\*\*/g, '')
           return (
             <p key={index} className="text-gray-300 leading-relaxed">
               <span className="text-purple-300 font-semibold">{num}. </span>
@@ -168,6 +224,32 @@ export function formatCourseText(
             <p key={index} className="text-gray-300 italic leading-relaxed">
               {formatInlineText(trimmed)}
             </p>
+          )
+        }
+
+        // === 多行段落（含换行的文本，逐行渲染）===
+        if (trimmed.includes('\n')) {
+          const lines = trimmed.split('\n').filter(line => line.trim())
+          return (
+            <div key={index} className="space-y-2">
+              {lines.map((line, i) => {
+                const lineTrimmed = line.trim()
+                // 子项（以 * 或 - 或 • 开头，后跟空格）
+                if (/^[*\-•]\s/.test(lineTrimmed)) {
+                  const content = lineTrimmed.replace(/^[*\-•]\s*/, '')
+                  return (
+                    <p key={i} className="text-gray-300 leading-relaxed ml-6">
+                      {formatInlineText(content)}
+                    </p>
+                  )
+                }
+                return (
+                  <p key={i} className="text-gray-300 leading-relaxed">
+                    {formatInlineText(lineTrimmed)}
+                  </p>
+                )
+              })}
+            </div>
           )
         }
 

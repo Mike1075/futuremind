@@ -47,6 +47,11 @@ export class ProgressService {
     contentIds: string[],
     progressType: ProgressType = 'reading'
   ): Promise<Map<string, UserProgress>> {
+    // 空数组保护：避免 .in() 传入空数组导致查询异常
+    if (contentIds.length === 0) {
+      return new Map<string, UserProgress>()
+    }
+
     const supabase = await createClient()
 
     const { data, error } = await supabase

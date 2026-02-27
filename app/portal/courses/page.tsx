@@ -29,7 +29,7 @@ export default function CoursesPage() {
   const toast = useToast()
 
   const [loading, setLoading] = useState(true)
-  const [enrolling, setEnrolling] = useState(false)
+  const [enrollingId, setEnrollingId] = useState<string | null>(null)
   const [allCourses, setAllCourses] = useState<Course[]>([])
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([])
   const [userId, setUserId] = useState<string | null>(null)
@@ -95,14 +95,13 @@ export default function CoursesPage() {
       return
     }
 
-    setEnrolling(true)
+    setEnrollingId(courseId)
     try {
       const { error } = await supabase
         .from('student_course_assignments')
         .insert({
           student_id: userId,
           course_system_id: courseId,
-          assigned_by: userId,
           status: 'active'
         })
 
@@ -113,7 +112,7 @@ export default function CoursesPage() {
     } catch {
       toast.error('选课失败，请重试')
     } finally {
-      setEnrolling(false)
+      setEnrollingId(null)
     }
   }
 
@@ -279,10 +278,10 @@ export default function CoursesPage() {
 
                       <button
                         onClick={() => handleEnroll(course.id)}
-                        disabled={enrolling}
+                        disabled={enrollingId === course.id}
                         className="btn-stardust w-full py-3 flex items-center justify-center gap-2"
                       >
-                        {enrolling ? (
+                        {enrollingId === course.id ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
                             选课中...

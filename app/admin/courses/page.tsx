@@ -5,7 +5,75 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BookOpen, ArrowLeft, Ear, Globe, Rocket, Plus, Trash2, Brain, Sunrise } from 'lucide-react'
+import { BookOpen, ArrowLeft, Plus, Trash2, Brain } from 'lucide-react'
+
+// 内联 SVG 图标组件（避免 lucide-react 渲染问题）
+const EarIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0" />
+    <path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 0 0 4 0" />
+  </svg>
+)
+
+const GlobeIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+    <path d="M2 12h20" />
+  </svg>
+)
+
+const RocketIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+  </svg>
+)
+
+const SunriseIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2v8" />
+    <path d="m4.93 10.93 1.41 1.41" />
+    <path d="M2 18h2" />
+    <path d="M20 18h2" />
+    <path d="m19.07 10.93-1.41 1.41" />
+    <path d="M22 22H2" />
+    <path d="m8 6 4-4 4 4" />
+    <path d="M16 18a4 4 0 0 0-8 0" />
+  </svg>
+)
+
+// 3月：无惧 - 盾牌图标（勇气/直面恐惧）
+const ShieldIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <path d="M9.5 12l2 2 4-4" />
+  </svg>
+)
+
+// 4月：热情 - 火焰图标（热情/欲望转化）
+const FlameIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+  </svg>
+)
+
+// 5月：智慧 - 莲花图标（智慧觉醒/升华）
+const LotusIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2C12 2 8.5 7 8.5 12c0 2.5 1.5 4 3.5 4s3.5-1.5 3.5-4C15.5 7 12 2 12 2z" />
+    <path d="M12 16c-2 0-6-1-7.5-5C3 11 2 13.5 4 16c1.5 1.9 4.5 3 8 3s6.5-1.1 8-3c2-2.5 1-5-.5-5-1.5 4-5.5 5-7.5 5z" />
+  </svg>
+)
+
+// 6月：放下 - 闪电能量图标（驾驭能量）
+const ZapIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+)
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 
@@ -68,7 +136,7 @@ export default function CoursesPage() {
 
   const deleteCourse = async (courseId: string, courseTitle: string, systemKey: string) => {
     // 检查是否是原始课程
-    const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening']
+    const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening', 'dependency_freedom', 'desire_flame', 'wisdom_awakening', 'energy_alchemy']
     if (protectedCourses.includes(systemKey)) {
       toast.warning('原始课程不可删除\n\n「' + courseTitle + '」是系统预设课程，不能删除。\n只有新增的课程可以删除。')
       return
@@ -137,29 +205,49 @@ export default function CoursesPage() {
     }))
   }, [isMounted])
 
-  // Icon mapping
+  // Icon mapping - 使用内联 SVG 避免 lucide-react 渲染问题
   const getIconAndGradient = (systemKey: string) => {
     switch (systemKey) {
       case 'listening':
         return {
-          icon: Ear,
+          icon: EarIcon,
           gradient: 'from-purple-500 via-indigo-500 to-blue-500'
         }
       case 'earth':
         return {
-          icon: Globe,
+          icon: GlobeIcon,
           gradient: 'from-cyan-500 via-teal-500 to-green-500'
         }
       case 'icarus':
       case 'pbl':
         return {
-          icon: Rocket,
+          icon: RocketIcon,
           gradient: 'from-orange-500 via-red-500 to-pink-500'
         }
       case 'dawn_awakening':
         return {
-          icon: Sunrise,
+          icon: SunriseIcon,
           gradient: 'from-amber-500 via-orange-500 to-yellow-500'
+        }
+      case 'dependency_freedom':
+        return {
+          icon: ShieldIcon,
+          gradient: 'from-rose-500 via-purple-500 to-indigo-500'
+        }
+      case 'desire_flame':
+        return {
+          icon: FlameIcon,
+          gradient: 'from-red-500 via-orange-500 to-yellow-500'
+        }
+      case 'wisdom_awakening':
+        return {
+          icon: LotusIcon,
+          gradient: 'from-indigo-500 via-blue-500 to-emerald-500'
+        }
+      case 'energy_alchemy':
+        return {
+          icon: ZapIcon,
+          gradient: 'from-teal-500 via-cyan-500 to-blue-500'
         }
       default:
         return {
@@ -245,11 +333,15 @@ export default function CoursesPage() {
               if (course.system_key === 'earth') return '/admin/courses/earth'
               if (course.system_key === 'icarus' || course.system_key === 'pbl') return '/admin/courses/pbl'
               if (course.system_key === 'dawn_awakening') return '/admin/courses/dawn-awakening'
+              if (course.system_key === 'dependency_freedom') return '/admin/courses/dependency-freedom'
+              if (course.system_key === 'desire_flame') return '/admin/courses/desire-flame'
+              if (course.system_key === 'wisdom_awakening') return '/admin/courses/wisdom-awakening'
+              if (course.system_key === 'energy_alchemy') return '/admin/courses/energy-alchemy'
               return `/admin/courses/${course.id}`
             }
 
             // 检查是否是原始课程（不可删除）
-            const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening']
+            const protectedCourses = ['listening', 'earth', 'pbl', 'icarus', 'dawn_awakening', 'dependency_freedom', 'desire_flame', 'wisdom_awakening', 'energy_alchemy']
             const isDeletable = !protectedCourses.includes(course.system_key)
 
             return (

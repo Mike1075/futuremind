@@ -28,10 +28,14 @@ docs/                  # 详细文档
 ## 课程体系
 1. **地球课程 (Earth)** - 基础课程，PBL 项目制学习
 2. **伊卡洛斯三角 (Icarus Triangle)** - 进阶课程
-3. **倾听课程 (Listening)** - 14天音频课程
-4. **破晓觉醒 (Dawn Awakening)** - 23天晨间冥想课程
-5. **盖亚对话 (Gaia Dialog)** - AI 对话系统
-6. **赛斯365 (Seth365)** - 每日灵感壁纸系统
+3. **觉察：唤醒感官 (listening)** - 克里希那穆提一月主题，14天音频课程
+4. **无为：打破模式 (dawn_awakening)** - 克里希那穆提二月主题，23天晨间冥想
+5. **无惧：直面恐惧 (dependency_freedom)** - 克里希那穆提三月主题，31天探索
+6. **热情：转化欲望 (desire_flame)** - 克里希那穆提四月主题，30天探索
+7. **智慧：智力升华 (wisdom_awakening)** - 克里希那穆提五月主题，31天探索
+8. **放下：驾驭能量 (energy_alchemy)** - 克里希那穆提六月主题，30天探索
+9. **盖亚对话 (Gaia Dialog)** - AI 对话系统
+10. **赛斯365 (Seth365)** - 每日灵感壁纸系统
 
 ## 用户角色
 - `student` - 学生
@@ -365,6 +369,41 @@ const MailIcon = () => (
   - 链式解锁机制：需>=60分解锁下一天（与自在聆听课程相同）
   - 数据库：`course_systems` system_key=`dawn_awakening`
   - 学员可在「我的课程」页面选修此课程
+- ✅ **无惧：直面恐惧（三月课程）（2026-02-17）**：
+  - 扩展为31天三月课程，源自克里希那穆提《生命之书》三月主题
+  - 从九宫格改为日历视图（复用 `MeditationCalendarView`）
+  - 管理后台：`/admin/courses/dependency-freedom`
+  - 数据库：`course_systems` system_key=`dependency_freedom`
+- ✅ **热情：转化欲望（四月课程）（2026-02-17）**：
+  - 新增30天四月课程，源自克里希那穆提《生命之书》四月主题
+  - 前端组件：`AprilCourseView.tsx`（日历视图）
+  - 管理后台：`/admin/courses/desire-flame`
+  - 数据库：`course_systems` system_key=`desire_flame`
+- ✅ **智慧：智力升华（五月课程）（2026-02-17）**：
+  - 新增31天五月课程，源自克里希那穆提《生命之书》五月主题
+  - 前端组件：`MayCourseView.tsx`（日历视图）
+  - 管理后台：`/admin/courses/wisdom-awakening`
+  - 数据库：`course_systems` system_key=`wisdom_awakening`
+- ✅ **冥想课程统一重命名（2026-02-17）**：
+  - 一月：自在聆听 → 觉察：唤醒感官
+  - 二月：破晓觉醒 → 无为：打破模式
+  - 三月：依赖与自由 → 无惧：直面恐惧
+  - 四月：欲望的火焰 → 热情：转化欲望
+  - 五月：智慧的苏醒 → 智慧：智力升华
+  - 共用组件：`MeditationCalendarView.tsx`（三/四/五月共用日历视图）
+- ✅ **放下：驾驭能量（六月课程）（2026-02-17）**：
+  - 新增30天六月课程，源自克里希那穆提《生命之书》六月主题：能量、注意力与暴力
+  - 前端组件：`JuneCourseView.tsx`（能量主题，蓝-绿-金渐变）
+  - 管理后台：`/admin/courses/energy-alchemy`
+  - 数据库：`course_systems` system_key=`energy_alchemy`
+  - 课程名称添加月份前缀（1月-6月）
+- ✅ **冥想音频自动修复系统（2026-02-23）**：
+  - 自动检测音频中缺失的文本内容（拼音级 diff 对比，忽略同音字差异）
+  - 用豆包TTS（鸡汤女音色）生成缺失语句，精确拼接到原始音频正确位置
+  - 三步定位法：段级转录做gap检测 → 段级线性粗定位 → 局部Whisper精转录精定位
+  - 修复范围：3-6月共80天、120处缺失，全部修复并上传到Supabase Storage
+  - 工具位置：`scripts/meditation-audit/fix_audio.py`
+  - 关键经验：word_timestamps对中文不可靠；长段落(>10s)必须局部精转录定位
 
 ---
 

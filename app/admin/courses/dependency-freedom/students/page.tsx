@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Users, UserPlus, Trash2, Search, Sunrise } from 'lucide-react'
+import { ArrowLeft, Users, UserPlus, Trash2, Search, BookOpen } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 
@@ -15,7 +15,7 @@ interface Student {
   assigned_at: string
 }
 
-export default function DawnAwakeningStudentsPage() {
+export default function DependencyFreedomStudentsPage() {
   const router = useRouter()
   const toast = useToast()
   const { confirm } = useConfirm()
@@ -54,15 +54,15 @@ export default function DawnAwakeningStudentsPage() {
     try {
       const supabase = createClient()
 
-      // 获取2月：无为：打破模式课程 system_id
+      // 获取3月：无惧：直面恐惧课程 system_id
       const { data: systemData, error: systemError } = await supabase
         .from('course_systems')
         .select('id')
-        .eq('system_key', 'dawn_awakening')
+        .eq('system_key', 'dependency_freedom')
         .maybeSingle()
 
       if (systemError) throw systemError
-      if (!systemData) throw new Error('未找到2月：无为：打破模式课程体系')
+      if (!systemData) throw new Error('未找到3月：无惧：直面恐惧课程体系')
       setSystemId(systemData.id)
 
       // 获取选课学员
@@ -174,8 +174,8 @@ export default function DawnAwakeningStudentsPage() {
     return (
       <div className="min-h-screen bg-cosmic-void flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto"></div>
-          <p className="text-amber-300 mt-4">加载中...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto"></div>
+          <p className="text-purple-300 mt-4">加载中...</p>
         </div>
       </div>
     )
@@ -189,20 +189,20 @@ export default function DawnAwakeningStudentsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.push('/admin/courses/dawn-awakening')}
+                onClick={() => router.push('/admin/courses/dependency-freedom')}
                 className="p-2 bg-white/10 hover:bg-white/20 text-starlight rounded-lg border border-white/20 transition-all"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <Sunrise className="w-6 h-6 text-amber-400" />
+              <BookOpen className="w-6 h-6 text-purple-400" />
               <div>
-                <h1 className="text-h2 font-bold text-starlight">2月：无为：打破模式 - 选课学员</h1>
-                <p className="text-small text-amber-300 mt-1">管理课程学员</p>
+                <h1 className="text-h2 font-bold text-starlight">3月：无惧：直面恐惧 - 选课学员</h1>
+                <p className="text-small text-purple-300 mt-1">管理课程学员</p>
               </div>
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-starlight rounded-lg font-medium transition-all flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-starlight rounded-lg font-medium transition-all flex items-center gap-2"
             >
               <UserPlus className="w-5 h-5" />
               添加学员
@@ -222,7 +222,7 @@ export default function DawnAwakeningStudentsPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="搜索学员姓名或邮箱..."
-              className="w-full pl-10 pr-4 py-3 input-ethereal focus:border-amber-500"
+              className="w-full pl-10 pr-4 py-3 input-ethereal focus:border-purple-500"
             />
           </div>
         </div>
@@ -231,7 +231,7 @@ export default function DawnAwakeningStudentsPage() {
         <div className="card-glass overflow-hidden">
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center gap-2 text-starlight">
-              <Users className="w-5 h-5 text-amber-400" />
+              <Users className="w-5 h-5 text-purple-400" />
               <span className="font-medium">选课学员列表</span>
               <span className="text-starlight-muted text-small">({filteredStudents.length} 人)</span>
             </div>
@@ -284,7 +284,7 @@ export default function DawnAwakeningStudentsPage() {
                     value={modalSearchTerm}
                     onChange={(e) => setModalSearchTerm(e.target.value)}
                     placeholder="搜索姓名或邮箱..."
-                    className="w-full pl-10 pr-4 py-2 input-ethereal focus:border-amber-500"
+                    className="w-full pl-10 pr-4 py-2 input-ethereal focus:border-purple-500"
                   />
                 </div>
               </div>

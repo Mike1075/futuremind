@@ -5,7 +5,15 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, ChevronRight, Users, UsersRound } from 'lucide-react'
+import { ArrowLeft, Plus, Save, Upload, FileAudio, Trash2, Users, Pencil, RefreshCw } from 'lucide-react'
+
+// 3月：无惧 - 盾牌图标（勇气/直面恐惧）
+const ShieldIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <path d="M9.5 12l2 2 4-4" />
+  </svg>
+)
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 
@@ -35,7 +43,7 @@ interface MediaResource {
   created_at: string | null
 }
 
-export default function ListeningCoursePage() {
+export default function DependencyFreedomCoursePage() {
   const router = useRouter()
   const toast = useToast()
   const { confirm } = useConfirm()
@@ -46,7 +54,9 @@ export default function ListeningCoursePage() {
   const [mediaResources, setMediaResources] = useState<MediaResource[]>([])
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [listeningSystemId, setListeningSystemId] = useState<string | null>(null)
+  const [systemId, setSystemId] = useState<string | null>(null)
+  const [editingMediaId, setEditingMediaId] = useState<string | null>(null)
+  const [editingMediaName, setEditingMediaName] = useState('')
 
   // 表单状态
   const [formData, setFormData] = useState({
@@ -97,21 +107,21 @@ export default function ListeningCoursePage() {
   const loadCourseContents = async (keepSelection = false) => {
     try {
       const supabase = createClient()
-      const currentSelectedId = selectedContent?.id // 记住当前选中的课程ID
+      const currentSelectedId = selectedContent?.id
 
-      // First, get the listening system ID
+      // 获取3月：无惧：直面恐惧课程体系ID
       const { data: systemData, error: systemError } = await supabase
         .from('course_systems')
         .select('id')
-        .eq('system_key', 'listening')
+        .eq('system_key', 'dependency_freedom')
         .maybeSingle()
 
       if (systemError) throw systemError
-      if (!systemData) throw new Error('未找到1月：觉察：唤醒感官课程体系')
+      if (!systemData) throw new Error('未找到3月：无惧：直面恐惧课程体系')
 
-      setListeningSystemId(systemData.id)
+      setSystemId(systemData.id)
 
-      // Then, get all course contents for this system
+      // 获取所有课程内容
       const { data, error } = await supabase
         .from('course_contents')
         .select('*')
@@ -123,7 +133,6 @@ export default function ListeningCoursePage() {
 
       if (data && data.length > 0) {
         if (keepSelection && currentSelectedId) {
-          // 保持当前选中状态：找到之前选中的课程并重新选中
           const previouslySelected = data.find(c => c.id === currentSelectedId)
           if (previouslySelected) {
             setSelectedContent(previouslySelected)
@@ -176,7 +185,7 @@ export default function ListeningCoursePage() {
       if (error) throw error
 
       toast.success('保存成功')
-      await loadCourseContents(true) // 保持当前选中的课程
+      await loadCourseContents(true)
     } catch (error) {
       console.error('保存失败:', error)
       toast.error('保存失败，请重试')
@@ -194,10 +203,10 @@ export default function ListeningCoursePage() {
     try {
       const supabase = createClient()
 
-      // 上传文件到 Supabase Storage (media bucket)
+      // 上传文件到 Supabase Storage
       const fileExt = file.name.split('.').pop()
       const fileName = `day_${selectedContent.sequence_number}_${Date.now()}.${fileExt}`
-      const filePath = `listening/${fileName}`
+      const filePath = `dependency-freedom/${fileName}`
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('media')
@@ -256,8 +265,85 @@ export default function ListeningCoursePage() {
     }
   }
 
+  // 编辑媒体文件名
+  const handleEditMediaName = async (mediaId: string) => {
+    if (!editingMediaName.trim()) {
+      toast.error('文件名不能为空')
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('media_resources')
+        .update({ file_name: editingMediaName.trim() })
+        .eq('id', mediaId)
+
+      if (error) throw error
+
+      toast.success('文件名已更新')
+      setEditingMediaId(null)
+      setEditingMediaName('')
+      if (selectedContent) {
+        await loadMediaResources(selectedContent.id)
+      }
+    } catch (error) {
+      console.error('更新失败:', error)
+      toast.error('更新失败，请重试')
+    }
+  }
+
+  // 替换媒体文件
+  const handleReplaceMedia = async (mediaId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedContent || !event.target.files || event.target.files.length === 0) return
+
+    const file = event.target.files[0]
+    setUploading(true)
+
+    try {
+      const supabase = createClient()
+
+      // 上传新文件
+      const fileExt = file.name.split('.').pop()
+      const fileName = `day_${selectedContent.sequence_number}_${Date.now()}.${fileExt}`
+      const filePath = `dependency-freedom/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // 获取公开URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath)
+
+      // 更新数据库记录
+      const { error: dbError } = await supabase
+        .from('media_resources')
+        .update({
+          file_name: file.name,
+          file_url: publicUrl,
+          file_type: file.type,
+          file_size: file.size,
+        })
+        .eq('id', mediaId)
+
+      if (dbError) throw dbError
+
+      toast.success('文件替换成功')
+      await loadMediaResources(selectedContent.id)
+    } catch (error) {
+      console.error('文件替换失败:', error)
+      toast.error('文件替换失败，请重试')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const handleAddNewDay = async () => {
-    if (!listeningSystemId) return
+    if (!systemId) return
 
     const newSequenceNumber = courseContents.length > 0
       ? Math.max(...courseContents.map(c => c.sequence_number)) + 1
@@ -268,7 +354,7 @@ export default function ListeningCoursePage() {
       const { data, error } = await supabase
         .from('course_contents')
         .insert({
-          system_id: listeningSystemId,
+          system_id: systemId,
           content_type: 'daily_lesson',
           sequence_number: newSequenceNumber,
           title: `第${newSequenceNumber}天`,
@@ -293,12 +379,6 @@ export default function ListeningCoursePage() {
   }
 
   const handleDeleteCourse = async (contentId: string, sequenceNumber: number) => {
-    // 保护前14天的固定课程
-    if (sequenceNumber <= 14) {
-      toast.warning('前14天的课程是固定内容，不能删除，只能修改。')
-      return
-    }
-
     if (!await confirm({
       title: '确认操作',
       message: `确定要删除第 ${sequenceNumber} 天的课程吗？删除后将无法恢复。`,
@@ -326,7 +406,6 @@ export default function ListeningCoursePage() {
 
       toast.success('删除成功')
 
-      // 如果删除的是当前选中的课程，清空选中状态
       if (selectedContent?.id === contentId) {
         setSelectedContent(null)
       }
@@ -338,7 +417,7 @@ export default function ListeningCoursePage() {
     }
   }
 
-  // 生成星空粒子
+  // 生成粒子效果
   const particles = useMemo(() => {
     if (!isMounted) return []
     return [...Array(50)].map((_, i) => ({
@@ -364,7 +443,7 @@ export default function ListeningCoursePage() {
 
   return (
     <div className="min-h-screen bg-cosmic-void relative overflow-hidden">
-      {/* Background particles */}
+      {/* Background particles - 紫色主题 */}
       <div className="absolute inset-0 overflow-hidden">
         {isMounted && particles.map((particle) => (
           <motion.div
@@ -398,9 +477,10 @@ export default function ListeningCoursePage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
+            <ShieldIcon />
             <div>
-              <h1 className="text-h2 font-bold text-starlight">1月：觉察：唤醒感官</h1>
-              <p className="text-small text-purple-300 mt-1">克里希那穆提《生命之书》一月主题</p>
+              <h1 className="text-h2 font-bold text-starlight">3月：无惧：直面恐惧</h1>
+              <p className="text-small text-purple-300 mt-1">克里希那穆提《生命之书》三月主题</p>
             </div>
           </div>
         </div>
@@ -414,23 +494,13 @@ export default function ListeningCoursePage() {
             {/* 管理功能链接 */}
             <div className="space-y-2 mb-4">
               <button
-                onClick={() => router.push('/admin/courses/listening/students')}
+                onClick={() => router.push('/admin/courses/dependency-freedom/students')}
                 className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-lg transition-all flex items-center gap-3 text-left"
               >
                 <Users className="w-5 h-5 text-purple-400" />
                 <div>
                   <p className="text-starlight font-medium">选课学员</p>
                   <p className="text-starlight-muted text-xs">管理课程学员</p>
-                </div>
-              </button>
-              <button
-                onClick={() => router.push('/admin/courses/listening/groups')}
-                className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-lg transition-all flex items-center gap-3 text-left"
-              >
-                <UsersRound className="w-5 h-5 text-cyan-400" />
-                <div>
-                  <p className="text-starlight font-medium">课程分组</p>
-                  <p className="text-starlight-muted text-xs">管理课程分组</p>
                 </div>
               </button>
             </div>
@@ -440,7 +510,7 @@ export default function ListeningCoursePage() {
 
             <button
               onClick={handleAddNewDay}
-              className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-starlight rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+              className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-starlight rounded-lg font-medium transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
               新增一天
@@ -458,7 +528,7 @@ export default function ListeningCoursePage() {
                 >
                   <button
                     onClick={() => setSelectedContent(content)}
-                    className={`w-full text-left px-4 py-3 ${content.sequence_number > 14 ? 'pr-20' : ''}`}
+                    className="w-full text-left px-4 py-3 pr-20"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -467,9 +537,7 @@ export default function ListeningCoursePage() {
                       </div>
                     </div>
                   </button>
-                  {/* 只显示第15天及以后的删除按钮 */}
-                  {content.sequence_number > 14 && (
-                    <button
+                  <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDeleteCourse(content.id, content.sequence_number)
@@ -479,7 +547,6 @@ export default function ListeningCoursePage() {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  )}
                 </div>
               ))}
             </div>
@@ -489,7 +556,7 @@ export default function ListeningCoursePage() {
         {/* 右侧栏 - 内容编辑器 */}
         <div className="flex-1 overflow-y-auto">
           {selectedContent ? (
-            <div className="w-full max-w-none p-8">
+            <div className="w-full max-w-none p-8 pb-32">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-h2 font-bold text-starlight">第 {selectedContent.sequence_number} 天</h2>
                 <button
@@ -516,7 +583,7 @@ export default function ListeningCoursePage() {
                 </div>
 
                 <div>
-                  <label className="block text-starlight font-medium mb-2">原文摘录</label>
+                  <label className="block text-starlight font-medium mb-2">克里希那穆提原文</label>
                   <textarea
                     value={formData.original_text}
                     onChange={(e) => setFormData({ ...formData, original_text: e.target.value })}
@@ -533,7 +600,7 @@ export default function ListeningCoursePage() {
                     onChange={(e) => setFormData({ ...formData, deep_interpretation: e.target.value })}
                     rows={10}
                     className="input-ethereal w-full"
-                    placeholder="输入深度解读内容..."
+                    placeholder="输入深度解读..."
                   />
                 </div>
 
@@ -542,9 +609,9 @@ export default function ListeningCoursePage() {
                   <textarea
                     value={formData.meditation_guide}
                     onChange={(e) => setFormData({ ...formData, meditation_guide: e.target.value })}
-                    rows={10}
+                    rows={15}
                     className="input-ethereal w-full"
-                    placeholder="输入冥想练习与引导..."
+                    placeholder="输入冥想练习引导语..."
                   />
                 </div>
 
@@ -555,7 +622,7 @@ export default function ListeningCoursePage() {
                     onChange={(e) => setFormData({ ...formData, life_practice: e.target.value })}
                     rows={8}
                     className="input-ethereal w-full"
-                    placeholder="输入生活中的小练习..."
+                    placeholder="输入生活练习..."
                   />
                 </div>
               </div>
@@ -563,10 +630,10 @@ export default function ListeningCoursePage() {
               {/* 资料管理模块 */}
               <div className="mt-12 pt-8 border-t border-white/10">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-h3 font-bold text-starlight">资料管理</h3>
-                  <label className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-starlight rounded-lg font-medium transition-all flex items-center gap-2 cursor-pointer">
+                  <h3 className="text-h3 font-bold text-starlight">冥想音频</h3>
+                  <label className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-starlight rounded-lg font-medium transition-all flex items-center gap-2 cursor-pointer">
                     <Upload className="w-4 h-4" />
-                    {uploading ? '上传中...' : '上传资料'}
+                    {uploading ? '上传中...' : '上传音频'}
                     <input
                       type="file"
                       onChange={handleFileUpload}
@@ -581,38 +648,103 @@ export default function ListeningCoursePage() {
                   {mediaResources.length === 0 ? (
                     <div className="text-center py-12 bg-white/5 rounded-lg border border-white/10">
                       <FileAudio className="w-12 h-12 text-starlight-muted mx-auto mb-3" />
-                      <p className="text-starlight-muted">暂无资料，点击上传按钮添加</p>
+                      <p className="text-starlight-muted">暂无音频，点击上传按钮添加冥想音频</p>
                     </div>
                   ) : (
                     mediaResources.map((media) => (
                       <div
                         key={media.id}
-                        className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all"
+                        className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all"
                       >
-                        <div className="flex items-center gap-3">
-                          <FileAudio className="w-6 h-6 text-purple-400" />
-                          <div>
-                            <p className="text-starlight font-medium">{media.file_name || '未命名文件'}</p>
-                            <p className="text-starlight-muted text-small">
-                              {media.file_size ? (media.file_size / 1024 / 1024).toFixed(2) : '0.00'} MB
-                            </p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <FileAudio className="w-6 h-6 text-purple-400 flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              {editingMediaId === media.id ? (
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={editingMediaName}
+                                    onChange={(e) => setEditingMediaName(e.target.value)}
+                                    className="input-ethereal flex-1 py-1 text-sm"
+                                    placeholder="输入文件名..."
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleEditMediaName(media.id)
+                                      if (e.key === 'Escape') {
+                                        setEditingMediaId(null)
+                                        setEditingMediaName('')
+                                      }
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => handleEditMediaName(media.id)}
+                                    className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-small"
+                                  >
+                                    保存
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingMediaId(null)
+                                      setEditingMediaName('')
+                                    }}
+                                    className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-small"
+                                  >
+                                    取消
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="text-starlight font-medium truncate">{media.file_name || '未命名文件'}</p>
+                                  <p className="text-starlight-muted text-small">
+                                    {media.file_size ? (media.file_size / 1024 / 1024).toFixed(2) : '0.00'} MB
+                                  </p>
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={media.file_url || '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-1 bg-white/10 hover:bg-white/20 text-starlight rounded text-small transition-all"
-                          >
-                            查看
-                          </a>
-                          <button
-                            onClick={() => handleDeleteMedia(media.id)}
-                            className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {editingMediaId !== media.id && (
+                            <div className="flex items-center gap-2 ml-4">
+                              <a
+                                href={media.file_url || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-starlight rounded text-small transition-all"
+                              >
+                                播放
+                              </a>
+                              <button
+                                onClick={() => {
+                                  setEditingMediaId(media.id)
+                                  setEditingMediaName(media.file_name || '')
+                                }}
+                                className="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded transition-all"
+                                title="编辑文件名"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <label
+                                className="p-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 rounded transition-all cursor-pointer"
+                                title="替换文件"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                                <input
+                                  type="file"
+                                  onChange={(e) => handleReplaceMedia(media.id, e)}
+                                  accept="audio/*"
+                                  className="hidden"
+                                  disabled={uploading}
+                                />
+                              </label>
+                              <button
+                                onClick={() => handleDeleteMedia(media.id)}
+                                className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-all"
+                                title="删除文件"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))

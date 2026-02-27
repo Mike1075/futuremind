@@ -34,10 +34,18 @@ interface ContentPageProps {
 }
 
 async function ContentDetail({ systemKey, contentId }: { systemKey: string, contentId: string }) {
-  const supabase = await createClient()
+  let supabase: any
+  let user: any
 
-  // 验证用户登录
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    supabase = await createClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    user = authUser
+  } catch (e: any) {
+    // 认证失败直接抛出，让 error boundary 处理
+    throw new Error(`认证服务异常: ${e?.message || '未知错误'}`)
+  }
+
   if (!user) {
     redirect('/login')
   }
@@ -56,56 +64,63 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     redirect(`/courses/${courseSystem.system_key}/${contentId}`)
   }
 
-  // 🔒 安全检查：验证倾听课程的解锁状态（防止用户通过URL直接访问未解锁课程）
+  // 🔒 安全检查：验证课程的解锁状态（防止用户通过URL直接访问未解锁课程）
   // 管理员账号可以跳过解锁检查
   const adminEmails = ['3368327@qq.com', 'onestnet@gmail.com']
   const isAdmin = adminEmails.includes(user.email || '')
 
   if (courseSystem.structure_type === 'daily_sequential' && !isAdmin) {
+    // 检查1：日期是否已到达（防止访问未来日期的冥想课程）
+    if (!CourseService.isCourseDateReached(systemKey, content.sequence_number)) {
+      redirect(`/courses/${systemKey}`)
+    }
+
+    // 检查2：分数链式解锁（前一天必须>=60分）
     const unlockStatus = await CourseService.checkListeningCourseUnlock(user.id, contentId)
     if (!unlockStatus.isUnlocked) {
-      // 未解锁，重定向回课程列表页
       redirect(`/courses/${systemKey}`)
     }
   }
 
-  // 获取相邻内容
-  const { prev: prevContent, next: nextContent } = await CourseService.getAdjacentContents(
-    courseSystem.id,
-    content.sequence_number,
-    false
-  )
-
-  // 获取用户进度
-  const isCompleted = await ProgressService.isCompleted(
-    user.id,
-    contentId,
-    'reading'
-  )
-
-  // 检查是否曾经有过>=60分的提交（用于控制"下一个"按钮）
-  // 只要曾经通过，就永久解锁，不会因为后续低分提交而锁回去
-  const { data: passedSubmission } = await supabase
-    .from('user_submissions')
-    .select('score')
-    .eq('user_id', user.id)
-    .eq('course_content_id', contentId)
-    .gte('score', 60)
-    .limit(1)
-    .single()
+  // 并行获取所有独立数据（避免顺序查询导致超时）
+  const [
+    { prev: prevContent, next: nextContent },
+    isCompleted,
+    { data: passedSubmission },
+    { data: highestSubmission },
+    { data: mediaResources },
+  ] = await Promise.all([
+    // 获取相邻内容
+    CourseService.getAdjacentContents(courseSystem.id, content.sequence_number, false),
+    // 获取用户进度
+    ProgressService.isCompleted(user.id, contentId, 'reading'),
+    // 检查是否曾经有过>=60分的提交
+    supabase
+      .from('user_submissions')
+      .select('score')
+      .eq('user_id', user.id)
+      .eq('course_content_id', contentId)
+      .gte('score', 60)
+      .limit(1)
+      .maybeSingle(),
+    // 获取用户当前最高分数
+    supabase
+      .from('user_submissions')
+      .select('score')
+      .eq('user_id', user.id)
+      .eq('course_content_id', contentId)
+      .order('score', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    // 获取媒体资源（音频等）
+    supabase
+      .from('media_resources')
+      .select('*')
+      .eq('course_content_id', contentId)
+      .order('created_at', { ascending: true }),
+  ])
 
   const hasPassedAssignment = !!passedSubmission
-
-  // 获取用户当前最高分数（用于显示在锁定提示弹窗中）
-  const { data: highestSubmission } = await supabase
-    .from('user_submissions')
-    .select('score')
-    .eq('user_id', user.id)
-    .eq('course_content_id', contentId)
-    .order('score', { ascending: false })
-    .limit(1)
-    .single()
-
   const currentHighestScore = highestSubmission?.score || 0
 
   // PBL项目使用专属详情页
@@ -307,13 +322,6 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
     )
   }
 
-  // 获取媒体资源（用于破晓觉醒课程的音频）
-  const { data: mediaResources } = await supabase
-    .from('media_resources')
-    .select('*')
-    .eq('course_content_id', contentId)
-    .order('created_at', { ascending: true })
-
   // 渲染媒体资源（从 media_resources 表获取的音频等）
   const renderMediaResources = () => {
     if (!mediaResources || mediaResources.length === 0) return null
@@ -386,11 +394,14 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
       )
     }
 
-    // Listening课程
+    // Listening课程（含3-6月冥想课程）
     if (structureType === 'daily_sequential' && content.deep_interpretation) {
       return (
         <div className="space-y-4">
-          {/* 课程资源 */}
+          {/* 媒体资源（从 media_resources 表获取） */}
+          {renderMediaResources()}
+
+          {/* 课程资源（从 content.resources JSON 获取） */}
           {renderResources()}
 
           {content.original_text && (

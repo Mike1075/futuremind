@@ -9,6 +9,10 @@ import { PBLCourseView } from '@/components/courses/PBLCourseView'
 import { EarthCourseView } from '@/components/courses/EarthCourseView'
 import { ListeningCourseView } from '@/components/courses/ListeningCourseView'
 import { DawnAwakeningView } from '@/components/courses/DawnAwakeningView'
+import { MarchCourseView } from '@/components/courses/MarchCourseView'
+import { AprilCourseView } from '@/components/courses/AprilCourseView'
+import { MayCourseView } from '@/components/courses/MayCourseView'
+import { JuneCourseView } from '@/components/courses/JuneCourseView'
 import type { CourseContent } from '@/lib/supabase/database.types'
 
 // ✅ 性能优化：启用30秒缓存，大幅提升页面加载速度
@@ -58,12 +62,22 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
   // 获取内容ID列表
   const contentIds = contents.map(c => c.id)
 
-  // 批量获取用户进度
-  const progressMap = await ProgressService.getBatchProgress(
-    user.id,
-    contentIds,
-    'reading'
-  )
+  // 冥想课程需要分数映射（链式解锁），与进度一起并行获取
+  const isMeditationCourse = ['listening', 'dawn_awakening', 'dependency_freedom', 'desire_flame', 'wisdom_awakening', 'energy_alchemy'].includes(systemKey)
+
+  // 并行获取进度和分数（避免顺序查询导致超时）
+  const [progressMap, submissionsResult] = await Promise.all([
+    ProgressService.getBatchProgress(user.id, contentIds, 'reading'),
+    isMeditationCourse
+      ? supabase
+          .from('user_submissions')
+          .select('course_content_id, score')
+          .eq('user_id', user.id)
+          .in('course_content_id', contentIds)
+          .eq('status', 'approved')
+          .order('submitted_at', { ascending: false })
+      : Promise.resolve({ data: null }),
+  ])
 
   // 创建完成状态映射
   const completionMap = new Map<string, boolean>()
@@ -82,16 +96,9 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     )
   }
 
-  // 聆听课程和破晓觉醒课程都需要分数映射（链式解锁）
-  if (systemKey === 'listening' || systemKey === 'dawn_awakening') {
-    // 获取用户的作业分数
-    const { data: submissions } = await supabase
-      .from('user_submissions')
-      .select('course_content_id, score')
-      .eq('user_id', user.id)
-      .in('course_content_id', contentIds)
-      .eq('status', 'approved')
-      .order('submitted_at', { ascending: false })
+  // 聆听课程、破晓觉醒课程、依赖与自由课程都需要分数映射（链式解锁）
+  if (isMeditationCourse) {
+    const submissions = submissionsResult.data
 
     // 创建分数映射（取最高分）
     const scoreMap = new Map<string, number>()
@@ -120,15 +127,69 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     const adminEmails = ['3368327@qq.com', 'onestnet@gmail.com']
     const bypassDateCheck = adminEmails.includes(user.email || '')
 
-    return (
-      <DawnAwakeningView
-        courseSystem={courseSystem}
-        contents={contents}
-        completionMap={completionMap}
-        scoreMap={scoreMap}
-        bypassDateCheck={bypassDateCheck}
-      />
-    )
+    if (systemKey === 'dawn_awakening') {
+      return (
+        <DawnAwakeningView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassDateCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    // 依赖与自由课程使用日历视图
+    if (systemKey === 'dependency_freedom') {
+      return (
+        <MarchCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    // 欲望的火焰课程使用日历视图
+    if (systemKey === 'desire_flame') {
+      return (
+        <AprilCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    // 智慧的苏醒课程使用日历视图
+    if (systemKey === 'wisdom_awakening') {
+      return (
+        <MayCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    // 能量炼金课程使用日历视图
+    if (systemKey === 'energy_alchemy') {
+      return (
+        <JuneCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
   }
 
   // 继续使用已经获取的progressMap和completionMap处理每日课程
