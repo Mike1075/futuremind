@@ -24,16 +24,13 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${f(0)}${f(8)}${f(4)}`
 }
 
-// 热情之旅：平滑渐变（玫红310° → 深红0° → 琥珀金45°）
+// 七脉轮彩虹渐变（红→橙→黄→绿→蓝→紫→品红），与1-3月风格一致
 const APRIL_COLORS = Array.from({ length: 30 }, (_, i) => {
-  const t = i / 29
-  const hue = (310 + t * 95) % 360
-  const sat = 76 + Math.sin(t * Math.PI) * 9
-  // 黄色区域降低亮度避免刺眼
-  const light = (hue > 25 && hue < 55) ? 46 : 50
+  const hue = (i / 29) * 330
+  const lFrom = (hue > 45 && hue < 85) ? 43 : 50
   return {
-    from: hslToHex(hue, sat, light),
-    to: hslToHex((hue + 18) % 360, sat - 10, light + 22)
+    from: hslToHex(hue, 100, lFrom),
+    to: hslToHex(hue, 100, lFrom + 17)
   }
 })
 
