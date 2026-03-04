@@ -17,6 +17,8 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
   const [isMuted, setIsMuted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isBuffering, setIsBuffering] = useState(false)
+  const wasPlayingRef = useRef(false)
 
   useEffect(() => {
     const audio = audioRef.current
@@ -31,10 +33,16 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
 
     const handleEnded = () => {
       setIsPlaying(false)
+      wasPlayingRef.current = false
     }
 
     const handleCanPlay = () => {
       setIsLoading(false)
+      // 缓冲恢复后自动继续播放
+      if (isBuffering || wasPlayingRef.current) {
+        setIsBuffering(false)
+        audio.play().catch(() => {})
+      }
     }
 
     const handleError = (e: Event) => {
@@ -59,14 +67,27 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
 
     const handlePlay = () => {
       setIsPlaying(true)
+      wasPlayingRef.current = true
     }
 
     const handlePause = () => {
-      setIsPlaying(false)
+      // 只有用户主动暂停时才更新状态，缓冲导致的暂停不更新
+      if (!isBuffering) {
+        setIsPlaying(false)
+        wasPlayingRef.current = false
+      }
     }
 
     const handleWaiting = () => {
-      // 缓冲中，无需操作
+      // 缓冲中断：显示加载状态，记住正在播放
+      setIsBuffering(true)
+    }
+
+    const handleStalled = () => {
+      // 数据获取停滞
+      if (wasPlayingRef.current) {
+        setIsBuffering(true)
+      }
     }
 
     audio.addEventListener('timeupdate', updateTime)
@@ -78,6 +99,7 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
     audio.addEventListener('play', handlePlay)
     audio.addEventListener('pause', handlePause)
     audio.addEventListener('waiting', handleWaiting)
+    audio.addEventListener('stalled', handleStalled)
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime)
@@ -89,8 +111,9 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
       audio.removeEventListener('play', handlePlay)
       audio.removeEventListener('pause', handlePause)
       audio.removeEventListener('waiting', handleWaiting)
+      audio.removeEventListener('stalled', handleStalled)
     }
-  }, [src, title])
+  }, [src, title, isBuffering])
 
   const togglePlay = async () => {
     if (!audioRef.current) {
@@ -100,8 +123,11 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
 
     try {
       if (isPlaying) {
+        wasPlayingRef.current = false
+        setIsBuffering(false)
         audioRef.current.pause()
       } else {
+        wasPlayingRef.current = true
         await audioRef.current.play()
       }
     } catch (err) {
@@ -165,7 +191,7 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
           <audio
             ref={audioRef}
             src={src}
-            preload="metadata"
+            preload="auto"
           />
 
           {/* 错误提示 */}
@@ -184,7 +210,7 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
               className="flex-shrink-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors disabled:opacity-50"
               aria-label={isPlaying ? '暂停' : '播放'}
             >
-              {isLoading ? (
+              {isLoading || isBuffering ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               ) : isPlaying ? (
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
