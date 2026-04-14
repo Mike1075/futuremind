@@ -345,8 +345,11 @@ export class CourseService {
    * - energy_alchemy: 2026年6月
    */
   static isCourseDateReached(systemKey: string, sequenceNumber: number): boolean {
+    // 使用中国时区(UTC+8)计算"今天"，避免服务端(UTC)和客户端(用户本地)时区不一致
+    // 所有用户都在中国，服务端在Vercel(UTC)，不转换会导致UTC 0:00-8:00之间日期判断错误
     const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const chinaTime = new Date(now.getTime() + 8 * 60 * 60 * 1000)
+    const today = new Date(chinaTime.getUTCFullYear(), chinaTime.getUTCMonth(), chinaTime.getUTCDate())
 
     let courseDate: Date
 
