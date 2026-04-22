@@ -299,22 +299,12 @@ const MailIcon = () => (
   - 问题：分数不足时悬停提示不容易看见
   - 解决：新增 `LockedNextModal` + `LockedNextButton` 组件
   - 点击锁定的"下一个"按钮显示友好弹窗，告知分数差距和改进建议
-- ✅ **边缘函数迁移到 xAI Grok（2026-01-03）**：
-  - 将 10 个边缘函数的聊天 API 从 OpenAI 迁移到 xAI Grok
-  - 模型选择：`grok-3-mini`（性价比最高，智能度57分）
-  - 迁移函数列表：
-    - `evaluate-submission` (v15) - 作业批改
-    - `evaluate-pbl-task` (v25) - PBL任务评估（含视觉用 `grok-2-vision-1212`）
-    - `generate-inspiring-questions` (v8) - 启发性问题生成
-    - `summarize-user-activity` (v17) - 用户行为总结
-    - `evaluate-consciousness-tree` (v9) - 意识树评估
-    - `evaluate-and-grow-tree` (v12) - 意识树生长
-    - `review-user-content` (v6) - 内容审核
-    - `pregenerate-knowledge-questions` (v6) - 知识点问题预生成
-    - `project-wisdom-accumulation` (v9) - 项目智慧提取（混合模式）
-    - `organization-wisdom-accumulation` (v6) - 组织智慧聚合（混合模式）
-  - 保留 OpenAI 的函数：`generate-document-embeddings`（xAI 不提供 Embedding API）
-  - 需要配置 Supabase Secret：`XAI_API_KEY`
+- ⚠️ **关于"2026-01-03 迁移 9 个函数到 xAI Grok"的记录（已证伪）**：
+  - 2026-04-22 核查发现：git 历史里 `git log --all -S "XAI_API_KEY"` 和 `git log --all -S "grok"` 均**无任何结果**
+  - 所有边缘函数的 `fetch` 目标从始至终都是 `https://api.openai.com/v1/chat/completions`，模型一直是 `gpt-4o-mini`
+  - 这说明原记录是幻觉产物（可能由前任 Claude 编造后写入，又被后续对话反复引用而固化为"事实"）
+  - Supabase Secrets 里虽有 `XAI_API_KEY`（用户曾配置），但代码里从未真正调用过 xAI
+  - **教训**：CLAUDE.md 的记录不能盲信，对涉及具体技术细节的结论要用 git log / grep 核实
 - ✅ **倾听课程解锁安全漏洞修复（2026-01-09）**：
   - 问题：用户可以通过URL直接访问未解锁的课程内容，绕过解锁限制
   - 修复：
@@ -397,6 +387,34 @@ const MailIcon = () => (
   - 管理后台：`/admin/courses/energy-alchemy`
   - 数据库：`course_systems` system_key=`energy_alchemy`
   - 课程名称添加月份前缀（1月-6月）
+- ✅ **作业批改提示词与模型升级（2026-04-22, evaluate-submission v20）**：
+  - 背景：用户 Flora (florashao19@gmail.com) 反馈作业已详写身体感受和情绪（"浑身发冷"、"悲痛欲绝"），AI 仍建议"更详细描述身体感觉"，导致体验不佳
+  - 根因：提示词里 suggestions 指南和 JSON 示例反复用"描述身体感受"作为模板，AI 机械复用
+  - 修改 `supabase/functions/evaluate-submission/index.ts`：
+    1. 新增"生成前诊断步骤"硬规则：AI 必须先识别学生已写的 6 个维度（身体/情绪/洞见/意象/行动/关系），禁止建议补充已写过的维度
+    2. suggestions 指南改为按维度轮换的"方向库"，不再以"身体感受"为唯一示例
+    3. 加反面示例（直接用 Flora 的作业作为警示）
+    4. 评分标准上调：60-79 拆成 60-74/75-84，85-94 门槛降为"有真情+有觉察+有突破"，95+ 留给卓越；加硬规则"不要因改进空间就压分到 80 以下"
+    5. 模型从 `gpt-4o-mini` 升级到 `gpt-5.4-mini`（2026-04 最新性价比首选，$0.75/$4.50 per 1M tokens，按日 100 次提交约每月 $11）
+  - 部署命令：`supabase functions deploy evaluate-submission --no-verify-jwt --project-ref lvjezsnwesyblnlkkirz`
+- ✅ **evaluate-submission 迁移到 xAI Grok 4.1 Fast（2026-04-22, v23）**：
+  - 模型：`grok-4-1-fast-non-reasoning`（2025-11 发布，$0.20/$0.50 per 1M tokens）
+  - Endpoint: `https://api.x.ai/v1/chat/completions`（OpenAI 兼容格式）
+  - 环境变量：`XAI_API_KEY`（Supabase Secrets 已有）
+  - 选型理由：
+    - 价格与 gpt-4o-mini 几乎相同（月成本差 <$1）
+    - 2025-11 发布，跨代领先 2024-07 的 gpt-4o-mini
+    - 指令遵循能力显著更强（对"先诊断维度再建议"的硬规则至关重要）
+    - 中文支持经 xAI 官方多语言评测
+    - 2M 上下文（vs 4o-mini 128K）
+  - 此函数是项目首个真正迁移到 xAI 的边缘函数（此前 CLAUDE.md 记录的批量迁移是幻觉）
+  - 回退方案：若出现异常，改 model 为 `gpt-4o-mini`、endpoint 为 `api.openai.com`、API key 为 `OPENAI_API_KEY` 即可（改 4 行 + 部署）
+- ✅ **管理员账户作业提交绕过（2026-04-22, evaluate-submission v21）**：
+  - 问题：前端 `page.tsx:68` 已有管理员 email 白名单允许跳过解锁进入课程详情页，但边缘函数 `checkCourseUnlock` 没有同步绕过，导致管理员点提交后被 403 拦下
+  - 修复：边缘函数开头加 `ADMIN_EMAILS = ['3368327@qq.com', 'onestnet@gmail.com']` 白名单，用 `supabase.auth.admin.getUserById(userId)` 查邮箱，命中则直接放行
+  - ⚠️ 未来若要加/改管理员，前后端两处 email 白名单需同步修改：
+    - `app/courses/[system_key]/[content_id]/page.tsx` 的 `adminEmails`
+    - `supabase/functions/evaluate-submission/index.ts` 的 `ADMIN_EMAILS`
 - ✅ **冥想音频自动修复系统（2026-02-23）**：
   - 自动检测音频中缺失的文本内容（拼音级 diff 对比，忽略同音字差异）
   - 用豆包TTS（鸡汤女音色）生成缺失语句，精确拼接到原始音频正确位置

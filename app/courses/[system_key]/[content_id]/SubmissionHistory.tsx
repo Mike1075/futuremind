@@ -273,14 +273,14 @@ export default function SubmissionHistory({
                         </div>
                       </div>
 
-                      {/* AI导师反馈 */}
+                      {/* AI老师反馈 */}
                       <div>
                         <h3 className="text-white font-semibold mb-2 flex items-center">
                           <svg className="w-5 h-5 mr-2 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
                             <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
                           </svg>
-                          AI导师的反馈
+                          AI老师的反馈
                         </h3>
                         <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-800/30 rounded-lg p-4">
                           <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">

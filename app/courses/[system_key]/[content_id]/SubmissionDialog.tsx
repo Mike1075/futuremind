@@ -215,7 +215,7 @@ export default function SubmissionDialog({
                   <div className="text-sm text-blue-300">
                     <p className="font-medium mb-1">提交后将发生什么？</p>
                     <ul className="list-disc list-inside space-y-1 text-blue-400">
-                      <li>AI导师将立即评估你的提交</li>
+                      <li>AI老师将立即评估你的提交</li>
                       <li>你将收到个性化的反馈和分数</li>
                       <li>你的意识树将根据学习质量实时生长🌱</li>
                     </ul>
@@ -296,7 +296,7 @@ export default function SubmissionDialog({
                     <span className="text-2xl">🧘</span>
                     <div className="flex-1">
                       <p className="text-purple-300 text-sm">
-                        AI导师正在认真阅读你的作业...
+                        AI老师正在认真阅读你的作业...
                       </p>
                       <p className="text-purple-400/70 text-xs mt-1">
                         请耐心等待约20秒，不要关闭窗口哦~
@@ -354,7 +354,7 @@ export default function SubmissionDialog({
                     <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
                     <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
                   </svg>
-                  AI导师的反馈
+                  AI老师的反馈
                 </h3>
                 <p className="text-starlight whitespace-pre-wrap leading-relaxed">
                   {result.evaluation?.feedback || ''}
@@ -386,7 +386,7 @@ export default function SubmissionDialog({
                       <div className="flex-1">
                         <p className="text-yellow-400 font-semibold mb-1">💪 继续努力</p>
                         <p className="text-yellow-200 text-sm">
-                          需要获得60分及以上才能解锁下一课。请根据AI导师的反馈改进后重新提交！
+                          需要获得60分及以上才能解锁下一课。请根据AI老师的反馈改进后重新提交！
                         </p>
                       </div>
                     </div>

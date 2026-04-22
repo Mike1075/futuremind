@@ -196,7 +196,7 @@ async function handleEvaluateSubmission(req: NextRequest) {
 
     if (error instanceof Error) {
       if (error.name === 'AbortError' || error.message.includes('timeout')) {
-        errorMessage = '请求超时，AI 导师可能正在忙碌，请稍后重试'
+        errorMessage = '请求超时，AI 老师可能正在忙碌，请稍后重试'
       } else if (error.message.includes('network') || error.message.includes('fetch')) {
         errorMessage = '网络连接不稳定，请检查网络后重试'
       }

@@ -25,7 +25,7 @@ export function AssignmentSection({
           <div>
             <h3 className="text-xl font-bold text-white mb-2">课程作业</h3>
             <p className="text-gray-400">
-              完成本阶段的学习后，请提交你的思考和感想，AI导师将为你提供个性化反馈
+              完成本阶段的学习后，请提交你的思考和感想，AI老师将为你提供个性化反馈
             </p>
           </div>
         </div>
@@ -55,7 +55,7 @@ export function AssignmentSection({
 
       <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
         <p className="text-amber-400 text-sm">
-          💡 <strong>提示：</strong>作业提交后，AI导师会根据你的回答提供深入的反馈，帮助你更好地理解课程内容。
+          💡 <strong>提示：</strong>作业提交后，AI老师会根据你的回答提供深入的反馈，帮助你更好地理解课程内容。
         </p>
       </div>
     </div>
