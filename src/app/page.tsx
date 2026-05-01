@@ -110,10 +110,13 @@ export default function Home() {
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
           </button>
 
-          <button className="group px-8 py-4 border-2 border-purple-400 rounded-full text-purple-300 font-semibold text-lg hover:bg-purple-400 hover:text-white transition-all duration-300 transform hover:scale-105">
-            <Users className="w-5 h-5 inline mr-2" />
-            探索者联盟
-          </button>
+                  <button 
+          onClick={() => window.location.href = "/alliance"}
+          className="group px-8 py-4 border-2 border-purple-400 rounded-full text-purple-300 font-semibold text-lg hover:bg-purple-400 hover:text-white transition-all duration-300 transform hover:scale-105"
+        >
+          <Users className="w-5 h-5 inline mr-2" />
+          探索者联盟
+        </button>
 
           <button
             onClick={() => window.location.href = '/portal'}
