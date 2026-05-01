@@ -2,7 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { Database } from '../supabase'
 
-export async function createClient() {
+// 这个函数只能在服务器端使用
+export async function createServerSupabase() {
   const cookieStore = await cookies()
 
   return createServerClient<Database>(
@@ -28,3 +29,6 @@ export async function createClient() {
     }
   )
 }
+
+// 为了向后兼容，保留 createClient 导出
+export const createClient = createServerSupabase

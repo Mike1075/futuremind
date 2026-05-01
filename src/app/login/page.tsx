@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { TreePine, Mail, Lock, Eye, EyeOff } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function LoginPage() {
+function LoginForm() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,7 +15,24 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+  
+  // 获取重定向地址
+  const redirectTo = searchParams.get('redirect') || '/dashboard'
+
+  // 监听认证状态变化
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Login page auth state change:', event, session?.user?.id)
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('User signed in, redirecting to:', redirectTo)
+        router.push(redirectTo)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase, router, redirectTo])
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +46,8 @@ export default function LoginPage() {
           password,
         })
         if (error) throw error
-        router.push('/dashboard')
+        
+        setMessage('登录成功，正在跳转...')
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -199,5 +217,17 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

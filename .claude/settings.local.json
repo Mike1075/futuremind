@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npm run lint)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(node:*)",
+      "Bash(npm run build:*)",
+      "Bash(curl:*)",
+      "Bash(npm:*)",
+      "Bash(supabase status:*)",
+      "Read(//Users/mikeliu/Desktop/dressmi/dressmi_1/docs/mcp安装/**)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__apply_migration",
+      "Bash(supabase functions:*)",
+      "Bash(supabase init:*)",
+      "Bash(supabase link:*)",
+      "Bash(supabase db push:*)",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__get_project_url",
+      "WebSearch",
+      "WebFetch(domain:supabase.com)",
+      "mcp__supabase__list_edge_functions",
+      "Read(//Users/mikeliu/Desktop/ethan/weilaijiaoyu_tuzi/futuremind/src/app/test-simple-root/**)",
+      "Read(//Users/mikeliu/Desktop/ethan/weilaijiaoyu_tuzi/futuremind/src/components/**)",
+      "Read(//Users/mikeliu/Desktop/ethan/weilaijiaoyu_tuzi/futuremind/**)",
+      "Bash(npx:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(claude doctor)",
+      "Bash(claude --version)",
+      "Bash(claude mcp remove:*)",
+      "Bash(claude mcp add:*)",
+      "Read(//Users/mikeliu/Library/Developer/Xcode/DerivedData/**)",
+      "Bash(gh repo fork:*)",
+      "Bash(git config:*)",
+      "Bash(git remote set-url:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}

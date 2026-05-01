@@ -1,10 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
 export type Database = {
   public: {
     Tables: {
@@ -176,6 +171,219 @@ export type Database = {
           joined_at?: string
         }
       }
+      explorer_guilds: {
+        Row: {
+          id: string
+          name: string
+          theme: string
+          description: string | null
+          status: string
+          max_members: number
+          current_members: number
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          theme: string
+          description?: string | null
+          status?: string
+          max_members?: number
+          current_members?: number
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          theme?: string
+          description?: string | null
+          status?: string
+          max_members?: number
+          current_members?: number
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      guild_members: {
+        Row: {
+          id: string
+          guild_id: string
+          user_id: string
+          role: string
+          joined_at: string
+          invitation_response: string
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          guild_id: string
+          user_id: string
+          role?: string
+          joined_at?: string
+          invitation_response?: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          guild_id?: string
+          user_id?: string
+          role?: string
+          joined_at?: string
+          invitation_response?: string
+          is_active?: boolean
+        }
+      }
+      mystical_invitations: {
+        Row: {
+          id: string
+          user_id: string
+          guild_id: string
+          invitation_text: string
+          sent_at: string
+          response: string
+          responded_at: string | null
+          expires_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          guild_id: string
+          invitation_text: string
+          sent_at?: string
+          response?: string
+          responded_at?: string | null
+          expires_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          guild_id?: string
+          invitation_text?: string
+          sent_at?: string
+          response?: string
+          responded_at?: string | null
+          expires_at?: string
+        }
+      }
+      guild_activities: {
+        Row: {
+          id: string
+          guild_id: string
+          user_id: string
+          activity_type: string
+          content: string
+          metadata: Record<string, unknown>
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          guild_id: string
+          user_id: string
+          activity_type: string
+          content: string
+          metadata?: Record<string, unknown>
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          guild_id?: string
+          user_id?: string
+          activity_type?: string
+          content?: string
+          metadata?: Record<string, unknown>
+          created_at?: string
+        }
+      }
+      guild_achievements: {
+        Row: {
+          id: string
+          guild_id: string
+          achievement_type: string
+          title: string
+          description: string | null
+          icon_name: string | null
+          unlocked_at: string
+          unlocked_by: string | null
+        }
+        Insert: {
+          id?: string
+          guild_id: string
+          achievement_type: string
+          title: string
+          description?: string | null
+          icon_name?: string | null
+          unlocked_at?: string
+          unlocked_by?: string | null
+        }
+        Update: {
+          id?: string
+          guild_id?: string
+          achievement_type?: string
+          title?: string
+          description?: string | null
+          icon_name?: string | null
+          unlocked_at?: string
+          unlocked_by?: string | null
+        }
+      }
+      insights: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          content: string
+          summary: string | null
+          tags: string[]
+          visibility: string
+          guild_id: string | null
+          status: string
+          likes_count: number
+          comments_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          content: string
+          summary?: string | null
+          tags?: string[]
+          visibility?: string
+          guild_id?: string | null
+          status?: string
+          likes_count?: number
+          comments_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          content?: string
+          summary?: string | null
+          tags?: string[]
+          visibility?: string
+          guild_id?: string | null
+          status?: string
+          likes_count?: number
+          comments_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
+
+// 使用环境变量创建 Supabase 客户端，构建时允许缺失
+export const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+)

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@/lib/supabase/client'
-import { createClient as createServerClient } from '@/lib/supabase/server'
+import { useState, useEffect } from 'react'
 
 export interface UserProfile {
   id: string
@@ -157,8 +157,7 @@ export const authClient = {
       const { data, error } = await (supabase as any)
         .from('user_progress')
         .update(updateData)
-        .eq('user_id', userId)
-        .eq('season_id', (season as any).id)
+        .eq('id', (existingProgress as any).id)
         .select()
         .single()
 
@@ -255,23 +254,86 @@ export const authClient = {
   }
 }
 
-// Server-side auth functions
-export const authServer = {
-  async getCurrentUser() {
-    const supabase = await createServerClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
-    return { user, error }
-  },
+// React hook for authentication state
+export const useAuth = () => {
+  const [user, setUser] = useState<any>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  async getUserProfile(userId: string) {
-    const supabase = await createServerClient()
+  useEffect(() => {
+    let mounted = true
 
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    // Get initial user
+    const getInitialUser = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        console.log('Initial user check:', user?.id, !!user)
+        if (mounted) {
+          setUser(user)
+          setIsAuthenticated(!!user)
+        }
+      } catch (error) {
+        console.error('Error getting initial user:', error)
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
 
-    return { profile, error }
+    getInitialUser()
+
+    // Listen for auth changes
+    const supabase = createClient()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id, 'Session exists:', !!session)
+        if (mounted) {
+          setUser(session?.user ?? null)
+          setIsAuthenticated(!!session?.user)
+          setLoading(false)
+        }
+      }
+    )
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  const signOut = async () => {
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      setUser(null)
+      setIsAuthenticated(false)
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
+
+  const refreshAuth = async () => {
+    try {
+      setLoading(true)
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      console.log('Refresh auth check:', user?.id, !!user)
+      setUser(user)
+      setIsAuthenticated(!!user)
+    } catch (error) {
+      console.error('Error refreshing auth:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return {
+    user,
+    isAuthenticated,
+    loading,
+    signOut,
+    refreshAuth
   }
 }
