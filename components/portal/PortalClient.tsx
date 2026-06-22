@@ -103,6 +103,18 @@ export function PortalClient({
         return Lightbulb
       case 'energy_alchemy':
         return Zap
+      case 'sorrow_alchemy':
+        return Sunrise
+      case 'reality_facing':
+        return Globe
+      case 'mind_insight':
+        return Lightbulb
+      case 'time_transformation':
+        return Calendar
+      case 'compassion_rebirth':
+        return Heart
+      case 'meditation_solitude':
+        return TreePine
       default:
         return BookOpen
     }
@@ -127,6 +139,18 @@ export function PortalClient({
         return 'from-indigo-500/20 to-blue-500/20 border-indigo-400/30'
       case 'energy_alchemy':
         return 'from-teal-500/20 to-cyan-500/20 border-teal-400/30'
+      case 'sorrow_alchemy':
+        return 'from-rose-500/20 to-amber-500/20 border-rose-400/30'
+      case 'reality_facing':
+        return 'from-sky-500/20 to-cyan-500/20 border-sky-400/30'
+      case 'mind_insight':
+        return 'from-indigo-500/20 to-violet-500/20 border-indigo-400/30'
+      case 'time_transformation':
+        return 'from-amber-500/20 to-orange-500/20 border-amber-400/30'
+      case 'compassion_rebirth':
+        return 'from-fuchsia-500/20 to-pink-500/20 border-fuchsia-400/30'
+      case 'meditation_solitude':
+        return 'from-slate-500/20 to-indigo-500/20 border-slate-400/30'
       default:
         return 'from-gray-500/20 to-gray-600/20 border-gray-400/30'
     }
@@ -152,6 +176,18 @@ export function PortalClient({
         return 'rgba(99, 102, 241, 0.4)' // 靛蓝
       case 'energy_alchemy':
         return 'rgba(20, 184, 166, 0.4)' // 青色
+      case 'sorrow_alchemy':
+        return 'rgba(251, 113, 133, 0.4)'
+      case 'reality_facing':
+        return 'rgba(56, 189, 248, 0.4)'
+      case 'mind_insight':
+        return 'rgba(129, 140, 248, 0.4)'
+      case 'time_transformation':
+        return 'rgba(251, 146, 60, 0.4)'
+      case 'compassion_rebirth':
+        return 'rgba(232, 121, 249, 0.4)'
+      case 'meditation_solitude':
+        return 'rgba(148, 163, 184, 0.4)'
       default:
         return 'rgba(156, 163, 175, 0.3)' // 灰色
     }

@@ -13,6 +13,12 @@ import { MarchCourseView } from '@/components/courses/MarchCourseView'
 import { AprilCourseView } from '@/components/courses/AprilCourseView'
 import { MayCourseView } from '@/components/courses/MayCourseView'
 import { JuneCourseView } from '@/components/courses/JuneCourseView'
+import { JulyCourseView } from '@/components/courses/JulyCourseView'
+import { AugustCourseView } from '@/components/courses/AugustCourseView'
+import { SeptemberCourseView } from '@/components/courses/SeptemberCourseView'
+import { OctoberCourseView } from '@/components/courses/OctoberCourseView'
+import { NovemberCourseView } from '@/components/courses/NovemberCourseView'
+import { DecemberCourseView } from '@/components/courses/DecemberCourseView'
 import type { CourseContent } from '@/lib/supabase/database.types'
 
 // ✅ 性能优化：启用30秒缓存，大幅提升页面加载速度
@@ -63,7 +69,7 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
   const contentIds = contents.map(c => c.id)
 
   // 冥想课程需要分数映射（链式解锁），与进度一起并行获取
-  const isMeditationCourse = ['listening', 'dawn_awakening', 'dependency_freedom', 'desire_flame', 'wisdom_awakening', 'energy_alchemy'].includes(systemKey)
+  const isMeditationCourse = ['listening', 'dawn_awakening', 'dependency_freedom', 'desire_flame', 'wisdom_awakening', 'energy_alchemy', 'sorrow_alchemy', 'reality_facing', 'mind_insight', 'time_transformation', 'compassion_rebirth', 'meditation_solitude'].includes(systemKey)
 
   // 并行获取进度和分数（避免顺序查询导致超时）
   const [progressMap, submissionsResult] = await Promise.all([
@@ -182,6 +188,78 @@ async function CourseContent({ systemKey }: { systemKey: string }) {
     if (systemKey === 'energy_alchemy') {
       return (
         <JuneCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    if (systemKey === 'sorrow_alchemy') {
+      return (
+        <JulyCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    if (systemKey === 'reality_facing') {
+      return (
+        <AugustCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    if (systemKey === 'mind_insight') {
+      return (
+        <SeptemberCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    if (systemKey === 'time_transformation') {
+      return (
+        <OctoberCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    if (systemKey === 'compassion_rebirth') {
+      return (
+        <NovemberCourseView
+          courseSystem={courseSystem}
+          contents={contents}
+          completionMap={completionMap}
+          scoreMap={scoreMap}
+          bypassScoreCheck={bypassDateCheck}
+        />
+      )
+    }
+
+    if (systemKey === 'meditation_solitude') {
+      return (
+        <DecemberCourseView
           courseSystem={courseSystem}
           contents={contents}
           completionMap={completionMap}
