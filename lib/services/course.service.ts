@@ -343,6 +343,12 @@ export class CourseService {
    * - desire_flame: 2026年4月
    * - wisdom_awakening: 2026年5月
    * - energy_alchemy: 2026年6月
+   * - sorrow_alchemy: 2026年7月
+   * - reality_facing: 2026年8月
+   * - mind_insight: 2026年9月
+   * - time_transformation: 2026年10月
+   * - compassion_rebirth: 2026年11月
+   * - meditation_solitude: 2026年12月
    */
   static isCourseDateReached(systemKey: string, sequenceNumber: number): boolean {
     // 使用中国时区(UTC+8)计算"今天"，避免服务端(UTC)和客户端(用户本地)时区不一致
@@ -373,6 +379,30 @@ export class CourseService {
       case 'energy_alchemy':
         // 6月课程，第N天=6月N日
         courseDate = new Date(2026, 5, sequenceNumber)
+        break
+      case 'sorrow_alchemy':
+        // 7月课程，第N天=7月N日
+        courseDate = new Date(2026, 6, sequenceNumber)
+        break
+      case 'reality_facing':
+        // 8月课程，第N天=8月N日
+        courseDate = new Date(2026, 7, sequenceNumber)
+        break
+      case 'mind_insight':
+        // 9月课程，第N天=9月N日
+        courseDate = new Date(2026, 8, sequenceNumber)
+        break
+      case 'time_transformation':
+        // 10月课程，第N天=10月N日
+        courseDate = new Date(2026, 9, sequenceNumber)
+        break
+      case 'compassion_rebirth':
+        // 11月课程，第N天=11月N日
+        courseDate = new Date(2026, 10, sequenceNumber)
+        break
+      case 'meditation_solitude':
+        // 12月课程，第N天=12月N日
+        courseDate = new Date(2026, 11, sequenceNumber)
         break
       default:
         // 其他课程不做日期限制
