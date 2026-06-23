@@ -36,3 +36,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 nul
+
+# meditation-audit 验证产物（脚本运行的临时输出，勿提交）
+scripts/meditation-audit/verify/
+scripts/meditation-audit/*.log
+scripts/meditation-audit/*.mp3
