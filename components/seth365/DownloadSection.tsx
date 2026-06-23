@@ -589,7 +589,7 @@ export function DownloadSection() {
               <li className="flex items-center gap-2">
                 <Monitor className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
                 <span>
-                  <span className="text-gray-300">Seth365_v1.5.0.zip</span>
+                  <span className="text-gray-300">Seth365_v1.5.1.zip</span>
                   <span className="text-gray-500 ml-1">- Windows 电脑</span>
                 </span>
               </li>

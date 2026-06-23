@@ -1,5 +1,4 @@
 // @ts-nocheck
-import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -601,13 +600,5 @@ async function ContentDetail({ systemKey, contentId }: { systemKey: string, cont
 export default async function ContentPage({ params }: ContentPageProps) {
   const { system_key, content_id } = await params
 
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-      </div>
-    }>
-      <ContentDetail systemKey={system_key} contentId={content_id} />
-    </Suspense>
-  )
+  return <ContentDetail systemKey={system_key} contentId={content_id} />
 }
