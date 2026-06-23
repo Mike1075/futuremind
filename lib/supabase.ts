@@ -8,16 +8,13 @@ import type { Database } from '@/types/database'
 export type { Database }
 export type { Json } from '@/types/database'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+// ⚠️ 构建时（next build 的 collect page data 会加载本模块）允许密钥缺失，
+//    用占位符兜底避免顶层 throw / createClient 报错导致构建失败；
+//    运行时的真实校验由各客户端调用及 getAdminClient() 负责。
+//    （与 lib/supabase/client.ts 的占位符策略保持一致）
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-if (!supabaseUrl) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set')
-}
-if (!supabaseAnonKey) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not set')
-}
 
 // 基础客户端
 export const supabase = createServiceClient<Database>(supabaseUrl, supabaseAnonKey)

@@ -1004,3 +1004,9 @@ export default function TestSummarizePage() {
     </div>
   )
 }
+
+// 强制按需渲染（SSR），避免构建期预渲染此测试页时
+// createClientComponentClient() 因缺少环境变量而中断构建
+export async function getServerSideProps() {
+  return { props: {} }
+}
