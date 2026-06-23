@@ -3,11 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenAI } from '@google/genai'
 import { logger } from '@/lib/logger'
 
-// 初始化 Gemini AI（使用环境变量验证）
+// 初始化 Gemini AI（环境变量验证延迟到请求处理时，见下方 handler 内的 !apiKey 检查）
+// ⚠️ 不在模块顶层 throw，避免 next build 阶段因缺少运行时密钥而中断构建
 const apiKey = process.env.GEMINI_API_KEY
-if (!apiKey) {
-  throw new Error('GEMINI_API_KEY 未配置，请在 .env 文件中添加')
-}
 
 // 智能识别课程类型的提示词 - 使用简单的键值对格式
 const IDENTIFY_COURSE_TYPE_PROMPT = `你是一个专业的课程分析专家。请分析以下课程文档，识别其课程类型并提取基本信息。
