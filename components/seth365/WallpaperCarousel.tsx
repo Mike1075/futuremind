@@ -21,7 +21,8 @@ import {
   filterWallpapers,
   Language,
   Orientation,
-  formatDate
+  formatDate,
+  downloadWallpaperAsJpeg
 } from '@/lib/seth365/wallpaper'
 
 interface WallpaperCarouselProps {
@@ -91,13 +92,8 @@ export function WallpaperCarousel({ date, onOpenPosterEditor, onOpenBatchDownloa
   }
 
   const handleDownload = async (wallpaper: Wallpaper) => {
-    const url = getWallpaperUrl(wallpaper)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `赛斯365_${formatDate(wallpaper.date)}_${getDisplayName(wallpaper)}.webp`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    const baseFileName = `赛斯365_${formatDate(wallpaper.date)}_${getDisplayName(wallpaper)}`
+    await downloadWallpaperAsJpeg(wallpaper, baseFileName)
   }
 
   const handleDownloadAll = async () => {

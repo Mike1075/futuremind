@@ -125,3 +125,66 @@ export function getDaysInMonth(year: number, month: number): Date[] {
 export function formatDate(date: Date): string {
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
 }
+
+// 加载图片为 HTMLImageElement
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error(`图片加载失败: ${src}`))
+    img.src = src
+  })
+}
+
+// 触发浏览器下载一个 Blob
+function triggerBlobDownload(blob: Blob, fileName: string): void {
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  // 释放对象 URL（延迟以确保下载已开始）
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+}
+
+// 下载壁纸为标准 JPEG 格式
+// 部分浏览器/系统对 .webp 兼容性不佳，统一转换为 JPEG 后下载，
+// 同时使用 Blob URL 确保自定义文件名生效
+export async function downloadWallpaperAsJpeg(
+  wallpaper: Wallpaper,
+  baseFileName: string
+): Promise<void> {
+  const url = getWallpaperUrl(wallpaper)
+  const jpegFileName = `${baseFileName}.jpg`
+
+  try {
+    const img = await loadImage(url)
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('无法创建画布上下文')
+
+    // JPEG 不支持透明通道，先填充白色背景
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(img, 0, 0)
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.95)
+    )
+    if (!blob) throw new Error('图片转换失败')
+
+    triggerBlobDownload(blob, jpegFileName)
+  } catch {
+    // 回退：直接下载原始 webp 文件
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${baseFileName}.webp`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+}
