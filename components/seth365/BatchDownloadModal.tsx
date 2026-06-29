@@ -5,14 +5,14 @@ import { motion } from 'framer-motion'
 import { X, Download, Calendar, ChevronLeft, ChevronRight, Check, Loader2, Info, Lock } from 'lucide-react'
 import {
   getWallpapersForDate,
-  getWallpaperUrl,
   getFileName,
   isDateUnlocked,
   LAUNCH_DATE,
   formatDate,
   getDaysInMonth,
   Language,
-  Orientation
+  Orientation,
+  downloadWallpaperAsJpeg
 } from '@/lib/seth365/wallpaper'
 
 interface BatchDownloadModalProps {
@@ -191,15 +191,9 @@ export function BatchDownloadModal({ onClose }: BatchDownloadModalProps) {
         if (filterLanguage !== 'all' && wallpaper.language !== filterLanguage) continue
         if (filterOrientation !== 'all' && wallpaper.orientation !== filterOrientation) continue
 
-        const url = getWallpaperUrl(wallpaper)
-        const fileName = getFileName(wallpaper)
-
-        const link = document.createElement('a')
-        link.href = url
-        link.download = fileName
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+        // 文件名（不含扩展名，转换函数会补上 .jpg）
+        const baseFileName = getFileName(wallpaper).replace(/\.webp$/i, '')
+        await downloadWallpaperAsJpeg(wallpaper, baseFileName)
 
         downloaded++
         setDownloadProgress(Math.round((downloaded / wallpaperCount) * 100))
