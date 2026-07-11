@@ -7,7 +7,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 // 环境变量
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const XAI_API_KEY = Deno.env.get('XAI_API_KEY')!
+// ⚠️ 2026-07-11：xAI Grok 服务批改全线失败（作业卡在 under_review），已回退到 OpenAI。
+// 若日后 xAI 恢复/充值，改回 XAI_API_KEY + api.x.ai + grok 模型即可（见下方调用处）。
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
 
 // 初始化Supabase客户端（使用Service Role绕过RLS）
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -322,17 +324,17 @@ serve(async (req) => {
       .replace('{recent_history}', recentHistory)
       .replace('{submission_content}', submission_content)
 
-    // 5. 调用 xAI Grok API（OpenAI 兼容格式）
-    console.log('🤖 调用 xAI Grok API 进行评估...')
+    // 5. 调用 OpenAI API 进行评估
+    console.log('🤖 调用 OpenAI API 进行评估...')
 
-    const openaiResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${XAI_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'grok-4-1-fast-non-reasoning',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -350,8 +352,8 @@ serve(async (req) => {
 
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text()
-      console.error('❌ xAI API 调用失败:', errorText)
-      throw new Error(`xAI API error: ${errorText}`)
+      console.error('❌ OpenAI API 调用失败:', errorText)
+      throw new Error(`OpenAI API error: ${errorText}`)
     }
 
     const openaiData = await openaiResponse.json()
