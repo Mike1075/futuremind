@@ -409,6 +409,12 @@ const MailIcon = () => (
     - 2M 上下文（vs 4o-mini 128K）
   - 此函数是项目首个真正迁移到 xAI 的边缘函数（此前 CLAUDE.md 记录的批量迁移是幻觉）
   - 回退方案：若出现异常，改 model 为 `gpt-4o-mini`、endpoint 为 `api.openai.com`、API key 为 `OPENAI_API_KEY` 即可（改 4 行 + 部署）
+- ✅ **作业批改从 xAI Grok 回退到 OpenAI（2026-07-11, evaluate-submission）**：
+  - 问题：早上学员提交作业全线报"提交失败，请重试"
+  - 排查：作业记录能写入 DB 但全部卡在 `under_review`（score=null），最后一次成功评分停在 2026-07-10 14:16 UTC；代码未变 → xAI Grok 外部服务/额度故障
+  - 修复：`index.ts` AI 调用从 `api.x.ai` + `grok-4-1-fast-non-reasoning` + `XAI_API_KEY` 改回 `api.openai.com` + `gpt-4o-mini` + `OPENAI_API_KEY`（均为 Supabase 已有 Secret），已部署并线上实测恢复
+  - 诊断技巧：用 SERVICE_ROLE_KEY 直查 `user_submissions` 状态即可定位卡在哪一步，无需边缘函数日志
+  - 若 xAI 恢复/充值，改回 4 行 + 部署即可
 - ✅ **管理员账户作业提交绕过（2026-04-22, evaluate-submission v21）**：
   - 问题：前端 `page.tsx:68` 已有管理员 email 白名单允许跳过解锁进入课程详情页，但边缘函数 `checkCourseUnlock` 没有同步绕过，导致管理员点提交后被 403 拦下
   - 修复：边缘函数开头加 `ADMIN_EMAILS = ['3368327@qq.com', 'onestnet@gmail.com']` 白名单，用 `supabase.auth.admin.getUserById(userId)` 查邮箱，命中则直接放行
