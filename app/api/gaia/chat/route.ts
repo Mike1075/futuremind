@@ -5,7 +5,7 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
-import { isDev } from '@/lib/env'
+import { generateGaiaReply } from '@/lib/gaia/native'
 import type { GaiaMessage } from '@/lib/supabase/database.types'
 import type { Json } from '@/types/database'
 
@@ -35,11 +35,8 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
     const startTime = Date.now()
     logger.info('Gaia chat request started')
 
-    // 获取N8N Webhook URL（不使用硬编码）
-    const N8N_CHAT_WEBHOOK = process.env.N8N_CHAT_WEBHOOK_URL
-
-    if (!N8N_CHAT_WEBHOOK) {
-      logger.error('N8N chat webhook URL not configured')
+    if (!process.env.OPENAI_API_KEY) {
+      logger.error('OPENAI_API_KEY not configured')
       return errorResponse('Service configuration error', undefined, 503)
     }
 
@@ -202,151 +199,26 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
       logger.info('Async summary update triggered', { userId })
     }
 
-    // 7. 准备发送给N8N的数据
-    const defaultProjectId = process.env.DEFAULT_PROJECT_ID || 'p001'
-    const defaultOrganizationId = process.env.DEFAULT_ORGANIZATION_ID || 'd03b6947-f08d-41bd-86c0-c92c3c4630b0'
-
-    const payload = {
-      chatInput: message,
-      session_id: conversation?.session_id || conversation?.id,
-      user_id: userId,
-      user_name: userName,
-      user_email: profileData?.email || user.email,
-      project_id: defaultProjectId,
-      organization_id: defaultOrganizationId,
-      // CQ-02: 使用GaiaMessage类型
-      conversation_history: conversationHistory.slice(-5).map((m: GaiaMessage) => ({
-        role: m.role,
-        content: m.content
-      })),
-
-      // 学生画像（用于因材施教）
-      student_profile: studentProfile,
-
-      // 对话行为摘要（用于了解学生）
-      dialogue_summary: dialogueSummary
-    }
-
     logger.debug('Database operations completed', {
       elapsed: `${Date.now() - startTime}ms`
     })
 
-    logger.debug('Calling N8N webhook', {
-      url: N8N_CHAT_WEBHOOK.substring(0, 50) + '...',
-      sessionId: payload.session_id,
-      historyLength: payload.conversation_history.length,
-      payloadSize: JSON.stringify(payload).length
-    })
-
-    // 5. 调用N8N获取流式响应（添加60秒超时）
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 60000)
-
-    let n8nRes: Response
-    try {
-      const n8nFetchStart = Date.now()
-      logger.info('N8N request started')
-
-      n8nRes = await fetch(N8N_CHAT_WEBHOOK, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      })
-
-      clearTimeout(timeoutId)
-
-      logger.info('N8N response received', {
-        elapsed: `${Date.now() - startTime}ms`,
-        n8nDuration: `${Date.now() - n8nFetchStart}ms`,
-        status: n8nRes.status
-      })
-
-      if (!n8nRes.ok) {
-        const errorText = await n8nRes.text()
-        logger.error('N8N request failed', undefined, {
-          status: n8nRes.status,
-          errorText: errorText.substring(0, 200)
-        })
-        return errorResponse('Failed to get response from Gaia', undefined, 502)
-      }
-    } catch (error: any) {
-      clearTimeout(timeoutId)
-      if (error.name === 'AbortError') {
-        logger.error('N8N request timeout (60s)')
-        return errorResponse('Request timeout', undefined, 504)
-      }
-      throw error
-    }
-
-    // 🔥 复用 AIP 的成功方案：一次性读取完整响应，然后解析
-    const responseText = await n8nRes.text()
-
-    logger.info('[gaia-chat] N8N raw response', {
-      length: responseText.length,
-      preview: responseText.substring(0, 500)
-    })
-
+    // 7. 生成盖亚回复（检索知识库 + 调用 LLM，原先由 N8N 承担）
     let fullContent = ''
-
-    // 🔥 方法1：尝试解析为单个 JSON 对象（streaming 关闭时）
     try {
-      let json = JSON.parse(responseText)
-
-      // 如果 N8N 返回数组，取第一个元素
-      if (Array.isArray(json)) {
-        logger.info('[gaia-chat] N8N returned array', { arrayLength: json.length })
-        json = json[0] || {}
-      }
-
-      logger.info('[gaia-chat] Parsed JSON', {
-        keys: Object.keys(json),
-        hasText: !!json.text,
-        hasOutput: !!json.output,
-        hasAiContent: !!json.ai_content,
-        hasContent: !!json.content
+      fullContent = await generateGaiaReply(supabase, {
+        userName,
+        studentProfile,
+        dialogueSummary,
+        history: conversationHistory.map((m: GaiaMessage) => ({
+          role: m.role,
+          content: m.content
+        })),
+        message
       })
-
-      if (json.text) {
-        fullContent = json.text
-      } else if (json.output) {
-        fullContent = json.output
-      } else if (json.ai_content) {
-        fullContent = json.ai_content
-      } else if (json.content) {
-        fullContent = json.content
-      }
-    } catch (parseError) {
-      // 🔥 方法2：尝试 NDJSON 格式（streaming 开启时）
-      logger.info('[gaia-chat] Single JSON parse FAILED, trying NDJSON', {
-        error: parseError instanceof Error ? parseError.message : String(parseError)
-      })
-
-      const lines = responseText.split('\n').filter(line => line.trim())
-      for (const line of lines) {
-        try {
-          const json = JSON.parse(line)
-          if (json.type === 'item' && json.content) {
-            try {
-              const innerJson = JSON.parse(json.content)
-              if (innerJson.text) fullContent = innerJson.text
-              else if (innerJson.output) fullContent = innerJson.output
-              else if (innerJson.ai_content) fullContent = innerJson.ai_content
-            } catch {
-              fullContent += json.content
-            }
-          } else if (json.text && json.type !== 'begin' && json.type !== 'done') {
-            fullContent = json.text
-          } else if (json.output) {
-            fullContent = json.output
-          }
-        } catch {
-          // 忽略解析错误
-        }
-      }
+    } catch (error) {
+      logger.error('[gaia-chat] Failed to generate reply', error)
+      return errorResponse('Failed to get response from Gaia', undefined, 502)
     }
 
     // 清理格式
@@ -357,17 +229,9 @@ async function handleGaiaChat(req: NextRequest): Promise<Response> {
 
     // 如果没有内容，返回友好的错误消息
     if (!finalReply) {
-      // 只在开发环境中记录详细调试信息
-      if (isDev()) {
-        logger.error('[gaia-chat] No content extracted', {
-          responseLength: responseText.length,
-          responsePreview: responseText.substring(0, 300)
-        })
-      } else {
-        logger.error('[gaia-chat] No content extracted', {
-          responseLength: responseText.length
-        })
-      }
+      logger.error('[gaia-chat] No content extracted', {
+        responseLength: fullContent.length
+      })
       finalReply = '抱歉，我现在无法回应。请稍后再试。'
     }
 
