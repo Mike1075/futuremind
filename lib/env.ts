@@ -11,10 +11,13 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase服务角色密钥不能为空').optional(),
 
   // AI 服务配置
-  // GEMINI_API_KEY：盖亚 / AIP 对话（对齐原 N8N 工作流的 Google Gemini 节点）
+  // MINIMAX_API_KEY：盖亚 / AIP 对话主力模型（MiniMax-M3）
   // OPENAI_API_KEY：文档 embedding（必须用 text-embedding-3-small，与库中已有向量同源）
-  GEMINI_API_KEY: z.string().min(1, 'Gemini API密钥不能为空').optional(),
+  //                 同时是对话模型的兜底（gpt-5.4-mini）
+  // GEMINI_API_KEY：可选，原 N8N 工作流用的模型，仍可通过 GAIA_CHAT_MODEL 切回
+  MINIMAX_API_KEY: z.string().min(1, 'MiniMax API密钥不能为空').optional(),
   OPENAI_API_KEY: z.string().min(1, 'OpenAI API密钥不能为空').optional(),
+  GEMINI_API_KEY: z.string().min(1, 'Gemini API密钥不能为空').optional(),
 
   // 注：N8N 相关的 webhook 变量已于 2026-08 全部移除，
   // 聊天与文档向量化改为项目内原生实现（lib/gaia、lib/aip、lib/rag）

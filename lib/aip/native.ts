@@ -23,8 +23,8 @@ import { logger } from '@/lib/logger'
 import { embedBatch } from '@/lib/rag/ingest'
 import { callChatModel, type ChatMessage } from '@/lib/llm'
 
-/** 对话模型：与原 N8N 工作流同一家 */
-const CHAT_MODEL = process.env.AIP_CHAT_MODEL || 'gemini-2.5-flash'
+/** 对话模型：主力 MiniMax M3，失败自动回退（见 lib/llm.ts） */
+const CHAT_MODEL = process.env.AIP_CHAT_MODEL || 'MiniMax-M3'
 
 /** 每个项目的召回条数（原工作流 topK=300，见文件头说明） */
 const MATCH_COUNT = 20

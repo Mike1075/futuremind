@@ -79,8 +79,10 @@ docs/                  # 详细文档
 
 **架构概览**:
 ```
-用户提问 → OpenAI embedding → 混合检索(向量+全文RRF) → 整合上下文 → Gemini(失败回退OpenAI) → 伪流式响应
+用户提问 → OpenAI embedding → 混合检索(向量+全文RRF) → 整合上下文 → MiniMax-M3(失败熔断+回退 gpt-5.4-mini) → 伪流式响应
 ```
+
+**⚠️ embedding 必须用 OpenAI `text-embedding-3-small`**——库里 1287 条向量是它生成的，换模型会导致检索全废。对话模型可以随便换，embedding 不行。
 
 **知识来源**:
 | 类型 | 存储表 |
@@ -429,6 +431,15 @@ const MailIcon = () => (
   - ⚠️ 未来若要加/改管理员，前后端两处 email 白名单需同步修改：
     - `app/courses/[system_key]/[content_id]/page.tsx` 的 `adminEmails`
     - `supabase/functions/evaluate-submission/index.ts` 的 `ADMIN_EMAILS`
+- ✅ **对话模型切换到 MiniMax M3 + GPT 兜底（2026-08-03）**：
+  - 主力 `MiniMax-M3`（国内站 `api.minimaxi.com/v1`，OpenAI 兼容接口），兜底 `gpt-5.4-mini`
+  - ⚠️ **M3 质量未实测**：提供的 key 账户额度已耗尽（全模型 429 `已达到 Token Plan 用量上限`），充值后需复测
+  - 兜底选型实测：gpt-5.4-mini 4.8s 是 gpt-5 系列最快；nano 更便宜但 7.5s/1196字，又慢又啰嗦；5.5 要 13s
+  - **接口坑（务必记住）**：GPT-5 全系拒收 `max_tokens` 必须用 `max_completion_tokens`；
+    gpt-5.5/5.6 拒收自定义 temperature；MiniMax 原生接口额度耗尽时返回 HTTP 200
+    错误藏在 `base_resp` 里，必须走 OpenAI 兼容接口才能拿到 429
+  - 加了熔断：主模型报额度/鉴权错误后冷却 10 分钟直接走兜底，已实测生效
+  - 新增环境变量 `MINIMAX_API_KEY`（Vercel 需手工添加）
 - ✅ **全面脱离 N8N（2026-08-03，分支 `fix/gaia-native`）**：
   - 起因：外部 N8N 实例 `n8n.aifunbox.com` 返回 522 失联，负责同事离职且忘记账号密码，四个工作流全线不可用
   - **关键发现**：原始工作流 JSON 一直在本机 `readme/N8NAIP/`（由 `docs/RAG优化分析报告-2024-11-28.md` 的路径线索找到），已存档到 `docs/n8n-archive/`

@@ -25,8 +25,13 @@ const OPENAI_BASE = 'https://api.openai.com/v1'
  */
 const EMBEDDING_MODEL = 'text-embedding-3-small'
 
-/** 对话模型：原工作流挂的是 Google Gemini Chat Model 节点，这里保持同一家 */
-const CHAT_MODEL = process.env.GAIA_CHAT_MODEL || 'gemini-2.5-flash'
+/**
+ * 对话模型
+ *
+ * 原 N8N 工作流挂的是 Google Gemini 节点；按项目要求改用 MiniMax M3 为主力，
+ * 失败自动回退（见 lib/llm.ts）。想换回原样设 GAIA_CHAT_MODEL=gemini-2.5-flash 即可。
+ */
+const CHAT_MODEL = process.env.GAIA_CHAT_MODEL || 'MiniMax-M3'
 
 /** 检索召回条数，与原工作流保持一致 */
 const MATCH_COUNT = 8

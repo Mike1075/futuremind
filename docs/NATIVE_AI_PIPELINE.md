@@ -52,7 +52,7 @@
 |------|-----|------|
 | Embedding 模型 | `text-embedding-3-small` | `心灵学院聊天bot.json` 的 Embeddings OpenAI4 节点显式写明；另经余弦相似度实测 0.9937 确认与库中已有向量同源（ada-002 为 -0.019，已排除） |
 | 分块 | 400 / overlap 100 | 两个上传工作流的 Recursive Character Text Splitter 节点 |
-| 对话模型 | Gemini（`gemini-2.5-flash`） | 两个聊天工作流挂的都是 `lmChatGoogleGemini` 节点 |
+| 对话模型 | **MiniMax-M3**（兜底 `gpt-5.4-mini`） | 原工作流用的是 Gemini（`lmChatGoogleGemini` 节点），2026-08-03 按项目要求改为 MiniMax 主力；设 `GAIA_CHAT_MODEL=gemini-2.5-flash` 可切回 |
 | 盖亚召回 | 8 条 | 原 topK=100，降低以控制上下文长度 |
 | AIP 召回 | 20 条/项目 | 原 topK=300，`docs/RAG优化分析报告-2024-11-28.md` 把它列为 P0 问题并建议降到 20-50 |
 
@@ -60,12 +60,46 @@
 
 | 变量 | 用途 | 缺失后果 |
 |------|------|---------|
-| `OPENAI_API_KEY` | **必需**。文档 embedding，且必须是 OpenAI（向量空间要和库里已有的 1287 条对齐） | 检索和上传全挂 |
-| `GEMINI_API_KEY` | 对话模型 | 自动回退到 OpenAI，功能不受影响 |
+| `OPENAI_API_KEY` | **必需**。①文档 embedding，必须是 OpenAI（向量空间要和库里已有的 1287 条对齐）②对话模型兜底 | 检索、上传、对话全挂 |
+| `MINIMAX_API_KEY` | 对话主力模型 | 自动回退到 `gpt-5.4-mini`，功能不受影响 |
 | `GAIA_KB_PROJECT_ID` | 盖亚知识库范围 | 盖亚检索跳过，只凭模型自身学识回答 |
-| `GAIA_CHAT_MODEL` | 可选，覆盖盖亚对话模型 | 默认 `gemini-2.5-flash` |
-| `AIP_CHAT_MODEL` | 可选，覆盖 AIP 对话模型 | 默认 `gemini-2.5-flash` |
-| `LLM_FALLBACK_MODEL` | 可选，Gemini 失败时的回退模型 | 默认 `gpt-4o` |
+| `MINIMAX_BASE_URL` | 可选，MiniMax 接口域名 | 默认 `https://api.minimaxi.com/v1`（国内站） |
+| `GAIA_CHAT_MODEL` | 可选，覆盖盖亚对话模型 | 默认 `MiniMax-M3` |
+| `AIP_CHAT_MODEL` | 可选，覆盖 AIP 对话模型 | 默认 `MiniMax-M3` |
+| `LLM_FALLBACK_MODEL` | 可选，主模型失败时的兜底 | 默认 `gpt-5.4-mini` |
+| `GEMINI_API_KEY` | 可选，仅在把对话模型设回 `gemini-*` 时需要 | — |
+
+### 模型选型依据（2026-08-03 实测）
+
+用盖亚真实提示词 + 真实检索上下文（约 5500 token 输入）横向对比：
+
+| 模型 | 耗时 | 输出字数 | 结论 |
+|------|------|---------|------|
+| gpt-4o | 3.7s | 277 | 最快、最贴合盖亚语气 |
+| **gpt-5.4-mini** | **4.8s** | 603 | **选作兜底**：gpt-5 系列里最快 |
+| gpt-5.4-nano | 7.5s | 1196 | 比 mini 又慢又啰嗦，虽便宜但不可取 |
+| gpt-5.5 | 13.0s | 858 | 太慢 |
+| gpt-5.6-luna / sol / terra | 8s 左右 | 580-640 | 无明显优势 |
+
+⚠️ **MiniMax-M3 未能实测**：提供的 key 账户额度已耗尽（所有模型均返回
+429 `已达到 Token Plan 用量上限`），充值后需要复测质量。
+
+### 各家接口的坑（实测）
+
+- **GPT-5 全系拒收 `max_tokens`**，必须用 `max_completion_tokens`
+- **gpt-5.5 / 5.6 全系拒收自定义 temperature**，只接受默认值 1；
+  gpt-5.4-mini/nano 可以传，但一旦带上 `reasoning_effort` 就又不行了
+- **MiniMax 原生接口 `/text/chatcompletion_v2` 在额度耗尽时返回 HTTP 200**，
+  错误藏在 `base_resp.status_code`（2056）里；OpenAI 兼容接口 `/chat/completions`
+  才正确返回 429。**所以必须走 OpenAI 兼容接口**
+- Gemini flash 系列不关掉 thinking 的话，思考过程会吃掉 `maxOutputTokens`
+  导致返回空内容；但 pro 系列又不接受 `thinkingBudget=0`
+
+### 熔断机制
+
+主模型返回额度/鉴权类错误时，`lib/llm.ts` 会把它冷却 10 分钟，期间直接走兜底，
+避免每条消息都白等一次注定失败的请求。冷却是单实例内存状态，
+充值后最多一个周期自动恢复，不需要人工干预。
 
 N8N 相关变量（`N8N_CHAT_WEBHOOK_URL`、`N8N_UPLOAD_WEBHOOK`、`N8N_AIP_CHAT_WEBHOOK_URL`、
 `N8N_AIP_UPLOAD_WEBHOOK`、`N8N_GAIA_CHAT_WEBHOOK_URL`）已全部废弃，可从 Vercel 删除。
