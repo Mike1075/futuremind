@@ -114,23 +114,6 @@ export async function POST(req: NextRequest) {
       return err(500, 'Failed to create video link', error)
     }
 
-    // Fire N8N webhook if configured
-    const webhook = process.env.N8N_UPLOAD_WEBHOOK
-    if (webhook) {
-      try {
-        await fetch(webhook, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event: 'video_link.created',
-            data: videoLink,
-          }),
-        })
-      } catch (e) {
-        logger.warn('[CMS] N8N webhook调用失败 (video_link.created)', e)
-      }
-    }
-
     return NextResponse.json({ data: videoLink }, { status: 201 })
   } catch (e: unknown) {
     return err(500, 'Internal server error', e)

@@ -10,14 +10,14 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Supabase匿名密钥不能为空'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase服务角色密钥不能为空').optional(),
 
-  // Google Gemini AI配置
+  // AI 服务配置
+  // GEMINI_API_KEY：盖亚 / AIP 对话（对齐原 N8N 工作流的 Google Gemini 节点）
+  // OPENAI_API_KEY：文档 embedding（必须用 text-embedding-3-small，与库中已有向量同源）
   GEMINI_API_KEY: z.string().min(1, 'Gemini API密钥不能为空').optional(),
+  OPENAI_API_KEY: z.string().min(1, 'OpenAI API密钥不能为空').optional(),
 
-  // N8N Webhook配置 (SEC-03: 所有N8N URL必须通过环境变量配置，不允许硬编码)
-  N8N_CHAT_WEBHOOK_URL: z.string().url('N8N聊天Webhook URL必须是有效的URL').optional(),
-  N8N_UPLOAD_WEBHOOK: z.string().url('N8N上传Webhook URL必须是有效的URL').optional(),
-  N8N_AIP_CHAT_WEBHOOK_URL: z.string().url('N8N AIP聊天Webhook URL必须是有效的URL').optional(),
-  N8N_GAIA_CHAT_WEBHOOK_URL: z.string().url('N8N盖亚聊天Webhook URL必须是有效的URL').optional(),
+  // 注：N8N 相关的 webhook 变量已于 2026-08 全部移除，
+  // 聊天与文档向量化改为项目内原生实现（lib/gaia、lib/aip、lib/rag）
 
   // 盖亚知识库配置
   GAIA_KB_PROJECT_ID: z.string().uuid('盖亚知识库项目ID必须是有效的UUID').optional(),

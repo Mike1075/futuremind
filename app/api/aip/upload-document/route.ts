@@ -1,15 +1,20 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { createClient as createServerSupabase, createAdminClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit'
+import { extractTextFromFile } from '@/lib/rag/extract'
+import { ingestDocument } from '@/lib/rag/ingest'
 
 // 创建上传速率限制器
 const uploadLimiter = rateLimit(rateLimitConfigs.upload)
 
+// 向量化是同步完成的，大文档需要更长的执行时间
+export const maxDuration = 300
+
 /**
  * POST /api/aip/upload-document
- * AIP文档上传API - 代理到N8N webhook处理
+ * AIP文档上传API - 提取文本、分块、向量化后写入知识库（原先代理到 N8N）
  * 支持审核功能：普通成员上传的文件需要发起人/管理员审核
  */
 export async function POST(request: NextRequest) {
@@ -67,41 +72,76 @@ export async function POST(request: NextRequest) {
       review_status: reviewStatus
     })
 
-    // 4. 只有已通过审核的文件才发送到N8N处理（进入知识库）
+    // 4. 只有已通过审核的文件才进知识库（原先走 N8N，现改为项目内向量化）
+    let vectorCount = 0
+
     if (reviewStatus === 'approved') {
-      const n8nFormData = new FormData()
-      n8nFormData.append('file', file)
-      n8nFormData.append('project_id', projectId)
-      n8nFormData.append('user_id', user.id)
-      n8nFormData.append('title', title)
+      try {
+        const fileContent = await extractTextFromFile(file)
 
-      // SEC-03: N8N webhook URL必须通过环境变量配置
-      // 探索者联盟使用专用的 AIP 上传 webhook
-      const webhookUrl = process.env.N8N_AIP_UPLOAD_WEBHOOK
-      if (!webhookUrl) {
-        logger.error('[AIP Upload] N8N_AIP_UPLOAD_WEBHOOK环境变量未配置')
-        return NextResponse.json({ error: 'Service configuration error' }, { status: 503 })
-      }
+        if (!fileContent.trim()) {
+          return NextResponse.json({
+            error: '无法从文件中提取文本内容，请上传 txt / md / pdf 格式'
+          }, { status: 400 })
+        }
 
-      const n8nResponse = await fetch(webhookUrl, {
-        method: 'POST',
-        body: n8nFormData
-      })
+        // 写入父文档（documents 存完整全文，供父子架构检索时扩展上下文）
+        // 用 Admin 客户端：写 documents / document_chunks 需要绕过 RLS
+        const admin = createAdminClient()
 
-      const responseText = await n8nResponse.text()
-      logger.info('[AIP Upload] N8N响应', {
-        status: n8nResponse.status,
-        ok: n8nResponse.ok,
-        response: responseText.substring(0, 500) // 只记录前500字符
-      })
+        const { data: newDoc, error: docError } = await admin
+          .from('documents')
+          .insert({
+            title,
+            content: fileContent,
+            user_id: user.id,
+            project_id: projectId,
+            metadata: {
+              type: 'aip_project_knowledge',
+              project_id: projectId,
+              filename: file.name,
+              file_size: file.size,
+              file_type: file.type,
+              uploaded_at: new Date().toISOString(),
+              status: 'processing'
+            }
+          })
+          .select()
+          .single()
 
-      // 注意：N8N 使用 lastNode 模式时，即使工作流成功，
-      // 向量存储节点的响应可能不是标准 HTTP 格式
-      // 所以我们只在明确的错误状态码时才报错
-      if (n8nResponse.status >= 400 && n8nResponse.status < 500) {
-        logger.error('[AIP Upload] N8N返回客户端错误', { response: responseText })
+        if (docError || !newDoc) {
+          logger.error('[AIP Upload] 写入 documents 失败', docError)
+          return NextResponse.json({ error: '保存文档失败' }, { status: 500 })
+        }
+
+        const result = await ingestDocument(admin, {
+          documentId: newDoc.id,
+          content: fileContent,
+          title,
+          projectId,
+          userId: user.id,
+          extraMetadata: { type: 'aip_project_knowledge', filename: file.name }
+        })
+
+        vectorCount = result.chunkCount
+
+        await admin
+          .from('documents')
+          .update({
+            metadata: { ...(newDoc.metadata as any), status: 'completed', vector_count: vectorCount },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', newDoc.id)
+
+        logger.info('[AIP Upload] 向量化完成', {
+          document_id: newDoc.id,
+          project_id: projectId,
+          vectorCount
+        })
+      } catch (ingestError) {
+        logger.error('[AIP Upload] 向量化失败', ingestError)
         return NextResponse.json({
-          error: 'Processing failed - invalid request'
+          error: '文档处理失败，请稍后重试'
         }, { status: 500 })
       }
     }
@@ -187,9 +227,12 @@ export async function POST(request: NextRequest) {
     // 7. 返回成功响应
     return NextResponse.json({
       success: true,
-      message: reviewStatus === 'approved' ? '文档上传成功' : '文档已提交，等待审核',
+      message: reviewStatus === 'approved'
+        ? `文档上传成功，已生成 ${vectorCount} 个向量块`
+        : '文档已提交，等待审核',
       filename: file.name,
-      review_status: reviewStatus
+      review_status: reviewStatus,
+      vector_count: vectorCount
     })
 
   } catch (error) {

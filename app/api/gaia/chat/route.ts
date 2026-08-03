@@ -30,6 +30,9 @@ interface GaiaConversation {
  * - message: 用户消息
  * - conversationId: 可选，现有对话ID
  */
+// 检索 + LLM 全在这个请求里完成，给足执行时间
+export const maxDuration = 60
+
 async function handleGaiaChat(req: NextRequest): Promise<Response> {
   try {
     const startTime = Date.now()

@@ -1,5 +1,14 @@
-# N8N 工作流配置指南
+# N8N 工作流配置指南（历史存档）
 
+> ⚠️ **2026-08-03 起本文档仅作历史参考。** N8N 实例（n8n.aifunbox.com）已失联且无人能登录，
+> 四个工作流全部已由项目内原生实现取代，**现在的架构见 `docs/NATIVE_AI_PIPELINE.md`**。
+>
+> 原始工作流 JSON 已存档到 `docs/n8n-archive/`，是提示词和参数的权威来源。
+>
+> **本文以下内容有两处已确认错误**（当时凭印象记录，未与 JSON 核对）：
+> 1. 盖亚聊天的 LLM 写的是 GPT-4o，实际工作流挂的是 **Google Gemini** 节点（`lmChatGoogleGemini`）
+> 2. 盖亚聊天的 "Basic LLM Chain" 实际是 **AI Agent** 节点（带工具调用），不是 Basic LLM Chain
+>
 > AIP 和盖亚聊天系统的 N8N 工作流配置详情
 
 ## 系统架构概览

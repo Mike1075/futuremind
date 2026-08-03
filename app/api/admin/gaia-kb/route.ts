@@ -2,6 +2,10 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
+import { ingestDocument } from '@/lib/rag/ingest'
+
+// 向量化是同步完成的，大文档需要更长的执行时间
+export const maxDuration = 300
 
 // pdf-parse 没有默认导出，使用动态导入
 const pdfParse = async (buffer: Buffer) => {
@@ -121,7 +125,7 @@ export async function GET() {
   }
 }
 
-// POST: 上传文档到N8N webhook并记录到数据库
+// POST: 上传文档，记录到 documents 并原生向量化写入 document_chunks
 export async function POST(request: Request) {
   try {
     // 先用普通客户端验证权限
@@ -233,117 +237,57 @@ export async function POST(request: Request) {
 
     logger.debug('[盖亚知识库] 已保存到数据库', { document_id: newDoc.id, project_id: gaiaProjectId })
 
-    // SEC-03: N8N webhook URL必须通过环境变量配置
-    // 盖亚知识库复用通用上传webhook（N8N_UPLOAD_WEBHOOK）
-    const webhookUrl = process.env.N8N_UPLOAD_WEBHOOK
-    if (!webhookUrl) {
-      logger.error('[盖亚知识库] N8N_UPLOAD_WEBHOOK环境变量未配置')
-      return NextResponse.json({ error: '服务配置错误' }, { status: 503 })
-    }
-    const n8nFormData = new FormData()
+    // 向量化入库（原先由 N8N 的 Vector Store 节点完成，现改为项目内实现）
+    // 说明：Serverless 环境下 fire-and-forget 不可靠（返回响应后函数可能被冻结），
+    // 所以这里同步等待完成再返回，前端拿到的状态就是最终状态。
+    const metadata = newDoc.metadata as any
 
-    // 🔧 修复：根据文件扩展名设置正确的MIME类型
-    const n8nFileName = file.name
-    const fileExtension = n8nFileName.substring(n8nFileName.lastIndexOf('.')).toLowerCase()
-    let mimeType = file.type || 'application/octet-stream'
-
-    // 强制设置正确的MIME类型（N8N只支持text/plain和application/pdf）
-    if (fileExtension === '.md' || fileExtension === '.txt') {
-      // ⚠️ N8N不支持text/markdown，统一使用text/plain
-      mimeType = 'text/plain'
-    } else if (fileExtension === '.pdf') {
-      mimeType = 'application/pdf'
-    } else if (fileExtension === '.doc' || fileExtension === '.docx') {
-      // Word文档也当作纯文本处理
-      mimeType = 'text/plain'
-    } else {
-      // 其他所有类型都当作纯文本
-      mimeType = 'text/plain'
-    }
-
-    // 创建带正确MIME类型的Blob（复用前面已读取的 fileBuffer）
-    const blob = new Blob([fileBuffer], { type: mimeType })
-
-    n8nFormData.append('file', blob, n8nFileName)
-    n8nFormData.append('project_id', gaiaProjectId) // 使用盖亚专属 project_id
-    n8nFormData.append('title', title)
-    n8nFormData.append('document_id', newDoc.id) // 传递document_id，供N8N回调使用
-
-    logger.debug('[盖亚知识库] 开始上传到N8N（后台处理）:', {
-      url: webhookUrl,
-      project_id: gaiaProjectId,
-      document_id: newDoc.id,
-      title: title,
-      filename: n8nFileName,
-      original_mime_type: file.type,
-      corrected_mime_type: mimeType,
-      file_size: file.size
-    })
-
-    // 发起请求但不等待（fire and forget）
-    fetch(webhookUrl, {
-      method: 'POST',
-      body: n8nFormData,
-    })
-      .then(async (response) => {
-        logger.debug('[盖亚知识库] N8N webhook响应:', {
-          status: response.status,
-          statusText: response.statusText,
-          document_id: newDoc.id
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-        }
-
-        const responseText = await response.text()
-        logger.debug('[盖亚知识库] N8N webhook成功', { responseText })
-      })
-      .catch(async (error) => {
-        logger.error('[盖亚知识库] N8N webhook调用失败（异步）:', error)
-        // 仅在开发环境记录详细错误
-        if (process.env.NODE_ENV === 'development') {
-          logger.error('[盖亚知识库] 错误详情:', {
-            message: error.message,
-            stack: error.stack,
-            document_id: newDoc.id
-          })
-        }
-
-        // 🔧 webhook失败时，自动更新文档状态为error
-        try {
-          const metadata = newDoc.metadata as any
-          metadata.status = 'error'
-          // SEC-01: 生产环境不泄露详细错误信息
-          metadata.error_message = process.env.NODE_ENV === 'development'
-            ? `N8N调用失败: ${error.message}`
-            : 'N8N服务处理失败，请稍后重试'
-          metadata.error_time = new Date().toISOString()
-
-          const { error: updateError } = await supabase
-            .from('documents')
-            .update({
-              metadata,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', newDoc.id)
-
-          if (updateError) {
-            logger.error('[盖亚知识库] 更新错误状态失败:', updateError)
-          } else {
-            logger.debug('[盖亚知识库] 已将文档状态更新为error', { document_id: newDoc.id })
-          }
-        } catch (updateErr) {
-          logger.error('[盖亚知识库] 捕获更新异常:', updateErr)
-        }
+    try {
+      const { chunkCount } = await ingestDocument(supabase, {
+        documentId: newDoc.id,
+        content: fileContent,
+        title,
+        projectId: gaiaProjectId,
+        userId: user.id,
+        extraMetadata: { type: 'gaia_knowledge_base', filename: file.name }
       })
 
-    // 立即返回成功响应
-    return NextResponse.json({
-      success: true,
-      document: newDoc,
-      message: '文档已提交，正在后台处理向量化...'
-    })
+      metadata.status = 'completed'
+      metadata.vector_count = chunkCount
+
+      await supabase
+        .from('documents')
+        .update({ metadata, updated_at: new Date().toISOString() })
+        .eq('id', newDoc.id)
+
+      logger.info('[盖亚知识库] 向量化完成', { document_id: newDoc.id, chunkCount })
+
+      return NextResponse.json({
+        success: true,
+        document: { ...newDoc, metadata },
+        vector_count: chunkCount,
+        message: `文档已入库，生成 ${chunkCount} 个向量块`
+      })
+    } catch (ingestError: any) {
+      logger.error('[盖亚知识库] 向量化失败:', ingestError)
+
+      metadata.status = 'error'
+      // SEC-01: 生产环境不泄露详细错误信息
+      metadata.error_message = process.env.NODE_ENV === 'development'
+        ? `向量化失败: ${ingestError.message}`
+        : '向量化处理失败，请稍后重试'
+      metadata.error_time = new Date().toISOString()
+
+      await supabase
+        .from('documents')
+        .update({ metadata, updated_at: new Date().toISOString() })
+        .eq('id', newDoc.id)
+
+      return NextResponse.json(
+        { error: '向量化失败', document: { ...newDoc, metadata } },
+        { status: 500 }
+      )
+    }
   } catch (error: any) {
     logger.error('[盖亚知识库] 上传失败:', error)
     // 临时：返回详细错误信息用于调试

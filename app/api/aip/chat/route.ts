@@ -5,7 +5,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit'
 import { requireAuth, errorResponse, validateParams } from '@/lib/api-utils'
-import { isDev } from '@/lib/env'
+import { generateAipReply } from '@/lib/aip/native'
+
+// 检索 + LLM 全在这个请求里完成，给足执行时间
+export const maxDuration = 60
 
 async function handleChatRequest(request: NextRequest): Promise<Response> {
   const startTime = Date.now()
@@ -47,15 +50,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       organizationId: organization_id
     })
 
-    // 3. 获取N8N Webhook URL（不使用硬编码）
-    const webhookUrl = process.env.N8N_AIP_CHAT_WEBHOOK_URL
-
-    if (!webhookUrl) {
-      logger.error('N8N webhook URL not configured')
-      return errorResponse('Service configuration error', undefined, 503)
-    }
-
-    // 处理project_id：支持单个或多个项目
+    // 3. 处理project_id：支持单个或多个项目
     // 如果是数组，转换为逗号分隔的字符串，方便N8N处理
     let projectIdValue = ''
     let projectIdsArray: string[] = []
@@ -156,161 +151,26 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       ).join('\n\n')
     }
 
-    const n8nPayload = {
-      chatInput,
-      user_id: user.id,
-      user_name: userName,
-      project_id: projectIdValue,
-      project_ids: projectIdsArray,
-      organization_id: organization_id || '',
-      // 添加项目信息（支持多个项目）
-      projects_info: projectsInfoText,
-      project_count: projectsInfo.length,
-      // 添加历史消息供N8N使用
-      chat_history: historyMessages,
-      // 添加用户画像（来自盖亚的分析）
-      student_profile: studentProfileText
-    }
-
-    // 安全日志：只记录 host，不泄露完整 URL
-    logger.info('Calling N8N webhook', {
-      host: new URL(webhookUrl).host,
-      payloadSize: JSON.stringify(n8nPayload).length
-    })
-
-    const n8nStartTime = Date.now()
-
-    // 添加超时控制
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 60000) // 60秒超时
-
-    try {
-      const n8nResponse = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(n8nPayload),
-        signal: controller.signal
-      })
-
-      clearTimeout(timeout)
-
-      const n8nDuration = Date.now() - n8nStartTime
-
-      // 🔥 详细日志：打印所有响应头
-      const responseHeaders: Record<string, string> = {}
-      n8nResponse.headers.forEach((value, key) => {
-        responseHeaders[key] = value
-      })
-
-      logger.info('N8N response details', {
-        status: n8nResponse.status,
-        statusText: n8nResponse.statusText,
-        duration: `${n8nDuration}ms`,
-        headers: responseHeaders,
-        url: n8nResponse.url,
-        redirected: n8nResponse.redirected,
-        type: n8nResponse.type
-      })
-
-      if (!n8nResponse.ok) {
-        const errorText = await n8nResponse.text()
-        logger.error('N8N webhook failed', undefined, {
-          status: n8nResponse.status,
-          statusText: n8nResponse.statusText
-        })
-
-        if (n8nResponse.status === 404) {
-          return errorResponse('AI service not available', undefined, 503)
-        }
-
-        return errorResponse('AI service error', undefined, 502)
-      }
-
-    // 🔥 读取完整响应
-    const responseText = await n8nResponse.text()
-
-    // 🔥 详细日志：显示完整的原始响应
-    logger.info('N8N raw response FULL', {
-      length: responseText.length,
-      content: responseText.substring(0, 1000),
-      firstChar: responseText.charCodeAt(0),
-      lastChar: responseText.charCodeAt(responseText.length - 1)
-    })
-
+    // 生成回复（检索项目知识库 + 智慧库 + 调用 LLM，原先由 N8N 承担）
+    const llmStartTime = Date.now()
     let fullContent = ''
 
-    // 🔥 方法1：尝试解析为单个 JSON 对象（streaming 关闭时）
     try {
-      let json = JSON.parse(responseText)
-
-      // 🔥 如果 N8N 返回数组，取第一个元素
-      if (Array.isArray(json)) {
-        logger.info('N8N returned array', { arrayLength: json.length })
-        json = json[0] || {}
-      }
-
-      logger.info('Parsed JSON', {
-        keys: Object.keys(json),
-        hasAiContent: !!json.ai_content,
-        hasText: !!json.text,
-        hasOutput: !!json.output,
-        hasContent: !!json.content
+      fullContent = await generateAipReply(supabase, {
+        userName,
+        studentProfile: studentProfileText,
+        projectsInfo: projectsInfoText,
+        history: historyMessages,
+        message: chatInput,
+        projectIds: projectIdsArray,
+        organizationId: organization_id || undefined
       })
-
-      if (json.ai_content) {
-        fullContent = json.ai_content
-      } else if (json.text) {
-        fullContent = json.text
-      } else if (json.output) {
-        fullContent = json.output
-      } else if (json.content) {
-        fullContent = json.content
-      }
-    } catch (parseError) {
-      // 🔥 方法2：尝试 NDJSON 格式（streaming 开启时）
-      logger.info('Single JSON parse FAILED, trying NDJSON', {
-        error: parseError instanceof Error ? parseError.message : String(parseError),
-        responsePreview: responseText.substring(0, 200)
-      })
-      const lines = responseText.split('\n').filter(line => line.trim())
-
-      for (const line of lines) {
-        try {
-          const json = JSON.parse(line)
-
-          // type: "item" 包含实际内容
-          if (json.type === 'item' && json.content) {
-            // content 可能是字符串或嵌套 JSON
-            try {
-              const innerJson = JSON.parse(json.content)
-              if (innerJson.ai_content) {
-                fullContent = innerJson.ai_content
-              } else if (innerJson.text) {
-                fullContent = innerJson.text
-              } else if (innerJson.output) {
-                fullContent = innerJson.output
-              }
-            } catch {
-              // content 是纯文本
-              fullContent += json.content
-            }
-          }
-          // 也支持直接返回的格式
-          else if (json.ai_content) {
-            fullContent = json.ai_content
-          } else if (json.text && json.type !== 'begin' && json.type !== 'done') {
-            fullContent = json.text
-          } else if (json.output) {
-            fullContent = json.output
-          }
-        } catch {
-          // 忽略解析错误，继续处理下一行
-        }
-      }
+    } catch (error) {
+      logger.error('[aip-chat] 生成回复失败', error)
+      return errorResponse('AI service error', undefined, 502)
     }
+
+    const llmDuration = Date.now() - llmStartTime
 
     logger.debug('Extracted content', {
       contentLength: fullContent.length,
@@ -325,18 +185,11 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
 
     // 如果没有内容，返回友好的错误消息
     if (!finalReply) {
-      // 只在开发环境中记录调试信息
-      if (isDev()) {
-        logger.debug('N8N响应解析失败', {
-          responseLength: responseText.length,
-          preview: responseText.substring(0, 200)
-        })
-      }
-      // 生产环境返回友好消息，不暴露内部细节
+      logger.error('[aip-chat] 模型返回内容为空')
       finalReply = '抱歉，我现在无法回应，请稍后再试。'
     }
 
-    timings.n8n = n8nDuration
+    timings.llm = llmDuration
     timings.total = Date.now() - startTime
 
     logger.info('AI response completed', {
@@ -344,9 +197,9 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       timings: {
         auth: `${timings.auth}ms`,
         db: `${timings.db}ms`,
-        n8n: `${timings.n8n}ms`,
+        llm: `${timings.llm}ms`,
         total: `${timings.total}ms`,
-        overhead: `${timings.total - timings.n8n}ms`
+        overhead: `${timings.total - timings.llm}ms`
       }
     })
 
@@ -398,7 +251,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
           serverTimings: {
             auth: timings.auth,
             db: timings.db,
-            n8n: timings.n8n,
+            llm: timings.llm,
             total: timings.total,
             dbSave: saveTime
           }
@@ -415,14 +268,6 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
         'Connection': 'keep-alive'
       }
     })
-    } catch (error: any) {
-      clearTimeout(timeout)
-      if (error.name === 'AbortError') {
-        logger.error('N8N request timeout (60s)')
-        return errorResponse('Request timeout', undefined, 504)
-      }
-      throw error
-    }
   } catch (error: any) {
     const totalDuration = Date.now() - startTime
     logger.error('Chat request failed', error, {

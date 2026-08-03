@@ -126,23 +126,6 @@ async function handleUpload(request: NextRequest) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
-    // Fire N8N webhook if configured
-    const webhook = process.env.N8N_UPLOAD_WEBHOOK
-    if (webhook) {
-      try {
-        await fetch(webhook, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event: 'media_asset.created',
-            data: assetData,
-          }),
-        })
-      } catch (e) {
-        logger.warn('[Media] N8N webhook调用失败', e)
-      }
-    }
-
     return NextResponse.json(
       {
         asset: assetData,
