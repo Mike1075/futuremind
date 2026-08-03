@@ -68,15 +68,21 @@ docs/                  # 详细文档
 
 ## AI 聊天系统架构
 
-| 系统 | 用途 | 组件 | API 路由 |
-|------|------|------|---------|
-| **探索者联盟 AIP** | 项目协作 | `FloatingChatBot` | `/api/aip/chat` |
-| **盖亚对话** | 个人成长 | `GlobalGaiaV3` | `/api/gaia/chat` |
+> ⚠️ **2026-08-03 起已完全脱离 N8N**，全部为项目内原生实现。
+
+| 系统 | 用途 | 组件 | API 路由 | 核心模块 |
+|------|------|------|---------|---------|
+| **探索者联盟 AIP** | 项目协作 | `FloatingChatBot` | `/api/aip/chat` | `lib/aip/native.ts` |
+| **盖亚对话** | 个人成长 | `GlobalGaiaV3` | `/api/gaia/chat` | `lib/gaia/native.ts` |
+| **文档向量化** | 知识库入库 | — | 上传类 API | `lib/rag/ingest.ts`、`lib/rag/extract.ts` |
+| **LLM 调用层** | 模型路由+回退 | — | — | `lib/llm.ts` |
 
 **架构概览**:
 ```
-用户提问 → 生成向量 → 并行查询(知识库+画像) → 整合上下文 → LLM → 响应
+用户提问 → OpenAI embedding → 混合检索(向量+全文RRF) → 整合上下文 → MiniMax-M3(失败熔断+回退 gpt-5.4-mini) → 伪流式响应
 ```
+
+**⚠️ embedding 必须用 OpenAI `text-embedding-3-small`**——库里 1287 条向量是它生成的，换模型会导致检索全废。对话模型可以随便换，embedding 不行。
 
 **知识来源**:
 | 类型 | 存储表 |
@@ -85,7 +91,9 @@ docs/                  # 详细文档
 | 智慧库 | `wisdom_entries` |
 | 用户画像 | `student_summaries` |
 
-> **详细配置见**: `docs/N8N_WORKFLOWS.md`
+> **详细配置见**: `docs/NATIVE_AI_PIPELINE.md`（现行架构）
+> **原始 N8N 工作流 JSON**: `docs/n8n-archive/`（提示词与参数的权威来源）
+> **`docs/N8N_WORKFLOWS.md` 已作废**，且其中盖亚模型记为 GPT-4o 是错的（实际是 Gemini）
 
 ---
 
@@ -250,7 +258,9 @@ const MailIcon = () => (
 ## 待办事项
 
 ### 未完成
-- [ ] 修复 N8N Vector Store 节点写入 `document_chunks`
+- [ ] AIP 各项目知识库为空（`document_chunks` 1287 条全属盖亚项目），需重新上传项目文档
+- [ ] `wisdom_entries` 为空，智慧沉淀链路未跑通
+- [ ] 历史 1287 条 chunk 的 `parent_document_id` 列仍是 NULL（不影响使用，检索走 metadata）
 - [ ] 考虑 Vercel Pro 的 Instant Start（减少冷启动）
 - [ ] Rerank 优化（Cohere Reranker）
 - [ ] @ts-nocheck 逐步移除（227 个文件）
@@ -421,6 +431,29 @@ const MailIcon = () => (
   - ⚠️ 未来若要加/改管理员，前后端两处 email 白名单需同步修改：
     - `app/courses/[system_key]/[content_id]/page.tsx` 的 `adminEmails`
     - `supabase/functions/evaluate-submission/index.ts` 的 `ADMIN_EMAILS`
+- ✅ **对话模型切换到 MiniMax M3 + GPT 兜底（2026-08-03）**：
+  - 主力 `MiniMax-M3`（国内站 `api.minimaxi.com/v1`，OpenAI 兼容接口），兜底 `gpt-5.4-mini`
+  - ✅ **M3 质量已实测过关**：语气贴合、篇幅克制（290-320字，比 GPT-5 的 600-1100 字更符合"不长篇大论"的人设）、多轮连贯、课外话题也接得住
+  - ⚠️ **M3 默认开思考模式**，会把 `<think>…</think>` 直接混进正文显示给学员。
+    只有 `thinking: {"type":"disabled"}` 能关掉，`reasoning_effort` / `enable_thinking` 会被静默忽略。
+    关掉后同题 3.0s→1.7s、输出 token 105→47。代码里另做了一层 `<think>` 剥离兜底
+  - 注：首次测试时该 key 额度耗尽（全模型 429），过一阵自行恢复，说明 Token Plan 额度会周期性重置
+  - 兜底选型实测：gpt-5.4-mini 4.8s 是 gpt-5 系列最快；nano 更便宜但 7.5s/1196字，又慢又啰嗦；5.5 要 13s
+  - **接口坑（务必记住）**：GPT-5 全系拒收 `max_tokens` 必须用 `max_completion_tokens`；
+    gpt-5.5/5.6 拒收自定义 temperature；MiniMax 原生接口额度耗尽时返回 HTTP 200
+    错误藏在 `base_resp` 里，必须走 OpenAI 兼容接口才能拿到 429
+  - 加了熔断：主模型报额度/鉴权错误后冷却 10 分钟直接走兜底，已实测生效
+  - 新增环境变量 `MINIMAX_API_KEY`（Vercel 需手工添加）
+- ✅ **全面脱离 N8N（2026-08-03，分支 `fix/gaia-native`）**：
+  - 起因：外部 N8N 实例 `n8n.aifunbox.com` 返回 522 失联，负责同事离职且忘记账号密码，四个工作流全线不可用
+  - **关键发现**：原始工作流 JSON 一直在本机 `readme/N8NAIP/`（由 `docs/RAG优化分析报告-2024-11-28.md` 的路径线索找到），已存档到 `docs/n8n-archive/`
+  - 提示词、模型、检索参数全部按存档 JSON 原样恢复，非猜测重建
+  - 新增：`lib/llm.ts`（Gemini/OpenAI 路由+自动回退）、`lib/gaia/native.ts`、`lib/aip/native.ts`、`lib/rag/ingest.ts`、`lib/rag/extract.ts`
+  - 顺带修复：`document_chunks.parent_document_id` 历史上全是 NULL；`/api/n8n/upload` 原本无鉴权；删除无鉴权的 `gaia-kb/callback`
+  - 顺带修复：`GlobalGaiaV3.tsx` 错误提示渲染成 `[object Object]`
+  - **纠错**：`docs/N8N_WORKFLOWS.md` 记的盖亚模型 GPT-4o 是错的，实际工作流挂的是 Google Gemini 节点
+  - 实测：分块/入库/检索闭环通过；盖亚回复风格与历史一致；AIP 加了防编造硬规则（未加时会凭空编项目进度）
+  - 详见 `docs/NATIVE_AI_PIPELINE.md`
 - ✅ **冥想音频自动修复系统（2026-02-23）**：
   - 自动检测音频中缺失的文本内容（拼音级 diff 对比，忽略同音字差异）
   - 用豆包TTS（鸡汤女音色）生成缺失语句，精确拼接到原始音频正确位置

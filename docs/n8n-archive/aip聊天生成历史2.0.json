@@ -1,0 +1,780 @@
+{
+  "name": "aip聊天生成历史2.0",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 用户发信息后会触发，先判断webhook是否有项目信息然后分流（这能让用户不选中项目也可以聊天），然后AI会根据【组织智慧库】和【项目智慧库】和聊天记录进行回复，随后存入到聊天记录里。",
+        "height": 353,
+        "width": 693
+      },
+      "id": "ecf4292b-af6a-49dd-8872-bc26b7799592",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fd6b2fff-af4c-4013-8fb6-ada231750a5a",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        80
+      ],
+      "id": "1bf22bef-b71e-471c-af36-c6776d1b7b25",
+      "name": "Webhook",
+      "webhookId": "fd6b2fff-af4c-4013-8fb6-ada231750a5a"
+    },
+    {
+      "parameters": {
+        "content": "## 问题：如何用组织id过滤？",
+        "width": 464
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        96,
+        1248
+      ],
+      "id": "2901c69a-93dd-4323-a0d5-d4d69f98dcbf",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "tableId": "chat_history",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $('1-Parse-Input-Parameters').item.json.chatInput }}"
+            },
+            {
+              "fieldId": "role",
+              "fieldValue": "user"
+            },
+            {
+              "fieldId": "agent_type",
+              "fieldValue": "project_agent"
+            },
+            {
+              "fieldId": "project_id",
+              "fieldValue": "={{ $('Merge').first().json.project_id }}"
+            },
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Merge').first().json.user_id }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $now }}"
+            },
+            {
+              "fieldId": "ai_content",
+              "fieldValue": "={{ $('6-Final-AI-Answer').item.json.output }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2032,
+        80
+      ],
+      "id": "d77ba94a-7bc1-48bf-9ce1-2b1ee4a1dd79",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "3Ip6b5mzk9YObmye",
+          "name": "Supabase aip"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "id": "abc8f9d6-732f-479f-994e-4868eaf2421e",
+      "name": "Embeddings OpenAI4",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        464
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "C3YO2hHavXorqcdJ",
+          "name": "Aixue pro"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=你是一个高级AI项目经理，你会根据团队资料和团队人员情况来协调安排和转告事宜。你的核心任务是调用supabase vector search工具来整合并分析documents。[get_chat_history]是你和用户的聊天历史，结合[参考知识]，以清晰、说人话的方式回答用户的[当前问题]。\n\n## 执行步骤：\n1.必须调用supabase vector search检索documents里相关的数据，如果问题与之相关则精准回复，在documents资料里，时间越新的权重越高；\n2.调用“get_chat_history”工具获取对话记录，如果当前问题与历史记录关联不大则可以忽略前文。要敏锐识别用户开头说的“那”，“但是”，以及以“呢”，“吗”结尾的，表示关联的词汇，这意味着你需要强烈联系上文；\n3.必须判断[参考知识]的成分，如果[参考知识]同时包含[项目智慧库]和[组织智慧库]两部分内容，请将[组织智慧库]作为底色，再以[项目智慧库]为大方向,以supabase的documents里的相关信息作为主体来准备回答问题；\n4.如果发现[项目智慧库]和[组织智慧库]与用户的[当前问题]不对应，那么可以不提及这两个智慧库的资料,documents同理；\n5.如果用户的问题与任务有关，比如用户问“我今天该干啥”之类的问题，那么就在原本的回复的基础上，调用[get_tasks工具]作为补充；\n6.如果用户的问题与平台的使用方法有关，则调用get_mannual工具回答。用户的问题通常会是“我该怎么添加...”，“按钮在哪里”，“你能干啥”之类的。\n7.回答用户问题。\n\n## 重要：\n1.说人话；\n2.不要透露项目id或组织id号。\n\n参考知识:\n{{ $json.data[1].content }}\n\n---\n当前问题：\n{{ $('Code').item.json.body.chatInput }}",
+        "options": {}
+      },
+      "id": "669d584e-8b26-4fbd-b2ab-82f07ef27dac",
+      "name": "6-Final-AI-Answer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        1184,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "aip",
+        "toolDescription": "Retreive the project_id in the documents to support question answering.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "topK": 300,
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "filter",
+                "value": "={{ { \"project_id\": $json.filter_project_id } }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "df3fd915-9a6a-4be1-88cc-87d237118b5f",
+      "name": "supabase vector search",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        304
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "3Ip6b5mzk9YObmye",
+          "name": "Supabase aip"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "chat_history",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Merge').first().json.user_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        304
+      ],
+      "id": "53dd00f7-af09-4349-9c80-7a445e4659e6",
+      "name": "get_chat_history",
+      "credentials": {
+        "supabaseApi": {
+          "id": "3Ip6b5mzk9YObmye",
+          "name": "Supabase aip"
+        }
+      },
+      "notes": "Retrieve the latest 20 chat history records sorted by creation time (newest first)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all();\n\n// 收集纯文本片段\nconst parts = [];\nconst push = (txt) => {\n  const s = (txt ?? \"\").toString().trim();\n  if (s) parts.push(s);\n};\n\nfor (const item of allItems) {\n  const data = item?.json ?? item;\n  if (!data) continue;\n\n  // 1) 直接文本：{ output: \"...\" }\n  if (typeof data.output === \"string\") {\n    push(data.output);\n    continue;\n  }\n\n  // 2) 单条记录：{ title, content }（只取content）\n  if (typeof data.content === \"string\") {\n    push(data.content);\n    continue;\n  }\n\n  // 3) 数组记录：[{ title, content }, ...] 或 { rows: [...] } / { data: [...] }\n  const arr =\n    Array.isArray(data) ? data\n    : Array.isArray(data.rows) ? data.rows\n    : Array.isArray(data.data) ? data.data\n    : null;\n\n  if (arr) {\n    for (const row of arr) {\n      if (row && typeof row.content === \"string\") push(row.content);\n    }\n    continue;\n  }\n\n  // 4) 纯字符串 fallback\n  if (typeof data === \"string\") push(data);\n}\n\n// 仅输出 context\nreturn [{\n  json: {\n    context: parts.join(\"\\n\\n\"),\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        64
+      ],
+      "id": "eae559ca-39ea-4588-9ebd-09377bb1e981",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "tasks",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "assignee_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Merge').first().json.user_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        304
+      ],
+      "id": "bf6aa1f4-171b-4542-8433-d5d5d13dec6e",
+      "name": "get_tasks",
+      "credentials": {
+        "supabaseApi": {
+          "id": "3Ip6b5mzk9YObmye",
+          "name": "Supabase aip"
+        }
+      },
+      "notes": "Retrieve the latest 20 chat history records sorted by creation time (newest first)"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "documents",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "=a4eb705e-2edf-440b-8d8c-9e5726e17e81"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        304
+      ],
+      "id": "9cdcbe18-7caa-430c-b894-3a33912c7368",
+      "name": "get_mannual",
+      "credentials": {
+        "supabaseApi": {
+          "id": "3Ip6b5mzk9YObmye",
+          "name": "Supabase aip"
+        }
+      },
+      "notes": "Retrieve the latest 20 chat history records sorted by creation time (newest first)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d2604ac1-5e46-4027-845e-39a88c39f7c5",
+              "leftValue": "={{ $('Merge').first().json.organization_id }}",
+              "rightValue": "00000000-0000-0000-0000-000000000000",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "27a8b8e4-2788-45c0-b5d4-25397074bc81",
+              "leftValue": "={{ $('Merge').first().json.user_id }}",
+              "rightValue": "00000000-0000-0000-0000-000000000002",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1712,
+        64
+      ],
+      "id": "a8ef744e-c3d4-4339-afec-49198fcbb2bc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 从嵌套的 data 数组中提取第一个对象的 project_id\nconst firstDataItem = item.json.data && item.json.data[0];\nconst projectId = firstDataItem ? firstDataItem.project_id : null; \n\n// 检查 projectId 是否存在（避免空值导致后续错误）\nif (!projectId) {\n  console.error(\"project_id is missing or empty in data[0]\");\n  return { json: { filter_project_id: null } };\n}\n\n// 若存在，返回包含 projectId 的单个对象\nreturn {\n  json: {\n    filter_project_id: projectId // 直接赋值纯 UUID\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        64
+      ],
+      "id": "c531fef6-4bb6-492b-b5a7-07c24ef0a027",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "content": "## 报错500的话用postman测一下，估计是大模型扛不住了",
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        864,
+        240
+      ],
+      "id": "a724b5c9-fe49-4613-b9d3-96d7d0f2f68d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        784,
+        64
+      ],
+      "id": "4830d6a8-c1b0-4cf0-91dc-174c16cb75d3",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 调试代码 - 查看webhook接收到的完整数据\nconsole.log('=== Webhook接收到的完整数据 ===');\nconsole.log('$input.all():', JSON.stringify($input.all(), null, 2));\nconsole.log('$json:', JSON.stringify($json, null, 2));\n\n// 返回原始数据以便后续节点使用\nreturn $input.all()[0].json;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        64
+      ],
+      "id": "132af34e-5cd4-479b-a0a1-fe6daeb27c0b",
+      "name": "Code"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        592,
+        64
+      ],
+      "id": "2d7b12c6-55e3-4f4c-ba44-1d2b37e429fd",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    content,\n    '项目智慧库' AS title,\n    organization_id,\n    project_id,\n    user_id,\n    id as document_id,\n    created_at,\n    updated_at\nFROM documents\nWHERE project_id = $1;\n",
+        "options": {
+          "queryReplacement": "={{$json[\"project_id\"]}}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        384,
+        208
+      ],
+      "id": "91fa0eb1-020b-4283-aed4-9ef5e8675c85",
+      "name": "Execute a SQL query pro",
+      "credentials": {
+        "postgres": {
+          "id": "Ods4cpHVbGmBPIu2",
+          "name": "aip Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    content,\n    title,\n    '{{ $(\"1-Parse-Input-Parameters\").item.json.organizationId }}' as organization_id,\n    '{{ $(\"1-Parse-Input-Parameters\").item.json.projectId }}' as project_id,\n    '{{ $(\"1-Parse-Input-Parameters\").item.json.userId }}' as user_id,\n    id as document_id,\n    created_at,\n    updated_at\nFROM documents\nWHERE organization_id = $1\n  AND title = '组织智慧库';\n",
+        "options": {
+          "queryReplacement": "={{ $('1-Parse-Input-Parameters').item.json.organizationId }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        384,
+        16
+      ],
+      "id": "9fab3e2c-4181-4b3f-92c0-e2f66fb2e170",
+      "name": "Execute a SQL query org",
+      "credentials": {
+        "postgres": {
+          "id": "Ods4cpHVbGmBPIu2",
+          "name": "aip Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        256
+      ],
+      "id": "1fdf292b-d80a-4fb4-a4ba-4deb9ce92217",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "VQj6RyfL7IEiSVmi",
+          "name": "gemini mike"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "81cdd369-5613-4be3-899d-be90a93cd218",
+              "leftValue": "={{ !!($json.projectId && $json.organizationId) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        64
+      ],
+      "id": "013b84c2-c271-4a98-90cb-692fc1cd7dd8",
+      "name": "2-Route-proj&org"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "21c79894-ce17-42c4-a65b-92f7c00cdfe3",
+              "leftValue": "={{ $json.organizationId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        176,
+        320
+      ],
+      "id": "7ccb706c-5fd6-4ec3-a30a-96b83562c130",
+      "name": "2-Route-org"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (JS) - 将输入拆成多个 item（支持 array / json-string / comma-separated / single）\nconst body = ($json.body) ? $json.body : ($input.all()[0] && $input.all()[0].json.body) ? $input.all()[0].json.body : {};\nconst EMPTY_PROJECT_UUID = '00000000-0000-0000-0000-000000000001';\nconst EMPTY_ORG_UUID = '00000000-0000-0000-0000-000000000000';\n\n// 获取 raw project_id\nlet projectIds = body.project_id;\n\n// 支持：JSON 字符串表示的数组\nif (typeof projectIds === 'string') {\n  // try parse JSON\n  try {\n    const maybe = JSON.parse(projectIds);\n    if (Array.isArray(maybe)) projectIds = maybe;\n  } catch (e) {\n    // not JSON -> 尝试逗号分割\n    if (projectIds.indexOf(',') !== -1) {\n      projectIds = projectIds.split(',').map(s => s.trim()).filter(Boolean);\n    } else {\n      projectIds = [projectIds];\n    }\n  }\n}\n\n// 如果是单个值\nif (!Array.isArray(projectIds)) {\n  if (projectIds === undefined || projectIds === null || projectIds === '') {\n    projectIds = [];\n  } else {\n    projectIds = [projectIds];\n  }\n}\n\n// 如果没有任何 project，就用 EMPTY placeholder（与你原来行为一致）\nif (projectIds.length === 0) projectIds = [EMPTY_PROJECT_UUID];\n\n// 对每个 project id 生成一个 item\nconst items = projectIds.map(pid => {\n  return {\n    json: {\n      chatInput: body.chatInput,\n      user_id: body.user_id,\n      project_id: pid || EMPTY_PROJECT_UUID,\n      organization_id: body.organization_id || EMPTY_ORG_UUID\n    }\n  };\n});\n\n// 可选：对数量做限制，防止滥用\nconst MAX = 20;\nif (items.length > MAX) throw new Error(`Too many project_ids: ${items.length} (max ${MAX})`);\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        64
+      ],
+      "id": "701a9f27-bf12-4fde-8f2c-b40a8198e9e4",
+      "name": "1-Parse-Input-Parameters"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI4": {
+      "ai_embedding": [
+        [
+          {
+            "node": "supabase vector search",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6-Final-AI-Answer": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "supabase vector search": {
+      "ai_tool": [
+        [
+          {
+            "node": "6-Final-AI-Answer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_chat_history": {
+      "ai_tool": [
+        [
+          {
+            "node": "6-Final-AI-Answer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_tasks": {
+      "ai_tool": [
+        [
+          {
+            "node": "6-Final-AI-Answer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_mannual": {
+      "ai_tool": [
+        [
+          {
+            "node": "6-Final-AI-Answer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "6-Final-AI-Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "1-Parse-Input-Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query pro": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query org": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "6-Final-AI-Answer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2-Route-proj&org": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query pro",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute a SQL query org",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "2-Route-org",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2-Route-org": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query org",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a SQL query pro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1-Parse-Input-Parameters": {
+      "main": [
+        [
+          {
+            "node": "2-Route-proj&org",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b31e7b34-cf86-4aee-8792-c85da4fd875d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1f778c37f32963d7908a07cd31451cf3b9dce1062b27726239599616e02e8a30"
+  },
+  "id": "AjIzVzmTx0pNmx9D",
+  "tags": []
+}

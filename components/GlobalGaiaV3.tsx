@@ -430,7 +430,12 @@ export function GlobalGaiaV3({ hideFloatingButton = false }: GlobalGaiaV3Props) 
         let errorMsg = '服务暂时不可用'
         try {
           const errorData = await response.json()
-          errorMsg = errorData.error || errorData.message || errorMsg
+          // errorResponse() 返回的 error 是 { code, message } 对象，
+          // 直接取 error 会渲染成 [object Object]
+          errorMsg =
+            (typeof errorData.error === 'string' ? errorData.error : errorData.error?.message) ||
+            errorData.message ||
+            errorMsg
         } catch {
           // 无法解析 JSON，使用默认错误信息
         }

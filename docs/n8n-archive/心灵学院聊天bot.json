@@ -1,0 +1,604 @@
+{
+  "name": "心灵学院聊天bot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b568b56a-79f0-47d4-b016-969612e5fa19",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        208
+      ],
+      "id": "bf08b845-3346-4dd5-a71c-7c1803845692",
+      "name": "Webhook",
+      "webhookId": "b568b56a-79f0-47d4-b016-969612e5fa19",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "id": "64f5a6cf-078b-4562-9978-6aebe96d40a7",
+      "name": "Embeddings OpenAI4",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [
+        144,
+        448
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "C3YO2hHavXorqcdJ",
+          "name": "Aixue pro"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "futuremind",
+        "toolDescription": "Retrieve content in documents to support your reply to the user.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "topK": 100,
+        "options": {}
+      },
+      "id": "17df95a5-138c-4258-9d8f-b73fa8379cbd",
+      "name": "supabase vector search",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        128,
+        304
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "bHv6jWc9zvCasfRS",
+          "name": "Supabase futuremind"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 把webhook告诉AI https://n8n.aifunbox.com/webhook/b568b56a-79f0-47d4-b016-969612e5fa19\n",
+        "height": 176,
+        "width": 480
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -64
+      ],
+      "id": "ca7fb853-ad9e-456a-be75-ab5d519ede54",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "gaia_conversations",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.user_id }}"
+            },
+            {
+              "keyName": "session_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Webhook1').item.json.body.session_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        448,
+        288
+      ],
+      "id": "405573e7-a91c-4246-ab2e-36019b9f38ce",
+      "name": "get_gaia_conversations",
+      "credentials": {
+        "supabaseApi": {
+          "id": "bHv6jWc9zvCasfRS",
+          "name": "Supabase futuremind"
+        }
+      },
+      "notes": "Retrieve the latest 20 chat history records sorted by creation time (newest first)"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=你是一个名为盖亚的辅导老师,你精通前沿物理学与身心灵科学，你的核心任务是调用supabase vector search工具来整合并分析documents,诚心地去帮助学生提升自己,安排学生的学习任务。[get_gaia_conversations]是你和用户的聊天历史，有时候你要评估一下是否需要回顾前文。请以清晰、说人话的方式回答用户的[用户输入]，如无必要不需要长篇大论，通常情况下要以令人舒适的长度回答问题。\n\n## 执行步骤：\n1.必须调用“get_gaia_conversations”工具获取对话记录，如果当前问题与历史记录关联不大则可以忽略前文。\n2.必须调用supabase vector search检索documents里相关的数据，如果问题与之相关则精准回复，在documents资料里，时间越新的权重越高；\n3.回答用户问题。\n\n## 重要：\n1.说人话；\n2.不要透露项目id或组织id号。\n\n用户输入:\n{{ $json.query }}\n",
+        "options": {}
+      },
+      "id": "41e02810-a98a-4cdc-ab99-d52aabb2879f",
+      "name": "聊天机器人",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        -448,
+        464
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3324e46d-351b-46f3-a2f3-282ebbce4671",
+              "name": "query",
+              "value": "={{$json.body.chatInput}}",
+              "type": "string"
+            },
+            {
+              "id": "591e549b-85cc-4a2a-bfda-dd7727fa9759",
+              "name": "user_id",
+              "value": "={{$json.body.user_id}}",
+              "type": "string"
+            },
+            {
+              "id": "af947d64-071e-45ca-a89d-e6176fb37e3f",
+              "name": "project_id",
+              "value": "={{ $json.body.project_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -304,
+        80
+      ],
+      "id": "ad6ffa2d-3692-481b-8c40-5d4f80488384",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "content": "## 我是如何解决supabase检索问题的\n最早的问题\n\nSupabase 报错 PGRST203 Could not choose the best candidate function。\n\n原因：数据库里有多个 match_documents 函数签名（参数顺序不一致），导致 RPC 调用时冲突。\n\n第一步解决\n\n删除多余的函数，只保留官方的 match_documents(query_embedding vector, match_count int, filter jsonb)。\n\n同时修正 n8n 里 SQL 节点调用参数顺序，和官方保持一致。\n\n→ 向量搜索能正常工作。\n\n第二个问题\n\n想按照 project_id 来过滤，但写入的 metadata 里没有 project_id，所以 filter 永远匹配不到。\n\n第二步解决\n\n在 Postman/webhook 请求里增加 project_id 字段，并在 n8n workflow 里把它写入 metadata。\n\n→ Supabase 的每条文档都带上了 project_id。\n\n第三个问题\n\n在 n8n 的 vector search 节点里，最开始 filter 填错了（变成 {\"filter\":\"p001\"}）。\n\n第三步解决\n\n在 Metadata Filter 里正确填写：Name=project_id, Value=p001。\n\n→ 检索成功，返回了目标项目的数据。\n\n总结一句话：\n你最早的错是 函数签名冲突 + metadata 里没有 project_id，最终通过 清理函数 → 修正参数顺序 → 在写入时加入 project_id → 正确配置 Metadata Filter，一步步解决，检索才能按项目过滤成功。",
+        "height": 768,
+        "width": 1040
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        -208
+      ],
+      "id": "ab53bc0c-2985-45bd-af64-8a265336ff5a",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "tableId": "gaia_conversations",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "messages",
+              "fieldValue": "={{ $json.data }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        768,
+        288
+      ],
+      "id": "2231567e-6a4b-49ee-a71e-4b33a87bfb96",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "bHv6jWc9zvCasfRS",
+          "name": "Supabase futuremind"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const { messages = [], response, user } = items[0].json;\n\nfunction pickContent(m) {\n  if (!m) return \"\";\n  if (Array.isArray(m.parts)) return m.parts.map(p => (p?.text ?? p ?? \"\")).join(\"\");\n  return String(m.content ?? m.text ?? \"\").trim();\n}\n\nconst out = (Array.isArray(messages) ? messages : [])\n  .filter(m => [\"user\", \"assistant\"].includes(m.role))\n  .map(m => ({ isGaia: m.role === \"assistant\", content: pickContent(m) }));\n\nif (response) {\n  const last = out[out.length - 1]?.content ?? \"\";\n  if (String(last).trim() !== String(response).trim()) {\n    out.push({ isGaia: true, content: String(response).trim() });\n  }\n}\n\nif (user && (!out.length || out[0].isGaia || out[0].content !== String(user).trim())) {\n  out.unshift({ isGaia: false, content: String(user).trim() });\n}\n\n// 方案A：用对象包一层，Webhook用“Under Property=data”即可返回纯数组\nreturn [{ json: { data: out } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        80
+      ],
+      "id": "d8cffb29-7132-41b7-89be-e665f8837595",
+      "name": "ToConversationArray"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "273207ad-5179-4f96-b562-c8def0387af2",
+              "name": "messages",
+              "value": "={{$json.messages || []}}\n",
+              "type": "string"
+            },
+            {
+              "id": "2b0643de-f558-4f24-a33d-2df7b89ac591",
+              "name": "response",
+              "value": "={{$json.response || $json.text || $json.output}}",
+              "type": "string"
+            },
+            {
+              "id": "a8ba4bbf-7c48-4aaa-b84c-8fe1ff0195ab",
+              "name": "user",
+              "value": "={{$node[\"Webhook\"].json.body.chatInput}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        768,
+        -96
+      ],
+      "id": "2768e792-5953-49fe-9fae-e62f7044a7d9",
+      "name": "Edit Fields1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## filter可以这样写\nproject_id\n{{ $('Webhook').item.json.body.project_id }}"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        496,
+        512
+      ],
+      "id": "3a2e157f-74c8-45f6-9557-1c8ed341fab5",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.rerankerCohere",
+      "typeVersion": 1,
+      "position": [
+        272,
+        448
+      ],
+      "id": "384f2b11-b787-4ebe-adfd-d47a5334a789",
+      "name": "Reranker Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "9cL3996dtv4T7kL1",
+          "name": "CohereApi account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## 动态提示词，到时候前面要加postgres拿到用户的情况",
+        "width": 352
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        48,
+        -64
+      ],
+      "id": "f98a8ba5-fbfd-4642-8768-943446d8001d",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "79cbcc7c-fcff-4ab4-9a4e-c5a6f14b3024",
+        "responseMode": "streaming",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -576,
+        80
+      ],
+      "id": "cc4a2690-7564-4f52-a757-7fe8898741b4",
+      "name": "Webhook1",
+      "webhookId": "79cbcc7c-fcff-4ab4-9a4e-c5a6f14b3024"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "273207ad-5179-4f96-b562-c8def0387af2",
+              "name": "messages",
+              "value": "={{ $('Webhook1').item.json.body.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "2b0643de-f558-4f24-a33d-2df7b89ac591",
+              "name": "response",
+              "value": "={{$json.response || $json.text || $json.output}}",
+              "type": "string"
+            },
+            {
+              "id": "a8ba4bbf-7c48-4aaa-b84c-8fe1ff0195ab",
+              "name": "user",
+              "value": "={{ $('Webhook1').item.json.body.user_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        64
+      ],
+      "id": "252b8c6e-7835-4727-a2d4-b26ddcd265f8",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=你是盖亚,你精通前沿物理学与身心灵科学。许多时候你是的辅导老师，你的核心任务是调用supabase vector search工具来整合并分析documents,诚心地去帮助学生提升自己,安排学生的学习任务。[get_gaia_conversations]是你和用户的聊天历史，有时候你要评估一下是否需要回顾前文。如果用户跟你聊课程以外的东西，你也要用你原本的智能进行回复。请以清晰、说人话的方式回答用户的[用户输入]，如无必要不需要长篇大论，通常情况下要以令人舒适的长度回答问题。结束的时候引导学生进行思考。\n\n## 执行步骤：\n1.必须调用“get_gaia_conversations”工具获取对话记录，如果当前问题与历史记录关联不大则可以忽略前文。\n2.必须调用supabase vector search检索documents里相关的数据，如果问题与之相关则精准回复；\n3.回答用户问题。\n\n## 重要：\n1.说人话；\n2.不要透露项目id或组织id号。\n\n用户输入:\n{{ $json.query }}\n",
+        "options": {
+          "enableStreaming": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -32,
+        80
+      ],
+      "id": "135e6ec4-069f-452e-bf19-2e02c32be2c3",
+      "name": "AI Agent",
+      "executeOnce": false,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "options": {
+          "enableStreaming": true
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        368,
+        80
+      ],
+      "id": "c7872697-6692-4c00-b71a-6f5aee8b5376",
+      "name": "Respond to Webhook (latest version)"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        288
+      ],
+      "id": "5841b1fe-33aa-42ff-b28f-5e29ba10ae67",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "VQj6RyfL7IEiSVmi",
+          "name": "gemini mike"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "futuremind",
+        "toolDescription": "Retrieve content in documents to support your reply to the user.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "topK": 100,
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "project_id",
+                "value": "={{ $('Webhook1').item.json.body.project_id }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "f9271192-4f5c-4623-8c2f-65a0a5fef2b6",
+      "name": "supabase vector search1",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        848,
+        672
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "bHv6jWc9zvCasfRS",
+          "name": "Supabase futuremind"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "带项目隔离的检索"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        848,
+        608
+      ],
+      "id": "317d6a4b-1d89-4a9d-af29-04955d6ae323",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Embeddings OpenAI4": {
+      "ai_embedding": [
+        [
+          {
+            "node": "supabase vector search",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "supabase vector search": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_gaia_conversations": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "聊天机器人": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ToConversationArray": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        []
+      ]
+    },
+    "Reranker Cohere": {
+      "ai_reranker": [
+        []
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "ToConversationArray",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook (latest version)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook (latest version)": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d1eb53e7-dae9-4f7a-966d-66d177927973",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1f778c37f32963d7908a07cd31451cf3b9dce1062b27726239599616e02e8a30"
+  },
+  "id": "hVwWTtBDLv9FvCRO",
+  "tags": []
+}

@@ -203,8 +203,7 @@ export function FileUploadModal({ projectId, onClose, onSuccess }: FileUploadMod
         ))
       }, 300)
 
-      // 直接上传二进制文件到N8N webhook（匹配参考实现）
-      // N8N webhook期望 multipart/form-data 格式的二进制文件
+      // 以 multipart/form-data 上传二进制文件，后端负责提取文本和向量化
       const formData = new FormData()
       formData.append('file', uploadFile.file)  // 二进制文件
       formData.append('project_id', projectId)
