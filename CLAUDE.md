@@ -433,7 +433,11 @@ const MailIcon = () => (
     - `supabase/functions/evaluate-submission/index.ts` 的 `ADMIN_EMAILS`
 - ✅ **对话模型切换到 MiniMax M3 + GPT 兜底（2026-08-03）**：
   - 主力 `MiniMax-M3`（国内站 `api.minimaxi.com/v1`，OpenAI 兼容接口），兜底 `gpt-5.4-mini`
-  - ⚠️ **M3 质量未实测**：提供的 key 账户额度已耗尽（全模型 429 `已达到 Token Plan 用量上限`），充值后需复测
+  - ✅ **M3 质量已实测过关**：语气贴合、篇幅克制（290-320字，比 GPT-5 的 600-1100 字更符合"不长篇大论"的人设）、多轮连贯、课外话题也接得住
+  - ⚠️ **M3 默认开思考模式**，会把 `<think>…</think>` 直接混进正文显示给学员。
+    只有 `thinking: {"type":"disabled"}` 能关掉，`reasoning_effort` / `enable_thinking` 会被静默忽略。
+    关掉后同题 3.0s→1.7s、输出 token 105→47。代码里另做了一层 `<think>` 剥离兜底
+  - 注：首次测试时该 key 额度耗尽（全模型 429），过一阵自行恢复，说明 Token Plan 额度会周期性重置
   - 兜底选型实测：gpt-5.4-mini 4.8s 是 gpt-5 系列最快；nano 更便宜但 7.5s/1196字，又慢又啰嗦；5.5 要 13s
   - **接口坑（务必记住）**：GPT-5 全系拒收 `max_tokens` 必须用 `max_completion_tokens`；
     gpt-5.5/5.6 拒收自定义 temperature；MiniMax 原生接口额度耗尽时返回 HTTP 200

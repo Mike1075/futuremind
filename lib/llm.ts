@@ -65,10 +65,10 @@ function acceptsTemperature(model: string): boolean {
 async function callOpenAICompatible(
   messages: ChatMessage[],
   opts: CallOptions,
-  cfg: { base: string; apiKey: string; label: string },
+  cfg: { base: string; apiKey: string; label: string; extraBody?: Record<string, unknown> },
   allowTemperature = acceptsTemperature(opts.model)
 ): Promise<string> {
-  const body: Record<string, unknown> = { model: opts.model, messages }
+  const body: Record<string, unknown> = { model: opts.model, messages, ...cfg.extraBody }
 
   if (usesCompletionTokens(opts.model)) {
     // 推理型模型的 reasoning tokens 也算在这个上限里，给宽一点免得正文被截断
@@ -98,14 +98,29 @@ async function callOpenAICompatible(
   }
 
   const json = await res.json()
-  const content = json?.choices?.[0]?.message?.content
+  const raw = json?.choices?.[0]?.message?.content
+  const content = typeof raw === 'string' ? stripThinking(raw) : ''
 
-  if (typeof content !== 'string' || !content.trim()) {
+  if (!content.trim()) {
     const reason = json?.choices?.[0]?.finish_reason || 'unknown'
     throw new Error(`${cfg.label} 返回内容为空 (finish_reason=${reason})`)
   }
 
   return content
+}
+
+/**
+ * 去掉推理型模型混在正文里的思考块
+ *
+ * MiniMax M3 默认会把 <think>…</think> 直接写进 message.content（不是单独字段），
+ * 不处理就会原样显示给学员。已经用 thinking.type=disabled 从源头关掉了，
+ * 这里再兜一层，防止哪天该参数失效或换模型后又冒出来。
+ * 顺带处理只有闭合标签、开头思考被截断的情况。
+ */
+function stripThinking(text: string): string {
+  let out = text.replace(/<think>[\s\S]*?<\/think>/g, '')
+  if (out.includes('</think>')) out = out.slice(out.lastIndexOf('</think>') + 8)
+  return out.trim()
 }
 
 async function callGemini(messages: ChatMessage[], opts: CallOptions): Promise<string> {
@@ -194,7 +209,11 @@ async function callOne(messages: ChatMessage[], opts: CallOptions): Promise<stri
       return callOpenAICompatible(messages, opts, {
         base: MINIMAX_BASE,
         apiKey: key,
-        label: 'MiniMax'
+        label: 'MiniMax',
+        // 关掉思考模式：M3 默认会把 <think>…</think> 混进正文，
+        // 而且思考本身要多花一倍 token、多花一倍时间。
+        // 实测只有这个参数有效，reasoning_effort / enable_thinking 都会被忽略。
+        extraBody: { thinking: { type: 'disabled' } }
       })
     }
 

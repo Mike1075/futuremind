@@ -75,14 +75,17 @@
 
 | 模型 | 耗时 | 输出字数 | 结论 |
 |------|------|---------|------|
-| gpt-4o | 3.7s | 277 | 最快、最贴合盖亚语气 |
-| **gpt-5.4-mini** | **4.8s** | 603 | **选作兜底**：gpt-5 系列里最快 |
+| **MiniMax-M3** | 12s | 292-318 | **选作主力**：篇幅最贴合"不要长篇大论"的人设要求 |
+| gpt-4o | 3.7s | 277 | 最快、语气也贴合 |
+| **gpt-5.4-mini** | 4.8s | 603 | **选作兜底**：gpt-5 系列里最快 |
 | gpt-5.4-nano | 7.5s | 1196 | 比 mini 又慢又啰嗦，虽便宜但不可取 |
 | gpt-5.5 | 13.0s | 858 | 太慢 |
 | gpt-5.6-luna / sol / terra | 8s 左右 | 580-640 | 无明显优势 |
 
-⚠️ **MiniMax-M3 未能实测**：提供的 key 账户额度已耗尽（所有模型均返回
-429 `已达到 Token Plan 用量上限`），充值后需要复测质量。
+M3 实测表现：会叫学员名字、用具体例子（视觉盲点 / 冰淇淋味觉疲劳 / 房间气味适应）、
+结尾开放式提问、emoji 克制；多轮连贯；课程外话题（解梦）也能认真接住。
+GPT-5 系列则明显偏长，且遇到"觉得世界不真实"会大幅转向心理危机话术，
+偏离盖亚原本的哲学探讨调性。
 
 ### 各家接口的坑（实测）
 
@@ -92,6 +95,12 @@
 - **MiniMax 原生接口 `/text/chatcompletion_v2` 在额度耗尽时返回 HTTP 200**，
   错误藏在 `base_resp.status_code`（2056）里；OpenAI 兼容接口 `/chat/completions`
   才正确返回 429。**所以必须走 OpenAI 兼容接口**
+- **MiniMax M3 默认开启思考模式**，且把 `<think>…</think>` 直接写进
+  `message.content`（不是单独字段），不处理就会原样显示给学员。
+  实测只有 `thinking: {"type": "disabled"}` 能关掉它，
+  `reasoning_effort` 和 `enable_thinking` 都会被静默忽略。
+  关掉后同一问题：3.0s→1.7s，completion_tokens 105→47。
+  `lib/llm.ts` 除了下发该参数，还额外做了一层 `<think>` 剥离兜底
 - Gemini flash 系列不关掉 thinking 的话，思考过程会吃掉 `maxOutputTokens`
   导致返回空内容；但 pro 系列又不接受 `thinkingBudget=0`
 
