@@ -41,3 +41,6 @@ nul
 scripts/meditation-audit/verify/
 scripts/meditation-audit/*.log
 scripts/meditation-audit/*.mp3
+
+# 含明文账号密码，禁止提交
+备忘录.md
