@@ -125,23 +125,16 @@ export default function SubmissionHistory({
         deletedSubmission.is_public &&
         (deletedSubmission.score ?? 0) >= 85
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-submission`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            submission_id: submissionId
-          })
-        }
-      )
+      // 走同域 API Route（服务端校验身份+归属），不再直连边缘函数
+      const response = await fetch('/api/submissions/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submission_id: submissionId })
+      })
 
       if (!response.ok) {
-        throw new Error('删除失败')
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || '删除失败')
       }
 
       // 删除成功，从列表中移除
@@ -155,7 +148,7 @@ export default function SubmissionHistory({
       }
     } catch (err) {
       console.error('删除提交失败:', err)
-      showToast('删除失败，请重试', 'error')
+      showToast(err instanceof Error ? err.message : '删除失败，请重试', 'error')
     } finally {
       setDeletingId(null)
     }
