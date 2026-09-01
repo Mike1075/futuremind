@@ -454,6 +454,34 @@ const MailIcon = () => (
   - **纠错**：`docs/N8N_WORKFLOWS.md` 记的盖亚模型 GPT-4o 是错的，实际工作流挂的是 Google Gemini 节点
   - 实测：分块/入库/检索闭环通过；盖亚回复风格与历史一致；AIP 加了防编造硬规则（未加时会凭空编项目进度）
   - 详见 `docs/NATIVE_AI_PIPELINE.md`
+- ✅ **删除作业失败修复（2026-08-29）**：
+  - 现象：学员在「我的提交记录」点「确认删除」，弹出「删除失败，请重试」
+  - 根因：Supabase 网关已停止接受本项目的 **legacy JWT**（anon / service_role 两把老 key），
+    凡是**开启了 JWT 校验**的边缘函数一律在网关层返回 401 `UNAUTHORIZED_LEGACY_JWT`，
+    请求根本进不了函数体。`delete-submission` 正是这类函数（前端还直接把 anon key 当 Bearer 用）
+  - 修复：不再依赖边缘函数，新增同域 `POST /api/submissions/delete`
+    （服务端 cookie 校验登录 → 校验归属 → Service Role 删除），
+    `SubmissionHistory.tsx` 改调此 API，并把服务端错误原文透传到 toast
+  - 顺带修掉旧实现的越权隐患：`user_id` 原本由客户端传入
+  - 注：边缘函数里「回退意识树成长点数」的逻辑一直是死代码——`consciousness_trees` 表在库里不存在
+    （成长数据实际存在 `profiles.consciousness_tree_view` JSON 里），故新 API 未复刻该逻辑
+  - ⚠️ **同一根因还有 3 个函数仍是坏的**（用 legacy key 调都返 401）：
+    `evaluate-pbl-task`（PBL/地球课程作业批改，前端 `EarthContentDetail.tsx`、`SubmitTaskDialog.tsx` 在用）、
+    `summarize-user-activity`、`evaluate-and-grow-tree`。
+    只有 `evaluate-submission` 因为当初带 `--no-verify-jwt` 部署而幸存。
+    修法二选一：重新部署时加 `--no-verify-jwt`，或在 Supabase Dashboard 换用新版 API keys（`sb_publishable_*` / `sb_secret_*`）
+  - 排查技巧：`curl -X POST <url>/functions/v1/<fn> -H "Authorization: Bearer <anon key>" -d '{}'`，
+    返回 `UNAUTHORIZED_LEGACY_JWT` 即为此问题；REST（`/rest/v1/`）仍接受 legacy key，所以数据库读写看起来一切正常
+- ✅ **冥想课「生活实践」去重改写（2026-09-01）**：
+  - 起因：学员反馈 9/1「第一次看见」似曾相识。核对 12 门月度课全部 343 条 `life_practice` 后确认是系统性重复
+  - 审计结论：「假装第一次看见熟悉之物」全年出现 15 次；9-12 月 122 条里 44% 落在 8 个已出现过的动作原型（1-8 月同口径仅 23%）；另有 18 组**同月内**近重复（9月20/21、11月11/15、12月18/19 为相邻日）
+  - 根因：7-12 月 184 天在 `7da35cf`（2026-06-22）一次性批量生成，未做跨月查重
+  - 处理（经老师同意，直接改线上库）：重写 **49 天**（9月16 · 10月14 · 11月10 · 12月9）。保留每组里最贴合当天主题的一条，其余按当天原文摘录+深度解读重写成全年未用过的新动作
+  - 改后：同月内重复 18 组 → **0 组**；8 原型密度 44% → **15%**（低于 1-8 月的 23%）；全年练习无重名
+  - **只改 9/1 之后**：1-8 月已讲过不动；9/1 当天也未动（已有 3 位学员提交，改了对不上题）
+  - 文档：`docs/课程练习重复审计-2026-09.md`（审计）、`docs/练习改写记录-2026-09.md`（49 条全文对照）
+  - 回滚：`docs/ROLLBACK_life_practice_2026-09-01.sql`（改动前 122 条原文的 UPDATE 语句集）
+  - ⚠️ 经验：改写时要防止**新写的内容之间**互相撞车。本次验收就抓出 4 处遗漏，其中 11/28 是新写的与 12/8 撞车，返工了一次
 - ✅ **冥想音频自动修复系统（2026-02-23）**：
   - 自动检测音频中缺失的文本内容（拼音级 diff 对比，忽略同音字差异）
   - 用豆包TTS（鸡汤女音色）生成缺失语句，精确拼接到原始音频正确位置
