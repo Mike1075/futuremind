@@ -8,8 +8,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 // ⚠️ 2026-07-11：xAI Grok 服务批改全线失败（作业卡在 under_review），已回退到 OpenAI。
-// 若日后 xAI 恢复/充值，改回 XAI_API_KEY + api.x.ai + grok 模型即可（见下方调用处）。
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
+// ⚠️ 2026-09-10：OpenAI 账户额度耗尽（insufficient_quota/credit_balance_exhausted），批改全线失败，改用 MiniMax M3。
+// 若日后 OpenAI/xAI 恢复，改回对应 KEY + endpoint + model 即可（见下方调用处）。
+const MINIMAX_API_KEY = Deno.env.get('MINIMAX_API_KEY')!
 
 // 初始化Supabase客户端（使用Service Role绕过RLS）
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -324,17 +325,17 @@ serve(async (req) => {
       .replace('{recent_history}', recentHistory)
       .replace('{submission_content}', submission_content)
 
-    // 5. 调用 OpenAI API 进行评估
-    console.log('🤖 调用 OpenAI API 进行评估...')
+    // 5. 调用 MiniMax M3 API 进行评估
+    console.log('🤖 调用 MiniMax M3 API 进行评估...')
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const minimaxResponse = await fetch('https://api.minimaxi.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${MINIMAX_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'MiniMax-M3',
         messages: [
           {
             role: 'system',
@@ -347,25 +348,38 @@ serve(async (req) => {
         ],
         temperature: 0.7,
         max_tokens: 1000,
+        // 关掉思考模式：M3 默认会把 <think>…</think> 混进正文，reasoning_effort/enable_thinking 会被忽略，只有这个参数有效
+        thinking: { type: 'disabled' },
       }),
     })
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text()
-      console.error('❌ OpenAI API 调用失败:', errorText)
-      throw new Error(`OpenAI API error: ${errorText}`)
+    if (!minimaxResponse.ok) {
+      const errorText = await minimaxResponse.text()
+      console.error('❌ MiniMax API 调用失败:', errorText)
+      throw new Error(`MiniMax API error: ${errorText}`)
     }
 
-    const openaiData = await openaiResponse.json()
-    const aiResultText = openaiData.choices[0].message.content
+    const minimaxData = await minimaxResponse.json()
+    // MiniMax 原生接口额度耗尽时会返回 HTTP 200 但错误藏在 base_resp 里
+    if (minimaxData.base_resp?.status_code && minimaxData.base_resp.status_code !== 0) {
+      console.error('❌ MiniMax API 返回错误:', minimaxData.base_resp)
+      throw new Error(`MiniMax API error: ${minimaxData.base_resp.status_msg || JSON.stringify(minimaxData.base_resp)}`)
+    }
+    let aiResultText = minimaxData.choices[0].message.content
 
     console.log('📥 AI返回内容:', aiResultText.substring(0, 200))
 
     // 6. 解析AI返回的JSON
     let aiResult
     try {
-      // 清理可能的Markdown代码块
+      // 剥离可能混入的思考过程标签
       let cleanedText = aiResultText.trim()
+      cleanedText = cleanedText.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
+      if (cleanedText.includes('</think>')) {
+        cleanedText = cleanedText.slice(cleanedText.lastIndexOf('</think>') + 8).trim()
+      }
+
+      // 清理可能的Markdown代码块
       if (cleanedText.startsWith('```json')) {
         cleanedText = cleanedText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
       } else if (cleanedText.startsWith('```')) {
