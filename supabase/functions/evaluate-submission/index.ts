@@ -350,6 +350,8 @@ serve(async (req) => {
         max_tokens: 1000,
         // 关掉思考模式：M3 默认会把 <think>…</think> 混进正文，reasoning_effort/enable_thinking 会被忽略，只有这个参数有效
         thinking: { type: 'disabled' },
+        // 强制纯 JSON 输出：M3 偶尔会在 JSON 前面加一段散文式前言，导致 JSON.parse 失败
+        response_format: { type: 'json_object' },
       }),
     })
 
@@ -384,6 +386,15 @@ serve(async (req) => {
         cleanedText = cleanedText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
       } else if (cleanedText.startsWith('```')) {
         cleanedText = cleanedText.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
+      }
+
+      // 兜底：如果模型在 JSON 前后混入了散文式前言/后语，截取第一个 { 到最后一个 } 之间的部分
+      if (!cleanedText.startsWith('{')) {
+        const firstBrace = cleanedText.indexOf('{')
+        const lastBrace = cleanedText.lastIndexOf('}')
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          cleanedText = cleanedText.slice(firstBrace, lastBrace + 1)
+        }
       }
 
       aiResult = JSON.parse(cleanedText)
