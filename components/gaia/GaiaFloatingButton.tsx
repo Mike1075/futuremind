@@ -18,7 +18,7 @@ export const GaiaFloatingButton = memo(function GaiaFloatingButton({
   return (
     <div
       onClick={onClick}
-      className="fixed bottom-8 right-8 z-50 cursor-pointer hover:scale-110 transition-transform duration-300"
+      className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 cursor-pointer hover:scale-110 transition-transform duration-300"
       aria-label="打开盖亚对话"
     >
       <div className="gaia-icon">
