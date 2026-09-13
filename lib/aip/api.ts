@@ -1,0 +1,723 @@
+/**
+ * AIP系统 API 工具函数
+ * API utility functions for AIP system
+ */
+
+// @ts-nocheck - 临时禁用类型检查，待AIP系统类型完善后移除
+import { createClient } from '@/lib/supabase/client'
+import type {
+  Organization,
+  Project,
+  Task,
+  Document,
+  ChatRequest,
+  ChatResponse,
+  Notification,
+  Invitation,
+  ProjectJoinRequest,
+  OrganizationJoinRequest,
+  CreateProjectInput,
+  UpdateProjectInput,
+  CreateTaskInput,
+  UpdateTaskInput,
+  CreateOrganizationInput,
+  ApiResponse,
+  UserOrganization,
+} from './types'
+
+const supabase = createClient()
+
+// ============ 组织相关 API ============
+
+export async function getMyOrganizations(): Promise<ApiResponse<UserOrganization[]>> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('未登录')
+
+    const { data, error } = await supabase
+      .from('user_organizations')
+      .select(`
+        *,
+        organization:organizations(*)
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    return { data: (data as any) || [] }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function createOrganization(
+  input: CreateOrganizationInput
+): Promise<ApiResponse<Organization>> {
+  try {
+    // 调用 API 路由创建组织（使用 service role 绕过 RLS）
+    const response = await fetch('/api/aip/create-organization', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: input.name,
+        description: input.description,
+        is_public: input.is_public ?? false,
+      }),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || '创建组织失败')
+    }
+
+    const data = result.data
+
+    // 为新组织创建组织智慧库文档（与对标网站一致）
+    try {
+      const knowledgeBaseContent = `# ${data.name} 组织智慧库
+
+## 组织简介
+${data.description || '这是一个新创建的组织，暂无详细描述。'}
+
+## 使用指南
+这是您组织的智慧库，您可以在这里添加组织的重要信息、规范和指导文档。
+所有组织成员都可以访问这些内容，帮助大家更好地了解组织和协作。
+
+## 常见问题
+1. 如何邀请新成员加入组织？
+   - 在组织页面，点击"邀请成员"按钮发送邀请。
+
+2. 如何创建新项目？
+   - 在组织工作台页面，点击"创建项目"按钮。
+
+3. 如何管理组织成员权限？
+   - 组织管理员可以在成员列表中修改成员角色。`
+
+      await supabase
+        .from('documents')
+        .insert({
+          project_id: null,  // 组织级别文档，不属于特定项目
+          user_id: user.id,
+          organization_id: data.id,
+          title: '组织智慧库',
+          content: knowledgeBaseContent,
+          metadata: { type: 'organization_knowledge_base' },
+          embedding: null
+        })
+    } catch (docError) {
+      console.error('[createOrganization] 创建组织智慧库失败:', docError)
+      // 不影响组织创建，仅记录日志
+    }
+
+    return { data }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function updateOrganization(
+  organizationId: string,
+  input: { name: string; description?: string; is_public?: boolean }
+): Promise<ApiResponse<Organization>> {
+  try {
+    const response = await fetch(`/api/aip/organization/${organizationId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || '更新组织失败')
+    }
+
+    return { data: result.data }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function deleteOrganization(
+  organizationId: string
+): Promise<ApiResponse<void>> {
+  try {
+    const response = await fetch(`/api/aip/organization/${organizationId}`, {
+      method: 'DELETE',
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || '删除组织失败')
+    }
+
+    return { message: '组织已删除' }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+// ============ 项目相关 API ============
+
+export async function getOrganizationProjects(
+  organizationId: string
+): Promise<ApiResponse<Project[]>> {
+  try {
+    // 1. 先查询组织信息，判断是否是"我的项目"
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', organizationId)
+      .maybeSingle()
+
+    // 2. 如果是"我的项目"，查询用户参与的所有项目
+    if (org?.name === '我的项目') {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        return { data: [] }
+      }
+
+      // 获取用户参与的所有项目ID
+      const { data: memberships } = await supabase
+        .from('project_members')
+        .select('project_id')
+        .eq('user_id', user.id)
+
+      const projectIds = memberships?.map(m => m.project_id) || []
+
+      if (projectIds.length === 0) {
+        return { data: [] }
+      }
+
+      // 查询这些项目的详情
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          creator:creator_id(id, full_name, avatar_url),
+          organization:organizations(id, name)
+        `)
+        .in('id', projectIds)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return { data: data || [] }
+    }
+
+    // 3. 普通组织：按organization_id查询
+    // 🔥 修复：社区项目组织只显示公开项目，其他组织显示所有项目
+    let query = supabase
+      .from('projects')
+      .select(`
+        *,
+        creator:creator_id(id, full_name, avatar_url),
+        organization:organizations(id, name)
+      `)
+      .eq('organization_id', organizationId)
+
+    // 如果是"社区项目"组织，只显示公开项目
+    if (org?.name === '社区项目') {
+      query = query.eq('is_public', true)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { data: data || [] }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function getPublicProjects(): Promise<ApiResponse<Project[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        creator:creator_id(id, full_name, avatar_url),
+        organization:organizations(id, name)
+      `)
+      .eq('is_public', true)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { data: data || [] }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function getProjectById(
+  projectId: string
+): Promise<ApiResponse<Project>> {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        creator:creator_id(id, full_name, avatar_url, email),
+        organization:organizations(id, name, description),
+        members:project_members(
+          *,
+          user:user_id(id, full_name, avatar_url, email)
+        )
+      `)
+      .eq('id', projectId)
+      .maybeSingle()
+
+    if (error) throw error
+    return { data }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function createProject(
+  input: CreateProjectInput
+): Promise<ApiResponse<Project>> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('未登录')
+
+    const { data, error } = await supabase
+      .from('projects')
+      .insert({
+        name: input.name,
+        description: input.description,
+        organization_id: input.organization_id,
+        is_public: input.is_public || false,
+        is_recruiting: input.is_recruiting || false,
+        creator_id: user.id,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // 自动将创建者添加为项目成员
+    const { error: memberError } = await supabase
+      .from('project_members')
+      .insert({
+        project_id: data.id,
+        user_id: user.id,
+        role_in_project: 'owner',
+      })
+
+    if (memberError) {
+      console.error('[createProject] 添加项目成员失败:', memberError)
+      // 如果添加成员失败，删除刚创建的项目以保持数据一致性
+      await supabase.from('projects').delete().eq('id', data.id)
+      throw new Error('创建项目失败：无法添加项目成员')
+    }
+
+    // 为新项目创建默认智慧库文档（与对标网站一致）
+    // 注意：content保持空字符串，embedding为NULL，这是正常的
+    // N8N的SQL查询不依赖embedding，只要有记录即可
+    try {
+      await supabase
+        .from('documents')
+        .insert({
+          project_id: data.id,
+          user_id: user.id,
+          organization_id: data.organization_id,
+          title: '项目智慧库',
+          content: '', // 空字符串，与对标网站一致
+          metadata: { type: 'project_knowledge_base' },
+          embedding: null // NULL，与对标网站一致
+        })
+    } catch (docError) {
+      // 文档创建失败不影响项目创建
+      console.error('[createProject] 创建默认文档失败:', docError)
+    }
+
+    return { data }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function updateProject(
+  projectId: string,
+  input: UpdateProjectInput
+): Promise<ApiResponse<Project>> {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .update(input)
+      .eq('id', projectId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return { data }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function deleteProject(
+  projectId: string
+): Promise<ApiResponse<void>> {
+  try {
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId)
+
+    if (error) throw error
+    return { message: '项目已删除' }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function getProjectMembers(
+  projectId: string
+): Promise<ApiResponse<any[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('project_members')
+      .select(`
+        project_id,
+        user_id,
+        role_in_project,
+        joined_at,
+        user:profiles!fk_project_members_user(id, full_name, avatar_url, email)
+      `)
+      .eq('project_id', projectId)
+      .order('joined_at', { ascending: true, nullsFirst: false })
+
+    if (error) throw error
+    return { data: data || [] }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+// ============ 任务相关 API ============
+
+export async function getProjectTasks(
+  projectId: string
+): Promise<ApiResponse<Task[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select(`
+        *,
+        assignee:assignee_id(id, full_name, avatar_url),
+        created_by:created_by_id(id, full_name, avatar_url)
+      `)
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { data: data || [] }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function createTask(
+  input: CreateTaskInput
+): Promise<ApiResponse<Task>> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('未登录')
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        ...input,
+        created_by_id: user.id,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return { data }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function updateTask(
+  taskId: string,
+  input: UpdateTaskInput
+): Promise<ApiResponse<Task>> {
+  try {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(input)
+      .eq('id', taskId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return { data }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function deleteTask(taskId: string): Promise<ApiResponse<void>> {
+  try {
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', taskId)
+
+    if (error) throw error
+    return { message: '任务已删除' }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+// ============ 通知相关 API ============
+
+export async function getMyNotifications(): Promise<ApiResponse<Notification[]>> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('未登录')
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (error) throw error
+    return { data: data || [] }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function markNotificationAsRead(
+  notificationId: string
+): Promise<ApiResponse<void>> {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId)
+
+    if (error) throw error
+    return { message: '通知已标记为已读' }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+// ============ 项目加入请求相关 API ============
+
+export async function requestToJoinProject(
+  projectId: string,
+  message?: string
+): Promise<ApiResponse<ProjectJoinRequest>> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('未登录')
+
+    // 1. 获取项目信息
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('name, creator_id')
+      .eq('id', projectId)
+      .maybeSingle()
+
+    if (projectError) throw projectError
+    if (!project) throw new Error('项目不存在')
+
+    // 2. 获取申请者的用户信息
+    const { data: applicantProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileError) throw profileError
+
+    const applicantName = applicantProfile?.full_name || applicantProfile?.email || '未知用户'
+
+    // 3. 创建加入申请记录
+    const { data, error } = await supabase
+      .from('project_join_requests')
+      .insert({
+        project_id: projectId,
+        user_id: user.id,
+        message: message || null,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // 4. 获取项目的所有管理者（创建者和manager角色）
+    const { data: managers, error: managersError } = await supabase
+      .from('project_members')
+      .select('user_id')
+      .eq('project_id', projectId)
+      .in('role_in_project', ['owner', 'manager'])
+
+    if (managersError) {
+      console.error('获取项目管理者失败:', managersError)
+    }
+
+    // 将创建者也加入通知列表（以防没有project_members记录）
+    const managerIds = new Set(managers?.map(m => m.user_id) || [])
+    if (project.creator_id) {
+      managerIds.add(project.creator_id)
+    }
+
+    // 5. 为所有管理者创建通知（失败不阻断主流程）
+    if (managerIds.size > 0) {
+      const notifications = Array.from(managerIds).map(managerId => ({
+        user_id: managerId,
+        type: 'project_join_request' as const,
+        title: '新的项目加入申请',
+        message: `${applicantName} 申请加入项目"${project.name}"`,
+        metadata: {
+          project_id: projectId,
+          project_name: project.name,
+          applicant_id: user.id,
+          applicant_name: applicantName,
+          request_id: data.id,
+          request_message: message
+        }
+      }))
+
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert(notifications)
+
+      if (notificationError) {
+        console.error('创建通知失败:', notificationError)
+        // 不抛出错误，避免影响主要流程
+      }
+    }
+
+    return { data }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function getProjectJoinRequests(
+  projectId: string
+): Promise<ApiResponse<ProjectJoinRequest[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('project_join_requests')
+      .select(`
+        *,
+        user:user_id(id, full_name, avatar_url, email)
+      `)
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { data: data || [] }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function reviewProjectJoinRequest(
+  requestId: string,
+  status: 'approved' | 'rejected'
+): Promise<ApiResponse<void>> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('未登录')
+
+    // 1. 获取申请信息
+    const { data: request, error: requestError } = await supabase
+      .from('project_join_requests')
+      .select('*, project:projects(name)')
+      .eq('id', requestId)
+      .maybeSingle()
+
+    if (requestError) throw requestError
+    if (!request) throw new Error('申请不存在')
+
+    // 2. 更新申请状态
+    const { error: updateError } = await supabase
+      .from('project_join_requests')
+      .update({
+        status,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id
+      })
+      .eq('id', requestId)
+
+    if (updateError) throw updateError
+
+    // 3. 如果批准，将用户添加到项目成员
+    if (status === 'approved') {
+      const { error: memberError } = await supabase
+        .from('project_members')
+        .insert({
+          project_id: request.project_id,
+          user_id: request.user_id,
+          role_in_project: 'member'
+        })
+
+      if (memberError) {
+        // 如果用户已经是成员，忽略错误
+        if (!memberError.message?.includes('duplicate')) {
+          console.error('添加项目成员失败:', memberError)
+        }
+      }
+    }
+
+    // 4. 给申请者发送通知
+    const projectName = (request.project as any)?.name || '未知项目'
+    const { error: notificationError } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: request.user_id,
+        type: status === 'approved' ? 'project_join_approved' : 'project_join_rejected',
+        title: status === 'approved' ? '项目申请已批准' : '项目申请已拒绝',
+        message: status === 'approved'
+          ? `您的加入项目"${projectName}"的申请已被批准`
+          : `您的加入项目"${projectName}"的申请已被拒绝`,
+        metadata: {
+          project_id: request.project_id,
+          project_name: projectName,
+          request_id: requestId
+        }
+      })
+
+    if (notificationError) {
+      console.error('创建通知失败:', notificationError)
+    }
+
+    return { message: status === 'approved' ? '申请已批准' : '申请已拒绝' }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+// ============ 文档相关 API ============
+
+export async function getProjectDocuments(
+  projectId: string
+): Promise<ApiResponse<Document[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { data: data || [] }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}

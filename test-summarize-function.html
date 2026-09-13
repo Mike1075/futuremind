@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试用户总结 Edge Function</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #e0e0e0;
+    }
+    h1 {
+      color: #10b981;
+      border-bottom: 2px solid #10b981;
+      padding-bottom: 10px;
+    }
+    .section {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      color: #10b981;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #10b981;
+    }
+    .checkbox-group {
+      margin: 15px 0;
+    }
+    .checkbox-group label {
+      display: inline-block;
+      margin-right: 20px;
+      font-weight: normal;
+      color: #e0e0e0;
+    }
+    .checkbox-group input[type="checkbox"] {
+      margin-right: 5px;
+    }
+    button {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #059669;
+    }
+    button:disabled {
+      background: #444;
+      cursor: not-allowed;
+    }
+    #result {
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .success {
+      color: #10b981;
+    }
+    .error {
+      color: #ef4444;
+    }
+    .info {
+      color: #3b82f6;
+    }
+    .loading {
+      color: #fbbf24;
+    }
+    .summary-box {
+      background: #2a2a2a;
+      border-left: 4px solid #10b981;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .summary-title {
+      color: #10b981;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .stat {
+      color: #fbbf24;
+      font-size: 12px;
+    }
+    code {
+      background: #2a2a2a;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #3b82f6;
+    }
+  </style>
+</head>
+<body>
+  <h1>🤖 测试用户总结 Edge Function</h1>
+
+  <div class="section">
+    <h3>📝 配置参数</h3>
+
+    <label for="userId">用户ID (必填):</label>
+    <input type="text" id="userId" placeholder="输入用户UUID，例如: 123e4567-e89b-12d3-a456-426614174000">
+
+    <div class="checkbox-group">
+      <label>选择要总结的维度:</label><br>
+      <label><input type="checkbox" id="dimDialogue" checked> 对话维度 (Dialogue)</label>
+      <label><input type="checkbox" id="dimCoursework" checked> 作业维度 (Coursework)</label>
+      <label><input type="checkbox" id="dimProjects" checked> 项目维度 (Projects)</label>
+    </div>
+
+    <button onclick="testFunction()">🚀 开始测试</button>
+    <button onclick="clearResult()" style="background: #6b7280; margin-left: 10px;">🗑️ 清空结果</button>
+  </div>
+
+  <div class="section">
+    <h3>📊 测试结果</h3>
+    <div id="result">等待测试...</div>
+  </div>
+
+  <div class="section">
+    <h3>💡 使用说明</h3>
+    <ol>
+      <li>在 Supabase SQL Editor 执行: <code>SELECT id FROM profiles WHERE role = 'student' LIMIT 1</code> 获取一个学生用户ID</li>
+      <li>将用户ID粘贴到上面的输入框</li>
+      <li>选择要测试的维度（建议先只选一个维度测试）</li>
+      <li>点击"开始测试"按钮</li>
+      <li>查看下方的测试结果和AI生成的总结</li>
+    </ol>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://lvjezsnwesyblnlkkirz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2amV6c253ZXN5YmxubGtraXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MTU1MjgsImV4cCI6MjA3Mjk5MTUyOH0.jMmrvWwHMBo10bvWPU3vYcwp-2D5S5JTQmkvOr4qFIA';
+
+    async function testFunction() {
+      const userId = document.getElementById('userId').value.trim();
+      const resultDiv = document.getElementById('result');
+
+      if (!userId) {
+        resultDiv.innerHTML = '<span class="error">❌ 错误: 请输入用户ID</span>';
+        return;
+      }
+
+      // 获取选中的维度
+      const dimensions = [];
+      if (document.getElementById('dimDialogue').checked) dimensions.push('dialogue');
+      if (document.getElementById('dimCoursework').checked) dimensions.push('coursework');
+      if (document.getElementById('dimProjects').checked) dimensions.push('projects');
+
+      if (dimensions.length === 0) {
+        resultDiv.innerHTML = '<span class="error">❌ 错误: 请至少选择一个维度</span>';
+        return;
+      }
+
+      resultDiv.innerHTML = '<span class="loading">⏳ 正在调用 Edge Function，请稍候...</span>';
+
+      try {
+        const startTime = Date.now();
+
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/summarize-user-activity`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            userId: userId,
+            dimensions: dimensions
+          })
+        });
+
+        const endTime = Date.now();
+        const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+        const data = await response.json();
+
+        if (response.ok) {
+          let html = `<div class="success">✅ 测试成功！ (耗时: ${duration}秒)</div>\n\n`;
+          html += `<div class="info">📌 用户ID: ${data.userId}</div>\n`;
+          html += `<div class="info">📌 处理维度: ${data.dimensions.join(', ')}</div>\n\n`;
+
+          html += `<div class="summary-title">📝 生成的总结:</div>\n`;
+
+          // 对话维度
+          if (data.results.dialogue) {
+            html += `<div class="summary-box">`;
+            html += `<div class="summary-title">💬 对话维度总结</div>`;
+            html += `<div>${data.results.dialogue.summary}</div>\n\n`;
+            html += `<div class="stat">`;
+            html += `📊 对话数: ${data.results.dialogue.conversation_count} | `;
+            html += `消息数: ${data.results.dialogue.message_count} | `;
+            html += `更新时间: ${new Date(data.results.dialogue.last_summarized_at).toLocaleString('zh-CN')}`;
+            html += `</div>`;
+            html += `</div>\n`;
+          }
+
+          // 作业维度
+          if (data.results.coursework) {
+            html += `<div class="summary-box">`;
+            html += `<div class="summary-title">📚 作业维度总结</div>`;
+            html += `<div>${data.results.coursework.summary}</div>\n\n`;
+            html += `<div class="stat">`;
+            html += `📊 提交数: ${data.results.coursework.submission_count} | `;
+            html += `互动数: ${data.results.coursework.interaction_count} | `;
+            html += `更新时间: ${new Date(data.results.coursework.last_summarized_at).toLocaleString('zh-CN')}`;
+            html += `</div>`;
+            html += `</div>\n`;
+          }
+
+          // 项目维度
+          if (data.results.projects) {
+            html += `<div class="summary-box">`;
+            html += `<div class="summary-title">🎯 项目维度总结</div>`;
+            html += `<div>${data.results.projects.summary}</div>\n\n`;
+            html += `<div class="stat">`;
+            html += `📊 活跃项目: ${data.results.projects.active_project_count} | `;
+            html += `总项目数: ${data.results.projects.total_project_count} | `;
+            html += `更新时间: ${new Date(data.results.projects.last_summarized_at).toLocaleString('zh-CN')}`;
+            html += `</div>`;
+            html += `</div>\n`;
+          }
+
+          html += `\n<div class="info">🕒 最后完整更新: ${new Date(data.results.last_full_update).toLocaleString('zh-CN')}</div>`;
+
+          html += `\n\n<div class="success">✅ 验证步骤:</div>`;
+          html += `<div>1. 复制以下SQL到 Supabase SQL Editor 查看数据库中的总结:</div>\n`;
+          html += `<code>SELECT * FROM student_summaries WHERE user_id = '${userId}'</code>\n\n`;
+          html += `<div>2. 检查 course_summaries 字段中是否包含上述总结内容</div>`;
+
+          resultDiv.innerHTML = html;
+        } else {
+          resultDiv.innerHTML = `<div class="error">❌ 调用失败 (${response.status})</div>\n\n`;
+          resultDiv.innerHTML += `<div class="error">错误信息: ${data.error || '未知错误'}</div>\n\n`;
+          resultDiv.innerHTML += `<div>完整响应:\n${JSON.stringify(data, null, 2)}</div>`;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="error">❌ 网络错误: ${error.message}</div>`;
+      }
+    }
+
+    function clearResult() {
+      document.getElementById('result').innerHTML = '等待测试...';
+    }
+  </script>
+</body>
+</html>

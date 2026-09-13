@@ -1,0 +1,15 @@
+# 下载的音频文件（太大，不应提交）
+audio/
+
+# 转录缓存
+cache/
+
+# 修复工作目录（TTS + 拼接输出）
+fix/
+
+# 报告输出
+output/
+
+# Python 缓存
+__pycache__/
+*.pyc
