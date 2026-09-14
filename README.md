@@ -1,6 +1,6 @@
 # 未来心灵学院 (Future Mind Institute)
 
-一个面向后AGI时代的全球意识觉醒生态系统
+一个面向后AGI时代的全球意识觉醒生态系统——
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
