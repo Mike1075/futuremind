@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createBrowserClient, createServerClient } from '@supabase/ssr'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { SUPABASE_COOKIE_OPTIONS, supabaseUrlForBrowser } from './supabase/config'
 
 // CQ-02: 导出Database类型供其他模块使用
 export type { Database }
@@ -21,7 +22,10 @@ export const supabase = createServiceClient<Database>(supabaseUrl, supabaseAnonK
 
 // 浏览器客户端
 export function getBrowserClient() {
-  return createBrowserClient<Database>(supabaseUrl!, supabaseAnonKey!)
+  // 浏览器走同源转发 /sb/*；cookie 名钉在原 project ref 上（见 supabase/config.ts）
+  return createBrowserClient<Database>(supabaseUrlForBrowser(), supabaseAnonKey!, {
+    cookieOptions: SUPABASE_COOKIE_OPTIONS,
+  })
 }
 
 // 服务端客户端（使用cookies）
@@ -29,6 +33,7 @@ export async function getClient() {
   const cookieStore = await cookies()
 
   return createServerClient<Database>(supabaseUrl!, supabaseAnonKey!, {
+    cookieOptions: SUPABASE_COOKIE_OPTIONS,
     cookies: {
       getAll() {
         return cookieStore.getAll()

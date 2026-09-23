@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { MessageSquare, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { subscribeWithPolling } from '@/lib/supabase/subscribeWithPolling'
 import { DiscussionCard } from '../discussion/DiscussionCard'
 import { CommentForm } from '../discussion/CommentForm'
 import { useToast } from '@/components/ui/ToastProvider'
@@ -46,7 +47,7 @@ export function DiscussionSection({ courseContentId }: DiscussionSectionProps) {
     checkAuth()
     loadDiscussions()
 
-    // 设置实时订阅
+    // 设置实时订阅；Realtime 连不上（同源转发不代理 WebSocket）时 30 秒轮询兜底
     const supabase = createClient()
     const channel = supabase
       .channel(`discussions:${courseContentId}`)
@@ -63,11 +64,8 @@ export function DiscussionSection({ courseContentId }: DiscussionSectionProps) {
           loadDiscussions()
         }
       )
-      .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return subscribeWithPolling(channel, loadDiscussions)
   }, [courseContentId, refreshTrigger])
 
   const checkAuth = async () => {

@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { subscribeWithPolling } from '@/lib/supabase/subscribeWithPolling'
 import { triggerUnreadCountRefresh } from '@/lib/aip/useUnreadCount'
 import type { UnifiedInteraction } from './notification-helpers'
 
@@ -119,8 +120,12 @@ export function useInteractionData() {
   useEffect(() => {
     loadInteractions()
 
-    // 实时订阅通知更新
+    // 实时订阅通知更新；Realtime 连不上（同源转发不代理 WebSocket）时 30 秒轮询兜底
     const supabase = createClient()
+    const refresh = () => {
+      loadInteractions()
+      triggerUnreadCountRefresh()
+    }
     const channel = supabase
       .channel('inbox-updates')
       .on('postgres_changes', {
@@ -143,11 +148,8 @@ export function useInteractionData() {
           triggerUnreadCountRefresh()
         }, 500)
       })
-      .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return subscribeWithPolling(channel, refresh)
   }, [loadInteractions])
 
   // 更新单个交互项的状态

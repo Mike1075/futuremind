@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { SUPABASE_COOKIE_OPTIONS } from '@/lib/supabase/config'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -17,6 +18,7 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        cookieOptions: SUPABASE_COOKIE_OPTIONS,
         cookies: {
           getAll() {
             return cookieStore.getAll()
